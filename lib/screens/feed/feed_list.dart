@@ -211,98 +211,93 @@ class _FeedListState extends State<FeedList>
   }
 
   Widget _buildPostItem(Post post) {
-    return Container(
-      decoration: const BoxDecoration(
-        border: Border(bottom: BorderSide(color: ShadcnColors.border)),
-      ),
-      child: InkWell(
-        onTap: () => _navigateToDetail(post),
-        child: Padding(
-          padding: const EdgeInsets.all(16.0),
-          child: Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              ShadcnAvatar(
-                avatarUrl: post.authorAvatarUrl,
-                fallbackInitials: post.author,
-                size: 40,
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    // Header
-                    Row(
-                      children: [
-                        Text(
-                          post.author,
-                          style: const TextStyle(
-                            fontWeight: FontWeight.w600,
-                            fontSize: 15,
-                            color: ShadcnColors.foreground,
-                          ),
+    return InkWell(
+      onTap: () => _navigateToDetail(post),
+      child: Padding(
+        padding: const EdgeInsets.all(16.0),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            ShadcnAvatar(
+              avatarUrl: post.authorAvatarUrl,
+              fallbackInitials: post.author,
+              size: 40,
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // Header
+                  Row(
+                    children: [
+                      Text(
+                        post.author,
+                        style: const TextStyle(
+                          fontWeight: FontWeight.w600,
+                          fontSize: 15,
+                          color: ShadcnColors.foreground,
                         ),
-                        const SizedBox(width: 4),
-                        Expanded(
-                          child: Text(
-                            '${post.authorHandle} · 2h',
-                            style: const TextStyle(
-                              color: ShadcnColors.mutedForeground,
-                              fontSize: 14,
-                            ),
-                            overflow: TextOverflow.ellipsis,
-                          ),
-                        ),
-                        const Icon(
-                          Icons.more_horiz,
-                          size: 16,
-                          color: ShadcnColors.mutedForeground,
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 4),
-                    // Content
-                    ExpandableText(
-                      text: post.content,
-                      style: const TextStyle(
-                        fontSize: 15,
-                        height: 1.4,
-                        color: ShadcnColors.foreground,
                       ),
-                    ),
-                    if (post.imageUrls.isNotEmpty) ...[
-                      const SizedBox(height: 12),
-                      PostImagesWidget(imageUrls: post.imageUrls),
+                      const SizedBox(width: 4),
+                      Expanded(
+                        child: Text(
+                          '${post.authorHandle} · 2h',
+                          style: const TextStyle(
+                            color: ShadcnColors.mutedForeground,
+                            fontSize: 14,
+                          ),
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                      const Icon(
+                        Icons.more_horiz,
+                        size: 16,
+                        color: ShadcnColors.mutedForeground,
+                      ),
                     ],
-                    const SizedBox(height: 12),
-                    // Actions
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        _buildAction(
-                          Icons.chat_bubble_outline,
-                          formatCount(post.commentsCount),
-                        ),
-                        _buildAction(
-                          Icons.repeat,
-                          formatCount(post.repostsCount),
-                        ),
-                        AnimatedLikeButton(
-                          isLiked: false, // In a real app, bind to data
-                          onData: () {
-                            // Handle like API
-                          },
-                          size: 18,
-                        ),
-                        _buildAction(Icons.share_outlined, ''),
-                      ],
+                  ),
+                  const SizedBox(height: 4),
+                  // Content
+                  ExpandableText(
+                    text: post.content,
+                    style: const TextStyle(
+                      fontSize: 15,
+                      height: 1.4,
+                      color: ShadcnColors.foreground,
                     ),
+                  ),
+                  if (post.imageUrls.isNotEmpty) ...[
+                    const SizedBox(height: 12),
+                    PostImagesWidget(imageUrls: post.imageUrls),
                   ],
-                ),
+                  const SizedBox(height: 12),
+                  // Actions
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      _buildAction(
+                        Icons.chat_bubble_outline,
+                        formatCount(post.commentsCount),
+                      ),
+                      _buildAction(
+                        Icons.repeat,
+                        formatCount(post.repostsCount),
+                      ),
+                      AnimatedLikeButton(
+                        isLiked: false, // In a real app, bind to data
+                        onData: () {
+                          // Handle like API
+                        },
+                        size: 18,
+                      ),
+                      _buildAction(Icons.share_outlined, ''),
+                    ],
+                  ),
+                ],
               ),
-            ],
-          ),
+            ),
+          ],
         ),
       ),
     );

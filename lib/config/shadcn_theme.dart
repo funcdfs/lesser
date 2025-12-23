@@ -47,6 +47,7 @@ class ShadcnColors {
 
 /// Spacing system based on 4px grid
 class ShadcnSpacing {
+  static const double xxs = 2.0; // 0.125rem
   static const double xs = 4.0; // 0.25rem
   static const double sm = 8.0; // 0.5rem
   static const double md = 12.0; // 0.75rem
