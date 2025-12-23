@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:intl/intl.dart';
 import '../models/post.dart';
 import '../config/shadcn_theme.dart';
 import '../widgets/shadcn/shadcn_avatar.dart';

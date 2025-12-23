@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import '../config/shadcn_theme.dart';
 import '../widgets/shadcn/shadcn_list_tile.dart';
 import '../widgets/shadcn/shadcn_icon_container.dart';
-import '../widgets/shadcn/shadcn_button.dart'; // Assuming this exists or will use standard buttons styled
+// Assuming this exists or will use standard buttons styled
 import '../widgets/shadcn/shadcn_chip.dart'; // For badges
 
 class ChatScreen extends StatefulWidget {
@@ -13,13 +13,14 @@ class ChatScreen extends StatefulWidget {
 }
 
 class _ChatScreenState extends State<ChatScreen> {
-
   void _showCreateMenu() {
     showModalBottomSheet(
       context: context,
       backgroundColor: ShadcnColors.background,
       shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(ShadcnRadius.xl)),
+        borderRadius: BorderRadius.vertical(
+          top: Radius.circular(ShadcnRadius.xl),
+        ),
       ),
       builder: (context) => SafeArea(
         child: Column(
@@ -27,7 +28,10 @@ class _ChatScreenState extends State<ChatScreen> {
           children: [
             const SizedBox(height: ShadcnSpacing.sm),
             ShadcnListTile(
-              leading: const Icon(Icons.group_add, color: ShadcnColors.foreground),
+              leading: const Icon(
+                Icons.group_add,
+                color: ShadcnColors.foreground,
+              ),
               title: '创建 Group',
               onTap: () {
                 Navigator.pop(context);
@@ -35,7 +39,10 @@ class _ChatScreenState extends State<ChatScreen> {
               },
             ),
             ShadcnListTile(
-              leading: const Icon(Icons.podcasts, color: ShadcnColors.foreground),
+              leading: const Icon(
+                Icons.podcasts,
+                color: ShadcnColors.foreground,
+              ),
               title: '创建 Channel',
               onTap: () {
                 Navigator.pop(context);
@@ -56,7 +63,11 @@ class _ChatScreenState extends State<ChatScreen> {
       appBar: AppBar(
         title: const Text(
           'Message',
-          style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18, color: ShadcnColors.foreground),
+          style: TextStyle(
+            fontWeight: FontWeight.bold,
+            fontSize: 18,
+            color: ShadcnColors.foreground,
+          ),
         ),
         centerTitle: false,
         backgroundColor: ShadcnColors.background,
@@ -70,7 +81,10 @@ class _ChatScreenState extends State<ChatScreen> {
               children: [
                 // Top Navigation Row
                 Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: ShadcnSpacing.md, vertical: ShadcnSpacing.sm),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: ShadcnSpacing.md,
+                    vertical: ShadcnSpacing.sm,
+                  ),
                   child: Row(
                     mainAxisAlignment: MainAxisAlignment.spaceAround,
                     crossAxisAlignment: CrossAxisAlignment.start,
@@ -98,10 +112,14 @@ class _ChatScreenState extends State<ChatScreen> {
                     ],
                   ),
                 ),
-                
+
                 const SizedBox(height: ShadcnSpacing.md),
-                const Divider(height: 1, thickness: 1, color: ShadcnColors.border),
-                
+                const Divider(
+                  height: 1,
+                  thickness: 1,
+                  color: ShadcnColors.border,
+                ),
+
                 // Chat items section
                 const _SectionHeader(title: '聊天'),
                 _ChatItem(
@@ -128,9 +146,9 @@ class _ChatScreenState extends State<ChatScreen> {
                   time: '12:00',
                   unreadCount: 0,
                 ),
-                
+
                 const SizedBox(height: ShadcnSpacing.lg),
-                
+
                 // Network neighbors section
                 const _SectionHeader(title: '网络邻居'),
                 _ChatItem(
@@ -145,7 +163,7 @@ class _ChatScreenState extends State<ChatScreen> {
               ],
             ),
           ),
-          
+
           // Bottom action bar
           Container(
             decoration: const BoxDecoration(
@@ -155,7 +173,7 @@ class _ChatScreenState extends State<ChatScreen> {
               ),
             ),
             padding: const EdgeInsets.symmetric(
-              horizontal: ShadcnSpacing.lg, 
+              horizontal: ShadcnSpacing.lg,
               vertical: ShadcnSpacing.md,
             ),
             child: SafeArea(
@@ -170,7 +188,9 @@ class _ChatScreenState extends State<ChatScreen> {
                       style: OutlinedButton.styleFrom(
                         foregroundColor: ShadcnColors.foreground,
                         side: const BorderSide(color: ShadcnColors.border),
-                        padding: const EdgeInsets.symmetric(vertical: ShadcnSpacing.md),
+                        padding: const EdgeInsets.symmetric(
+                          vertical: ShadcnSpacing.md,
+                        ),
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(ShadcnRadius.md),
                         ),
@@ -186,7 +206,9 @@ class _ChatScreenState extends State<ChatScreen> {
                       style: ElevatedButton.styleFrom(
                         backgroundColor: ShadcnColors.primary,
                         foregroundColor: ShadcnColors.primaryForeground,
-                        padding: const EdgeInsets.symmetric(vertical: ShadcnSpacing.md),
+                        padding: const EdgeInsets.symmetric(
+                          vertical: ShadcnSpacing.md,
+                        ),
                         elevation: 0,
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(ShadcnRadius.md),
@@ -224,14 +246,12 @@ class _TopIconItem extends StatelessWidget {
           width: 48,
           height: 48,
           decoration: BoxDecoration(
-            color: color.withOpacity(0.1), // Light background matching icon color
+            color: color.withOpacity(
+              0.1,
+            ), // Light background matching icon color
             borderRadius: BorderRadius.circular(16),
           ),
-          child: Icon(
-            icon,
-            color: color,
-            size: 24,
-          ),
+          child: Icon(icon, color: color, size: 24),
         ),
         const SizedBox(height: 8),
         SizedBox(
@@ -262,9 +282,9 @@ class _SectionHeader extends StatelessWidget {
   Widget build(BuildContext context) {
     return Padding(
       padding: const EdgeInsets.fromLTRB(
-        ShadcnSpacing.xl, 
-        ShadcnSpacing.sm, 
-        ShadcnSpacing.xl, 
+        ShadcnSpacing.xl,
+        ShadcnSpacing.sm,
+        ShadcnSpacing.xl,
         ShadcnSpacing.sm,
       ),
       child: Text(
@@ -306,11 +326,7 @@ class _ChatItem extends StatelessWidget {
         horizontal: ShadcnSpacing.lg,
         vertical: ShadcnSpacing.md,
       ),
-      leading: ShadcnIconContainer(
-        icon: icon,
-        iconColor: iconColor,
-        size: 48,
-      ),
+      leading: ShadcnIconContainer(icon: icon, iconColor: iconColor, size: 48),
       title: title,
       subtitle: subtitle,
       trailing: Column(
@@ -331,11 +347,11 @@ class _ChatItem extends StatelessWidget {
               text: unreadCount > 99 ? '99+' : unreadCount.toString(),
             ),
           ] else if (showArrow)
-             const Icon(
-               Icons.chevron_right, 
-               color: ShadcnColors.mutedForeground, 
-               size: 18,
-             ),
+            const Icon(
+              Icons.chevron_right,
+              color: ShadcnColors.mutedForeground,
+              size: 18,
+            ),
         ],
       ),
       onTap: () {
@@ -344,4 +360,3 @@ class _ChatItem extends StatelessWidget {
     );
   }
 }
-

@@ -454,7 +454,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                         _isDarkMode = value;
                       });
                     },
-                    activeColor: ShadcnColors.foreground,
+                    activeTrackColor: ShadcnColors.foreground,
                   ),
                 ],
               ),
