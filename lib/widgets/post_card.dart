@@ -1,3 +1,4 @@
+import 'dart:math';
 import 'package:flutter/material.dart';
 import '../config/shadcn_theme.dart';
 import '../widgets/shadcn/shadcn_avatar.dart';
@@ -158,7 +159,7 @@ class _PostCardState extends State<PostCard> with TickerProviderStateMixin {
                       ),
                     ],
                   ),
-                  const SizedBox(height: 2),
+                  const SizedBox(height: 8),
 
                   /// 帖子内容
                   Text(
@@ -501,37 +502,56 @@ class _ActionButtonState extends State<_ActionButton>
   /// 是否悬停状态
   bool _isHovered = false;
 
-  /// 缩放动画控制器
-  late AnimationController _scaleController;
+  /// 波纹动画控制器
+  late AnimationController _rippleController;
 
-  /// 缩放动画
-  late Animation<double> _scaleAnimation;
+  /// 粒子动画控制器
+  late AnimationController _burstController;
+
+  /// 波纹扩散动画
+  late Animation<double> _rippleAnimation;
+
+  /// 粒子爆发动画
+  late Animation<double> _burstAnimation;
 
   @override
   void initState() {
     super.initState();
-    _scaleController = AnimationController(
-      duration: const Duration(milliseconds: 500),
+
+    // 波纹扩散动画 - 从中心向外扩散的圆形
+    _rippleController = AnimationController(
+      duration: const Duration(milliseconds: 600),
       vsync: this,
     );
-    _scaleAnimation = Tween<double>(begin: 1.0, end: 1.15).animate(
-      CurvedAnimation(parent: _scaleController, curve: Curves.elasticOut),
+    _rippleAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
+      CurvedAnimation(parent: _rippleController, curve: Curves.easeOutCubic),
     );
+
+    // 粒子爆发动画 - 小圆点从中心向外爆发
+    _burstController = AnimationController(
+      duration: const Duration(milliseconds: 400),
+      vsync: this,
+    );
+    _burstAnimation = Tween<double>(
+      begin: 0.0,
+      end: 1.0,
+    ).animate(CurvedAnimation(parent: _burstController, curve: Curves.easeOut));
   }
 
   @override
   void didUpdateWidget(_ActionButton oldWidget) {
     super.didUpdateWidget(oldWidget);
     if (widget.isLiked && !oldWidget.isLiked) {
-      _scaleController.forward().then((_) {
-        _scaleController.reverse();
-      });
+      // 点赞时触发动画
+      _rippleController.forward(from: 0.0);
+      _burstController.forward(from: 0.0);
     }
   }
 
   @override
   void dispose() {
-    _scaleController.dispose();
+    _rippleController.dispose();
+    _burstController.dispose();
     super.dispose();
   }
 
@@ -555,37 +575,153 @@ class _ActionButtonState extends State<_ActionButton>
                 ? ShadcnColors.secondary.withValues(alpha: 0.5)
                 : Colors.transparent,
           ),
-          child: ScaleTransition(
-            scale: _scaleAnimation,
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Icon(
-                  widget.isLikeButton && widget.isLiked
-                      ? Icons.favorite
-                      : widget.icon,
-                  size: 20,
-                  color: widget.isLikeButton && widget.isLiked
-                      ? const Color(0xFFEF4444)
-                      : (_isHovered
-                            ? ShadcnColors.foreground
-                            : ShadcnColors.mutedForeground),
-                ),
-                if (widget.count != null && widget.count! > 0) ...[
-                  const SizedBox(width: 6),
-                  Text(
-                    formatCount(widget.count!),
-                    style: const TextStyle(
-                      fontSize: 13,
-                      color: ShadcnColors.mutedForeground,
-                    ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              // 图标 + 特效层
+              Stack(
+                clipBehavior: Clip.none,
+                children: [
+                  // 图标（作为 Stack 的主要子组件，决定 Stack 大小）
+                  Icon(
+                    widget.isLikeButton && widget.isLiked
+                        ? Icons.favorite
+                        : widget.icon,
+                    size: 20,
+                    color: widget.isLikeButton && widget.isLiked
+                        ? const Color(0xFFEF4444)
+                        : (_isHovered
+                              ? ShadcnColors.foreground
+                              : ShadcnColors.mutedForeground),
                   ),
+
+                  // 波纹扩散效果（仅在点赞按钮上显示，不占据布局空间）
+                  if (widget.isLikeButton)
+                    Positioned.fill(
+                      child: Center(
+                        child: AnimatedBuilder(
+                          animation: _rippleAnimation,
+                          builder: (context, child) {
+                            return CustomPaint(
+                              painter: _RipplePainter(
+                                progress: _rippleAnimation.value,
+                                color: const Color(0xFFEF4444),
+                              ),
+                            );
+                          },
+                        ),
+                      ),
+                    ),
+
+                  // 粒子爆发效果（仅在点赞按钮上显示，不占据布局空间）
+                  if (widget.isLikeButton)
+                    Positioned.fill(
+                      child: Center(
+                        child: AnimatedBuilder(
+                          animation: _burstAnimation,
+                          builder: (context, child) {
+                            return CustomPaint(
+                              painter: _BurstPainter(
+                                progress: _burstAnimation.value,
+                                color: const Color(0xFFEF4444),
+                              ),
+                            );
+                          },
+                        ),
+                      ),
+                    ),
                 ],
+              ),
+
+              // 数字（如果有）
+              if (widget.count != null && widget.count! > 0) ...[
+                const SizedBox(width: 6),
+                Text(
+                  formatCount(widget.count!),
+                  style: const TextStyle(
+                    fontSize: 13,
+                    color: ShadcnColors.mutedForeground,
+                  ),
+                ),
               ],
-            ),
+            ],
           ),
         ),
       ),
     );
+  }
+}
+
+/// 波纹扩散效果绘制器
+class _RipplePainter extends CustomPainter {
+  final double progress;
+  final Color color;
+
+  _RipplePainter({required this.progress, required this.color});
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    if (progress == 0.0) return;
+
+    final center = Offset(size.width / 2, size.height / 2);
+    final maxRadius = size.width / 2;
+    final currentRadius = maxRadius * progress;
+
+    // 计算透明度 - 随着扩散逐渐消失
+    final opacity = 1.0 - progress;
+
+    final paint = Paint()
+      ..color = color.withValues(alpha: opacity * 0.3)
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 2.0;
+
+    canvas.drawCircle(center, currentRadius, paint);
+  }
+
+  @override
+  bool shouldRepaint(_RipplePainter oldDelegate) {
+    return oldDelegate.progress != progress;
+  }
+}
+
+/// 粒子爆发效果绘制器
+class _BurstPainter extends CustomPainter {
+  final double progress;
+  final Color color;
+
+  _BurstPainter({required this.progress, required this.color});
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    if (progress == 0.0) return;
+
+    final center = Offset(size.width / 2, size.height / 2);
+
+    // 计算透明度 - 随着移动逐渐消失
+    final opacity = 1.0 - progress;
+
+    // 绘制8个小圆点，从中心向8个方向爆发
+    final angles = [0, 45, 90, 135, 180, 225, 270, 315];
+    final maxDistance = 15.0;
+    final currentDistance = maxDistance * progress;
+
+    final paint = Paint()
+      ..color = color.withValues(alpha: opacity * 0.8)
+      ..style = PaintingStyle.fill;
+
+    for (final angle in angles) {
+      final radian = angle * 3.14159 / 180;
+      final x = center.dx + currentDistance * cos(radian);
+      final y = center.dy + currentDistance * sin(radian);
+
+      // 圆点大小随着距离变小
+      final dotRadius = 2.0 * (1.0 - progress * 0.5);
+      canvas.drawCircle(Offset(x, y), dotRadius, paint);
+    }
+  }
+
+  @override
+  bool shouldRepaint(_BurstPainter oldDelegate) {
+    return oldDelegate.progress != progress;
   }
 }
