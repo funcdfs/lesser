@@ -4,6 +4,13 @@ import '../config/shadcn_theme.dart';
 import '../widgets/shadcn/shadcn_avatar.dart';
 import '../widgets/post_actions_bar.dart';
 
+/// 帖子详情屏幕 (Post Detail Screen)
+///
+/// 该页面用于展示单条帖子的完整内容，包括：
+/// 1. 帖子正文、图片、位置和精确发布时间。
+/// 2. 交互操作栏 (点赞、评论、转发等)。
+/// 3. 评论列表占位符。
+/// 4. 针对帖子的管理操作菜单（不感兴趣、屏蔽、举报等）。
 class DetailScreen extends StatefulWidget {
   final Post post;
 
@@ -14,6 +21,7 @@ class DetailScreen extends StatefulWidget {
 }
 
 class _DetailScreenState extends State<DetailScreen> {
+  /// 模拟本地点赞状态
   late bool _isLiked;
 
   @override
@@ -22,6 +30,7 @@ class _DetailScreenState extends State<DetailScreen> {
     _isLiked = false;
   }
 
+  /// 切换点赞状态
   void _toggleLike() {
     setState(() {
       _isLiked = !_isLiked;
@@ -53,13 +62,13 @@ class _DetailScreenState extends State<DetailScreen> {
       body: SingleChildScrollView(
         child: Column(
           children: [
-            // Post Content
+            // 帖子核心内容区块
             Padding(
               padding: const EdgeInsets.all(ShadcnSpacing.lg),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  // Author Header
+                  // 作者信息头部
                   Row(
                     children: [
                       ShadcnAvatar(
@@ -100,7 +109,8 @@ class _DetailScreenState extends State<DetailScreen> {
                     ],
                   ),
                   const SizedBox(height: ShadcnSpacing.lg),
-                  // Text Content
+
+                  // 帖子正文文本
                   Text(
                     widget.post.content,
                     style: const TextStyle(
@@ -110,7 +120,8 @@ class _DetailScreenState extends State<DetailScreen> {
                     ),
                   ),
                   const SizedBox(height: ShadcnSpacing.lg),
-                  // Timestamp and Location
+
+                  // 发布时间与位置信息
                   Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
@@ -147,7 +158,8 @@ class _DetailScreenState extends State<DetailScreen> {
                   const SizedBox(height: ShadcnSpacing.lg),
                   const Divider(color: ShadcnColors.border),
                   const SizedBox(height: ShadcnSpacing.md),
-                  // 操作栏
+
+                  // 交互操作栏封装组件
                   PostActionsBar(
                     likesCount: widget.post.likesCount,
                     commentsCount: widget.post.commentsCount,
@@ -156,7 +168,7 @@ class _DetailScreenState extends State<DetailScreen> {
                     sharesCount: widget.post.sharesCount,
                     initiallyLiked: _isLiked,
                     onLikeToggle: _toggleLike,
-                    responsive: false,
+                    responsive: false, // 详情页通常固定排版
                   ),
                   const SizedBox(height: ShadcnSpacing.md),
                 ],
@@ -165,7 +177,7 @@ class _DetailScreenState extends State<DetailScreen> {
 
             const Divider(color: ShadcnColors.border, thickness: 8, height: 8),
 
-            // Comments Section Placeholder
+            // 评论区块占位
             Container(
               padding: const EdgeInsets.all(ShadcnSpacing.lg),
               alignment: Alignment.centerLeft,
@@ -178,7 +190,8 @@ class _DetailScreenState extends State<DetailScreen> {
                 ),
               ),
             ),
-            // Placeholder List
+
+            // 模拟评论列表
             ListView.separated(
               physics: const NeverScrollableScrollPhysics(),
               shrinkWrap: true,
@@ -219,7 +232,7 @@ class _DetailScreenState extends State<DetailScreen> {
                             Row(
                               children: [
                                 Text(
-                                  'User ${index + 1}',
+                                  '用户 ${index + 1}',
                                   style: const TextStyle(
                                     fontWeight: FontWeight.w600,
                                     color: ShadcnColors.foreground,
@@ -248,7 +261,7 @@ class _DetailScreenState extends State<DetailScreen> {
                 );
               },
             ),
-            // Bottom spacing
+            // 底部间距
             const SizedBox(height: 40),
           ],
         ),
@@ -256,6 +269,7 @@ class _DetailScreenState extends State<DetailScreen> {
     );
   }
 
+  /// 弹出针对该帖子的更多操作菜单
   void _showActionMenu(BuildContext context) {
     showModalBottomSheet(
       context: context,
@@ -306,6 +320,7 @@ class _DetailScreenState extends State<DetailScreen> {
     );
   }
 
+  /// 构建菜单中的单一可点击项
   Widget _buildActionItem(
     BuildContext context,
     String title,
@@ -315,7 +330,7 @@ class _DetailScreenState extends State<DetailScreen> {
     return InkWell(
       onTap: () {
         Navigator.pop(context);
-        // Implement action logic here
+        // 此处应实现具体的业务逻辑
       },
       child: Padding(
         padding: const EdgeInsets.symmetric(
@@ -348,6 +363,7 @@ class _DetailScreenState extends State<DetailScreen> {
     );
   }
 
+  /// 格式化为长日期字符串，例如：2023 年 12 月 23 日 周六 14:30
   String _formatFullDate(DateTime date) {
     final weekDays = ['周一', '周二', '周三', '周四', '周五', '周六', '周日'];
     final weekDay = weekDays[date.weekday - 1];

@@ -1,11 +1,21 @@
 import 'package:flutter/material.dart';
 import '../config/shadcn_theme.dart';
 
+/// 带有动画效果的点赞按钮组件
 class AnimatedLikeButton extends StatefulWidget {
+  /// 当前是否已点赞
   final bool isLiked;
+
+  /// 点击回调
   final VoidCallback onData;
+
+  /// 图标大小
   final double size;
+
+  /// 激活状态颜色（已点赞）
   final Color? activeColor;
+
+  /// 未激活状态颜色（未点赞）
   final Color? inactiveColor;
 
   const AnimatedLikeButton({
@@ -23,9 +33,11 @@ class AnimatedLikeButton extends StatefulWidget {
 
 class _AnimatedLikeButtonState extends State<AnimatedLikeButton>
     with SingleTickerProviderStateMixin {
+  /// 缩放动画控制器
   late AnimationController _controller;
   late Animation<double> _scaleAnimation;
 
+  /// 内部点赞状态，用于快速响应交互 (乐观更新)
   bool _isLiked = false;
 
   @override
@@ -37,6 +49,7 @@ class _AnimatedLikeButtonState extends State<AnimatedLikeButton>
       duration: const Duration(milliseconds: 200),
     );
 
+    // 缩放序列动画：点击后稍微变大再恢复，产生回弹感
     _scaleAnimation = TweenSequence<double>([
       TweenSequenceItem(tween: Tween<double>(begin: 1.0, end: 1.3), weight: 50),
       TweenSequenceItem(tween: Tween<double>(begin: 1.3, end: 1.0), weight: 50),
@@ -57,18 +70,19 @@ class _AnimatedLikeButtonState extends State<AnimatedLikeButton>
     super.dispose();
   }
 
+  /// 处理点击交互
   void _handleTap() {
     if (!_isLiked) {
-      // Animate if becoming liked
+      // 只有在从未点赞变为点赞时触发动画
       _controller.forward(from: 0.0);
     }
 
-    // Optimistic update locally
+    // 内部状态乐观更新
     setState(() {
       _isLiked = !_isLiked;
     });
 
-    // Notify parent
+    // 通知父组件执行业务逻辑
     widget.onData();
   }
 

@@ -1,18 +1,45 @@
-/// 帖子数据模型
+/// 帖子内容数据模型
 class Post {
+  /// 唯一标识符
   final String id;
+
+  /// 标题
   final String title;
+
+  /// 内容正文
   final String content;
+
+  /// 作者姓名/昵称
   final String author;
+
+  /// 作者唯一句柄（如 @username）
   final String authorHandle;
+
+  /// 作者头像 URL
   final String authorAvatarUrl;
+
+  /// 发布时间
   final DateTime timestamp;
+
+  /// 点赞数
   final int likesCount;
+
+  /// 评论数
   final int commentsCount;
+
+  /// 转发数
   final int repostsCount;
+
+  /// 收藏数
   final int bookmarksCount;
+
+  /// 分享数
   final int sharesCount;
+
+  /// 地理位置信息（可选）
   final String? location;
+
+  /// 图片 URL 列表
   final List<String> imageUrls;
 
   /// 当前用户是否点赞了该帖子

@@ -1,7 +1,12 @@
 import 'package:flutter/material.dart';
 
+/// 帖子图片展示组件
+/// 支持单张图片全屏显示和多张图片的横向滚动浏览（瀑布流/轮播）。
 class PostImagesWidget extends StatelessWidget {
+  /// 图片 URL 列表
   final List<String> imageUrls;
+
+  /// 展示高度
   final double height;
 
   const PostImagesWidget({
@@ -14,13 +19,14 @@ class PostImagesWidget extends StatelessWidget {
   Widget build(BuildContext context) {
     if (imageUrls.isEmpty) return const SizedBox.shrink();
 
-    // Max 50 limits enforced at model/data level usually, but we can clamp here too just in case.
+    // 限制单次展示的最大图片数量（50张）
     final displayUrls = imageUrls.take(50).toList();
 
-    // Get screen width to apply max-width constraints on wide screens
+    // 获取屏幕宽度以在宽屏（如平板、桌面）上应用最大宽度限制
     final screenWidth = MediaQuery.of(context).size.width;
     final maxWidth = screenWidth > 640 ? 600.0 : double.infinity;
 
+    // 情况 1: 只有一张图片时，占满宽度显示
     if (displayUrls.length == 1) {
       return Container(
         constraints: BoxConstraints(maxHeight: height, maxWidth: maxWidth),
@@ -35,6 +41,7 @@ class PostImagesWidget extends StatelessWidget {
       );
     }
 
+    // 情况 2: 多张图片时，以横向滚动轮播形式显示
     return SizedBox(
       height: height,
       width: maxWidth,
@@ -44,7 +51,7 @@ class PostImagesWidget extends StatelessWidget {
         separatorBuilder: (context, index) => const SizedBox(width: 8),
         itemBuilder: (context, index) {
           return Container(
-            width: 250, // Fixed width for carousel items
+            width: 250, // 轮播中每张图片的固定宽度
             decoration: BoxDecoration(
               borderRadius: BorderRadius.circular(12),
               image: DecorationImage(

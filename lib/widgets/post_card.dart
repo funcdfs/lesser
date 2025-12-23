@@ -6,20 +6,26 @@ import '../models/post.dart';
 import '../utils/theme_constants.dart';
 import '../utils/time_formatter.dart';
 
-/// 帖子卡片组件 - 展示单个帖子的完整信息
+/// 帖子卡片组件
 ///
-/// 包含用户信息、帖子内容、图片、操作栏等
+/// 职责：负责展示单个帖子的核心信息流视图。
+/// 布局结构：
+/// - 左侧：作者头像。
+/// - 右侧：
+///   - 顶部：作者名、账号句柄、发布时间及更多菜单按钮。
+///   - 中间：帖子正文内容。
+///   - 底部：交互操作栏（PostActionsBar）。
 class PostCard extends StatefulWidget {
-  /// 帖子数据模型
+  /// 帖子数据实体
   final Post post;
 
-  /// 卡片点击回调
+  /// 整个卡片的点击回调（通常用于跳转到详情页）
   final VoidCallback onTap;
 
-  /// 点赞状态变更回调
+  /// 点赞状态发生改变时的回调（用于父组件同步状态）
   final ValueChanged<bool>? onLikeChanged;
 
-  /// 更多操作菜单回调
+  /// 点击顶部“更多”按钮时的回调
   final VoidCallback? onMoreTapped;
 
   const PostCard({

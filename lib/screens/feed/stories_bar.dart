@@ -4,14 +4,17 @@ import '../../config/shadcn_theme.dart';
 import '../../widgets/shadcn/shadcn_avatar.dart';
 import 'story_view_screen.dart';
 
+/// 故事栏组件 (Stories Bar)
+///
+/// 展示在“关注”动态流的顶部，包含横向滚动的用户头像列表。
+/// 点击头像可进入全屏故事浏览模式。
 class StoriesBar extends StatelessWidget {
   const StoriesBar({super.key});
 
   @override
   Widget build(BuildContext context) {
     return Container(
-      height:
-          120, // Increased height for better spacing and to prevent overflow
+      height: 120, // 增加高度以提供更好的间距防止溢出
       decoration: const BoxDecoration(
         color: ShadcnColors.background,
         border: Border(
@@ -21,18 +24,20 @@ class StoriesBar extends StatelessWidget {
       child: ListView.separated(
         scrollDirection: Axis.horizontal,
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-        itemCount: mockFollowingUsers.length + 1, // +1 for "My Story"
+        itemCount: mockFollowingUsers.length + 1, // +1 用于显示“我的状态”
         separatorBuilder: (context, index) => const SizedBox(width: 16),
         itemBuilder: (context, index) {
           if (index == 0) {
+            // 第一个项目通常是当前用户的“发布状态”入口
             return const _MyStoryItem();
           }
           final user = mockFollowingUsers[index - 1];
           return GestureDetector(
             onTap: () {
+              // 点击跳转至全屏故事视图
               Navigator.of(context).push(
                 PageRouteBuilder(
-                  opaque: false, // Important for transparent background
+                  opaque: false, // 设置为非不透明，以支持透明/磨砂背景效果
                   pageBuilder: (context, animation, secondaryAnimation) =>
                       StoryViewScreen(
                         users: mockFollowingUsers,
@@ -44,7 +49,7 @@ class StoriesBar extends StatelessWidget {
             child: _StoryItem(
               name: user.name,
               imageUrl: user.avatar,
-              hasUnseenStory: index % 3 != 0, // Mock unseen status
+              hasUnseenStory: index % 3 != 0, // 模拟未读状态
             ),
           );
         },
@@ -53,6 +58,7 @@ class StoriesBar extends StatelessWidget {
   }
 }
 
+/// 内部私有：当前用户的“发状态”项
 class _MyStoryItem extends StatelessWidget {
   const _MyStoryItem();
 
@@ -62,15 +68,14 @@ class _MyStoryItem extends StatelessWidget {
       mainAxisAlignment: MainAxisAlignment.center,
       children: [
         Container(
-          width: 68, // slightly larger to include border visual weight
+          width: 68,
           height: 68,
           padding: const EdgeInsets.all(2),
           decoration: BoxDecoration(
             shape: BoxShape.circle,
             border: Border.all(
               color: ShadcnColors.border,
-              width:
-                  1, // Dashed border is hard in basic Flutter without packages, solid is fine for now
+              width: 1,
               style: BorderStyle.solid,
             ),
           ),
@@ -96,9 +101,12 @@ class _MyStoryItem extends StatelessWidget {
   }
 }
 
+/// 内部私有：单个普通用户的故事头像项
 class _StoryItem extends StatelessWidget {
   final String name;
   final String? imageUrl;
+
+  /// 是否有未查看的故事（决定是否显示彩色圆环）
   final bool hasUnseenStory;
 
   const _StoryItem({
@@ -113,15 +121,16 @@ class _StoryItem extends StatelessWidget {
       mainAxisAlignment: MainAxisAlignment.center,
       children: [
         Container(
-          padding: const EdgeInsets.all(3), // Space between border and avatar
+          padding: const EdgeInsets.all(3), // 圆环与头像之间的间距
           decoration: BoxDecoration(
             shape: BoxShape.circle,
+            // 如果有未读故事，显示渐变色圆环
             gradient: hasUnseenStory
                 ? const LinearGradient(
                     colors: [
-                      Color(0xFFFFD600), // Yellow
-                      Color(0xFFFF0169), // Pink/Red
-                      Color(0xFFD300C5), // Purple
+                      Color(0xFFFFD600), // 黄色
+                      Color(0xFFFF0169), // 品红
+                      Color(0xFFD300C5), // 紫色
                     ],
                     begin: Alignment.bottomLeft,
                     end: Alignment.topRight,
@@ -129,7 +138,7 @@ class _StoryItem extends StatelessWidget {
                 : const LinearGradient(colors: [Colors.grey, Colors.grey]),
           ),
           child: Container(
-            padding: const EdgeInsets.all(2), // White border inside gradient
+            padding: const EdgeInsets.all(2), // 渐变环内部的白色隔离圈
             decoration: const BoxDecoration(
               shape: BoxShape.circle,
               color: ShadcnColors.background,
@@ -137,15 +146,15 @@ class _StoryItem extends StatelessWidget {
             child: ShadcnAvatar(
               avatarUrl: imageUrl,
               fallbackInitials: name,
-              size: 56, // Slightly larger avatar
+              size: 56,
             ),
           ),
         ),
         const SizedBox(height: 6),
         SizedBox(
-          width: 64, // Constrain text width
+          width: 64, // 限制文本宽度
           child: Text(
-            name.split(' ')[0], // First name only
+            name.split(' ')[0], // 仅显示用户名的第一部分
             textAlign: TextAlign.center,
             maxLines: 1,
             overflow: TextOverflow.ellipsis,

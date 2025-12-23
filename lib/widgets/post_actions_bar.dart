@@ -5,45 +5,48 @@ import '../utils/number_formatter.dart';
 import '../utils/theme_constants.dart';
 import '../utils/constants.dart';
 
-/// 帖子操作栏组件
+/// 帖子底部操作栏组件
 ///
-/// 包含点赞、评论、转发、收藏、分享等操作按钮
-/// 支持响应式布局和完整的点赞动画特效
+/// 功能：包含点赞、评论、转发、收藏、分享等操作按钮。
+/// 特性：
+/// - 支持响应式布局：根据屏幕宽度自动切换宽屏（一行显示）或窄屏（两行显示）布局。
+/// - 点赞特效：集成了波纹扩散和粒子爆发动画。
+/// - 逻辑解耦：通过回调函数通知父组件执行具体的业务逻辑。
 class PostActionsBar extends StatefulWidget {
-  /// 点赞数
+  /// 当前点赞总数
   final int likesCount;
 
-  /// 评论数
+  /// 当前评论总数
   final int commentsCount;
 
-  /// 转发数
+  /// 当前转发总数
   final int repostsCount;
 
-  /// 收藏数（可选）
+  /// 收藏数（可选，不传则可能不显示图标）
   final int? bookmarksCount;
 
   /// 分享数（可选）
   final int? sharesCount;
 
-  /// 是否已点赞
+  /// 初始点赞状态（通常来自数据模型）
   final bool initiallyLiked;
 
-  /// 点赞状态变更回调
+  /// 点击点赞按钮时的回调
   final VoidCallback? onLikeToggle;
 
-  /// 评论回调
+  /// 点击评论按钮时的回调
   final VoidCallback? onComment;
 
-  /// 转发回调
+  /// 点击转发按钮时的回调
   final VoidCallback? onRepost;
 
-  /// 收藏回调
+  /// 点击收藏按钮时的回调
   final VoidCallback? onBookmark;
 
-  /// 分享回调
+  /// 点击分享按钮时的回调
   final VoidCallback? onShare;
 
-  /// 是否使用响应式布局
+  /// 是否开启响应式布局逻辑
   final bool responsive;
 
   const PostActionsBar({

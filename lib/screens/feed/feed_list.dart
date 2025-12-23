@@ -10,8 +10,19 @@ import '../../widgets/post_images_widget.dart';
 import '../../widgets/expandable_text.dart';
 import '../../widgets/animated_like_button.dart';
 
+/// 动态流列表组件 (Feed List)
+///
+/// 这是一个通用的帖子列表容器，支持：
+/// 1. 骨架屏加载状态 (Skeleton Loading)。
+/// 2. 模拟下拉刷新和向上平滑滚动。
+/// 3. 基于 NestedScrollView 的滚动容器适配。
+/// 4. 帖子列表渲染及加载更多模拟。
+/// 5. 悬浮快捷按钮组（刷新、回到顶部）。
 class FeedList extends StatefulWidget {
-  final String feedType; // 'following' or 'trending'
+  /// 动态流类型：'following' (关注) 或 'trending' (推荐/热门)
+  final String feedType;
+
+  /// 可选的列表头部组件（例如故事栏）
   final Widget? header;
 
   const FeedList({super.key, required this.feedType, this.header});
@@ -23,8 +34,12 @@ class FeedList extends StatefulWidget {
 class _FeedListState extends State<FeedList>
     with AutomaticKeepAliveClientMixin {
   ScrollController? _scrollController;
+
+  /// 是否显示右下角的悬浮按钮组
   bool _showBottomActions = false;
-  bool _isLoading = true; // Initial loading state
+
+  /// 初始加载状态
+  bool _isLoading = true;
 
   @override
   bool get wantKeepAlive => true;
@@ -32,7 +47,7 @@ class _FeedListState extends State<FeedList>
   @override
   void initState() {
     super.initState();
-    // Simulate network delay
+    // 模拟网络请求延迟，展示骨架屏效果
     Future.delayed(const Duration(seconds: 2), () {
       if (mounted) {
         setState(() {
@@ -45,6 +60,7 @@ class _FeedListState extends State<FeedList>
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
+    // 获取当前环境的滚动控制器（通常由父级的 NestedScrollView 提供）
     final newController = PrimaryScrollController.of(context);
     if (_scrollController != newController) {
       _scrollController?.removeListener(_onScroll);
@@ -56,17 +72,16 @@ class _FeedListState extends State<FeedList>
   @override
   void dispose() {
     _scrollController?.removeListener(_onScroll);
-    // Do not dispose _scrollController as it is inherited
     super.dispose();
   }
 
+  /// 滚动监听，决定何时显示返回顶部按钮
   void _onScroll() {
     if (_scrollController == null || !_scrollController!.hasClients) return;
 
-    // Show bottom actions when scrolled to bottom area (e.g., last 300 pixels)
     final currentScroll = _scrollController!.position.pixels;
 
-    // Simple check: if we are deeper than 1 screen height or near bottom
+    // 当滚动超过一屏高度时，显示悬浮按钮
     final show = currentScroll > MediaQuery.of(context).size.height;
     if (show != _showBottomActions) {
       setState(() {
@@ -75,6 +90,7 @@ class _FeedListState extends State<FeedList>
     }
   }
 
+  /// 滚动回顶部
   void _scrollToTop() {
     _scrollController?.animateTo(
       0,
@@ -83,18 +99,19 @@ class _FeedListState extends State<FeedList>
     );
   }
 
+  /// 刷新动态流
   Future<void> _refreshFeed() async {
-    // Navigate to top and simulate refresh
     _scrollToTop();
-    // In a real app, you might trigger a refresh indicator or reload data here
+    // 模拟刷新请求
     await Future.delayed(const Duration(milliseconds: 500));
     if (mounted) {
       ScaffoldMessenger.of(
         context,
-      ).showSnackBar(const SnackBar(content: Text('Feed Refreshed')));
+      ).showSnackBar(const SnackBar(content: Text('动态已更新')));
     }
   }
 
+  /// 跳转至详情页
   void _navigateToDetail(Post post) {
     Navigator.push(
       context,
@@ -104,18 +121,16 @@ class _FeedListState extends State<FeedList>
 
   @override
   Widget build(BuildContext context) {
-    super.build(context); // Required for AutomaticKeepAliveClientMixin
+    super.build(context); // 保持页面状态
 
     return Stack(
       children: [
         if (_isLoading)
+          // 加载中：展示骨架屏
           ListView.builder(
             padding: EdgeInsets.zero,
-            physics:
-                const NeverScrollableScrollPhysics(), // Disable scrolling while loading
-            itemCount:
-                5 +
-                (widget.header != null ? 1 : 0), // Show 5 skeletons + header
+            physics: const NeverScrollableScrollPhysics(),
+            itemCount: 5 + (widget.header != null ? 1 : 0),
             itemBuilder: (context, index) {
               if (widget.header != null && index == 0) {
                 return widget.header!;
@@ -124,19 +139,13 @@ class _FeedListState extends State<FeedList>
             },
           )
         else
+          // 加载完成：展示实际帖子列表
           ListView.builder(
-            // controller: _scrollController, // Do NOT set controller for NestedScrollView child
             padding: EdgeInsets.zero,
-            itemCount:
-                mockPosts.length +
-                10 +
-                (widget.header != null
-                    ? 1
-                    : 0), // Mock infinite scroll + header
+            itemCount: mockPosts.length + 10 + (widget.header != null ? 1 : 0),
             itemBuilder: (context, index) {
               if (widget.header != null) {
                 if (index == 0) return widget.header!;
-                // Adjust index for posts
                 final postIndex = index - 1;
                 final post = mockPosts[postIndex % mockPosts.length];
                 return _AnimatedPostItem(
@@ -152,6 +161,8 @@ class _FeedListState extends State<FeedList>
               );
             },
           ),
+
+        // 悬浮按钮组
         if (_showBottomActions && !_isLoading)
           Positioned(
             bottom: 24,
@@ -185,6 +196,7 @@ class _FeedListState extends State<FeedList>
     );
   }
 
+  /// 构建圆形悬浮按钮
   Widget _buildFloatingButton({
     required IconData icon,
     required VoidCallback onTap,
@@ -210,6 +222,7 @@ class _FeedListState extends State<FeedList>
     );
   }
 
+  /// 构建单个帖子条目
   Widget _buildPostItem(Post post) {
     return InkWell(
       onTap: () => _navigateToDetail(post),
@@ -218,6 +231,7 @@ class _FeedListState extends State<FeedList>
         child: Row(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
+            // 作者头像
             ShadcnAvatar(
               avatarUrl: post.authorAvatarUrl,
               fallbackInitials: post.author,
@@ -228,7 +242,7 @@ class _FeedListState extends State<FeedList>
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  // Header
+                  // 帖子头部：作者名、账号、时间、更多按钮
                   Row(
                     children: [
                       Text(
@@ -258,7 +272,7 @@ class _FeedListState extends State<FeedList>
                     ],
                   ),
                   const SizedBox(height: 4),
-                  // Content
+                  // 正文内容：支持展开折叠
                   ExpandableText(
                     text: post.content,
                     style: const TextStyle(
@@ -267,12 +281,13 @@ class _FeedListState extends State<FeedList>
                       color: ShadcnColors.foreground,
                     ),
                   ),
+                  // 图片区域
                   if (post.imageUrls.isNotEmpty) ...[
                     const SizedBox(height: 12),
                     PostImagesWidget(imageUrls: post.imageUrls),
                   ],
                   const SizedBox(height: 12),
-                  // Actions
+                  // 操作按钮组：评论、转发、点赞、分享
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
@@ -285,10 +300,8 @@ class _FeedListState extends State<FeedList>
                         formatCount(post.repostsCount),
                       ),
                       AnimatedLikeButton(
-                        isLiked: false, // In a real app, bind to data
-                        onData: () {
-                          // Handle like API
-                        },
+                        isLiked: false,
+                        onData: () {},
                         size: 18,
                       ),
                       _buildAction(Icons.share_outlined, ''),
@@ -303,6 +316,7 @@ class _FeedListState extends State<FeedList>
     );
   }
 
+  /// 构建底部操作小图标和计数
   Widget _buildAction(IconData icon, String label) {
     return Row(
       children: [
@@ -322,6 +336,7 @@ class _FeedListState extends State<FeedList>
   }
 }
 
+/// 内部私有：为帖子条目添加进场动画（渐变+位移）
 class _AnimatedPostItem extends StatefulWidget {
   final int index;
   final Widget child;
@@ -356,7 +371,7 @@ class _AnimatedPostItemState extends State<_AnimatedPostItem>
       end: 1.0,
     ).animate(CurvedAnimation(parent: _controller, curve: Curves.easeOut));
 
-    // Stagger based on index (up to a limit to avoid long delays on scroll)
+    // 根据索引执行交错动画效果
     final delay = (widget.index % 10) * 50;
     Future.delayed(Duration(milliseconds: delay), () {
       if (mounted) {

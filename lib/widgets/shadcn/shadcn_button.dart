@@ -1,13 +1,29 @@
 import 'package:flutter/material.dart';
 import '../../config/shadcn_theme.dart';
 
-enum ShadcnButtonVariant { primary, secondary, ghost, outline }
+/// Shadcn 按钮变体类型
+enum ShadcnButtonVariant {
+  primary, // 主要按钮（深色背景）
+  secondary, // 次要按钮（浅色背景）
+  ghost, // 幽灵按钮（无背景）
+  outline, // 边框按钮
+}
 
+/// Shadcn 风格的通用按钮组件
 class ShadcnButton extends StatelessWidget {
+  /// 按钮子组件（通常为 Text 或 Icon）
   final Widget child;
+
+  /// 点击回调函数
   final VoidCallback onPressed;
+
+  /// 按钮外观变体
   final ShadcnButtonVariant variant;
+
+  /// 按钮图标（可选）
   final IconData? icon;
+
+  /// 按钮尺寸尺寸
   final double? size;
 
   const ShadcnButton({
@@ -19,7 +35,7 @@ class ShadcnButton extends StatelessWidget {
     this.size,
   });
 
-  // Ghost Icon Button Factory
+  /// 工厂方法：创建一个幽灵图标按钮
   factory ShadcnButton.ghost({
     required VoidCallback onPressed,
     required IconData icon,
@@ -30,11 +46,15 @@ class ShadcnButton extends StatelessWidget {
       onPressed: onPressed,
       variant: ShadcnButtonVariant.ghost,
       size: size,
-      child: Icon(icon, size: size ?? 20, color: color ?? ShadcnColors.mutedForeground),
+      child: Icon(
+        icon,
+        size: size ?? 20,
+        color: color ?? ShadcnColors.mutedForeground,
+      ),
     );
   }
 
-  // Ghost Text + Icon Button Factory
+  /// 工厂方法：创建一个带有文本和图标的幽灵按钮
   factory ShadcnButton.ghostText({
     required VoidCallback onPressed,
     required IconData icon,
@@ -68,6 +88,7 @@ class ShadcnButton extends StatelessWidget {
     Color foregroundColor;
     Border? border;
 
+    // 根据变体设置颜色和样式
     switch (variant) {
       case ShadcnButtonVariant.primary:
         backgroundColor = ShadcnColors.primary;
@@ -95,7 +116,8 @@ class ShadcnButton extends StatelessWidget {
       shape: border != null
           ? RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(ShadcnRadius.md),
-              side: BorderSide(color: ShadcnColors.border))
+              side: BorderSide(color: ShadcnColors.border),
+            )
           : null,
       child: InkWell(
         onTap: onPressed,

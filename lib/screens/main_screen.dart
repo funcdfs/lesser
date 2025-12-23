@@ -6,6 +6,12 @@ import 'chat_screen.dart';
 import 'profile_screen.dart';
 import '../config/shadcn_theme.dart';
 
+/// 应用程序主外壳屏幕
+///
+/// 负责处理：
+/// 1. 底部导航栏（移动端）与侧边导航栏（桌面端）的切换。
+/// 2. 多页面状态管理（使用 IndexedStack 保持页面状态）。
+/// 3. 响应式布局：在宽屏上显示侧边栏，窄屏上显示底部导航。
 class MainScreen extends StatefulWidget {
   const MainScreen({super.key});
 
@@ -14,22 +20,26 @@ class MainScreen extends StatefulWidget {
 }
 
 class _MainScreenState extends State<MainScreen> {
+  /// 当前选中的导航索引
   int _selectedIndex = 0;
 
+  /// 导航对应的子屏幕列表
   final List<Widget> _screens = [
     const HomeScreen(),
     const SearchScreen(),
-    const PostScreen(), // Placeholder
+    const PostScreen(), // 占位：发布面
     const ChatScreen(),
     const ProfileScreen(),
   ];
 
+  /// 处理导航项点击
   void _onItemTapped(int index) {
     if (index == 2) {
-      // TODO: Open Create Post modal
+      // 索引为 2 的是中心“发布”按钮，触发模态框
+      // TODO: 实现发布帖子的模态弹出框
       ScaffoldMessenger.of(
         context,
-      ).showSnackBar(const SnackBar(content: Text('Open Create Post Modal')));
+      ).showSnackBar(const SnackBar(content: Text('打开发布模态框')));
       return;
     }
     setState(() {
@@ -41,16 +51,16 @@ class _MainScreenState extends State<MainScreen> {
   Widget build(BuildContext context) {
     return LayoutBuilder(
       builder: (context, constraints) {
-        // Desktop / Tablet Layout
+        // 当宽度大于等于 640 时，使用桌面/平板布局
         if (constraints.maxWidth >= 640) {
           return Scaffold(
             backgroundColor: ShadcnColors.background,
             body: Row(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                // Left Navigation Rail
+                // 左侧导航栏 (Sidebar)
                 Container(
-                  width: 88, // Fixed width for sidebar
+                  width: 88, // 侧边栏固定宽度
                   decoration: const BoxDecoration(
                     border: Border(
                       right: BorderSide(color: ShadcnColors.border),
@@ -60,7 +70,7 @@ class _MainScreenState extends State<MainScreen> {
                     children: [
                       const SizedBox(height: ShadcnSpacing.xl),
 
-                      // Nav Items
+                      // 导航项
                       _NavBarItem(
                         icon: Icons.home_outlined,
                         selectedIcon: Icons.home,
@@ -76,7 +86,7 @@ class _MainScreenState extends State<MainScreen> {
                         isSidebar: true,
                       ),
 
-                      // Create Button (Sidebar style)
+                      // 侧边栏风格的发布按钮
                       Padding(
                         padding: const EdgeInsets.symmetric(
                           vertical: ShadcnSpacing.lg,
@@ -115,19 +125,16 @@ class _MainScreenState extends State<MainScreen> {
                       ),
 
                       const Spacer(),
-                      // Bottom/Spacer items could go here
                       const SizedBox(height: ShadcnSpacing.xl),
                     ],
                   ),
                 ),
 
-                // Main Content Area (Centered)
+                // 主内容区域（居中显示，并限制最大宽度）
                 Expanded(
                   child: Center(
                     child: Container(
-                      constraints: const BoxConstraints(
-                        maxWidth: 900,
-                      ), // Max width for content
+                      constraints: const BoxConstraints(maxWidth: 900),
                       decoration: BoxDecoration(
                         border: const Border.symmetric(
                           vertical: BorderSide(
@@ -148,7 +155,7 @@ class _MainScreenState extends State<MainScreen> {
           );
         }
 
-        // Mobile Layout (Bottom Navigation)
+        // 移动端布局 (带有底部导航栏)
         return Scaffold(
           body: IndexedStack(index: _selectedIndex, children: _screens),
           bottomNavigationBar: Container(
@@ -160,7 +167,7 @@ class _MainScreenState extends State<MainScreen> {
             ),
             padding: const EdgeInsets.only(
               top: ShadcnSpacing.sm,
-              bottom: ShadcnSpacing.xl2,
+              bottom: ShadcnSpacing.xl2, // 适配全面屏底部
             ),
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceAround,
@@ -177,7 +184,7 @@ class _MainScreenState extends State<MainScreen> {
                   isSelected: _selectedIndex == 1,
                   onTap: () => _onItemTapped(1),
                 ),
-                // Central Add Button
+                // 中心加号发布按钮
                 GestureDetector(
                   onTap: () => _onItemTapped(2),
                   child: Container(
@@ -215,6 +222,7 @@ class _MainScreenState extends State<MainScreen> {
   }
 }
 
+/// 内部使用的导航项组件
 class _NavBarItem extends StatelessWidget {
   final IconData icon;
   final IconData selectedIcon;
@@ -241,7 +249,7 @@ class _NavBarItem extends StatelessWidget {
             : const EdgeInsets.all(ShadcnSpacing.sm),
         child: Icon(
           isSelected ? selectedIcon : icon,
-          size: 28, // Slightly larger icons
+          size: 28,
           color: isSelected
               ? ShadcnColors.foreground
               : ShadcnColors.mutedForeground,

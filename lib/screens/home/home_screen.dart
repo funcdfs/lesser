@@ -3,6 +3,9 @@ import '../../config/shadcn_theme.dart';
 import '../feed/feed_screen.dart';
 import '../feed/stories_bar.dart';
 
+/// 首页屏幕组件
+///
+/// 包含了“推荐”和“关注”两个选项卡，用于切换不同的内容流。
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
 
@@ -10,7 +13,9 @@ class HomeScreen extends StatefulWidget {
   State<HomeScreen> createState() => _HomeScreenState();
 }
 
-class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateMixin {
+class _HomeScreenState extends State<HomeScreen>
+    with SingleTickerProviderStateMixin {
+  /// 用于控制顶部选项卡切换
   late TabController _tabController;
 
   @override
@@ -32,13 +37,17 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
       appBar: AppBar(
         backgroundColor: ShadcnColors.background,
         elevation: 0,
+        // 在 AppBar 中嵌套 TabBar 作为标题
         title: TabBar(
           controller: _tabController,
           indicatorColor: ShadcnColors.primary,
           indicatorSize: TabBarIndicatorSize.label,
           labelColor: ShadcnColors.foreground,
           unselectedLabelColor: ShadcnColors.mutedForeground,
-          labelStyle: const TextStyle(fontWeight: FontWeight.w600, fontSize: 16),
+          labelStyle: const TextStyle(
+            fontWeight: FontWeight.w600,
+            fontSize: 16,
+          ),
           tabs: const [
             Tab(text: '推荐'),
             Tab(text: '关注'),
@@ -47,11 +56,11 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
       ),
       body: TabBarView(
         controller: _tabController,
-        physics: const NeverScrollableScrollPhysics(), // Disable swipe
+        physics: const NeverScrollableScrollPhysics(), // 禁用左右滑动切换，防止与横向图片冲突
         children: const [
-          // Recommend Feed (No Stories)
+          // 推荐流（不带故事栏）
           FeedScreen(feedMode: 'trending'),
-          // Follow Feed (With Stories)
+          // 关注流（带故事栏）
           _FollowFeed(),
         ],
       ),
@@ -59,6 +68,8 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
   }
 }
 
+/// 内部私有：关注流页面布局
+/// 它由头部的“故事栏”和底部的“动态列表”组合而成。
 class _FollowFeed extends StatelessWidget {
   const _FollowFeed();
 
@@ -66,24 +77,13 @@ class _FollowFeed extends StatelessWidget {
   Widget build(BuildContext context) {
     return CustomScrollView(
       slivers: [
-        const SliverToBoxAdapter(
-          child: StoriesBar(),
-        ),
+        // 顶部横向滚动的故事栏
+        const SliverToBoxAdapter(child: StoriesBar()),
         const SliverToBoxAdapter(
           child: Divider(color: ShadcnColors.border, thickness: 1, height: 1),
         ),
-        // We need the feed list here. Since FeedScreen was a Scaffold, we need to extract the list part.
-        // For now, I will assume I can modify FeedScreen to be just the list or refactor it.
-        // Using a modified FeedScreen wrapper for now that works as a sliver would be ideal, 
-        // but FeedScreen returns a Scaffold.
-        // Let's assume FeedScreen will be refactored to return just the list content or I will inline it here later.
-        // Actually, to make it work *now*, I should probably refactor FeedScreen first or make a re-usable
-        // SliverFeedList widget.
-        // For this step, I will simply embed the FeedScreen logic refactored.
-        
-        // Waiting for FeedScreen refactor.
-        // But to make this compile and work, I will use a placeholder or the refactored widget.
-        // Let's use the to-be-created `FeedList` widget.
+
+        // 动态列表部分（使用 SliverList 实现）
         const FeedList(feedMode: 'following'),
       ],
     );

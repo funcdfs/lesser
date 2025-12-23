@@ -1,8 +1,15 @@
 import 'constants.dart';
 
 /// 时间格式化工具类
+///
+/// 提供常用的相对/绝对时间格式化方法，统一应用内时间显示风格。
+/// - 相对时间：如“刚刚 / 5分钟前 / 2小时前 / 3天前”
+/// - 绝对时间：如“昨天 14:05 / 4月5日 09:30 / 2024年1月15日”
 class TimeFormatter {
-  /// 获取相对时间字符串 (如 "2小时前", "3分钟前")
+  /// 返回相对时间字符串（示例："刚刚"、"5分钟前"、"2小时前"）
+  ///
+  /// 规则：小于一分钟 => 刚刚；小于一小时 => x 分钟前；小于一天 => x 小时前；
+  /// 小于一周 => x 天前；小于一月 => x 周前；小于一年 => x 个月前；否则 x 年前。
   static String formatRelativeTime(DateTime dateTime) {
     final now = DateTime.now();
     final difference = now.difference(dateTime);
@@ -32,7 +39,12 @@ class TimeFormatter {
   }
 
   /// 获取绝对时间字符串 (如 "2024年1月15日", "14:30")
-  /// 今天显示时间，其他日期显示完整日期或简化格式
+  /// 获取绝对时间字符串
+  ///
+  /// - 如果是今天：只显示时间（HH:mm）
+  /// - 如果是昨天：显示 "昨天 HH:mm"
+  /// - 如果是同年：显示 "M月D日 HH:mm"
+  /// - 如果不是同年：显示 "YYYY年M月D日"
   static String formatAbsoluteTime(DateTime dateTime) {
     final now = DateTime.now();
     final today = DateTime(now.year, now.month, now.day);
@@ -54,6 +66,7 @@ class TimeFormatter {
   }
 
   /// 格式化时间部分 (HH:mm 或 HH:mm:ss)
+  /// 将时间格式化为 HH:mm 字符串
   static String _formatTimeOfDay(DateTime dateTime) {
     final hour = _padZero(dateTime.hour);
     final minute = _padZero(dateTime.minute);
@@ -61,11 +74,13 @@ class TimeFormatter {
   }
 
   /// 补零辅助方法
+  /// 为小于10的数字补零，例如 9 -> "09"
   static String _padZero(int value) {
     return value.toString().padLeft(2, '0');
   }
 
   /// 获取简化的日期显示 (用于列表展示)
+  /// 简化日期显示：今天显示时间，昨天显示"昨天"，同年显示"M/D"，否则显示"YYYY/M/D"
   static String formatSimpleDate(DateTime dateTime) {
     final now = DateTime.now();
     final today = DateTime(now.year, now.month, now.day);
@@ -83,11 +98,13 @@ class TimeFormatter {
   }
 
   /// 获取时间戳距离现在的差值（毫秒）
+  /// 返回从指定时间到现在的毫秒差
   static int getMillisecondsSinceNow(DateTime dateTime) {
     return DateTime.now().difference(dateTime).inMilliseconds;
   }
 
   /// 判断是否是今天
+  /// 判断给定时间是否为今天
   static bool isToday(DateTime dateTime) {
     final now = DateTime.now();
     return dateTime.year == now.year &&
@@ -112,12 +129,14 @@ class TimeFormatter {
   }
 
   /// 判断是否是本月
+  /// 判断是否为本月
   static bool isThisMonth(DateTime dateTime) {
     final now = DateTime.now();
     return dateTime.year == now.year && dateTime.month == now.month;
   }
 
   /// 判断是否是本年
+  /// 判断是否为今年
   static bool isThisYear(DateTime dateTime) {
     return dateTime.year == DateTime.now().year;
   }

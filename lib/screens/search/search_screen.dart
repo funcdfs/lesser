@@ -3,6 +3,12 @@ import '../../data/mock_data.dart';
 import '../../config/shadcn_theme.dart';
 import '../../widgets/shadcn/shadcn_chip.dart';
 
+/// 搜索与发现屏幕
+///
+/// 该组件实现了综合搜索体验：
+/// 1. 顶部提供交互式搜索栏。
+/// 2. 中间展示多类别的“热门榜单”，支持切换分类浏览热门文章。
+/// 3. 底部展示“热门标签”墙。
 class SearchScreen extends StatefulWidget {
   const SearchScreen({super.key});
 
@@ -11,17 +17,19 @@ class SearchScreen extends StatefulWidget {
 }
 
 class _SearchScreenState extends State<SearchScreen> {
+  /// 搜索框输入控制器
   final TextEditingController _searchController = TextEditingController();
 
-  // Hot Section
+  /// 当前选中的热门榜单分类索引
   int _hotIndex = 0;
 
-  // Mock Data Groups
+  // 模拟各个类别的热榜数据
   late final List<Article> _allHotArticles;
   late final List<Article> _travelHotArticles;
   late final List<Article> _foodHotArticles;
   late final List<Article> _techHotArticles;
 
+  /// 这里定义了发现页底部的热门标签
   final List<String> _hotTags = [
     '旅行',
     '美食',
@@ -38,6 +46,7 @@ class _SearchScreenState extends State<SearchScreen> {
   @override
   void initState() {
     super.initState();
+    // 初始化时对模拟数据进行随机分配/各类别采样
     _allHotArticles = List.generate(
       5,
       (index) => mockArticles[index % mockArticles.length],
@@ -75,6 +84,7 @@ class _SearchScreenState extends State<SearchScreen> {
     super.dispose();
   }
 
+  /// 弹出搜索设置模态框
   void _showSearchSettings() {
     showModalBottomSheet(
       context: context,
@@ -144,17 +154,17 @@ class _SearchScreenState extends State<SearchScreen> {
       body: SafeArea(
         child: CustomScrollView(
           slivers: [
-            // Search Bar
+            // 顶部搜索搜索
             SliverToBoxAdapter(child: _buildSearchBar()),
             const SliverToBoxAdapter(child: SizedBox(height: ShadcnSpacing.lg)),
 
-            // Hot Section
+            // 热门榜单
             SliverToBoxAdapter(child: _buildHotSection()),
             const SliverToBoxAdapter(
               child: SizedBox(height: ShadcnSpacing.xl2),
             ),
 
-            // Hot Tags Section
+            // 热门标签
             SliverToBoxAdapter(child: _buildHotTagsSection()),
             const SliverToBoxAdapter(
               child: SizedBox(height: ShadcnSpacing.xl4),
@@ -165,6 +175,7 @@ class _SearchScreenState extends State<SearchScreen> {
     );
   }
 
+  /// 构建圆角搜索栏
   Widget _buildSearchBar() {
     return Padding(
       padding: const EdgeInsets.fromLTRB(
@@ -203,6 +214,7 @@ class _SearchScreenState extends State<SearchScreen> {
     );
   }
 
+  /// 构建“热门榜单”区块，包含分类切换和排行列表
   Widget _buildHotSection() {
     final tabs = ['全局热门', '旅游', '美食', '科技'];
     final dataLists = [
@@ -215,6 +227,7 @@ class _SearchScreenState extends State<SearchScreen> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
+        // 区块标题
         Padding(
           padding: const EdgeInsets.fromLTRB(
             ShadcnSpacing.lg,
@@ -241,7 +254,7 @@ class _SearchScreenState extends State<SearchScreen> {
           ),
         ),
 
-        // Tab selector
+        // 分类切换栏
         SingleChildScrollView(
           scrollDirection: Axis.horizontal,
           padding: const EdgeInsets.symmetric(horizontal: ShadcnSpacing.lg),
@@ -288,7 +301,7 @@ class _SearchScreenState extends State<SearchScreen> {
 
         const SizedBox(height: ShadcnSpacing.lg),
 
-        // Content with AnimatedSwitcher
+        // 实际的排行列表。使用 AnimatedSwitcher 提供切换时的平滑过渡。
         AnimatedSwitcher(
           duration: const Duration(milliseconds: 300),
           child: KeyedSubtree(
@@ -301,7 +314,7 @@ class _SearchScreenState extends State<SearchScreen> {
               separatorBuilder: (context, index) => const Divider(
                 height: 1,
                 thickness: 0.5,
-                indent: ShadcnSpacing.lg + 24, // Indent to align with text
+                indent: ShadcnSpacing.lg + 24,
                 color: ShadcnColors.border,
               ),
               itemBuilder: (context, index) {
@@ -317,6 +330,7 @@ class _SearchScreenState extends State<SearchScreen> {
     );
   }
 
+  /// 底部标签区块
   Widget _buildHotTagsSection() {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -351,15 +365,12 @@ class _SearchScreenState extends State<SearchScreen> {
   }
 }
 
+/// 内部私有：单一的热点排行项目样式
 class _RankedArticleItem extends StatelessWidget {
   final int rank;
   final Article article;
 
   const _RankedArticleItem({required this.rank, required this.article});
-
-  Color _getRankColor(int rank) {
-    return ShadcnColors.mutedForeground;
-  }
 
   @override
   Widget build(BuildContext context) {
@@ -373,23 +384,23 @@ class _RankedArticleItem extends StatelessWidget {
         child: Row(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Rank Number
+            // 排名数字
             SizedBox(
               width: 24,
               child: Text(
                 '$rank',
                 textAlign: TextAlign.center,
-                style: TextStyle(
+                style: const TextStyle(
                   fontSize: 18,
                   fontWeight: FontWeight.w800,
                   fontStyle: FontStyle.italic,
-                  color: _getRankColor(rank),
+                  color: ShadcnColors.mutedForeground,
                 ),
               ),
             ),
             const SizedBox(width: ShadcnSpacing.md),
 
-            // Content
+            // 文本信息部分
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -416,6 +427,7 @@ class _RankedArticleItem extends StatelessWidget {
                         ),
                       ),
                       const SizedBox(width: 8),
+                      // 一个小白点间隔
                       Container(
                         width: 3,
                         height: 3,
@@ -440,7 +452,7 @@ class _RankedArticleItem extends StatelessWidget {
 
             const SizedBox(width: ShadcnSpacing.md),
 
-            // Thumbnail (Right side)
+            // 封面图片（右侧）
             ClipRRect(
               borderRadius: BorderRadius.circular(ShadcnRadius.md),
               child: Container(
@@ -450,7 +462,6 @@ class _RankedArticleItem extends StatelessWidget {
                   width: 80,
                   height: 60,
                   fit: BoxFit.cover,
-                  cacheWidth: 160,
                   errorBuilder: (context, error, stackTrace) => const SizedBox(
                     width: 80,
                     height: 60,

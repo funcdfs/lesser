@@ -1,6 +1,6 @@
 import '../models/post.dart';
 
-// --- Users Data from HomeFeed.tsx ---
+/// 模拟用户模型 (Mock User Model)
 class User {
   final int id;
   final String name;
@@ -15,8 +15,8 @@ class User {
   });
 }
 
-// Using a simple map for avatars for now as we don't have the DiceBear API setup in Flutter directly
-// without a network call, but we can accept strings.
+/// 模拟关注的用户列表
+/// 用于展示在搜索页或侧边栏等位置
 final List<User> mockFollowingUsers = [
   User(
     id: 1,
@@ -68,7 +68,8 @@ final List<User> mockFollowingUsers = [
   ),
 ];
 
-// --- Posts Data from HomeFeed.tsx (Adapting to Post model) ---
+/// 模拟动态帖子数据
+/// 包含了长文本、多图、位置信息等多种情况，用于测试 Feed 流展示
 final List<Post> mockPosts = [
   Post(
     id: '1',
@@ -82,7 +83,7 @@ final List<Post> mockPosts = [
     repostsCount: 12,
     bookmarksCount: 8,
     sharesCount: 3,
-    title: '', // Not used in this view
+    title: '',
     location: '上海, 中国',
     imageUrls: [
       'https://images.unsplash.com/photo-1555041469-a586c61ea9bc?w=800&auto=format',
@@ -98,14 +99,13 @@ final List<Post> mockPosts = [
     content:
         '暴论：最好的代码就是没有代码。简单 > 复杂，永远如此。\n\n我们在构建软件时，经常陷入"为了做而做"的陷阱。我们引入复杂的架构、分层、模式，却忘了软件的本质是解决问题。\n\n每一行你写的代码，都是未来的技术债务。它需要被阅读、被理解、被测试、被维护。\n\n保持简单 (KISS) 不仅仅是一个原则，它是一种生存策略。当你的系统变得过于复杂，没人能完全理解它时，你就失去了对它的控制。\n\n所以，在写下一行代码之前，问问自己：真的需要吗？有没有更简单的方法？能不能复用现有的东西？\n\n少即是多。LESS IS MORE.',
     timestamp: DateTime.now().subtract(const Duration(hours: 4)),
-    likesCount: 12500, // 1.3万
+    likesCount: 12500, // 1.2万
     commentsCount: 156,
     repostsCount: 78,
     bookmarksCount: 45,
     sharesCount: 12,
     title: '',
     location: 'San Francisco, CA',
-    // Long text to test expandable text widget
   ),
   Post(
     id: '3',
@@ -114,7 +114,7 @@ final List<Post> mockPosts = [
     authorAvatarUrl: 'https://api.dicebear.com/7.x/avataaars/svg?seed=Maya',
     content: '正在写一篇关于现代 Web 应用状态管理模式的新文章。大家有什么特别想看的话题吗？',
     timestamp: DateTime.now().subtract(const Duration(hours: 6)),
-    likesCount: 123456789, // 1.2亏
+    likesCount: 123456789, // 1.2亿
     commentsCount: 8900,
     repostsCount: 23,
     bookmarksCount: 156,
@@ -152,7 +152,7 @@ final List<Post> mockPosts = [
     author: 'Emma Wilson',
     authorHandle: '@emmawilson',
     authorAvatarUrl: 'https://api.dicebear.com/7.x/avataaars/svg?seed=Emma',
-    content: '刘读完一篇很棒的 CSS Grid 文章。都 2025 年了我还在学新技巧！学无止境 📚',
+    content: '刚读完一篇很棒的 CSS Grid 文章。都 2025 年了我还在学新技巧！学无止境 📚',
     timestamp: DateTime.now().subtract(const Duration(hours: 12)),
     likesCount: 312,
     commentsCount: 34,
@@ -167,7 +167,7 @@ final List<Post> mockPosts = [
     author: 'Lucas Garcia',
     authorHandle: '@lucas_g',
     authorAvatarUrl: 'https://api.dicebear.com/7.x/avataaars/svg?seed=Lucas',
-    content: '周末去爬山了，风景真不错！🏔️ 强烈推荐大家多出去走走，呀吸新鲜空气。',
+    content: '周末去爬山了，风景真不错！🏔️ 强烈推荐大家多出去走走，呼吸新鲜空气。',
     timestamp: DateTime.now().subtract(const Duration(days: 1, hours: 2)),
     likesCount: 56,
     commentsCount: 8,
@@ -320,7 +320,7 @@ final List<Post> mockPosts = [
   ),
 ];
 
-// --- Articles Data from ArticlesSection.tsx ---
+/// 模拟文章模型
 class Article {
   final int id;
   final String title;
@@ -351,6 +351,7 @@ class Article {
   });
 }
 
+/// 文章分类映射
 final List<Map<String, String>> articleCategories = [
   {'id': 'daily', 'label': '日常生活'},
   {'id': 'family', 'label': '家庭'},
@@ -377,6 +378,7 @@ final List<Map<String, String>> articleCategories = [
   {'id': 'qualification', 'label': '资格'},
 ];
 
+/// 模拟文章列表，用于搜索页的实时展示
 final List<Article> mockArticles = [
   Article(
     id: 1,
@@ -455,11 +457,11 @@ final List<Article> mockArticles = [
   ),
 ];
 
-// --- Stories Data ---
+/// 模拟故事模型
 class Story {
   final String id;
   final String imageUrl;
-  final String? videoUrl; // For future video support
+  final String? videoUrl; // 为未来支持视频预留
   final DateTime timestamp;
   final bool isSeen;
 
@@ -472,6 +474,7 @@ class Story {
   });
 }
 
+/// 模拟全屏故事数据，Key 为用户 ID
 final Map<int, List<Story>> mockStories = {
   1: [
     // Sarah Chen

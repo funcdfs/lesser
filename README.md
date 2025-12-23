@@ -1,8 +1,39 @@
 # Lesser - 邀请类文字信息流 App
 
-这是一个使用 Flutter 开发的邀请类文字信息流应用程序。
+这是一个使用 Flutter 开发的邀请制文字信息流应用程序。项目旨在提供一个简洁、高效的平台，让用户可以专注于高质量内容的分享与交流。
 
-## 项目结构与文件说明 (Project Structure & Files)
+## ✨ 功能特性 (Features)
+
+*   **文字信息流**: 简洁的卡片式设计，聚焦内容本身。
+*   **Shadcn 风格**: 采用借鉴自 Shadcn UI 的设计系统，提供清爽、现代的视觉体验。
+*   **模块化结构**: 清晰的代码组织，分为主页、信息流、搜索、通知、个人中心等模块。
+*   **状态管理**: (在这里补充你使用的状态管理方案，如 Provider, Bloc, Riverpod 等)
+*   **跨平台支持**: 一套代码库可编译运行于 iOS, Android, Web, macOS 等多个平台。
+
+## 📸 运行截图 (Screenshots)
+
+*(在这里可以添加你的应用截图，以更直观地展示项目)*
+
+| 首页 | 帖子详情 | 个人主页 |
+| :---: | :---: | :---: |
+| ![首页](https://via.placeholder.com/300x600.png?text=Home+Screen) | ![帖子详情](https://via.placeholder.com/300x600.png?text=Detail+Screen) | ![个人主页](https://via.placeholder.com/300x600.png?text=Profile+Screen) |
+
+---
+
+## 🚀 快速开始 (Getting Started)
+
+1.  **环境配置**: 确保本地已安装 Flutter SDK (推荐 3.x+)。
+2.  **获取依赖**:
+    ```bash
+    flutter pub get
+    ```
+3.  **运行应用**:
+    *   **Chrome**: `flutter run -d chrome`
+    *   **macOS**: `flutter run -d macos`
+
+---
+
+## 📂 项目结构与文件说明 (Project Structure & Files)
 
 ### 核心代码 (Core Code) - `lib/`
 
@@ -57,13 +88,18 @@
 
 ---
 
-## 快速开始 (Getting Started)
+## 🤝 贡献指南 (Contributing)
 
-1.  **环境配置**: 确保本地已安装 Flutter SDK (推荐 3.x+)。
-2.  **获取依赖**:
-    ```bash
-    flutter pub get
-    ```
-3.  **运行应用**:
-    *   **Chrome**: `flutter run -d chrome`
-    *   **macOS**: `flutter run -d macos`
+欢迎对 `Lesser` 项目做出贡献！如果你有好的想法或建议，请遵循以下步骤：
+
+1.  **Fork** 本仓库。
+2.  创建一个新的分支 (`git checkout -b feature/YourFeature`)。
+3.  提交你的代码更改 (`git commit -m '''feat: Add some amazing feature'''`)。
+4.  将你的分支推送到远程仓库 (`git push origin feature/YourFeature`)。
+5.  创建一个 **Pull Request**。
+
+---
+
+## 📄 许可证 (License)
+
+该项目基于 [MIT License](LICENSE) 进行分发。详情请查看 `LICENSE` 文件。

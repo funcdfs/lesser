@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import '../config/shadcn_theme.dart';
 
+/// 帖子卡片的骨架屏组件
+/// 用于在内容加载时展示占位符，减少视觉抖动。
 class PostCardSkeleton extends StatefulWidget {
   const PostCardSkeleton({super.key});
 
@@ -8,15 +10,18 @@ class PostCardSkeleton extends StatefulWidget {
   State<PostCardSkeleton> createState() => _PostCardSkeletonState();
 }
 
-class _PostCardSkeletonState extends State<PostCardSkeleton> with SingleTickerProviderStateMixin {
+class _PostCardSkeletonState extends State<PostCardSkeleton>
+    with SingleTickerProviderStateMixin {
+  /// 动画控制器，用于实现透明度呼吸效果
   late AnimationController _controller;
 
   @override
   void initState() {
     super.initState();
     _controller = AnimationController(
-        vsync: this, duration: const Duration(milliseconds: 1500))
-      ..repeat();
+      vsync: this,
+      duration: const Duration(milliseconds: 1500),
+    )..repeat();
   }
 
   @override
@@ -30,10 +35,9 @@ class _PostCardSkeletonState extends State<PostCardSkeleton> with SingleTickerPr
     return AnimatedBuilder(
       animation: _controller,
       builder: (context, child) {
-        // Simple opacity pulse or sliding gradient could work.
-        // Let's use opacity pulse for simplicity and performance.
+        // 使用透明度脉冲动画展示加载感
         return Opacity(
-          opacity: 0.5 + 0.5 * _controller.value, // Pulse between 0.5 and 1.0
+          opacity: 0.5 + 0.5 * _controller.value, // 透明度在 0.5 到 1.0 之间循环
           child: child,
         );
       },
@@ -48,22 +52,22 @@ class _PostCardSkeletonState extends State<PostCardSkeleton> with SingleTickerPr
         child: Row(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Avatar Skeleton
+            // 头像骨架
             Container(
               width: 40,
               height: 40,
               decoration: const BoxDecoration(
-                color: ShadcnColors.secondary, // Light gray
+                color: ShadcnColors.secondary,
                 shape: BoxShape.circle,
               ),
             ),
             const SizedBox(width: ShadcnSpacing.md),
-            // Content
+            // 内容骨架
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  // Header (Name + Handle)
+                  // 头部骨架 (用户名 + ID 句柄)
                   Row(
                     children: [
                       Container(
@@ -86,7 +90,7 @@ class _PostCardSkeletonState extends State<PostCardSkeleton> with SingleTickerPr
                     ],
                   ),
                   const SizedBox(height: 12),
-                  // Content Lines
+                  // 正文内容行骨架
                   Container(
                     width: double.infinity,
                     height: 14,
@@ -114,7 +118,7 @@ class _PostCardSkeletonState extends State<PostCardSkeleton> with SingleTickerPr
                     ),
                   ),
                   const SizedBox(height: 16),
-                  // Action Row
+                  // 操作栏骨架
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
@@ -133,6 +137,7 @@ class _PostCardSkeletonState extends State<PostCardSkeleton> with SingleTickerPr
     );
   }
 
+  /// 构建单个操作按钮的骨架
   Widget _buildActionSkeleton() {
     return Container(
       width: 40,
