@@ -10,14 +10,12 @@ class StoriesBar extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      height: 120, // Increased height for better spacing and to prevent overflow
+      height:
+          120, // Increased height for better spacing and to prevent overflow
       decoration: const BoxDecoration(
         color: ShadcnColors.background,
         border: Border(
-          bottom: BorderSide(
-            color: ShadcnColors.border, 
-            width: 0.5,
-          ),
+          bottom: BorderSide(color: ShadcnColors.border, width: 0.5),
         ),
       ),
       child: ListView.separated(
@@ -32,13 +30,14 @@ class StoriesBar extends StatelessWidget {
           final user = mockFollowingUsers[index - 1];
           return GestureDetector(
             onTap: () {
-               Navigator.of(context).push(
+              Navigator.of(context).push(
                 PageRouteBuilder(
                   opaque: false, // Important for transparent background
-                  pageBuilder: (context, _, __) => StoryViewScreen(
-                    users: mockFollowingUsers,
-                    initialUserIndex: index - 1,
-                  ),
+                  pageBuilder: (context, animation, secondaryAnimation) =>
+                      StoryViewScreen(
+                        users: mockFollowingUsers,
+                        initialUserIndex: index - 1,
+                      ),
                 ),
               );
             },
@@ -70,8 +69,9 @@ class _MyStoryItem extends StatelessWidget {
             shape: BoxShape.circle,
             border: Border.all(
               color: ShadcnColors.border,
-              width: 1, // Dashed border is hard in basic Flutter without packages, solid is fine for now
-              style: BorderStyle.solid, 
+              width:
+                  1, // Dashed border is hard in basic Flutter without packages, solid is fine for now
+              style: BorderStyle.solid,
             ),
           ),
           child: Container(

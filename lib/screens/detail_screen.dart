@@ -89,20 +89,27 @@ class DetailScreen extends StatelessWidget {
                   ),
                   const SizedBox(height: ShadcnSpacing.lg),
                   // Timestamp and Location
-                  Row(
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text(
-                        _formatDate(post.timestamp),
-                        style: const TextStyle(color: ShadcnColors.mutedForeground, fontSize: 14),
+                      Row(
+                        children: [
+                          const Text(
+                            '发布时间 ',
+                            style: TextStyle(color: ShadcnColors.mutedForeground, fontSize: 14),
+                          ),
+                          Text(
+                            _formatFullDate(post.timestamp),
+                            style: const TextStyle(color: ShadcnColors.mutedForeground, fontSize: 14),
+                          ),
+                        ],
                       ),
                       if (post.location != null) ...[
-                         const SizedBox(width: ShadcnSpacing.sm),
-                         const Text('·', style: TextStyle(color: ShadcnColors.mutedForeground)),
-                         const SizedBox(width: ShadcnSpacing.sm),
-                         Text(
-                           post.location!,
-                           style: const TextStyle(color: ShadcnColors.primary, fontSize: 14),
-                         ),
+                        const SizedBox(height: ShadcnSpacing.sm),
+                        Text(
+                          '地点 ${post.location!}',
+                          style: const TextStyle(color: ShadcnColors.primary, fontSize: 14),
+                        ),
                       ],
                     ],
                   ),
@@ -126,9 +133,9 @@ class DetailScreen extends StatelessWidget {
                        // Right Group
                        Row(
                          children: [
-                           _buildAction(Icons.bookmark_border, null),
-                           const SizedBox(width: ShadcnSpacing.md),
-                           _buildAction(Icons.share_outlined, null),
+                           _buildAction(Icons.bookmark_border, post.bookmarksCount),
+                           const SizedBox(width: ShadcnSpacing.lg),
+                           _buildAction(Icons.share_outlined, post.sharesCount),
                          ],
                        ),
                     ],
@@ -158,7 +165,7 @@ class DetailScreen extends StatelessWidget {
               physics: const NeverScrollableScrollPhysics(),
               shrinkWrap: true,
               itemCount: 3,
-              separatorBuilder: (_, __) => const Divider(color: ShadcnColors.border, height: 1),
+              separatorBuilder: (context, index) => const Divider(color: ShadcnColors.border, height: 1),
               itemBuilder: (context, index) {
                 return Padding(
                   padding: const EdgeInsets.symmetric(
@@ -287,20 +294,10 @@ class DetailScreen extends StatelessWidget {
     );
   }
 
-  String _formatDate(DateTime date) {
-    final now = DateTime.now();
-    final diff = now.difference(date);
-
-    if (diff.inHours < 24) {
-      if (diff.inMinutes < 60) {
-        return '${diff.inMinutes} 分钟前';
-      }
-      return '${diff.inHours} 小时前';
-    }
-    
+  String _formatFullDate(DateTime date) {
     final weekDays = ['周一', '周二', '周三', '周四', '周五', '周六', '周日'];
     final weekDay = weekDays[date.weekday - 1];
     
-    return '${date.year} ${date.month} 月 ${date.day} 日 $weekDay ${date.hour}:${date.minute.toString().padLeft(2, '0')}';
+    return '${date.year} 年 ${date.month} 月 ${date.day} 日 $weekDay ${date.hour}:${date.minute.toString().padLeft(2, '0')}';
   }
 }

@@ -91,22 +91,22 @@ class _ChatScreenState extends State<ChatScreen> {
                     children: [
                       _TopIconItem(
                         icon: Icons.favorite,
-                        color: const Color(0xFFE91E63), // Pink
+                        color: ShadcnColors.mutedForeground,
                         label: '收到的喜欢',
                       ),
                       _TopIconItem(
                         icon: Icons.comment,
-                        color: const Color(0xFF2196F3), // Blue
+                        color: ShadcnColors.mutedForeground,
                         label: '评论和回复',
                       ),
                       _TopIconItem(
                         icon: Icons.bookmark,
-                        color: const Color(0xFFFFC107), // Amber/Yellow
+                        color: ShadcnColors.mutedForeground,
                         label: '收藏和@',
                       ),
                       _TopIconItem(
                         icon: Icons.person_add,
-                        color: const Color(0xFF4CAF50), // Green
+                        color: ShadcnColors.mutedForeground,
                         label: '新增粉丝',
                       ),
                     ],
@@ -246,9 +246,7 @@ class _TopIconItem extends StatelessWidget {
           width: 48,
           height: 48,
           decoration: BoxDecoration(
-            color: color.withOpacity(
-              0.1,
-            ), // Light background matching icon color
+            color: ShadcnColors.secondary,
             borderRadius: BorderRadius.circular(16),
           ),
           child: Icon(icon, color: color, size: 24),
@@ -326,7 +324,7 @@ class _ChatItem extends StatelessWidget {
         horizontal: ShadcnSpacing.lg,
         vertical: ShadcnSpacing.md,
       ),
-      leading: ShadcnIconContainer(icon: icon, iconColor: iconColor, size: 48),
+      leading: ShadcnIconContainer(icon: icon, iconColor: ShadcnColors.mutedForeground, size: 48),
       title: title,
       subtitle: subtitle,
       trailing: Column(

@@ -19,8 +19,8 @@ class ShadcnIconContainer extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final effectiveIconColor = iconColor ?? ShadcnColors.foreground;
-    final effectiveBackgroundColor = backgroundColor ?? 
-        effectiveIconColor.withOpacity(0.1);
+    final effectiveBackgroundColor =
+        backgroundColor ?? effectiveIconColor.withValues(alpha: 0.1);
 
     return Container(
       width: size,
@@ -29,11 +29,7 @@ class ShadcnIconContainer extends StatelessWidget {
         color: effectiveBackgroundColor,
         borderRadius: BorderRadius.circular(ShadcnRadius.lg),
       ),
-      child: Icon(
-        icon,
-        color: effectiveIconColor,
-        size: size * 0.55,
-      ),
+      child: Icon(icon, color: effectiveIconColor, size: size * 0.55),
     );
   }
 }

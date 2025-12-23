@@ -226,7 +226,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
             ShadcnListTile(
               leading: const ShadcnIconContainer(
                 icon: Icons.workspace_premium,
-                iconColor: Color(0xFFF59E0B),
+                iconColor: ShadcnColors.mutedForeground,
               ),
               title: '会员中心',
               subtitle: _isVipMember ? 'VIP会员 享受专属权益' : '开通会员 解锁更多功能',
@@ -257,7 +257,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
             ShadcnListTile(
               leading: const ShadcnIconContainer(
                 icon: Icons.palette_outlined,
-                iconColor: Color(0xFFEC4899),
+                iconColor: ShadcnColors.mutedForeground,
               ),
               title: '个性化设置',
               subtitle: '自定义您的发布样式',
@@ -294,7 +294,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
             ShadcnListTile(
               leading: const ShadcnIconContainer(
                 icon: Icons.article_outlined,
-                iconColor: Color(0xFF3B82F6),
+                iconColor: ShadcnColors.mutedForeground,
               ),
               title: '我的文章',
               subtitle: '查看和管理已发布的文章',
@@ -306,7 +306,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
             ShadcnListTile(
               leading: const ShadcnIconContainer(
                 icon: Icons.drafts_outlined,
-                iconColor: Color(0xFF8B5CF6),
+                iconColor: ShadcnColors.mutedForeground,
               ),
               title: '草稿箱',
               subtitle: '8篇草稿',
@@ -318,7 +318,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
             ShadcnListTile(
               leading: const ShadcnIconContainer(
                 icon: Icons.favorite_outline,
-                iconColor: Color(0xFFEC4899),
+                iconColor: ShadcnColors.mutedForeground,
               ),
               title: '我的收藏',
               subtitle: '126个收藏',
@@ -330,7 +330,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
             ShadcnListTile(
               leading: const ShadcnIconContainer(
                 icon: Icons.bar_chart_outlined,
-                iconColor: Color(0xFF10B981),
+                iconColor: ShadcnColors.mutedForeground,
               ),
               title: '数据统计',
               subtitle: '查看发布数据和互动情况',
@@ -354,7 +354,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
             ShadcnListTile(
               leading: const ShadcnIconContainer(
                 icon: Icons.feedback_outlined,
-                iconColor: Color(0xFFF59E0B),
+                iconColor: ShadcnColors.mutedForeground,
               ),
               title: '意见反馈',
               subtitle: '告诉我们您的建议',
@@ -366,7 +366,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
             ShadcnListTile(
               leading: const ShadcnIconContainer(
                 icon: Icons.support_agent_outlined,
-                iconColor: Color(0xFF06B6D4),
+                iconColor: ShadcnColors.mutedForeground,
               ),
               title: '联系客服',
               subtitle: '在线客服 09:00-21:00',
@@ -378,7 +378,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
             ShadcnListTile(
               leading: const ShadcnIconContainer(
                 icon: Icons.help_outline,
-                iconColor: Color(0xFF6366F1),
+                iconColor: ShadcnColors.mutedForeground,
               ),
               title: '帮助中心',
               subtitle: '常见问题与使用指南',
@@ -421,7 +421,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 children: [
                   const ShadcnIconContainer(
                     icon: Icons.dark_mode_outlined,
-                    iconColor: ShadcnColors.zinc700,
+                    iconColor: ShadcnColors.mutedForeground,
                   ),
                   const SizedBox(width: ShadcnSpacing.md),
                   const Expanded(
@@ -463,7 +463,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
             ShadcnListTile(
               leading: const ShadcnIconContainer(
                 icon: Icons.notifications_outlined,
-                iconColor: Color(0xFFEF4444),
+                iconColor: ShadcnColors.mutedForeground,
               ),
               title: '通知设置',
               subtitle: '管理推送通知',
@@ -475,7 +475,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
             ShadcnListTile(
               leading: const ShadcnIconContainer(
                 icon: Icons.language_outlined,
-                iconColor: Color(0xFF14B8A6),
+                iconColor: ShadcnColors.mutedForeground,
               ),
               title: '语言设置',
               subtitle: '简体中文',
@@ -487,7 +487,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
             ShadcnListTile(
               leading: const ShadcnIconContainer(
                 icon: Icons.privacy_tip_outlined,
-                iconColor: Color(0xFF78716C),
+                iconColor: ShadcnColors.mutedForeground,
               ),
               title: '隐私设置',
               subtitle: '账号与隐私管理',
@@ -499,7 +499,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
             ShadcnListTile(
               leading: const ShadcnIconContainer(
                 icon: Icons.info_outline,
-                iconColor: ShadcnColors.zinc600,
+                iconColor: ShadcnColors.mutedForeground,
               ),
               title: '关于我们',
               subtitle: 'v1.0.0',

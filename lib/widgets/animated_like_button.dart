@@ -25,7 +25,7 @@ class _AnimatedLikeButtonState extends State<AnimatedLikeButton>
     with SingleTickerProviderStateMixin {
   late AnimationController _controller;
   late Animation<double> _scaleAnimation;
-  
+
   bool _isLiked = false;
 
   @override
@@ -36,20 +36,11 @@ class _AnimatedLikeButtonState extends State<AnimatedLikeButton>
       vsync: this,
       duration: const Duration(milliseconds: 200),
     );
-    
+
     _scaleAnimation = TweenSequence<double>([
-      TweenSequenceItem(
-        tween: Tween<double>(begin: 1.0, end: 1.3),
-        weight: 50,
-      ),
-      TweenSequenceItem(
-        tween: Tween<double>(begin: 1.3, end: 1.0),
-        weight: 50,
-      ),
-    ]).animate(CurvedAnimation(
-      parent: _controller,
-      curve: Curves.easeInOut,
-    ));
+      TweenSequenceItem(tween: Tween<double>(begin: 1.0, end: 1.3), weight: 50),
+      TweenSequenceItem(tween: Tween<double>(begin: 1.3, end: 1.0), weight: 50),
+    ]).animate(CurvedAnimation(parent: _controller, curve: Curves.easeInOut));
   }
 
   @override
@@ -71,12 +62,12 @@ class _AnimatedLikeButtonState extends State<AnimatedLikeButton>
       // Animate if becoming liked
       _controller.forward(from: 0.0);
     }
-    
+
     // Optimistic update locally
     setState(() {
       _isLiked = !_isLiked;
     });
-    
+
     // Notify parent
     widget.onData();
   }
@@ -94,7 +85,7 @@ class _AnimatedLikeButtonState extends State<AnimatedLikeButton>
             child: Icon(
               _isLiked ? Icons.favorite : Icons.favorite_border,
               color: _isLiked
-                  ? (widget.activeColor ?? Colors.red)
+                  ? (widget.activeColor ?? ShadcnColors.foreground)
                   : (widget.inactiveColor ?? ShadcnColors.mutedForeground),
               size: widget.size,
             ),

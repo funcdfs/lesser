@@ -47,11 +47,11 @@ class ShadcnColors {
 
 /// Spacing system based on 4px grid
 class ShadcnSpacing {
-  static const double xs = 4.0;   // 0.25rem
-  static const double sm = 8.0;   // 0.5rem
-  static const double md = 12.0;  // 0.75rem
-  static const double lg = 16.0;  // 1rem
-  static const double xl = 20.0;  // 1.25rem
+  static const double xs = 4.0; // 0.25rem
+  static const double sm = 8.0; // 0.5rem
+  static const double md = 12.0; // 0.75rem
+  static const double lg = 16.0; // 1rem
+  static const double xl = 20.0; // 1.25rem
   static const double xl2 = 24.0; // 1.5rem
   static const double xl3 = 32.0; // 2rem
   static const double xl4 = 40.0; // 2.5rem
@@ -60,10 +60,10 @@ class ShadcnSpacing {
 
 /// Border radius system
 class ShadcnRadius {
-  static const double sm = 4.0;   // 0.25rem
-  static const double md = 8.0;   // 0.5rem
-  static const double lg = 12.0;  // 0.75rem
-  static const double xl = 16.0;  // 1rem
+  static const double sm = 4.0; // 0.25rem
+  static const double md = 8.0; // 0.5rem
+  static const double lg = 12.0; // 0.75rem
+  static const double xl = 16.0; // 1rem
   static const double xl2 = 20.0; // 1.25rem
   static const double full = 9999.0; // For pills
 }
@@ -72,7 +72,7 @@ class ShadcnRadius {
 class ShadcnShadows {
   static List<BoxShadow> get subtle => [
     BoxShadow(
-      color: Colors.black.withOpacity(0.02),
+      color: Colors.black.withValues(alpha: 0.02),
       blurRadius: 2,
       offset: const Offset(0, 1),
     ),
@@ -80,7 +80,7 @@ class ShadcnShadows {
 
   static List<BoxShadow> get sm => [
     BoxShadow(
-      color: Colors.black.withOpacity(0.05),
+      color: Colors.black.withValues(alpha: 0.05),
       blurRadius: 4,
       offset: const Offset(0, 1),
     ),
@@ -88,7 +88,7 @@ class ShadcnShadows {
 
   static List<BoxShadow> get md => [
     BoxShadow(
-      color: Colors.black.withOpacity(0.08),
+      color: Colors.black.withValues(alpha: 0.08),
       blurRadius: 8,
       offset: const Offset(0, 2),
     ),
@@ -96,7 +96,7 @@ class ShadcnShadows {
 
   static List<BoxShadow> get lg => [
     BoxShadow(
-      color: Colors.black.withOpacity(0.1),
+      color: Colors.black.withValues(alpha: 0.1),
       blurRadius: 16,
       offset: const Offset(0, 4),
     ),

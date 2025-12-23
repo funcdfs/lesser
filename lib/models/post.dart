@@ -9,6 +9,8 @@ class Post {
   final int likesCount;
   final int commentsCount;
   final int repostsCount;
+  final int bookmarksCount;
+  final int sharesCount;
   final String? location;
   final List<String> imageUrls;
 
@@ -23,6 +25,8 @@ class Post {
     this.likesCount = 0,
     this.commentsCount = 0,
     this.repostsCount = 0,
+    this.bookmarksCount = 0,
+    this.sharesCount = 0,
     this.location,
     this.imageUrls = const [],
   });

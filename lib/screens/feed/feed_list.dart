@@ -14,17 +14,14 @@ class FeedList extends StatefulWidget {
   final String feedType; // 'following' or 'trending'
   final Widget? header;
 
-  const FeedList({
-    super.key,
-    required this.feedType,
-    this.header,
-  });
+  const FeedList({super.key, required this.feedType, this.header});
 
   @override
   State<FeedList> createState() => _FeedListState();
 }
 
-class _FeedListState extends State<FeedList> with AutomaticKeepAliveClientMixin {
+class _FeedListState extends State<FeedList>
+    with AutomaticKeepAliveClientMixin {
   ScrollController? _scrollController;
   bool _showBottomActions = false;
   bool _isLoading = true; // Initial loading state
@@ -67,14 +64,10 @@ class _FeedListState extends State<FeedList> with AutomaticKeepAliveClientMixin 
     if (_scrollController == null || !_scrollController!.hasClients) return;
 
     // Show bottom actions when scrolled to bottom area (e.g., last 300 pixels)
-    // Note: In NestedScrollView, maxScrollExtent might behave differently,
-    // but usually points to the total scrollable extent.
-    final maxScroll = _scrollController!.position.maxScrollExtent;
     final currentScroll = _scrollController!.position.pixels;
-    
+
     // Simple check: if we are deeper than 1 screen height or near bottom
     final show = currentScroll > MediaQuery.of(context).size.height;
-    
     if (show != _showBottomActions) {
       setState(() {
         _showBottomActions = show;
@@ -96,18 +89,16 @@ class _FeedListState extends State<FeedList> with AutomaticKeepAliveClientMixin 
     // In a real app, you might trigger a refresh indicator or reload data here
     await Future.delayed(const Duration(milliseconds: 500));
     if (mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Feed Refreshed')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('Feed Refreshed')));
     }
   }
 
   void _navigateToDetail(Post post) {
     Navigator.push(
       context,
-      MaterialPageRoute(
-        builder: (context) => DetailScreen(post: post),
-      ),
+      MaterialPageRoute(builder: (context) => DetailScreen(post: post)),
     );
   }
 
@@ -120,11 +111,14 @@ class _FeedListState extends State<FeedList> with AutomaticKeepAliveClientMixin 
         if (_isLoading)
           ListView.builder(
             padding: EdgeInsets.zero,
-            physics: const NeverScrollableScrollPhysics(), // Disable scrolling while loading
-            itemCount: 5 + (widget.header != null ? 1 : 0), // Show 5 skeletons + header
+            physics:
+                const NeverScrollableScrollPhysics(), // Disable scrolling while loading
+            itemCount:
+                5 +
+                (widget.header != null ? 1 : 0), // Show 5 skeletons + header
             itemBuilder: (context, index) {
               if (widget.header != null && index == 0) {
-                 return widget.header!;
+                return widget.header!;
               }
               return const PostCardSkeleton();
             },
@@ -133,7 +127,12 @@ class _FeedListState extends State<FeedList> with AutomaticKeepAliveClientMixin 
           ListView.builder(
             // controller: _scrollController, // Do NOT set controller for NestedScrollView child
             padding: EdgeInsets.zero,
-            itemCount: mockPosts.length + 10 + (widget.header != null ? 1 : 0), // Mock infinite scroll + header
+            itemCount:
+                mockPosts.length +
+                10 +
+                (widget.header != null
+                    ? 1
+                    : 0), // Mock infinite scroll + header
             itemBuilder: (context, index) {
               if (widget.header != null) {
                 if (index == 0) return widget.header!;
@@ -145,7 +144,7 @@ class _FeedListState extends State<FeedList> with AutomaticKeepAliveClientMixin 
                   child: _buildPostItem(post),
                 );
               }
-              
+
               final post = mockPosts[index % mockPosts.length];
               return _AnimatedPostItem(
                 index: index,
@@ -163,10 +162,7 @@ class _FeedListState extends State<FeedList> with AutomaticKeepAliveClientMixin 
               builder: (context, value, child) {
                 return Transform.scale(
                   scale: value,
-                  child: Opacity(
-                    opacity: value,
-                    child: child,
-                  ),
+                  child: Opacity(opacity: value, child: child),
                 );
               },
               child: Column(
@@ -189,7 +185,10 @@ class _FeedListState extends State<FeedList> with AutomaticKeepAliveClientMixin 
     );
   }
 
-  Widget _buildFloatingButton({required IconData icon, required VoidCallback onTap}) {
+  Widget _buildFloatingButton({
+    required IconData icon,
+    required VoidCallback onTap,
+  }) {
     return GestureDetector(
       onTap: onTap,
       child: Container(
@@ -200,17 +199,13 @@ class _FeedListState extends State<FeedList> with AutomaticKeepAliveClientMixin 
           shape: BoxShape.circle,
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withOpacity(0.1),
+              color: Colors.black.withValues(alpha: 0.1),
               blurRadius: 8,
               offset: const Offset(0, 4),
             ),
           ],
         ),
-        child: Icon(
-          icon,
-          color: ShadcnColors.primaryForeground,
-          size: 24,
-        ),
+        child: Icon(icon, color: ShadcnColors.primaryForeground, size: 24),
       ),
     );
   }
@@ -259,8 +254,11 @@ class _FeedListState extends State<FeedList> with AutomaticKeepAliveClientMixin 
                             overflow: TextOverflow.ellipsis,
                           ),
                         ),
-                        const Icon(Icons.more_horiz,
-                            size: 16, color: ShadcnColors.mutedForeground),
+                        const Icon(
+                          Icons.more_horiz,
+                          size: 16,
+                          color: ShadcnColors.mutedForeground,
+                        ),
                       ],
                     ),
                     const SizedBox(height: 4),
@@ -282,14 +280,18 @@ class _FeedListState extends State<FeedList> with AutomaticKeepAliveClientMixin 
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
-                        _buildAction(Icons.chat_bubble_outline,
-                            formatCount(post.commentsCount)),
-                        _buildAction(Icons.repeat,
-                            formatCount(post.repostsCount)),
+                        _buildAction(
+                          Icons.chat_bubble_outline,
+                          formatCount(post.commentsCount),
+                        ),
+                        _buildAction(
+                          Icons.repeat,
+                          formatCount(post.repostsCount),
+                        ),
                         AnimatedLikeButton(
                           isLiked: false, // In a real app, bind to data
                           onData: () {
-                             // Handle like API
+                            // Handle like API
                           },
                           size: 18,
                         ),
@@ -329,10 +331,7 @@ class _AnimatedPostItem extends StatefulWidget {
   final int index;
   final Widget child;
 
-  const _AnimatedPostItem({
-    required this.index,
-    required this.child,
-  });
+  const _AnimatedPostItem({required this.index, required this.child});
 
   @override
   State<_AnimatedPostItem> createState() => _AnimatedPostItemState();
@@ -355,21 +354,15 @@ class _AnimatedPostItemState extends State<_AnimatedPostItem>
     _slideAnimation = Tween<Offset>(
       begin: const Offset(0, 0.1),
       end: Offset.zero,
-    ).animate(CurvedAnimation(
-      parent: _controller,
-      curve: Curves.easeOutQuad,
-    ));
+    ).animate(CurvedAnimation(parent: _controller, curve: Curves.easeOutQuad));
 
     _fadeAnimation = Tween<double>(
       begin: 0.0,
       end: 1.0,
-    ).animate(CurvedAnimation(
-      parent: _controller,
-      curve: Curves.easeOut,
-    ));
+    ).animate(CurvedAnimation(parent: _controller, curve: Curves.easeOut));
 
     // Stagger based on index (up to a limit to avoid long delays on scroll)
-    final delay = (widget.index % 10) * 50; 
+    final delay = (widget.index % 10) * 50;
     Future.delayed(Duration(milliseconds: delay), () {
       if (mounted) {
         _controller.forward();
@@ -387,10 +380,7 @@ class _AnimatedPostItemState extends State<_AnimatedPostItem>
   Widget build(BuildContext context) {
     return FadeTransition(
       opacity: _fadeAnimation,
-      child: SlideTransition(
-        position: _slideAnimation,
-        child: widget.child,
-      ),
+      child: SlideTransition(position: _slideAnimation, child: widget.child),
     );
   }
 }

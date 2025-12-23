@@ -71,7 +71,8 @@ class _StoryViewScreenState extends State<StoryViewScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.transparent, // Transparent background for modal feel
+      backgroundColor:
+          Colors.transparent, // Transparent background for modal feel
       body: GestureDetector(
         onTap: () => Navigator.pop(context), // Close when tapping outside
         child: Container(
@@ -88,9 +89,9 @@ class _StoryViewScreenState extends State<StoryViewScreen> {
             itemBuilder: (context, index) {
               final user = widget.users[index];
               final stories = mockStories[user.id] ?? [];
-              
+
               if (stories.isEmpty) {
-                 return Center(
+                return Center(
                   child: Text(
                     'No stories for ${user.name}',
                     style: const TextStyle(color: Colors.white),
@@ -99,20 +100,24 @@ class _StoryViewScreenState extends State<StoryViewScreen> {
               }
 
               // Guard against index out of range if stories update or something is inconsistent
-              final safeStoryIndex = _currentStoryIndex >= stories.length ? 0 : _currentStoryIndex;
+              final safeStoryIndex = _currentStoryIndex >= stories.length
+                  ? 0
+                  : _currentStoryIndex;
               final story = stories[safeStoryIndex];
 
               return Center(
                 child: GestureDetector(
                   onTap: () {}, // Absorb taps so background tap doesn't fire
                   child: Container(
-                    margin: const EdgeInsets.symmetric(vertical: 60), // Gaps at top and bottom
+                    margin: const EdgeInsets.symmetric(
+                      vertical: 60,
+                    ), // Gaps at top and bottom
                     decoration: BoxDecoration(
                       borderRadius: BorderRadius.circular(20),
                       color: Colors.black,
                       boxShadow: [
-                         BoxShadow(
-                          color: Colors.black.withOpacity(0.5),
+                        BoxShadow(
+                          color: Colors.black.withValues(alpha: 0.5),
                           blurRadius: 20,
                           spreadRadius: 5,
                         ),
@@ -127,32 +132,37 @@ class _StoryViewScreenState extends State<StoryViewScreen> {
                           imageUrl: story.imageUrl,
                           fit: BoxFit.cover,
                           placeholder: (context, url) => const Center(
-                            child: CircularProgressIndicator(color: Colors.white),
+                            child: CircularProgressIndicator(
+                              color: Colors.white,
+                            ),
                           ),
                           errorWidget: (context, url, error) => const Center(
                             child: Icon(Icons.error, color: Colors.white),
                           ),
                         ),
-                        
+
                         // Navigation Touch Area (Top 80% only)
                         Positioned(
                           top: 0,
                           left: 0,
                           right: 0,
-                          bottom: 100, // Leave space for bottom bar interactions
+                          bottom:
+                              100, // Leave space for bottom bar interactions
                           child: GestureDetector(
-                             onTapUp: (details) {
-                                final width = MediaQuery.of(context).size.width;
-                                if (details.localPosition.dx < width / 3) {
-                                  _previousStory();
-                                } else {
-                                  _nextStory();
-                                }
-                              },
-                              child: Container(color: Colors.transparent), // Transparent hit target
+                            onTapUp: (details) {
+                              final width = MediaQuery.of(context).size.width;
+                              if (details.localPosition.dx < width / 3) {
+                                _previousStory();
+                              } else {
+                                _nextStory();
+                              }
+                            },
+                            child: Container(
+                              color: Colors.transparent,
+                            ), // Transparent hit target
                           ),
                         ),
-                
+
                         // Top Progress Bar & User Info
                         Positioned(
                           top: 20,
@@ -165,13 +175,19 @@ class _StoryViewScreenState extends State<StoryViewScreen> {
                                 children: List.generate(stories.length, (i) {
                                   return Expanded(
                                     child: Container(
-                                      margin: const EdgeInsets.symmetric(horizontal: 2),
+                                      margin: const EdgeInsets.symmetric(
+                                        horizontal: 2,
+                                      ),
                                       height: 3,
                                       decoration: BoxDecoration(
                                         color: i == safeStoryIndex
                                             ? Colors.white
-                                            : Colors.white.withOpacity(0.3),
-                                        borderRadius: BorderRadius.circular(1.5),
+                                            : Colors.white.withValues(
+                                                alpha: 0.3,
+                                              ),
+                                        borderRadius: BorderRadius.circular(
+                                          1.5,
+                                        ),
                                       ),
                                     ),
                                   );
@@ -198,13 +214,18 @@ class _StoryViewScreenState extends State<StoryViewScreen> {
                                   Text(
                                     _getTimeAgo(story.timestamp),
                                     style: TextStyle(
-                                      color: Colors.white.withOpacity(0.7),
+                                      color: Colors.white.withValues(
+                                        alpha: 0.7,
+                                      ),
                                       fontSize: 12,
                                     ),
                                   ),
                                   const Spacer(),
                                   IconButton(
-                                    icon: const Icon(Icons.close, color: Colors.white),
+                                    icon: const Icon(
+                                      Icons.close,
+                                      color: Colors.white,
+                                    ),
                                     onPressed: () => Navigator.pop(context),
                                   ),
                                 ],
@@ -212,9 +233,9 @@ class _StoryViewScreenState extends State<StoryViewScreen> {
                             ],
                           ),
                         ),
-                
+
                         // Floating Action Bar (Bottom) - Interaction Zone
-                         Positioned(
+                        Positioned(
                           left: 16,
                           right: 16,
                           bottom: 20,
@@ -224,21 +245,34 @@ class _StoryViewScreenState extends State<StoryViewScreen> {
                               Expanded(
                                 child: Container(
                                   height: 44,
-                                  padding: const EdgeInsets.symmetric(horizontal: 16),
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 16,
+                                  ),
                                   decoration: BoxDecoration(
-                                    color: Colors.black.withOpacity(0.4),
+                                    color: Colors.black.withValues(alpha: 0.4),
                                     borderRadius: BorderRadius.circular(22),
-                                    border: Border.all(color: Colors.white.withOpacity(0.2)),
+                                    border: Border.all(
+                                      color: Colors.white.withValues(
+                                        alpha: 0.2,
+                                      ),
+                                    ),
                                   ),
                                   child: Row(
                                     children: [
-                                      Icon(Icons.chat_bubble_outline, 
-                                        color: Colors.white.withOpacity(0.7), size: 20),
+                                      Icon(
+                                        Icons.chat_bubble_outline,
+                                        color: Colors.white.withValues(
+                                          alpha: 0.7,
+                                        ),
+                                        size: 20,
+                                      ),
                                       const SizedBox(width: 8),
                                       Text(
                                         "Send message...",
                                         style: TextStyle(
-                                          color: Colors.white.withOpacity(0.7),
+                                          color: Colors.white.withValues(
+                                            alpha: 0.7,
+                                          ),
                                           fontSize: 14,
                                         ),
                                       ),
@@ -246,20 +280,21 @@ class _StoryViewScreenState extends State<StoryViewScreen> {
                                   ),
                                 ),
                               ),
-                              
+
                               const SizedBox(width: 12),
-                              
+
                               // Like Button
                               _buildCircleActionButton(
-                                icon: Icons.favorite_border, 
+                                icon: Icons.favorite_border,
                                 onTap: () => _showSnackBar("Liked"),
                               ),
-                              
+
                               const SizedBox(width: 12),
-                              
+
                               // Share/Forward Button (Network Style)
-                               _buildCircleActionButton(
-                                icon: Icons.share_outlined, // Changed to network share style
+                              _buildCircleActionButton(
+                                icon: Icons
+                                    .share_outlined, // Changed to network share style
                                 onTap: () => _showSnackBar("Shared"),
                               ),
                             ],
@@ -277,22 +312,21 @@ class _StoryViewScreenState extends State<StoryViewScreen> {
     );
   }
 
-  Widget _buildCircleActionButton({required IconData icon, required VoidCallback onTap}) {
+  Widget _buildCircleActionButton({
+    required IconData icon,
+    required VoidCallback onTap,
+  }) {
     return GestureDetector(
       onTap: onTap,
       child: Container(
         width: 44,
         height: 44,
         decoration: BoxDecoration(
-          color: Colors.black.withOpacity(0.4),
+          color: Colors.black.withValues(alpha: 0.4),
           shape: BoxShape.circle,
-          border: Border.all(color: Colors.white.withOpacity(0.2)),
+          border: Border.all(color: Colors.white.withValues(alpha: 0.2)),
         ),
-        child: Icon(
-          icon,
-          color: Colors.white,
-          size: 24,
-        ),
+        child: Icon(icon, color: Colors.white, size: 24),
       ),
     );
   }
@@ -301,7 +335,7 @@ class _StoryViewScreenState extends State<StoryViewScreen> {
     ScaffoldMessenger.of(context).clearSnackBars();
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
-        content: Text(message), 
+        content: Text(message),
         duration: const Duration(seconds: 1),
         behavior: SnackBarBehavior.floating,
       ),

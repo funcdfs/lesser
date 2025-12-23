@@ -12,10 +12,10 @@ class SearchScreen extends StatefulWidget {
 
 class _SearchScreenState extends State<SearchScreen> {
   final TextEditingController _searchController = TextEditingController();
-  
+
   // Hot Section
   int _hotIndex = 0;
-  
+
   // Mock Data Groups
   late final List<Article> _allHotArticles;
   late final List<Article> _travelHotArticles;
@@ -23,28 +23,50 @@ class _SearchScreenState extends State<SearchScreen> {
   late final List<Article> _techHotArticles;
 
   final List<String> _hotTags = [
-    '旅行', '美食', '摄影', '艺术', '音乐', 
-    '电影', '读书', '健身', '科技', '设计'
+    '旅行',
+    '美食',
+    '摄影',
+    '艺术',
+    '音乐',
+    '电影',
+    '读书',
+    '健身',
+    '科技',
+    '设计',
   ];
 
   @override
   void initState() {
     super.initState();
-    _allHotArticles = List.generate(5, (index) => mockArticles[index % mockArticles.length]);
-    
-    final travelArticles = mockArticles.where((a) => a.category == 'travel').toList();
+    _allHotArticles = List.generate(
+      5,
+      (index) => mockArticles[index % mockArticles.length],
+    );
+
+    final travelArticles = mockArticles
+        .where((a) => a.category == 'travel')
+        .toList();
     _travelHotArticles = List.generate(5, (index) {
-      if (travelArticles.isNotEmpty) return travelArticles[index % travelArticles.length];
+      if (travelArticles.isNotEmpty) {
+        return travelArticles[index % travelArticles.length];
+      }
       return mockArticles[index % mockArticles.length];
     });
 
-    final foodArticles = mockArticles.where((a) => a.category == 'food').toList();
+    final foodArticles = mockArticles
+        .where((a) => a.category == 'food')
+        .toList();
     _foodHotArticles = List.generate(5, (index) {
-      if (foodArticles.isNotEmpty) return foodArticles[index % foodArticles.length];
+      if (foodArticles.isNotEmpty) {
+        return foodArticles[index % foodArticles.length];
+      }
       return mockArticles[index % mockArticles.length];
     });
-    
-    _techHotArticles = List.generate(5, (index) => mockArticles[(index + 2) % mockArticles.length]);
+
+    _techHotArticles = List.generate(
+      5,
+      (index) => mockArticles[(index + 2) % mockArticles.length],
+    );
   }
 
   @override
@@ -58,7 +80,9 @@ class _SearchScreenState extends State<SearchScreen> {
       context: context,
       backgroundColor: ShadcnColors.background,
       shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(ShadcnRadius.xl)),
+        borderRadius: BorderRadius.vertical(
+          top: Radius.circular(ShadcnRadius.xl),
+        ),
       ),
       builder: (context) => SafeArea(
         child: Padding(
@@ -77,16 +101,34 @@ class _SearchScreenState extends State<SearchScreen> {
               ),
               const SizedBox(height: ShadcnSpacing.lg),
               ListTile(
-                leading: const Icon(Icons.history, color: ShadcnColors.mutedForeground),
-                title: const Text('搜索历史', style: TextStyle(color: ShadcnColors.foreground)),
+                leading: const Icon(
+                  Icons.history,
+                  color: ShadcnColors.mutedForeground,
+                ),
+                title: const Text(
+                  '搜索历史',
+                  style: TextStyle(color: ShadcnColors.foreground),
+                ),
               ),
               ListTile(
-                leading: const Icon(Icons.filter_list, color: ShadcnColors.mutedForeground),
-                title: const Text('搜索过滤', style: TextStyle(color: ShadcnColors.foreground)),
+                leading: const Icon(
+                  Icons.filter_list,
+                  color: ShadcnColors.mutedForeground,
+                ),
+                title: const Text(
+                  '搜索过滤',
+                  style: TextStyle(color: ShadcnColors.foreground),
+                ),
               ),
               ListTile(
-                leading: const Icon(Icons.settings, color: ShadcnColors.mutedForeground),
-                title: const Text('高级设置', style: TextStyle(color: ShadcnColors.foreground)),
+                leading: const Icon(
+                  Icons.settings,
+                  color: ShadcnColors.mutedForeground,
+                ),
+                title: const Text(
+                  '高级设置',
+                  style: TextStyle(color: ShadcnColors.foreground),
+                ),
               ),
             ],
           ),
@@ -103,22 +145,20 @@ class _SearchScreenState extends State<SearchScreen> {
         child: CustomScrollView(
           slivers: [
             // Search Bar
-            SliverToBoxAdapter(
-              child: _buildSearchBar(),
-            ),
+            SliverToBoxAdapter(child: _buildSearchBar()),
             const SliverToBoxAdapter(child: SizedBox(height: ShadcnSpacing.lg)),
-            
+
             // Hot Section
-            SliverToBoxAdapter(
-              child: _buildHotSection(),
+            SliverToBoxAdapter(child: _buildHotSection()),
+            const SliverToBoxAdapter(
+              child: SizedBox(height: ShadcnSpacing.xl2),
             ),
-            const SliverToBoxAdapter(child: SizedBox(height: ShadcnSpacing.xl2)),
-            
+
             // Hot Tags Section
-            SliverToBoxAdapter(
-              child: _buildHotTagsSection(),
+            SliverToBoxAdapter(child: _buildHotTagsSection()),
+            const SliverToBoxAdapter(
+              child: SizedBox(height: ShadcnSpacing.xl4),
             ),
-            const SliverToBoxAdapter(child: SizedBox(height: ShadcnSpacing.xl4)),
           ],
         ),
       ),
@@ -128,10 +168,10 @@ class _SearchScreenState extends State<SearchScreen> {
   Widget _buildSearchBar() {
     return Padding(
       padding: const EdgeInsets.fromLTRB(
-        ShadcnSpacing.lg, 
-        ShadcnSpacing.lg, 
-        ShadcnSpacing.lg, 
-        0
+        ShadcnSpacing.lg,
+        ShadcnSpacing.lg,
+        ShadcnSpacing.lg,
+        0,
       ),
       child: Container(
         decoration: BoxDecoration(
@@ -144,15 +184,18 @@ class _SearchScreenState extends State<SearchScreen> {
           decoration: InputDecoration(
             hintText: '搜索文章、话题、用户...',
             hintStyle: const TextStyle(color: ShadcnColors.mutedForeground),
-            prefixIcon: const Icon(Icons.search, color: ShadcnColors.mutedForeground),
+            prefixIcon: const Icon(
+              Icons.search,
+              color: ShadcnColors.mutedForeground,
+            ),
             suffixIcon: IconButton(
               icon: const Icon(Icons.tune, color: ShadcnColors.mutedForeground),
               onPressed: _showSearchSettings,
             ),
             border: InputBorder.none,
             contentPadding: const EdgeInsets.symmetric(
-              horizontal: ShadcnSpacing.lg, 
-              vertical: 14 
+              horizontal: ShadcnSpacing.lg,
+              vertical: 14,
             ),
           ),
         ),
@@ -162,16 +205,30 @@ class _SearchScreenState extends State<SearchScreen> {
 
   Widget _buildHotSection() {
     final tabs = ['全局热门', '旅游', '美食', '科技'];
-    final dataLists = [_allHotArticles, _travelHotArticles, _foodHotArticles, _techHotArticles];
-    
+    final dataLists = [
+      _allHotArticles,
+      _travelHotArticles,
+      _foodHotArticles,
+      _techHotArticles,
+    ];
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Padding(
-          padding: const EdgeInsets.fromLTRB(ShadcnSpacing.lg, 0, ShadcnSpacing.lg, ShadcnSpacing.md),
+          padding: const EdgeInsets.fromLTRB(
+            ShadcnSpacing.lg,
+            0,
+            ShadcnSpacing.lg,
+            ShadcnSpacing.md,
+          ),
           child: Row(
             children: [
-              const Icon(Icons.show_chart, color: ShadcnColors.primary, size: 20),
+              const Icon(
+                Icons.show_chart,
+                color: ShadcnColors.primary,
+                size: 20,
+              ),
               const SizedBox(width: ShadcnSpacing.sm),
               Text(
                 '热门榜单',
@@ -183,7 +240,7 @@ class _SearchScreenState extends State<SearchScreen> {
             ],
           ),
         ),
-        
+
         // Tab selector
         SingleChildScrollView(
           scrollDirection: Axis.horizontal,
@@ -197,12 +254,19 @@ class _SearchScreenState extends State<SearchScreen> {
                   onTap: () => setState(() => _hotIndex = index),
                   child: AnimatedContainer(
                     duration: const Duration(milliseconds: 200),
-                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 16,
+                      vertical: 8,
+                    ),
                     decoration: BoxDecoration(
-                      color: isSelected ? ShadcnColors.foreground : Colors.transparent,
+                      color: isSelected
+                          ? ShadcnColors.foreground
+                          : Colors.transparent,
                       borderRadius: BorderRadius.circular(ShadcnRadius.full),
                       border: Border.all(
-                        color: isSelected ? ShadcnColors.foreground : ShadcnColors.border,
+                        color: isSelected
+                            ? ShadcnColors.foreground
+                            : ShadcnColors.border,
                       ),
                     ),
                     child: Text(
@@ -210,7 +274,9 @@ class _SearchScreenState extends State<SearchScreen> {
                       style: TextStyle(
                         fontSize: 13,
                         fontWeight: FontWeight.w600,
-                        color: isSelected ? ShadcnColors.background : ShadcnColors.mutedForeground,
+                        color: isSelected
+                            ? ShadcnColors.background
+                            : ShadcnColors.mutedForeground,
                       ),
                     ),
                   ),
@@ -219,9 +285,9 @@ class _SearchScreenState extends State<SearchScreen> {
             }),
           ),
         ),
-        
+
         const SizedBox(height: ShadcnSpacing.lg),
-        
+
         // Content with AnimatedSwitcher
         AnimatedSwitcher(
           duration: const Duration(milliseconds: 300),
@@ -233,10 +299,10 @@ class _SearchScreenState extends State<SearchScreen> {
               padding: EdgeInsets.zero,
               itemCount: dataLists[_hotIndex].length,
               separatorBuilder: (context, index) => const Divider(
-                height: 1, 
-                thickness: 0.5, 
+                height: 1,
+                thickness: 0.5,
                 indent: ShadcnSpacing.lg + 24, // Indent to align with text
-                color: ShadcnColors.border
+                color: ShadcnColors.border,
               ),
               itemBuilder: (context, index) {
                 return _RankedArticleItem(
@@ -289,16 +355,10 @@ class _RankedArticleItem extends StatelessWidget {
   final int rank;
   final Article article;
 
-  const _RankedArticleItem({
-    required this.rank,
-    required this.article,
-  });
+  const _RankedArticleItem({required this.rank, required this.article});
 
   Color _getRankColor(int rank) {
-    if (rank == 1) return const Color(0xFFF59E0B); // Gold
-    if (rank == 2) return const Color(0xFF71717A); // Silver
-    if (rank == 3) return const Color(0xFFA1A1AA); // Bronze
-    return ShadcnColors.mutedForeground.withOpacity(0.5);
+    return ShadcnColors.mutedForeground;
   }
 
   @override
@@ -328,7 +388,7 @@ class _RankedArticleItem extends StatelessWidget {
               ),
             ),
             const SizedBox(width: ShadcnSpacing.md),
-            
+
             // Content
             Expanded(
               child: Column(
@@ -360,8 +420,9 @@ class _RankedArticleItem extends StatelessWidget {
                         width: 3,
                         height: 3,
                         decoration: const BoxDecoration(
-                            color: ShadcnColors.mutedForeground,
-                            shape: BoxShape.circle),
+                          color: ShadcnColors.mutedForeground,
+                          shape: BoxShape.circle,
+                        ),
                       ),
                       const SizedBox(width: 8),
                       Text(
@@ -376,9 +437,9 @@ class _RankedArticleItem extends StatelessWidget {
                 ],
               ),
             ),
-            
+
             const SizedBox(width: ShadcnSpacing.md),
-            
+
             // Thumbnail (Right side)
             ClipRRect(
               borderRadius: BorderRadius.circular(ShadcnRadius.md),
@@ -389,11 +450,14 @@ class _RankedArticleItem extends StatelessWidget {
                   width: 80,
                   height: 60,
                   fit: BoxFit.cover,
-                  cacheWidth: 160, 
+                  cacheWidth: 160,
                   errorBuilder: (context, error, stackTrace) => const SizedBox(
-                    width: 80, 
+                    width: 80,
                     height: 60,
-                    child: Icon(Icons.image, color: ShadcnColors.mutedForeground),
+                    child: Icon(
+                      Icons.image,
+                      color: ShadcnColors.mutedForeground,
+                    ),
                   ),
                 ),
               ),

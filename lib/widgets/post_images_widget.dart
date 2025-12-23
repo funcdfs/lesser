@@ -17,9 +17,13 @@ class PostImagesWidget extends StatelessWidget {
     // Max 50 limits enforced at model/data level usually, but we can clamp here too just in case.
     final displayUrls = imageUrls.take(50).toList();
 
+    // Get screen width to apply max-width constraints on wide screens
+    final screenWidth = MediaQuery.of(context).size.width;
+    final maxWidth = screenWidth > 640 ? 600.0 : double.infinity;
+
     if (displayUrls.length == 1) {
       return Container(
-        constraints: BoxConstraints(maxHeight: height),
+        constraints: BoxConstraints(maxHeight: height, maxWidth: maxWidth),
         width: double.infinity,
         decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(12),
@@ -33,6 +37,7 @@ class PostImagesWidget extends StatelessWidget {
 
     return SizedBox(
       height: height,
+      width: maxWidth,
       child: ListView.separated(
         scrollDirection: Axis.horizontal,
         itemCount: displayUrls.length,

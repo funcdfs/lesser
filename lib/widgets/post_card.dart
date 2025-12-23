@@ -4,7 +4,7 @@ import '../widgets/shadcn/shadcn_avatar.dart';
 import '../models/post.dart';
 import '../utils/number_formatter.dart';
 
-class PostCard extends StatelessWidget {
+class PostCard extends StatefulWidget {
   final Post post;
   final VoidCallback onTap;
 
@@ -15,9 +15,44 @@ class PostCard extends StatelessWidget {
   });
 
   @override
+  State<PostCard> createState() => _PostCardState();
+}
+
+class _PostCardState extends State<PostCard> with TickerProviderStateMixin {
+  late bool _isLiked;
+  late AnimationController _likeAnimationController;
+
+  @override
+  void initState() {
+    super.initState();
+    _isLiked = false;
+    _likeAnimationController = AnimationController(
+      duration: const Duration(milliseconds: 600),
+      vsync: this,
+    );
+  }
+
+  @override
+  void dispose() {
+    _likeAnimationController.dispose();
+    super.dispose();
+  }
+
+  void _toggleLike() {
+    setState(() {
+      _isLiked = !_isLiked;
+    });
+    if (_isLiked) {
+      _likeAnimationController.forward();
+    } else {
+      _likeAnimationController.reverse();
+    }
+  }
+
+  @override
   Widget build(BuildContext context) {
     return InkWell(
-      onTap: onTap,
+      onTap: widget.onTap,
       child: Padding(
         padding: const EdgeInsets.symmetric(
           horizontal: ShadcnSpacing.lg, 
@@ -28,8 +63,8 @@ class PostCard extends StatelessWidget {
           children: [
             // Left: Avatar
             ShadcnAvatar(
-              avatarUrl: post.authorAvatarUrl,
-              fallbackInitials: post.author,
+              avatarUrl: widget.post.authorAvatarUrl,
+              fallbackInitials: widget.post.author,
               size: 40,
             ),
             const SizedBox(width: ShadcnSpacing.md),
@@ -42,7 +77,7 @@ class PostCard extends StatelessWidget {
                   Row(
                     children: [
                       Text(
-                        post.author,
+                        widget.post.author,
                         style: const TextStyle(
                           fontWeight: FontWeight.w600,
                           fontSize: 15,
@@ -52,7 +87,7 @@ class PostCard extends StatelessWidget {
                       const SizedBox(width: ShadcnSpacing.xs),
                       Flexible(
                         child: Text(
-                          post.authorHandle,
+                          widget.post.authorHandle,
                           style: const TextStyle(
                             color: ShadcnColors.mutedForeground,
                             fontSize: 14,
@@ -62,7 +97,7 @@ class PostCard extends StatelessWidget {
                       ),
                       const SizedBox(width: ShadcnSpacing.xs),
                       Text(
-                        '· ${timeAgo(post.timestamp)}',
+                        '· ${timeAgo(widget.post.timestamp)}',
                         style: const TextStyle(
                           color: ShadcnColors.mutedForeground,
                           fontSize: 14,
@@ -78,7 +113,7 @@ class PostCard extends StatelessWidget {
                   const SizedBox(height: 2),
                   // Content
                   Text(
-                    post.content,
+                    widget.post.content,
                     style: const TextStyle(
                       fontSize: 15,
                       color: ShadcnColors.foreground,
@@ -96,17 +131,20 @@ class PostCard extends StatelessWidget {
                           children: [
                             _ActionButton(
                               icon: Icons.chat_bubble_outline,
-                              count: post.commentsCount,
+                              count: widget.post.commentsCount,
                             ),
                             const SizedBox(width: ShadcnSpacing.sm),
                             _ActionButton(
                               icon: Icons.repeat,
-                              count: post.repostsCount,
+                              count: widget.post.repostsCount,
                             ),
                             const SizedBox(width: ShadcnSpacing.sm),
                             _ActionButton(
                               icon: Icons.favorite_border,
-                              count: post.likesCount,
+                              count: widget.post.likesCount,
+                              onTap: _toggleLike,
+                              isLiked: _isLiked,
+                              isLikeButton: true,
                             ),
                           ],
                         ),
@@ -150,9 +188,9 @@ class PostCard extends StatelessWidget {
             mainAxisSize: MainAxisSize.min,
             children: [
               _buildActionItem(context, '对此帖子不感兴趣', Icons.visibility_off_outlined),
-              _buildActionItem(context, '取消关注 ${post.author}', Icons.person_remove_outlined),
-              _buildActionItem(context, '单向隐藏 ${post.author}', Icons.block_outlined),
-              _buildActionItem(context, '双向屏蔽 ${post.author}', Icons.do_not_disturb_on_outlined, isDestructive: true),
+              _buildActionItem(context, '取消关注 ${widget.post.author}', Icons.person_remove_outlined),
+              _buildActionItem(context, '单向隐藏 ${widget.post.author}', Icons.block_outlined),
+              _buildActionItem(context, '双向屏蔽 ${widget.post.author}', Icons.do_not_disturb_on_outlined, isDestructive: true),
               const Divider(height: 1, color: ShadcnColors.border),
               _buildActionItem(context, '举报帖子', Icons.report_gmailerrorred_outlined, isDestructive: true),
             ],
@@ -216,30 +254,95 @@ class PostCard extends StatelessWidget {
   }
 }
 
-class _ActionButton extends StatelessWidget {
+class _ActionButton extends StatefulWidget {
   final IconData icon;
   final int? count;
+  final VoidCallback? onTap;
+  final bool isLiked;
+  final bool isLikeButton;
 
-  const _ActionButton({required this.icon, this.count});
+  const _ActionButton({
+    required this.icon,
+    this.count,
+    this.onTap,
+    this.isLiked = false,
+    this.isLikeButton = false,
+  });
+
+  @override
+  State<_ActionButton> createState() => _ActionButtonState();
+}
+
+class _ActionButtonState extends State<_ActionButton> with TickerProviderStateMixin {
+  bool _isHovered = false;
+  late AnimationController _scaleController;
+  late Animation<double> _scaleAnimation;
+
+  @override
+  void initState() {
+    super.initState();
+    _scaleController = AnimationController(
+      duration: const Duration(milliseconds: 500),
+      vsync: this,
+    );
+    _scaleAnimation = Tween<double>(begin: 1.0, end: 1.15).animate(
+      CurvedAnimation(parent: _scaleController, curve: Curves.elasticOut),
+    );
+  }
+
+  @override
+  void didUpdateWidget(_ActionButton oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (widget.isLiked && !oldWidget.isLiked) {
+      _scaleController.forward().then((_) {
+        _scaleController.reverse();
+      });
+    }
+  }
+
+  @override
+  void dispose() {
+    _scaleController.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
-    return InkWell(
-      onTap: () {},
-      borderRadius: BorderRadius.circular(ShadcnRadius.full),
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: ShadcnSpacing.sm, vertical: ShadcnSpacing.xs),
-        child: Row(
-          children: [
-            Icon(icon, size: 20, color: ShadcnColors.mutedForeground),
-            if (count != null && count! > 0) ...[
-              const SizedBox(width: 4),
-              Text(
-                formatCount(count!),
-                style: const TextStyle(fontSize: 13, color: ShadcnColors.mutedForeground),
-              ),
-            ],
-          ],
+    return MouseRegion(
+      onEnter: (_) => setState(() => _isHovered = true),
+      onExit: (_) => setState(() => _isHovered = false),
+      child: InkWell(
+        onTap: widget.onTap ?? () {},
+        borderRadius: BorderRadius.circular(ShadcnRadius.full),
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 200),
+          padding: const EdgeInsets.symmetric(horizontal: ShadcnSpacing.sm, vertical: ShadcnSpacing.xs),
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(ShadcnRadius.full),
+            color: _isHovered ? ShadcnColors.secondary.withValues(alpha: 0.5) : Colors.transparent,
+          ),
+          child: ScaleTransition(
+            scale: _scaleAnimation,
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(
+                  widget.isLikeButton && widget.isLiked ? Icons.favorite : widget.icon,
+                  size: 20,
+                  color: widget.isLikeButton && widget.isLiked
+                      ? const Color(0xFFEF4444)
+                      : (_isHovered ? ShadcnColors.foreground : ShadcnColors.mutedForeground),
+                ),
+                if (widget.count != null && widget.count! > 0) ...[
+                  const SizedBox(width: 6),
+                  Text(
+                    formatCount(widget.count!),
+                    style: const TextStyle(fontSize: 13, color: ShadcnColors.mutedForeground),
+                  ),
+                ],
+              ],
+            ),
+          ),
         ),
       ),
     );

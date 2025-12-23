@@ -27,9 +27,9 @@ class _MainScreenState extends State<MainScreen> {
   void _onItemTapped(int index) {
     if (index == 2) {
       // TODO: Open Create Post modal
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Open Create Post Modal')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('Open Create Post Modal')));
       return;
     }
     setState(() {
@@ -59,10 +59,7 @@ class _MainScreenState extends State<MainScreen> {
                   child: Column(
                     children: [
                       const SizedBox(height: ShadcnSpacing.xl),
-                      // Logo or Top Icon
-                      const Icon(Icons.flutter_dash, size: 32, color: ShadcnColors.primary),
-                      const SizedBox(height: ShadcnSpacing.xl2),
-                      
+
                       // Nav Items
                       _NavBarItem(
                         icon: Icons.home_outlined,
@@ -78,10 +75,12 @@ class _MainScreenState extends State<MainScreen> {
                         onTap: () => _onItemTapped(1),
                         isSidebar: true,
                       ),
-                      
+
                       // Create Button (Sidebar style)
                       Padding(
-                        padding: const EdgeInsets.symmetric(vertical: ShadcnSpacing.lg),
+                        padding: const EdgeInsets.symmetric(
+                          vertical: ShadcnSpacing.lg,
+                        ),
                         child: GestureDetector(
                           onTap: () => _onItemTapped(2),
                           child: Container(
@@ -114,7 +113,7 @@ class _MainScreenState extends State<MainScreen> {
                         onTap: () => _onItemTapped(4),
                         isSidebar: true,
                       ),
-                      
+
                       const Spacer(),
                       // Bottom/Spacer items could go here
                       const SizedBox(height: ShadcnSpacing.xl),
@@ -126,10 +125,15 @@ class _MainScreenState extends State<MainScreen> {
                 Expanded(
                   child: Center(
                     child: Container(
-                      constraints: const BoxConstraints(maxWidth: 900), // Max width for content
+                      constraints: const BoxConstraints(
+                        maxWidth: 900,
+                      ), // Max width for content
                       decoration: BoxDecoration(
                         border: const Border.symmetric(
-                          vertical: BorderSide(color: ShadcnColors.border, width: 0.5),
+                          vertical: BorderSide(
+                            color: ShadcnColors.border,
+                            width: 0.5,
+                          ),
                         ),
                       ),
                       child: IndexedStack(
@@ -146,18 +150,12 @@ class _MainScreenState extends State<MainScreen> {
 
         // Mobile Layout (Bottom Navigation)
         return Scaffold(
-          body: IndexedStack(
-            index: _selectedIndex,
-            children: _screens,
-          ),
+          body: IndexedStack(index: _selectedIndex, children: _screens),
           bottomNavigationBar: Container(
             decoration: const BoxDecoration(
               color: ShadcnColors.background,
               border: Border(
-                top: BorderSide(
-                  color: ShadcnColors.border,
-                  width: 1.0,
-                ),
+                top: BorderSide(color: ShadcnColors.border, width: 1.0),
               ),
             ),
             padding: const EdgeInsets.only(
@@ -238,14 +236,14 @@ class _NavBarItem extends StatelessWidget {
       onTap: onTap,
       behavior: HitTestBehavior.opaque,
       child: Padding(
-        padding: isSidebar 
-          ? const EdgeInsets.symmetric(vertical: ShadcnSpacing.lg) 
-          : const EdgeInsets.all(ShadcnSpacing.sm),
+        padding: isSidebar
+            ? const EdgeInsets.symmetric(vertical: ShadcnSpacing.lg)
+            : const EdgeInsets.all(ShadcnSpacing.sm),
         child: Icon(
           isSelected ? selectedIcon : icon,
           size: 28, // Slightly larger icons
-          color: isSelected 
-              ? ShadcnColors.foreground 
+          color: isSelected
+              ? ShadcnColors.foreground
               : ShadcnColors.mutedForeground,
         ),
       ),
