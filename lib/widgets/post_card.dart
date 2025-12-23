@@ -3,51 +3,76 @@ import '../config/shadcn_theme.dart';
 import '../widgets/shadcn/shadcn_avatar.dart';
 import '../widgets/post_actions_bar.dart';
 import '../models/post.dart';
+import '../utils/theme_constants.dart';
+import '../utils/time_formatter.dart';
 
-/// 帖子卡片组件
+/// 帖子卡片组件 - 展示单个帖子的完整信息
+///
+/// 包含用户信息、帖子内容、图片、操作栏等
 class PostCard extends StatefulWidget {
+  /// 帖子数据模型
   final Post post;
+
+  /// 卡片点击回调
   final VoidCallback onTap;
 
-  const PostCard({super.key, required this.post, required this.onTap});
+  /// 点赞状态变更回调
+  final ValueChanged<bool>? onLikeChanged;
+
+  /// 更多操作菜单回调
+  final VoidCallback? onMoreTapped;
+
+  const PostCard({
+    super.key,
+    required this.post,
+    required this.onTap,
+    this.onLikeChanged,
+    this.onMoreTapped,
+  });
 
   @override
   State<PostCard> createState() => _PostCardState();
 }
 
-class _PostCardState extends State<PostCard> with TickerProviderStateMixin {
-  /// 是否点赞
-  late bool _isLiked;
+class _PostCardState extends State<PostCard> {
+  /// 当前点赞状态（来自 Post 模型）
+  late bool _postIsLiked;
 
-  /// 点赞动画控制器
-  late AnimationController _likeAnimationController;
+  /// 当前点赞数（支持乐观更新）
+  late int _currentLikeCount;
 
   @override
   void initState() {
     super.initState();
-    _isLiked = false;
-    _likeAnimationController = AnimationController(
-      duration: const Duration(milliseconds: 600),
-      vsync: this,
-    );
+    _postIsLiked = widget.post.isLiked;
+    _currentLikeCount = widget.post.likesCount;
   }
 
   @override
-  void dispose() {
-    _likeAnimationController.dispose();
-    super.dispose();
+  void didUpdateWidget(covariant PostCard oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (widget.post.id != oldWidget.post.id) {
+      _postIsLiked = widget.post.isLiked;
+      _currentLikeCount = widget.post.likesCount;
+    }
   }
 
-  /// 切换点赞状态
-  void _toggleLike() {
+  /// 处理点赞按钮点击
+  void _handleLikeTap() {
     setState(() {
-      _isLiked = !_isLiked;
+      _postIsLiked = !_postIsLiked;
+      // 乐观更新点赞计数
+      _currentLikeCount += _postIsLiked ? 1 : -1;
     });
-    if (_isLiked) {
-      _likeAnimationController.forward();
-    } else {
-      _likeAnimationController.reverse();
-    }
+
+    // 通知父组件点赞状态已改变
+    widget.onLikeChanged?.call(_postIsLiked);
+  }
+
+  /// 处理更多操作菜单
+  void _handleMoreTapped() {
+    widget.onMoreTapped?.call();
+    _showActionMenu(context);
   }
 
   @override
@@ -56,130 +81,31 @@ class _PostCardState extends State<PostCard> with TickerProviderStateMixin {
       onTap: widget.onTap,
       child: Padding(
         padding: const EdgeInsets.symmetric(
-          horizontal: ShadcnSpacing.lg,
-          vertical: ShadcnSpacing.md,
+          horizontal: PostThemeConstants.postCardPaddingHorizontal,
+          vertical: PostThemeConstants.postCardPaddingVertical,
         ),
         child: Row(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            /// 左侧：头像
-            ShadcnAvatar(
-              avatarUrl: widget.post.authorAvatarUrl,
-              fallbackInitials: widget.post.author,
-              size: 40,
-            ),
+            /// 左侧：用户头像
+            _buildUserAvatar(),
             const SizedBox(width: ShadcnSpacing.md),
 
-            /// 右侧：内容
+            /// 右侧：主要内容
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  /// 标题栏：用户名 + 用户句柄 + 时间
-                  Stack(
-                    children: [
-                      Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Row(
-                            children: [
-                              Text(
-                                widget.post.author,
-                                style: const TextStyle(
-                                  fontWeight: FontWeight.w600,
-                                  fontSize: 15,
-                                  color: ShadcnColors.foreground,
-                                ),
-                              ),
-                              const SizedBox(width: ShadcnSpacing.xs),
-                              Flexible(
-                                child: Text(
-                                  widget.post.authorHandle,
-                                  style: const TextStyle(
-                                    color: ShadcnColors.mutedForeground,
-                                    fontSize: 14,
-                                  ),
-                                  overflow: TextOverflow.ellipsis,
-                                ),
-                              ),
-                            ],
-                          ),
-                          const SizedBox(height: 2),
-                          Row(
-                            children: [
-                              Text(
-                                _getRelativeTime(widget.post.timestamp),
-                                style: const TextStyle(
-                                  color: Color(0xAA999999),
-                                  fontSize: 11,
-                                  fontWeight: FontWeight.w400,
-                                ),
-                              ),
-                              Padding(
-                                padding: const EdgeInsets.symmetric(
-                                  horizontal: 6,
-                                ),
-                                child: SizedBox(
-                                  width: 12,
-                                  height: 1,
-                                  child: CustomPaint(
-                                    painter: _DotSeparatorPainter(),
-                                  ),
-                                ),
-                              ),
-                              Expanded(
-                                child: Text(
-                                  _getAbsoluteTime(widget.post.timestamp),
-                                  style: const TextStyle(
-                                    color: Color(0xAA999999),
-                                    fontSize: 11,
-                                    fontWeight: FontWeight.w400,
-                                  ),
-                                  maxLines: 1,
-                                  overflow: TextOverflow.ellipsis,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ],
-                      ),
-                      Positioned(
-                        right: 16,
-                        top: 0,
-                        bottom: 0,
-                        child: GestureDetector(
-                          onTap: () => _showActionMenu(context),
-                          child: const Icon(
-                            Icons.more_horiz,
-                            size: 20,
-                            color: ShadcnColors.mutedForeground,
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
+                  /// 标题栏：用户名、句柄、时间、更多菜单
+                  _buildHeaderRow(),
                   const SizedBox(height: 8),
 
-                  /// 帖子内容
-                  Text(
-                    widget.post.content,
-                    style: const TextStyle(
-                      fontSize: 15,
-                      color: ShadcnColors.foreground,
-                      height: 1.4,
-                    ),
-                  ),
+                  /// 帖子文本内容
+                  _buildContentText(),
                   const SizedBox(height: 12),
 
-                  /// 操作栏
-                  PostActionsBar(
-                    likesCount: widget.post.likesCount,
-                    commentsCount: widget.post.commentsCount,
-                    repostsCount: widget.post.repostsCount,
-                    initiallyLiked: _isLiked,
-                    onLikeToggle: _toggleLike,
-                    responsive: true,
-                  ),
+                  /// 操作栏（点赞、评论、转发等）
+                  _buildActionsBar(),
                 ],
               ),
             ),
@@ -189,68 +115,189 @@ class _PostCardState extends State<PostCard> with TickerProviderStateMixin {
     );
   }
 
+  /// 构建用户头像
+  Widget _buildUserAvatar() {
+    return ShadcnAvatar(
+      avatarUrl: widget.post.authorAvatarUrl,
+      fallbackInitials: widget.post.author,
+      size: PostThemeConstants.postAvatarSize,
+    );
+  }
+
+  /// 构建头部信息行（用户名、句柄、时间、菜单）
+  Widget _buildHeaderRow() {
+    return Stack(
+      children: [
+        Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            /// 用户名和句柄
+            _buildAuthorInfo(),
+            const SizedBox(height: 2),
+
+            /// 时间信息
+            _buildTimestampInfo(),
+          ],
+        ),
+
+        /// 更多操作菜单按钮
+        Positioned(
+          right: 0,
+          top: 0,
+          child: GestureDetector(
+            onTap: _handleMoreTapped,
+            child: const Padding(
+              padding: EdgeInsets.all(4.0),
+              child: Icon(
+                Icons.more_horiz,
+                size: 20,
+                color: ThemeConstants.iconColorMuted,
+              ),
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  /// 构建作者信息（用户名和句柄）
+  Widget _buildAuthorInfo() {
+    return Row(
+      children: [
+        Text(widget.post.author, style: PostThemeConstants.postAuthorNameStyle),
+        const SizedBox(width: ShadcnSpacing.xs),
+        Flexible(
+          child: Text(
+            widget.post.authorHandle,
+            style: PostThemeConstants.postAuthorHandleStyle,
+            overflow: TextOverflow.ellipsis,
+          ),
+        ),
+      ],
+    );
+  }
+
+  /// 构建时间戳信息（相对时间和绝对时间）
+  Widget _buildTimestampInfo() {
+    final relativeTime = TimeFormatter.formatRelativeTime(
+      widget.post.timestamp,
+    );
+    final absoluteTime = TimeFormatter.formatAbsoluteTime(
+      widget.post.timestamp,
+    );
+
+    return Row(
+      children: [
+        Text(relativeTime, style: PostThemeConstants.postTimestampStyle),
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: ShadcnSpacing.xs),
+          child: Container(
+            width: 12,
+            height: 1,
+            color: ThemeConstants.separatorColor,
+          ),
+        ),
+        Expanded(
+          child: Text(
+            absoluteTime,
+            style: PostThemeConstants.postTimestampStyle,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+          ),
+        ),
+      ],
+    );
+  }
+
+  /// 构建帖子内容文本
+  Widget _buildContentText() {
+    return Text(
+      widget.post.content,
+      style: PostThemeConstants.postContentStyle,
+    );
+  }
+
+  /// 构建操作栏
+  Widget _buildActionsBar() {
+    return PostActionsBar(
+      likesCount: _currentLikeCount,
+      commentsCount: widget.post.commentsCount,
+      repostsCount: widget.post.repostsCount,
+      bookmarksCount: widget.post.bookmarksCount,
+      sharesCount: widget.post.sharesCount,
+      initiallyLiked: _postIsLiked,
+      onLikeToggle: _handleLikeTap,
+      responsive: true,
+    );
+  }
+
   /// 显示更多操作菜单
   void _showActionMenu(BuildContext context) {
     showModalBottomSheet(
       context: context,
-      backgroundColor: ShadcnColors.background,
+      backgroundColor: PostThemeConstants.postBackgroundColor,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(
           top: Radius.circular(ShadcnRadius.xl),
         ),
       ),
-      builder: (context) => SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.symmetric(vertical: ShadcnSpacing.lg),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              _buildActionItem(
-                context,
-                '对此帖子不感兴趣',
-                Icons.visibility_off_outlined,
-              ),
-              _buildActionItem(
-                context,
-                '取消关注 ${widget.post.author}',
-                Icons.person_remove_outlined,
-              ),
-              _buildActionItem(
-                context,
-                '单向隐藏 ${widget.post.author}',
-                Icons.block_outlined,
-              ),
-              _buildActionItem(
-                context,
-                '双向屏蔽 ${widget.post.author}',
-                Icons.do_not_disturb_on_outlined,
-                isDestructive: true,
-              ),
-              const Divider(height: 1, color: ShadcnColors.border),
-              _buildActionItem(
-                context,
-                '举报帖子',
-                Icons.report_gmailerrorred_outlined,
-                isDestructive: true,
-              ),
-            ],
-          ),
+      builder: (context) => _buildActionMenuSheet(context),
+    );
+  }
+
+  /// 构建操作菜单 Sheet
+  Widget _buildActionMenuSheet(BuildContext context) {
+    return SafeArea(
+      child: Padding(
+        padding: const EdgeInsets.symmetric(vertical: ShadcnSpacing.lg),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            _buildActionMenuItem(
+              context,
+              '对此帖子不感兴趣',
+              Icons.visibility_off_outlined,
+            ),
+            _buildActionMenuItem(
+              context,
+              '取消关注 ${widget.post.author}',
+              Icons.person_remove_outlined,
+            ),
+            _buildActionMenuItem(
+              context,
+              '单向隐藏 ${widget.post.author}',
+              Icons.block_outlined,
+            ),
+            _buildActionMenuItem(
+              context,
+              '双向屏蔽 ${widget.post.author}',
+              Icons.do_not_disturb_on_outlined,
+              isDestructive: true,
+            ),
+            const Divider(height: 1, color: PostThemeConstants.postBorderColor),
+            _buildActionMenuItem(
+              context,
+              '举报帖子',
+              Icons.report_gmailerrorred_outlined,
+              isDestructive: true,
+            ),
+          ],
         ),
       ),
     );
   }
 
-  /// 构建操作菜单项
-  Widget _buildActionItem(
+  /// 构建单个菜单项
+  Widget _buildActionMenuItem(
     BuildContext context,
-    String title,
+    String label,
     IconData icon, {
     bool isDestructive = false,
   }) {
     return InkWell(
       onTap: () {
         Navigator.pop(context);
-        // Implement action logic here
+        // TODO: 实现具体的操作逻辑
       },
       child: Padding(
         padding: const EdgeInsets.symmetric(
@@ -261,20 +308,20 @@ class _PostCardState extends State<PostCard> with TickerProviderStateMixin {
           children: [
             Icon(
               icon,
-              size: 24,
+              size: ThemeConstants.iconSizeLarge,
               color: isDestructive
-                  ? ShadcnColors.destructive
-                  : ShadcnColors.foreground,
+                  ? ThemeConstants.errorColor
+                  : ThemeConstants.enabledColor,
             ),
             const SizedBox(width: ShadcnSpacing.lg),
             Text(
-              title,
+              label,
               style: TextStyle(
                 fontSize: 16,
                 fontWeight: FontWeight.w500,
                 color: isDestructive
-                    ? ShadcnColors.destructive
-                    : ShadcnColors.foreground,
+                    ? ThemeConstants.errorColor
+                    : ThemeConstants.enabledColor,
               ),
             ),
           ],
@@ -282,93 +329,4 @@ class _PostCardState extends State<PostCard> with TickerProviderStateMixin {
       ),
     );
   }
-
-  /// 计算时间差显示（如"5分钟前"或具体时间）
-  String _getRelativeTime(DateTime date) {
-    final now = DateTime.now();
-    final diff = now.difference(date);
-
-    if (diff.inHours < 24) {
-      return '${diff.inHours} 小时前';
-    }
-
-    if (diff.inDays < 7) {
-      return '${diff.inDays} 天前';
-    }
-
-    if (diff.inDays < 30) {
-      final weeks = (diff.inDays / 7).floor();
-      return '$weeks 周前';
-    }
-
-    if (diff.inDays < 365) {
-      final months = (diff.inDays / 30).floor();
-      return '$months 个月前';
-    }
-
-    final years = (diff.inDays / 365).floor();
-    return '$years 年前';
-  }
-
-  String _getAbsoluteTime(DateTime date) {
-    final weekDays = ['周一', '周二', '周三', '周四', '周五', '周六', '周日'];
-    final weekDay = weekDays[date.weekday - 1];
-    return '${date.month}月${date.day}日 $weekDay ${date.hour}:${date.minute.toString().padLeft(2, '0')}';
-  }
-
-  String timeAgo(DateTime date) {
-    final now = DateTime.now();
-    final diff = now.difference(date);
-    final weekDays = ['周一', '周二', '周三', '周四', '周五', '周六', '周日'];
-    final weekDay = weekDays[date.weekday - 1];
-    final timeStr =
-        '${date.month}月${date.day}日 $weekDay ${date.hour}:${date.minute.toString().padLeft(2, '0')}';
-
-    if (diff.inHours < 24) {
-      // 一天内的帖子
-      return '${diff.inHours} 小时前 · $timeStr';
-    }
-
-    if (diff.inDays < 7) {
-      // 一周内的帖子
-      return '${diff.inDays} 天前 · $timeStr';
-    }
-
-    if (diff.inDays < 30) {
-      // 一月内的帖子
-      final weeks = (diff.inDays / 7).floor();
-      return '$weeks 周前 · $timeStr';
-    }
-
-    if (diff.inDays < 365) {
-      // 一年内的帖子
-      final months = (diff.inDays / 30).floor();
-      return '$months 个月前 · $timeStr';
-    }
-
-    // 一年外的帖子
-    final years = (diff.inDays / 365).floor();
-    return '$years 年前 · $timeStr';
-  }
-}
-
-/// 精致的点分隔符绘制器
-class _DotSeparatorPainter extends CustomPainter {
-  @override
-  void paint(Canvas canvas, Size size) {
-    final paint = Paint()
-      ..color = const Color(0xAA999999)
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = 0.8
-      ..strokeCap = StrokeCap.round;
-    canvas.drawLine(
-      Offset(0, size.height / 2),
-      Offset(size.width, size.height / 2),
-      paint,
-    );
-  }
-
-
-  @override
-  bool shouldRepaint(_DotSeparatorPainter oldDelegate) => false;
 }
