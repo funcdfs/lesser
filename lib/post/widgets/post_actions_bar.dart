@@ -2,7 +2,6 @@ import 'dart:math';
 import 'package:flutter/material.dart';
 import '../../theme/theme.dart';
 import '../../common/utils/number_formatter.dart';
-import '../../theme/theme.dart';
 import '../../common/utils/constants.dart';
 
 /// 帖子底部操作栏组件

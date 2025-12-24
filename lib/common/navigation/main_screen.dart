@@ -5,8 +5,9 @@ import '../../post/screens/post_screen.dart';
 import '../../chat/screens/chat_screen.dart';
 import '../../profile/screens/profile_screen.dart';
 import '../../theme/theme.dart';
+import '../../home/widgets/navigation_bar.dart';
 
-/// 应用程序主外壳屏幕
+/// 应用程序主框架屏幕
 ///
 /// 负责处理：
 /// 1. 底部导航栏（移动端）与侧边导航栏（桌面端）的切换。
@@ -34,7 +35,7 @@ class _MainScreenState extends State<MainScreen> {
 
   /// 处理导航项点击
   void _onItemTapped(int index) {
-    // 索引为 2 的是中心“发布”按钮，触发模态框
+    // 索引为 2 的是中心"发布"按钮，触发模态框
     if (index == 2) {
       showModalBottomSheet(
         context: context,
@@ -65,80 +66,14 @@ class _MainScreenState extends State<MainScreen> {
         // 当宽度大于等于 640 时，使用桌面/平板布局
         if (constraints.maxWidth >= 640) {
           return Scaffold(
-            backgroundColor: ShadcnColors.background,
+            backgroundColor: AppColors.background,
             body: Row(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                // 左侧导航栏 (Sidebar)
-                Container(
-                  width: 88, // 侧边栏固定宽度
-                  decoration: const BoxDecoration(
-                    border: Border(
-                      right: BorderSide(color: ShadcnColors.border),
-                    ),
-                  ),
-                  child: Column(
-                    children: [
-                      const SizedBox(height: ShadcnSpacing.xl),
-
-                      // 导航项
-                      _NavBarItem(
-                        icon: Icons.home_outlined,
-                        selectedIcon: Icons.home,
-                        isSelected: _selectedIndex == 0,
-                        onTap: () => _onItemTapped(0),
-                        isSidebar: true,
-                      ),
-                      _NavBarItem(
-                        icon: Icons.search,
-                        selectedIcon: Icons.search,
-                        isSelected: _selectedIndex == 1,
-                        onTap: () => _onItemTapped(1),
-                        isSidebar: true,
-                      ),
-
-                      // 侧边栏风格的发布按钮
-                      Padding(
-                        padding: const EdgeInsets.symmetric(
-                          vertical: ShadcnSpacing.lg,
-                        ),
-                        child: GestureDetector(
-                          onTap: () => _onItemTapped(2),
-                          child: Container(
-                            width: 48,
-                            height: 48,
-                            decoration: BoxDecoration(
-                              color: ShadcnColors.foreground,
-                              borderRadius: BorderRadius.circular(24),
-                            ),
-                            child: const Icon(
-                              Icons.add,
-                              color: ShadcnColors.background,
-                              size: 28,
-                            ),
-                          ),
-                        ),
-                      ),
-
-                      _NavBarItem(
-                        icon: Icons.chat_bubble_outline,
-                        selectedIcon: Icons.chat_bubble,
-                        isSelected: _selectedIndex == 3,
-                        onTap: () => _onItemTapped(3),
-                        isSidebar: true,
-                      ),
-                      _NavBarItem(
-                        icon: Icons.person_outline,
-                        selectedIcon: Icons.person,
-                        isSelected: _selectedIndex == 4,
-                        onTap: () => _onItemTapped(4),
-                        isSidebar: true,
-                      ),
-
-                      const Spacer(),
-                      const SizedBox(height: ShadcnSpacing.xl),
-                    ],
-                  ),
+                // 左侧导航栏 (Sidebar) - 使用导航栏组件
+                AppNavigationBar.sidebar(
+                  selectedIndex: _selectedIndex,
+                  onItemTapped: _onItemTapped,
                 ),
 
                 // 主内容区域（居中显示，并限制最大宽度）
@@ -149,7 +84,7 @@ class _MainScreenState extends State<MainScreen> {
                       decoration: BoxDecoration(
                         border: const Border.symmetric(
                           vertical: BorderSide(
-                            color: ShadcnColors.border,
+                            color: AppColors.border,
                             width: 0.5,
                           ),
                         ),
@@ -166,106 +101,15 @@ class _MainScreenState extends State<MainScreen> {
           );
         }
 
-        // 移动端布局 (带有底部导航栏)
+        // 移动端布局 (带有底部导航栏) - 使用导航栏组件
         return Scaffold(
           body: IndexedStack(index: _selectedIndex, children: _screens),
-          bottomNavigationBar: Container(
-            decoration: const BoxDecoration(
-              color: ShadcnColors.background,
-              border: Border(
-                top: BorderSide(color: ShadcnColors.border, width: 1.0),
-              ),
-            ),
-            padding: const EdgeInsets.only(
-              top: ShadcnSpacing.sm,
-              bottom: ShadcnSpacing.xl2, // 适配全面屏底部
-            ),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceAround,
-              children: [
-                _NavBarItem(
-                  icon: Icons.home_outlined,
-                  selectedIcon: Icons.home,
-                  isSelected: _selectedIndex == 0,
-                  onTap: () => _onItemTapped(0),
-                ),
-                _NavBarItem(
-                  icon: Icons.search,
-                  selectedIcon: Icons.search,
-                  isSelected: _selectedIndex == 1,
-                  onTap: () => _onItemTapped(1),
-                ),
-                // 中心加号发布按钮
-                GestureDetector(
-                  onTap: () => _onItemTapped(2),
-                  child: Container(
-                    width: 44,
-                    height: 44,
-                    decoration: BoxDecoration(
-                      color: ShadcnColors.foreground,
-                      borderRadius: BorderRadius.circular(ShadcnRadius.lg),
-                    ),
-                    child: const Icon(
-                      Icons.add,
-                      color: ShadcnColors.background,
-                      size: 24,
-                    ),
-                  ),
-                ),
-                _NavBarItem(
-                  icon: Icons.chat_bubble_outline,
-                  selectedIcon: Icons.chat_bubble,
-                  isSelected: _selectedIndex == 3,
-                  onTap: () => _onItemTapped(3),
-                ),
-                _NavBarItem(
-                  icon: Icons.person_outline,
-                  selectedIcon: Icons.person,
-                  isSelected: _selectedIndex == 4,
-                  onTap: () => _onItemTapped(4),
-                ),
-              ],
-            ),
+          bottomNavigationBar: AppNavigationBar.bottom(
+            selectedIndex: _selectedIndex,
+            onItemTapped: _onItemTapped,
           ),
         );
       },
-    );
-  }
-}
-
-/// 内部使用的导航项组件
-class _NavBarItem extends StatelessWidget {
-  final IconData icon;
-  final IconData selectedIcon;
-  final bool isSelected;
-  final VoidCallback onTap;
-  final bool isSidebar;
-
-  const _NavBarItem({
-    required this.icon,
-    required this.selectedIcon,
-    required this.isSelected,
-    required this.onTap,
-    this.isSidebar = false,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: onTap,
-      behavior: HitTestBehavior.opaque,
-      child: Padding(
-        padding: isSidebar
-            ? const EdgeInsets.symmetric(vertical: ShadcnSpacing.lg)
-            : const EdgeInsets.all(ShadcnSpacing.sm),
-        child: Icon(
-          isSelected ? selectedIcon : icon,
-          size: 28,
-          color: isSelected
-              ? ShadcnColors.foreground
-              : ShadcnColors.mutedForeground,
-        ),
-      ),
     );
   }
 }
