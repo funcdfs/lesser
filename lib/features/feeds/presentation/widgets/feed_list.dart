@@ -25,13 +25,9 @@ class FeedList extends StatefulWidget {
   /// 可选的滚动控制器，如果不提供，ListView 将由上层（如 NestedScrollView）管理
   final ScrollController? controller;
 
-  /// 分段导航控制器，用于在局部 NestedScrollView 中渲染 TabBar
-  final TabController tabController;
-
   const FeedList({
     super.key,
     required this.feedType,
-    required this.tabController,
     this.header,
     this.controller,
   });
@@ -153,132 +149,55 @@ class _FeedListState extends State<FeedList>
 
     return Stack(
       children: [
-        NestedScrollView(
-          key: PageStorageKey<String>(widget.feedType), // 关键：持久化滚动位置
-          headerSliverBuilder: (context, innerBoxIsScrolled) {
-            return [
-              SliverOverlapAbsorber(
+        NotificationListener<ScrollNotification>(
+          onNotification: _handleScrollNotification,
+          child: CustomScrollView(
+            key: PageStorageKey<String>(widget.feedType), // 关键：持久化滚动位置
+            controller: widget.controller,
+            physics: const BouncingScrollPhysics(
+              parent: AlwaysScrollableScrollPhysics(),
+            ),
+            slivers: [
+              // 关键：注入重叠区域，解决 NestedScrollView 头部浮动时的位置补偿
+              SliverOverlapInjector(
                 handle: NestedScrollView.sliverOverlapAbsorberHandleFor(
                   context,
                 ),
-                sliver: SliverAppBar(
-                  backgroundColor: Colors.transparent, // 透明以支持玻璃拟态
-                  elevation: 0,
-                  scrolledUnderElevation: 0,
-                  toolbarHeight: 0,
-                  floating: true,
-                  snap: true,
-                  pinned: false,
-                  forceElevated: innerBoxIsScrolled,
-                  bottom: PreferredSize(
-                    preferredSize: const Size.fromHeight(48.5),
-                    child: ClipRRect(
-                      child: BackdropFilter(
-                        filter: ImageFilter.blur(sigmaX: 12, sigmaY: 12),
-                        child: Container(
-                          height: 48.5,
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: AppSpacing.lg,
-                          ),
-                          decoration: BoxDecoration(
-                            color: AppColors.background.withValues(alpha: 0.8),
-                            border: const Border(
-                              bottom: BorderSide(
-                                color: AppColors.border,
-                                width: 0.5,
-                              ),
-                            ),
-                          ),
-                          child: TabBar(
-                            controller: widget.tabController,
-                            isScrollable: true,
-                            tabAlignment: TabAlignment.center,
-                            dividerColor: Colors.transparent,
-                            indicatorColor: AppColors.primary,
-                            indicatorSize: TabBarIndicatorSize.label,
-                            indicatorWeight: 3,
-                            indicatorPadding: const EdgeInsets.only(top: 44),
-                            labelColor: AppColors.primary,
-                            unselectedLabelColor: AppColors.mutedForeground,
-                            labelStyle: const TextStyle(
-                              fontSize: 16,
-                              fontWeight: FontWeight.w700,
-                              letterSpacing: -0.2,
-                            ),
-                            unselectedLabelStyle: const TextStyle(
-                              fontSize: 16,
-                              fontWeight: FontWeight.w500,
-                              letterSpacing: -0.2,
-                            ),
-                            overlayColor: WidgetStateProperty.all(
-                              Colors.transparent,
-                            ),
-                            tabs: const [
-                              Tab(text: '推荐'),
-                              Tab(text: '关注'),
-                            ],
-                          ),
-                        ),
-                      ),
-                    ),
-                  ),
-                ),
               ),
-            ];
-          },
-          body: Builder(
-            builder: (context) {
-              return NotificationListener<ScrollNotification>(
-                onNotification: _handleScrollNotification,
-                child: CustomScrollView(
-                  controller: widget.controller,
-                  physics: const BouncingScrollPhysics(
-                    parent: AlwaysScrollableScrollPhysics(),
-                  ),
-                  slivers: [
-                    // 关键：注入重叠区域，解决 NestedScrollView 头部浮动时的位置补偿
-                    SliverOverlapInjector(
-                      handle: NestedScrollView.sliverOverlapAbsorberHandleFor(
-                        context,
-                      ),
+
+              // 列表头部（如果存在）
+              if (widget.header != null)
+                SliverToBoxAdapter(child: widget.header!),
+
+              if (_isLoading)
+                // 加载中：展示骨架屏 SliverList
+                SliverList(
+                  delegate: SliverChildBuilderDelegate(
+                    (context, index) => const Padding(
+                      padding: EdgeInsets.symmetric(vertical: 0),
+                      child: FeedsCardSkeleton(),
                     ),
-
-                    // 列表头部（如果存在）
-                    if (widget.header != null)
-                      SliverToBoxAdapter(child: widget.header!),
-
-                    if (_isLoading)
-                      // 加载中：展示骨架屏 SliverList
-                      SliverList(
-                        delegate: SliverChildBuilderDelegate(
-                          (context, index) => const Padding(
-                            padding: EdgeInsets.symmetric(vertical: 0),
-                            child: FeedsCardSkeleton(),
-                          ),
-                          childCount: 5,
+                    childCount: 5,
+                  ),
+                )
+              else
+                // 加载完成：展示实际帖子 SliverList
+                SliverList(
+                  delegate: SliverChildBuilderDelegate(
+                    (context, index) {
+                      final post = mockPosts[index % mockPosts.length];
+                      return _AnimatedPostItem(
+                        index: index,
+                        child: PostCard(
+                          post: post,
+                          onTap: () => _navigateToDetail(post),
                         ),
-                      )
-                    else
-                      // 加载完成：展示实际帖子 SliverList
-                      SliverList(
-                        delegate: SliverChildBuilderDelegate(
-                          (context, index) {
-                            final post = mockPosts[index % mockPosts.length];
-                            return _AnimatedPostItem(
-                              index: index,
-                              child: PostCard(
-                                post: post,
-                                onTap: () => _navigateToDetail(post),
-                              ),
-                            );
-                          },
-                          childCount: mockPosts.length + 20, // 增加页数模拟
-                        ),
-                      ),
-                  ],
+                      );
+                    },
+                    childCount: mockPosts.length + 20, // 增加页数模拟
+                  ),
                 ),
-              );
-            },
+            ],
           ),
         ),
 

@@ -1,3 +1,4 @@
+import 'dart:ui';
 import 'package:flutter/material.dart';
 import '../../../../shared/theme/theme.dart';
 import 'feed_screen.dart';
@@ -36,16 +37,83 @@ class _HomeScreenState extends State<HomeScreen>
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: AppColors.background,
-      body: SafeArea(
-        top: false,
-        bottom: false,
-        child: TabBarView(
+      body: NestedScrollView(
+        headerSliverBuilder: (context, innerBoxIsScrolled) {
+          return [
+            SliverOverlapAbsorber(
+              handle: NestedScrollView.sliverOverlapAbsorberHandleFor(context),
+              sliver: SliverAppBar(
+                backgroundColor: Colors.transparent,
+                elevation: 0,
+                scrolledUnderElevation: 0,
+                toolbarHeight: 0,
+                floating: true,
+                snap: true,
+                pinned: false,
+                forceElevated: innerBoxIsScrolled,
+                bottom: PreferredSize(
+                  preferredSize: const Size.fromHeight(48.5),
+                  child: ClipRRect(
+                    child: BackdropFilter(
+                      filter: ImageFilter.blur(sigmaX: 12, sigmaY: 12),
+                      child: Container(
+                        height: 48.5,
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: AppSpacing.lg,
+                        ),
+                        decoration: BoxDecoration(
+                          color: AppColors.background.withValues(alpha: 0.8),
+                          border: const Border(
+                            bottom: BorderSide(
+                              color: AppColors.border,
+                              width: 0.5,
+                            ),
+                          ),
+                        ),
+                        child: TabBar(
+                          controller: _tabController,
+                          isScrollable: true,
+                          tabAlignment: TabAlignment.center,
+                          dividerColor: Colors.transparent,
+                          indicatorColor: AppColors.primary,
+                          indicatorSize: TabBarIndicatorSize.label,
+                          indicatorWeight: 3,
+                          indicatorPadding: const EdgeInsets.only(top: 44),
+                          labelColor: AppColors.primary,
+                          unselectedLabelColor: AppColors.mutedForeground,
+                          labelStyle: const TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.w700,
+                            letterSpacing: -0.2,
+                          ),
+                          unselectedLabelStyle: const TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.w500,
+                            letterSpacing: -0.2,
+                          ),
+                          overlayColor: WidgetStateProperty.all(
+                            Colors.transparent,
+                          ),
+                          tabs: const [
+                            Tab(text: '推荐'),
+                            Tab(text: '关注'),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          ];
+        },
+        body: TabBarView(
           controller: _tabController,
           children: [
             // 推荐信息流
-            FeedScreen(tabController: _tabController),
+            FeedScreen(),
             // 关注信息流
-            FollowingFeedScreen(tabController: _tabController),
+            FollowingFeedScreen(),
           ],
         ),
       ),

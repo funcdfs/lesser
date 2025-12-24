@@ -6,8 +6,7 @@ import '../widgets/stories_bar.dart';
 ///
 /// 显示用户关注的人发布的帖子
 class FollowingFeedScreen extends StatefulWidget {
-  final TabController tabController;
-  const FollowingFeedScreen({super.key, required this.tabController});
+  const FollowingFeedScreen({super.key});
 
   @override
   State<FollowingFeedScreen> createState() => _FollowingFeedScreenState();
@@ -16,10 +15,6 @@ class FollowingFeedScreen extends StatefulWidget {
 class _FollowingFeedScreenState extends State<FollowingFeedScreen> {
   @override
   Widget build(BuildContext context) {
-    return FeedList(
-      feedType: 'following',
-      header: const StoriesBar(),
-      tabController: widget.tabController,
-    );
+    return const FeedList(feedType: 'following', header: StoriesBar());
   }
 }

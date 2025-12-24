@@ -5,8 +5,7 @@ import '../widgets/feed_list.dart';
 ///
 /// 显示根据算法推荐的帖子列表
 class FeedScreen extends StatefulWidget {
-  final TabController tabController;
-  const FeedScreen({super.key, required this.tabController});
+  const FeedScreen({super.key});
 
   @override
   State<FeedScreen> createState() => _FeedScreenState();
@@ -15,6 +14,6 @@ class FeedScreen extends StatefulWidget {
 class _FeedScreenState extends State<FeedScreen> {
   @override
   Widget build(BuildContext context) {
-    return FeedList(feedType: 'trending', tabController: widget.tabController);
+    return const FeedList(feedType: 'trending');
   }
 }
