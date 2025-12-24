@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import '../../../../shared/data/mock_data.dart';
 import '../../../../shared/models/post.dart';
 import '../../../../shared/theme/theme.dart';
-// import '../detail_screen.dart';
+import '../screens/post_detail_screen.dart';
 import 'feeds_card_skeleton.dart';
 import 'post_card.dart';
 
@@ -109,10 +109,34 @@ class _FeedListState extends State<FeedList>
 
   /// 跳转至详情页
   void _navigateToDetail(Post post) {
-    // Navigator.push(
-    //   context,
-    //   MaterialPageRoute(builder: (context) => DetailScreen(post: post)),
-    // );
+    showGeneralDialog(
+      context: context,
+      barrierDismissible: true,
+      barrierLabel: 'Close',
+      barrierColor: Colors.black54,
+      transitionDuration: const Duration(milliseconds: 300),
+      useRootNavigator: false, // 关键：使其在内容区域内显示，不覆盖侧边栏/底栏
+      pageBuilder: (context, anim1, anim2) {
+        return Center(
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 650, maxHeight: 850),
+            child: ClipRRect(
+              borderRadius: BorderRadius.circular(20),
+              child: PostDetailScreen(post: post),
+            ),
+          ),
+        );
+      },
+      transitionBuilder: (context, anim1, anim2, child) {
+        return ScaleTransition(
+          scale: Tween<double>(
+            begin: 0.9,
+            end: 1.0,
+          ).animate(CurvedAnimation(parent: anim1, curve: Curves.easeOutCubic)),
+          child: FadeTransition(opacity: anim1, child: child),
+        );
+      },
+    );
   }
 
   @override

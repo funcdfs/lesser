@@ -80,66 +80,9 @@ class _FeedsActionsBarState extends State<FeedsActionsBar> {
   }
 
   Widget _buildCompactLayout() {
-    return Column(
-      children: [
-        Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            FeedsActionButton(
-              icon: Icons.chat_bubble_outline,
-              count: widget.commentsCount,
-              onTap: widget.onComment,
-            ),
-            FeedsActionButton(
-              icon: Icons.repeat,
-              count: widget.repostsCount,
-              onTap: widget.onRepost,
-            ),
-            FeedsActionButton(
-              icon: Icons.favorite_border,
-              count:
-                  widget.likesCount +
-                  (_userLiked && !widget.initiallyLiked
-                      ? 1
-                      : (!_userLiked && widget.initiallyLiked ? -1 : 0)),
-              isLiked: _userLiked,
-              isLikeButton: true,
-              onTap: _handleLikeTap,
-            ),
-            Row(
-              children: [
-                if (widget.bookmarksCount != null)
-                  FeedsActionButton(
-                    icon: Icons.bookmark_outline,
-                    onTap: widget.onBookmark,
-                  ),
-                FeedsActionButton(
-                  icon: Icons.share_outlined,
-                  onTap: widget.onShare,
-                ),
-              ],
-            ),
-          ],
-        ),
-      ],
-    );
-  }
-
-  Widget _buildWideLayout() {
     return Row(
       children: [
-        FeedsActionButton(
-          icon: Icons.chat_bubble_outline,
-          count: widget.commentsCount,
-          onTap: widget.onComment,
-        ),
-        const SizedBox(width: AppSpacing.lg),
-        FeedsActionButton(
-          icon: Icons.repeat,
-          count: widget.repostsCount,
-          onTap: widget.onRepost,
-        ),
-        const SizedBox(width: AppSpacing.lg),
+        // Left group: Like, Comment, Repost
         FeedsActionButton(
           icon: Icons.favorite_border,
           count:
@@ -151,13 +94,62 @@ class _FeedsActionsBarState extends State<FeedsActionsBar> {
           isLikeButton: true,
           onTap: _handleLikeTap,
         ),
+        FeedsActionButton(
+          icon: Icons.chat_bubble_outline,
+          count: widget.commentsCount,
+          onTap: widget.onComment,
+        ),
+        FeedsActionButton(
+          icon: Icons.repeat,
+          count: widget.repostsCount,
+          onTap: widget.onRepost,
+        ),
         const Spacer(),
+        // Right group: Bookmark, Share
         if (widget.bookmarksCount != null)
           FeedsActionButton(
             icon: Icons.bookmark_outline,
             onTap: widget.onBookmark,
           ),
-        const SizedBox(width: AppSpacing.sm),
+        FeedsActionButton(icon: Icons.share_outlined, onTap: widget.onShare),
+      ],
+    );
+  }
+
+  Widget _buildWideLayout() {
+    return Row(
+      children: [
+        FeedsActionButton(
+          icon: Icons.favorite_border,
+          count:
+              widget.likesCount +
+              (_userLiked && !widget.initiallyLiked
+                  ? 1
+                  : (!_userLiked && widget.initiallyLiked ? -1 : 0)),
+          isLiked: _userLiked,
+          isLikeButton: true,
+          onTap: _handleLikeTap,
+        ),
+        const SizedBox(width: AppSpacing.lg),
+        FeedsActionButton(
+          icon: Icons.chat_bubble_outline,
+          count: widget.commentsCount,
+          onTap: widget.onComment,
+        ),
+        const SizedBox(width: AppSpacing.lg),
+        FeedsActionButton(
+          icon: Icons.repeat,
+          count: widget.repostsCount,
+          onTap: widget.onRepost,
+        ),
+        const Spacer(),
+        if (widget.bookmarksCount != null) ...[
+          FeedsActionButton(
+            icon: Icons.bookmark_outline,
+            onTap: widget.onBookmark,
+          ),
+          const SizedBox(width: AppSpacing.sm),
+        ],
         FeedsActionButton(icon: Icons.share_outlined, onTap: widget.onShare),
       ],
     );

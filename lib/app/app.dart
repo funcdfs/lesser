@@ -88,49 +88,81 @@ class _MainScreenState extends State<MainScreen> {
           return Scaffold(
             backgroundColor: shared_theme.AppColors.background,
             body: Row(
+              mainAxisAlignment: MainAxisAlignment.center,
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                // 左侧导航栏 (Sidebar)
+                // 左侧导航栏 (Sidebar) - 紧贴内容区域
                 SizedBox(
-                  width: 280,
-                  child: Scaffold(
-                    appBar: AppBar(title: const Text('Lesser'), elevation: 0),
-                    body: NavigationRail(
-                      selectedIndex: _selectedIndex,
-                      onDestinationSelected: _onItemTapped,
-                      destinations: const [
-                        NavigationRailDestination(
-                          icon: Icon(Icons.home),
-                          label: Text('Home'),
-                        ),
-                        NavigationRailDestination(
-                          icon: Icon(Icons.search),
-                          label: Text('Search'),
-                        ),
-                        NavigationRailDestination(
-                          icon: Icon(Icons.add_circle_outline),
-                          label: Text('Post'),
-                        ),
-                        NavigationRailDestination(
-                          icon: Icon(Icons.message),
-                          label: Text('Messages'),
-                        ),
-                        NavigationRailDestination(
-                          icon: Icon(Icons.person),
-                          label: Text('Profile'),
-                        ),
-                      ],
+                  height: double.infinity,
+                  child: NavigationRail(
+                    extended: constraints.maxWidth >= 1100,
+                    selectedIndex: _selectedIndex,
+                    onDestinationSelected: _onItemTapped,
+                    backgroundColor: Colors.transparent,
+                    indicatorColor: shared_theme.AppColors.primary.withValues(
+                      alpha: 0.1,
                     ),
+                    selectedIconTheme: const IconThemeData(
+                      color: shared_theme.AppColors.primary,
+                    ),
+                    unselectedIconTheme: const IconThemeData(
+                      color: shared_theme.AppColors.mutedForeground,
+                    ),
+                    leading: Padding(
+                      padding: const EdgeInsets.symmetric(
+                        vertical: 32,
+                        horizontal: 16,
+                      ),
+                      child: Text(
+                        'Lesser',
+                        style: TextStyle(
+                          fontSize: 26,
+                          fontWeight: FontWeight.bold,
+                          color: shared_theme.AppColors.primary,
+                        ),
+                      ),
+                    ),
+                    destinations: const [
+                      NavigationRailDestination(
+                        icon: Icon(Icons.home_outlined),
+                        selectedIcon: Icon(Icons.home),
+                        label: Text('Home'),
+                      ),
+                      NavigationRailDestination(
+                        icon: Icon(Icons.search_outlined),
+                        selectedIcon: Icon(Icons.search),
+                        label: Text('Search'),
+                      ),
+                      NavigationRailDestination(
+                        icon: Icon(Icons.add_circle_outline),
+                        label: Text('Post'),
+                      ),
+                      NavigationRailDestination(
+                        icon: Icon(Icons.message_outlined),
+                        selectedIcon: Icon(Icons.message),
+                        label: Text('Messages'),
+                      ),
+                      NavigationRailDestination(
+                        icon: Icon(Icons.person_outline),
+                        selectedIcon: Icon(Icons.person),
+                        label: Text('Profile'),
+                      ),
+                    ],
                   ),
                 ),
 
-                // 主内容区域
-                Expanded(
+                const VerticalDivider(width: 1, thickness: 1),
+
+                // 中间/主要内容区域 - 限制最大宽度以实现良好的阅读体验
+                const SizedBox(width: 40), // 增加侧边栏与内容之间的间距
+                ConstrainedBox(
+                  constraints: const BoxConstraints(maxWidth: 700),
                   child: IndexedStack(
                     index: _selectedIndex,
                     children: _screens,
                   ),
                 ),
+                const SizedBox(width: 40), // 右侧也保持平衡
               ],
             ),
           );
