@@ -33,6 +33,33 @@ class Post {
   /// 是否被当前用户收藏
   final bool isSavedByCurrentUser;
 
+  /// 转发数
+  final int repostCount;
+
+  /// 阅读数/展现数
+  final int viewsCount;
+
+  /// 标签/主题
+  final List<String> tags;
+
+  /// 位置信息（可选）
+  final String? location;
+
+  /// 是否是转发动态
+  final bool isRepost;
+
+  /// 原始动态 ID（如果是转发的话）
+  final String? originPostId;
+
+  /// 是否已编辑
+  final bool isEdited;
+
+  /// 是否包含敏感内容
+  final bool isSensitive;
+
+  /// 是否置顶
+  final bool isPinned;
+
   Post({
     required this.id,
     required this.author,
@@ -44,6 +71,15 @@ class Post {
     required this.shareCount,
     required this.isLikedByCurrentUser,
     required this.isSavedByCurrentUser,
+    this.repostCount = 0,
+    this.viewsCount = 0,
+    this.tags = const [],
+    this.location,
+    this.isRepost = false,
+    this.originPostId,
+    this.isEdited = false,
+    this.isSensitive = false,
+    this.isPinned = false,
   });
 
   /// 创建副本，用于状态更新
@@ -58,6 +94,15 @@ class Post {
     int? shareCount,
     bool? isLikedByCurrentUser,
     bool? isSavedByCurrentUser,
+    int? repostCount,
+    int? viewsCount,
+    List<String>? tags,
+    String? location,
+    bool? isRepost,
+    String? originPostId,
+    bool? isEdited,
+    bool? isSensitive,
+    bool? isPinned,
   }) {
     return Post(
       id: id ?? this.id,
@@ -70,6 +115,15 @@ class Post {
       shareCount: shareCount ?? this.shareCount,
       isLikedByCurrentUser: isLikedByCurrentUser ?? this.isLikedByCurrentUser,
       isSavedByCurrentUser: isSavedByCurrentUser ?? this.isSavedByCurrentUser,
+      repostCount: repostCount ?? this.repostCount,
+      viewsCount: viewsCount ?? this.viewsCount,
+      tags: tags ?? this.tags,
+      location: location ?? this.location,
+      isRepost: isRepost ?? this.isRepost,
+      originPostId: originPostId ?? this.originPostId,
+      isEdited: isEdited ?? this.isEdited,
+      isSensitive: isSensitive ?? this.isSensitive,
+      isPinned: isPinned ?? this.isPinned,
     );
   }
 }
