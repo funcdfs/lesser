@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../widgets/feed_list.dart';
+import '../widgets/stories_bar.dart';
 
 /// 关注信息流页面
 ///
@@ -14,6 +15,9 @@ class FollowingFeedScreen extends StatefulWidget {
 class _FollowingFeedScreenState extends State<FollowingFeedScreen> {
   @override
   Widget build(BuildContext context) {
-    return FeedList(feedType: FeedListType.following);
+    return const FeedList(
+      feedType: 'following',
+      header: StoriesBar(),
+    );
   }
 }

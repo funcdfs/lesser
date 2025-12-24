@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import '../widgets/stories_bar.dart';
 import 'feed_screen.dart';
 import 'following_feed_screen.dart';
 
@@ -46,22 +45,13 @@ class _HomeScreenState extends State<HomeScreen>
           ],
         ),
       ),
-      body: Column(
-        children: [
-          // 日常状态栏 (Stories Bar)
-          const StoriesBar(),
-          // Feed 列表
-          Expanded(
-            child: TabBarView(
-              controller: _tabController,
-              children: [
-                // 推荐信息流
-                const FeedScreen(),
-                // 关注信息流
-                const FollowingFeedScreen(),
-              ],
-            ),
-          ),
+      body: TabBarView(
+        controller: _tabController,
+        children: const [
+          // 推荐信息流
+          FeedScreen(),
+          // 关注信息流
+          FollowingFeedScreen(),
         ],
       ),
     );

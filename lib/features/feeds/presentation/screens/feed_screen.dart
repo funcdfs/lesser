@@ -14,6 +14,6 @@ class FeedScreen extends StatefulWidget {
 class _FeedScreenState extends State<FeedScreen> {
   @override
   Widget build(BuildContext context) {
-    return FeedList(feedType: FeedListType.recommendation);
+    return const FeedList(feedType: 'trending');
   }
 }

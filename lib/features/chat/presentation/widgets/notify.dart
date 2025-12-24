@@ -1,36 +1,39 @@
 import 'package:flutter/material.dart';
+import '../../../../shared/theme/theme.dart';
 
-/// 通知组件
-///
-/// 显示：
-/// - 与用户相关的通知（如被关注、被提及）
-/// - 与帖子相关的通知（如点赞、评论）
 class NotifyWidget extends StatelessWidget {
   const NotifyWidget({super.key});
 
   @override
   Widget build(BuildContext context) {
-    return ExpansionTile(
-      title: const Text(
-        'Notifications',
-        style: TextStyle(fontWeight: FontWeight.bold),
+    return Container(
+      color: AppColors.background,
+      padding: const EdgeInsets.symmetric(
+          vertical: AppSpacing.lg, horizontal: AppSpacing.sm),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceAround,
+        children: [
+          _buildNotifyItem(context, Icons.favorite_border, '收到的喜欢'),
+          _buildNotifyItem(context, Icons.chat_bubble_outline, '评论和回复'),
+          _buildNotifyItem(context, Icons.bookmark_border, '收藏和@'),
+          _buildNotifyItem(context, Icons.person_add_alt_1_outlined, '新增粉丝'),
+        ],
       ),
+    );
+  }
+
+  Widget _buildNotifyItem(BuildContext context, IconData icon, String label) {
+    return Column(
+      mainAxisSize: MainAxisSize.min,
       children: [
-        ListView.builder(
-          shrinkWrap: true,
-          physics: const NeverScrollableScrollPhysics(),
-          itemCount: 3,
-          itemBuilder: (context, index) {
-            return ListTile(
-              leading: const CircleAvatar(child: Icon(Icons.person_add)),
-              title: const Text('User followed you'),
-              subtitle: const Text('2 minutes ago'),
-              trailing: IconButton(
-                icon: const Icon(Icons.close),
-                onPressed: () {},
-              ),
-            );
-          },
+        Icon(icon, color: AppColors.foreground, size: 28),
+        const SizedBox(height: AppSpacing.sm),
+        Text(
+          label,
+          style: Theme.of(context)
+              .textTheme
+              .labelMedium
+              ?.copyWith(color: AppColors.mutedForeground, fontSize: 13),
         ),
       ],
     );

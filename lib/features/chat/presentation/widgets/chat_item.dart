@@ -1,96 +1,84 @@
-import 'package:flutter/material.dart';
+import 'package:flutter/material.dart' hide Badge;
+import '../../../../shared/theme/theme.dart';
+import '../../../../shared/widgets/list_tile.dart';
+import '../../../../shared/widgets/icon_container.dart';
+import '../../../../shared/widgets/chip.dart';
 
-/// 聊天项目
-///
-/// 显示单个聊天会话：
-/// - Channel（频道）
-/// - Private（私聊）
-/// - Group（群组）
+/// 单个聊天会话/功能项样式
 class ChatItem extends StatelessWidget {
-  /// 聊天类型
-  final ChatType type;
-
-  /// 聊天名称
-  final String name;
-
-  /// 最后消息
-  final String lastMessage;
-
-  /// 未读消息数
+  final IconData icon;
+  final Color iconColor;
+  final String title;
+  final String subtitle;
+  final String time;
   final int unreadCount;
+  final bool showArrow;
+  final bool isMuted;
 
   const ChatItem({
     super.key,
-    this.type = ChatType.private,
-    this.name = 'Chat Name',
-    this.lastMessage = 'Last message...',
+    required this.icon,
+    required this.iconColor,
+    required this.title,
+    required this.subtitle,
+    required this.time,
     this.unreadCount = 0,
+    this.showArrow = false,
+    this.isMuted = false,
   });
 
   @override
   Widget build(BuildContext context) {
-    return ListTile(
-      leading: _buildAvatar(),
-      title: Row(
+    return AppListTile(
+      padding: const EdgeInsets.symmetric(
+        horizontal: AppSpacing.lg,
+        vertical: AppSpacing.md,
+      ),
+      leading: IconContainer(
+        icon: icon,
+        iconColor: AppColors.mutedForeground,
+        size: 48,
+      ),
+      title: title,
+      subtitle: subtitle,
+      trailing: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        crossAxisAlignment: CrossAxisAlignment.end,
         children: [
-          Expanded(
-            child: Text(
-              name,
-              style: const TextStyle(fontWeight: FontWeight.bold),
+          if (time.isNotEmpty)
+            Text(
+              time,
+              style: const TextStyle(
+                fontSize: 12,
+                color: AppColors.mutedForeground,
+              ),
             ),
-          ),
-          if (unreadCount > 0)
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-              decoration: BoxDecoration(
-                color: Colors.blue,
-                borderRadius: BorderRadius.circular(20),
-              ),
-              child: Text(
-                unreadCount.toString(),
-                style: const TextStyle(color: Colors.white, fontSize: 12),
-              ),
+          if (unreadCount > 0) ...[
+            const SizedBox(height: 4),
+            Badge(
+              text: unreadCount > 99 ? '99+' : unreadCount.toString(),
+              backgroundColor: isMuted
+                  ? AppColors.mutedForeground
+                  : AppColors.destructive,
+            ),
+          ] else if (isMuted) ...[
+            const SizedBox(height: 4),
+            const Icon(
+              Icons.notifications_off_outlined,
+              color: AppColors.mutedForeground,
+              size: 16,
+            ),
+          ] else if (showArrow)
+            const Icon(
+              Icons.chevron_right,
+              color: AppColors.mutedForeground,
+              size: 18,
             ),
         ],
       ),
-      subtitle: Text(lastMessage, maxLines: 1, overflow: TextOverflow.ellipsis),
       onTap: () {
-        // 打开聊天详情
+        // TODO: 跳转至聊天详情页
       },
     );
   }
-
-  Widget _buildAvatar() {
-    switch (type) {
-      case ChatType.channel:
-        return Container(
-          width: 48,
-          height: 48,
-          decoration: BoxDecoration(
-            shape: BoxShape.circle,
-            border: Border.all(color: Colors.blue),
-          ),
-          child: const Icon(Icons.tag, color: Colors.blue),
-        );
-      case ChatType.private:
-        return const CircleAvatar(child: Icon(Icons.person));
-      case ChatType.group:
-        return Stack(
-          alignment: Alignment.center,
-          children: [const CircleAvatar(child: Icon(Icons.people))],
-        );
-    }
-  }
-}
-
-/// 聊天类型
-enum ChatType {
-  /// 频道
-  channel,
-
-  /// 私聊
-  private,
-
-  /// 群组
-  group,
 }

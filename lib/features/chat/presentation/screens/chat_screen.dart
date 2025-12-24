@@ -1,14 +1,11 @@
 import 'package:flutter/material.dart';
-import '../widgets/notify.dart';
-import '../widgets/chat_item.dart';
-import '../widgets/network_neighbors.dart';
+import 'package:lesser/features/chat/presentation/widgets/notify.dart';
+import 'package:lesser/features/chat/presentation/widgets/network_neighbors.dart';
+import 'package:lesser/features/chat/presentation/widgets/chat_item.dart';
+import 'package:lesser/features/chat/presentation/widgets/section_header.dart';
+import '../../../../shared/theme/theme.dart';
 
 /// 会话组件的大框架
-///
-/// 显示：
-/// - 上方的通知部分（通知用户和帖子相关的部分）
-/// - 中间的聊天列表（Channel、Private、Group 三种类型）
-/// - 下方的网络邻居部分（我的好友、我的粉丝、创建群组等外显）
 class ChatScreen extends StatefulWidget {
   const ChatScreen({super.key});
 
@@ -28,65 +25,55 @@ class _ChatScreenState extends State<ChatScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: AppColors.background,
       appBar: AppBar(
-        title: const Text('Messages'),
-        elevation: 0,
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.edit),
-            onPressed: () {
-              // 新建会话
-            },
-          ),
-        ],
+        title: Text(
+          'Message',
+          style: Theme.of(context).textTheme.headlineSmall,
+        ),
       ),
-      body: ListView(
-        controller: _scrollController,
-        children: const [
-          // 通知部分 - 显示与用户和帖子相关的通知
-          NotifyWidget(),
-          Divider(height: 1),
-          // 聊天列表 - 显示所有聊天会话
-          ChatListSection(),
-          // 网络邻居部分 - 显示好友、粉丝、创建群组等
-          NetworkNeighborsWidget(),
-        ],
+      body: NestedScrollView(
+        headerSliverBuilder: (BuildContext context, bool innerBoxIsScrolled) {
+          return <Widget>[const SliverToBoxAdapter(child: NotifyWidget())];
+        },
+        body: CustomScrollView(
+          slivers: <Widget>[
+            SliverToBoxAdapter(child: _buildChatList()),
+            const SliverToBoxAdapter(child: NetworkNeighborsWidget()),
+          ],
+        ),
       ),
     );
   }
-}
 
-/// 聊天列表部分
-class ChatListSection extends StatelessWidget {
-  const ChatListSection({super.key});
-
-  @override
-  Widget build(BuildContext context) {
+  Widget _buildChatList() {
     return Column(
-      children: [
-        Padding(
-          padding: const EdgeInsets.all(12),
-          child: TextField(
-            decoration: InputDecoration(
-              hintText: 'Search messages...',
-              prefixIcon: const Icon(Icons.search),
-              border: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(20),
-                borderSide: BorderSide.none,
-              ),
-              filled: true,
-              fillColor: Colors.grey[100],
-              contentPadding: const EdgeInsets.symmetric(vertical: 8),
-            ),
-          ),
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: const [
+        SectionHeader(title: '聊天'),
+        ChatItem(
+          icon: Icons.people_outline,
+          iconColor: Colors.blue,
+          title: 'Group Chat',
+          subtitle: '最新消息预览...',
+          time: '10:30',
+          unreadCount: 5,
         ),
-        ListView.builder(
-          shrinkWrap: true,
-          physics: const NeverScrollableScrollPhysics(),
-          itemCount: 10,
-          itemBuilder: (context, index) {
-            return const ChatItem();
-          },
+        ChatItem(
+          icon: Icons.campaign_outlined,
+          iconColor: Colors.orange,
+          title: 'Channel',
+          subtitle: '频道消息更新',
+          time: '昨天',
+          unreadCount: 2,
+          isMuted: true,
+        ),
+        ChatItem(
+          icon: Icons.person_outline,
+          iconColor: Colors.green,
+          title: 'Private Chat',
+          subtitle: '你好啊',
+          time: '12:00',
         ),
       ],
     );
