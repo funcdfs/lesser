@@ -167,63 +167,64 @@ class _SearchScreenState extends State<SearchScreen> {
             ),
           ),
           const SizedBox(height: AppSpacing.lg),
-          ListView.separated(
-            shrinkWrap: true,
-            physics: const NeverScrollableScrollPhysics(),
-            itemCount: hotListItems.length,
-            separatorBuilder: (context, index) =>
-                const SizedBox(height: AppSpacing.lg),
-            itemBuilder: (context, index) {
-              final item = hotListItems[index];
-              return Row(
-                children: [
-                  Text(
-                    '${index + 1}',
-                    style: textTheme.titleLarge?.copyWith(
-                      color: index < 3
-                          ? AppColors.primary
-                          : AppColors.mutedForeground,
-                      fontWeight: FontWeight.bold,
+          Column(
+            children: hotListItems.asMap().entries.map((entry) {
+              final index = entry.key;
+              final item = entry.value;
+              return Padding(
+                padding: EdgeInsets.only(
+                  bottom: index == hotListItems.length - 1 ? 0 : AppSpacing.lg,
+                ),
+                child: Row(
+                  children: [
+                    Text(
+                      '${index + 1}',
+                      style: textTheme.titleLarge?.copyWith(
+                        color: index < 3
+                            ? const Color(0xFFFFD700)
+                            : AppColors.mutedForeground,
+                        fontWeight: FontWeight.bold,
+                      ),
                     ),
-                  ),
-                  const SizedBox(width: AppSpacing.lg),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          item['title']!,
-                          style: textTheme.bodyLarge?.copyWith(
-                            fontWeight: FontWeight.w600,
+                    const SizedBox(width: AppSpacing.lg),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            item['title']!,
+                            style: textTheme.bodyLarge?.copyWith(
+                              fontWeight: FontWeight.w600,
+                            ),
                           ),
-                        ),
-                        const SizedBox(height: AppSpacing.xs),
-                        Text(
-                          '${item['author']!} · ${item['heat']!}',
-                          style: textTheme.bodySmall?.copyWith(
-                            color: AppColors.mutedForeground,
+                          const SizedBox(height: AppSpacing.xs),
+                          Text(
+                            '${item['author']!} · ${item['heat']!}',
+                            style: textTheme.bodySmall?.copyWith(
+                              color: AppColors.mutedForeground,
+                            ),
                           ),
-                        ),
-                      ],
+                        ],
+                      ),
                     ),
-                  ),
-                  const SizedBox(width: AppSpacing.md),
-                  ClipRRect(
-                    borderRadius: BorderRadius.circular(AppRadius.md),
-                    child: CachedNetworkImage(
-                      imageUrl: item['image']!,
-                      width: 56,
-                      height: 56,
-                      fit: BoxFit.cover,
-                      placeholder: (context, url) =>
-                          Container(color: AppColors.muted),
-                      errorWidget: (context, url, error) =>
-                          const Icon(Icons.error),
+                    const SizedBox(width: AppSpacing.md),
+                    ClipRRect(
+                      borderRadius: BorderRadius.circular(AppRadius.md),
+                      child: CachedNetworkImage(
+                        imageUrl: item['image']!,
+                        width: 56,
+                        height: 56,
+                        fit: BoxFit.cover,
+                        placeholder: (context, url) =>
+                            Container(color: AppColors.muted),
+                        errorWidget: (context, url, error) =>
+                            const Icon(Icons.error),
+                      ),
                     ),
-                  ),
-                ],
+                  ],
+                ),
               );
-            },
+            }).toList(),
           ),
         ],
       ),
@@ -236,7 +237,9 @@ class _SearchScreenState extends State<SearchScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text('# 热门标签', style: textTheme.headlineSmall),
+          Text('# 热门标签',
+              style: textTheme.headlineSmall
+                  ?.copyWith(color: const Color(0xFF4CAF50))),
           const SizedBox(height: AppSpacing.md),
           Wrap(
             spacing: AppSpacing.sm,

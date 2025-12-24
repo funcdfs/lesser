@@ -29,11 +29,14 @@ class FeedList extends StatefulWidget {
 
 class _FeedListState extends State<FeedList>
     with AutomaticKeepAliveClientMixin {
-  /// 是否显示右下角的悬浮按钮组
-  bool _showBottomActions = false;
+  /// 是否显示右下角的悬浮按钮组的通知器，避免 setState 触发整个列表重建
+  final ValueNotifier<bool> _showBottomActions = ValueNotifier<bool>(false);
 
   /// 初始加载状态
   bool _isLoading = true;
+
+  /// 本地滚动控制器，防止多 Tab 共享 PrimaryScrollController 导致异常
+  late final ScrollController _scrollController;
 
   @override
   bool get wantKeepAlive => true;
@@ -41,6 +44,7 @@ class _FeedListState extends State<FeedList>
   @override
   void initState() {
     super.initState();
+    _scrollController = ScrollController();
     // 模拟网络请求延迟，展示骨架屏效果
     Future.delayed(const Duration(seconds: 2), () {
       if (mounted) {
@@ -53,6 +57,8 @@ class _FeedListState extends State<FeedList>
 
   @override
   void dispose() {
+    _scrollController.dispose();
+    _showBottomActions.dispose();
     super.dispose();
   }
 
@@ -60,12 +66,10 @@ class _FeedListState extends State<FeedList>
   bool _handleScrollNotification(ScrollNotification notification) {
     if (notification is ScrollUpdateNotification) {
       final currentScroll = notification.metrics.pixels;
-      // 当滚动超过一屏高度时，显示悬浮按钮
+      // 当滚动超过一屏高度时，更新悬浮按钮显示状态
       final show = currentScroll > MediaQuery.of(context).size.height;
-      if (show != _showBottomActions) {
-        setState(() {
-          _showBottomActions = show;
-        });
+      if (show != _showBottomActions.value) {
+        _showBottomActions.value = show;
       }
     }
     return false; // 允许通知继续向上冒泡
@@ -73,9 +77,8 @@ class _FeedListState extends State<FeedList>
 
   /// 滚动回顶部
   void _scrollToTop() {
-    final controller = PrimaryScrollController.of(context);
-    if (controller.hasClients) {
-      controller.animateTo(
+    if (_scrollController.hasClients) {
+      _scrollController.animateTo(
         0.0,
         duration: const Duration(milliseconds: 600),
         curve: Curves.easeInOutCubic,
@@ -142,9 +145,10 @@ class _FeedListState extends State<FeedList>
           NotificationListener<ScrollNotification>(
             onNotification: _handleScrollNotification,
             child: ListView.builder(
+              controller: _scrollController,
               padding: EdgeInsets.zero,
               physics: const BouncingScrollPhysics(
-                parent: NeverScrollableScrollPhysics(),
+                parent: AlwaysScrollableScrollPhysics(),
               ),
               itemCount: 5 + (widget.header != null ? 1 : 0),
               itemBuilder: (context, index) {
@@ -160,6 +164,7 @@ class _FeedListState extends State<FeedList>
           NotificationListener<ScrollNotification>(
             onNotification: _handleScrollNotification,
             child: ListView.builder(
+              controller: _scrollController,
               padding: EdgeInsets.zero,
               physics: const BouncingScrollPhysics(
                 parent: AlwaysScrollableScrollPhysics(),
@@ -192,46 +197,64 @@ class _FeedListState extends State<FeedList>
             ),
           ),
 
-        // 悬浮按钮组
-        if (_showBottomActions && !_isLoading)
-          Positioned(
-            bottom: 32,
-            right: 24,
-            child: TweenAnimationBuilder<double>(
-              tween: Tween(begin: 0.0, end: 1.0),
-              duration: const Duration(milliseconds: 400),
-              curve: Curves.easeOutBack,
-              builder: (context, value, child) {
-                return Transform.scale(
-                  scale: value,
-                  child: Opacity(opacity: value, child: child),
-                );
-              },
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  _buildFloatingButton(
-                    icon: Icons.refresh_rounded,
-                    onTap: _refreshFeed,
-                  ),
-                  const SizedBox(height: 16),
-                  _buildFloatingButton(
-                    icon: Icons.arrow_upward_rounded,
-                    onTap: _scrollToTop,
-                  ),
-                ],
-              ),
-            ),
-          ),
+        // 悬浮按钮组：使用 ValueListenableBuilder 局部刷新
+        ValueListenableBuilder<bool>(
+          valueListenable: _showBottomActions,
+          builder: (context, show, child) {
+            if (!show || _isLoading) return const SizedBox.shrink();
+            return _FloatingButtons(
+              onRefresh: _refreshFeed,
+              onScrollToTop: _scrollToTop,
+            );
+          },
+        ),
       ],
     );
   }
+}
 
-  /// 构建圆形悬浮按钮 - 使用半透明高级感
-  Widget _buildFloatingButton({
-    required IconData icon,
-    required VoidCallback onTap,
-  }) {
+/// 内部私有：悬浮按钮组组件，用于局部刷新
+class _FloatingButtons extends StatelessWidget {
+  final VoidCallback onRefresh;
+  final VoidCallback onScrollToTop;
+
+  const _FloatingButtons({
+    required this.onRefresh,
+    required this.onScrollToTop,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Positioned(
+      bottom: 32,
+      right: 24,
+      child: TweenAnimationBuilder<double>(
+        tween: Tween(begin: 0.0, end: 1.0),
+        duration: const Duration(milliseconds: 400),
+        curve: Curves.easeOutBack,
+        builder: (context, value, child) {
+          final opacity = value.clamp(0.0, 1.0);
+          return Transform.scale(
+            scale: value,
+            child: Opacity(opacity: opacity, child: child),
+          );
+        },
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            _buildButton(icon: Icons.refresh_rounded, onTap: onRefresh),
+            const SizedBox(height: 16),
+            _buildButton(
+              icon: Icons.arrow_upward_rounded,
+              onTap: onScrollToTop,
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildButton({required IconData icon, required VoidCallback onTap}) {
     return _AnimatedScaleButton(
       onTap: onTap,
       child: Container(
@@ -340,11 +363,10 @@ class _AnimatedPostItemState extends State<_AnimatedPostItem>
 
   @override
   Widget build(BuildContext context) {
-    return RepaintBoundary(
-      child: FadeTransition(
-        opacity: _fadeAnimation,
-        child: SlideTransition(position: _slideAnimation, child: widget.child),
-      ),
+    // 移除 redundent RepaintBoundary，交给 PostCard 处理，或者仅在动画运行时包裹
+    return FadeTransition(
+      opacity: _fadeAnimation,
+      child: SlideTransition(position: _slideAnimation, child: widget.child),
     );
   }
 }

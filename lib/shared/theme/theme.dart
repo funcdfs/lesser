@@ -1,12 +1,12 @@
 import 'package:flutter/material.dart';
 
 /// 融合 Note.com 和 Shadcn 设计系统的主题配置
-/// 
+///
 /// Note.com 风格特点：
 /// - 更柔和的颜色和优雅的排版
 /// - 精致的间距和圆角
 /// - 优雅的字体层次
-/// 
+///
 /// Shadcn 风格特点：
 /// - 清晰的层次结构
 /// - 系统化的设计令牌
@@ -70,6 +70,12 @@ class AppColors {
   static const Color success = Color(0xFF22C55E); // Green 500
   static const Color warning = Color(0xFFEAB308); // Yellow 500
   static const Color info = Color(0xFF3B82F6); // Blue 500
+
+  // 强调色 - 优雅紫色系列 (Premium Accent)
+  static const Color accentPurple = Color(0xFFC084FC); // Purple 400 - 柔和优雅的紫色
+  static const Color accentPurpleLight = Color(
+    0xFFF5F3FF,
+  ); // Purple 50 - 极浅紫色背景
 }
 
 // ============================================================================
@@ -509,6 +515,7 @@ class PostThemeConstants {
   static const Color postTextColor = AppColors.foreground;
   static const Color postMutedTextColor = AppColors.mutedForeground;
   static const Color postBorderColor = AppColors.border;
+  static const Color postHandleColor = AppColors.zinc200;
 
   // 文本样式
   static const TextStyle postAuthorNameStyle = TextStyle(
@@ -552,4 +559,3 @@ class ActionButtonThemeConstants {
   // 动画
   static const Duration likeAnimDuration = Duration(milliseconds: 200);
 }
-

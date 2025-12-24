@@ -36,86 +36,74 @@ class _HomeScreenState extends State<HomeScreen>
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: AppColors.background,
-      body: NestedScrollView(
-        headerSliverBuilder: (context, innerBoxIsScrolled) {
-          return [
-            SliverToBoxAdapter(
-              child: Padding(
-                padding: const EdgeInsets.fromLTRB(
-                  AppSpacing.lg,
-                  12,
-                  AppSpacing.lg,
-                  8,
-                ),
-                child: const Center(
-                  child: Text(
-                    'Lesser',
-                    style: TextStyle(
-                      fontSize: 26,
-                      fontWeight: FontWeight.bold,
-                      letterSpacing: -0.8,
+      body: SafeArea(
+        top: true,
+        bottom: false,
+        child: NestedScrollView(
+          headerSliverBuilder: (context, innerBoxIsScrolled) {
+            return [
+              /// 分段导航 - 浮动且支持 Snap，向上滚动隐藏，向下滚动显示
+              SliverAppBar(
+                backgroundColor: AppColors.background,
+                elevation: 0,
+                scrolledUnderElevation: 0,
+                toolbarHeight: 0, // 隐藏标题栏以仅显示 TabBar
+                floating: true,
+                snap: true,
+                pinned: false,
+                bottom: PreferredSize(
+                  preferredSize: const Size.fromHeight(48.5),
+                  child: Container(
+                    height: 48.5,
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: AppSpacing.lg,
+                    ),
+                    decoration: const BoxDecoration(
+                      border: Border(
+                        bottom: BorderSide(color: AppColors.border, width: 0.5),
+                      ),
+                    ),
+                    child: TabBar(
+                      controller: _tabController,
+                      isScrollable: true,
+                      tabAlignment: TabAlignment.center,
+                      dividerColor: Colors.transparent,
+                      indicatorColor: AppColors.primary,
+                      indicatorSize: TabBarIndicatorSize.label,
+                      indicatorWeight: 2,
+                      indicatorPadding: const EdgeInsets.only(top: 44),
+                      labelColor: AppColors.primary,
+                      unselectedLabelColor: AppColors.mutedForeground,
+                      labelStyle: const TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w600,
+                        letterSpacing: -0.2,
+                      ),
+                      unselectedLabelStyle: const TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w400,
+                        letterSpacing: -0.2,
+                      ),
+                      overlayColor: WidgetStateProperty.all(Colors.transparent),
+                      tabs: const [
+                        Tab(text: 'For You'),
+                        Tab(text: 'Following'),
+                      ],
                     ),
                   ),
                 ),
               ),
-            ),
-
-            /// 分段导航 - 固定在顶部
-            SliverAppBar(
-              backgroundColor: AppColors.background,
-              elevation: 0,
-              scrolledUnderElevation: 0,
-              toolbarHeight: 0, // 隐藏标题栏以仅显示 TabBar
-              floating: false,
-              pinned: true,
-              bottom: PreferredSize(
-                preferredSize: const Size.fromHeight(48.5),
-                child: Container(
-                  height: 48.5,
-                  decoration: const BoxDecoration(
-                    border: Border(
-                      bottom: BorderSide(color: AppColors.border, width: 0.5),
-                    ),
-                  ),
-                  child: TabBar(
-                    controller: _tabController,
-                    isScrollable: false, // 使 Tab 各占据 50% 宽度
-                    dividerColor: Colors.transparent,
-                    indicatorColor: AppColors.primary,
-                    indicatorSize: TabBarIndicatorSize.label,
-                    indicatorWeight: 2,
-                    indicatorPadding: const EdgeInsets.only(top: 44),
-                    labelColor: AppColors.primary,
-                    unselectedLabelColor: AppColors.mutedForeground,
-                    labelStyle: const TextStyle(
-                      fontSize: 15,
-                      fontWeight: FontWeight.w600,
-                      letterSpacing: -0.2,
-                    ),
-                    unselectedLabelStyle: const TextStyle(
-                      fontSize: 15,
-                      fontWeight: FontWeight.w400,
-                      letterSpacing: -0.2,
-                    ),
-                    overlayColor: WidgetStateProperty.all(Colors.transparent),
-                    tabs: const [
-                      Tab(text: 'For You'),
-                      Tab(text: 'Following'),
-                    ],
-                  ),
-                ),
-              ),
-            ),
-          ];
-        },
-        body: TabBarView(
-          controller: _tabController,
-          children: const [
-            // 推荐信息流
-            FeedScreen(),
-            // 关注信息流
-            FollowingFeedScreen(),
-          ],
+            ];
+          },
+          body: TabBarView(
+            controller: _tabController,
+            children: const [
+              // 推荐信息流
+              FeedScreen(),
+              // 关注信息流
+              FollowingFeedScreen(),
+            ],
+          ),
         ),
       ),
     );
