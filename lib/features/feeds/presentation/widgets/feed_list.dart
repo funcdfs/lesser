@@ -1,3 +1,4 @@
+import 'dart:ui';
 import 'package:flutter/material.dart';
 import '../../../../shared/data/mock_data.dart';
 import '../../../../shared/models/post.dart';
@@ -21,7 +22,19 @@ class FeedList extends StatefulWidget {
   /// 可选的列表头部组件（例如故事栏）
   final Widget? header;
 
-  const FeedList({super.key, required this.feedType, this.header});
+  /// 可选的滚动控制器，如果不提供，ListView 将由上层（如 NestedScrollView）管理
+  final ScrollController? controller;
+
+  /// 分段导航控制器，用于在局部 NestedScrollView 中渲染 TabBar
+  final TabController tabController;
+
+  const FeedList({
+    super.key,
+    required this.feedType,
+    required this.tabController,
+    this.header,
+    this.controller,
+  });
 
   @override
   State<FeedList> createState() => _FeedListState();
@@ -35,8 +48,9 @@ class _FeedListState extends State<FeedList>
   /// 初始加载状态
   bool _isLoading = true;
 
-  /// 本地滚动控制器，防止多 Tab 共享 PrimaryScrollController 导致异常
-  late final ScrollController _scrollController;
+  /// 获取有效的滚动控制器：优先使用外部传入的，否则尝试寻找上层的
+  ScrollController? get _effectiveController =>
+      widget.controller ?? (PrimaryScrollController.maybeOf(context));
 
   @override
   bool get wantKeepAlive => true;
@@ -44,7 +58,6 @@ class _FeedListState extends State<FeedList>
   @override
   void initState() {
     super.initState();
-    _scrollController = ScrollController();
     // 模拟网络请求延迟，展示骨架屏效果
     Future.delayed(const Duration(seconds: 2), () {
       if (mounted) {
@@ -57,7 +70,6 @@ class _FeedListState extends State<FeedList>
 
   @override
   void dispose() {
-    _scrollController.dispose();
     _showBottomActions.dispose();
     super.dispose();
   }
@@ -77,8 +89,9 @@ class _FeedListState extends State<FeedList>
 
   /// 滚动回顶部
   void _scrollToTop() {
-    if (_scrollController.hasClients) {
-      _scrollController.animateTo(
+    final controller = _effectiveController;
+    if (controller != null && controller.hasClients) {
+      controller.animateTo(
         0.0,
         duration: const Duration(milliseconds: 600),
         curve: Curves.easeInOutCubic,
@@ -140,62 +153,134 @@ class _FeedListState extends State<FeedList>
 
     return Stack(
       children: [
-        if (_isLoading)
-          // 加载中：展示骨架屏
-          NotificationListener<ScrollNotification>(
-            onNotification: _handleScrollNotification,
-            child: ListView.builder(
-              controller: _scrollController,
-              padding: EdgeInsets.zero,
-              physics: const BouncingScrollPhysics(
-                parent: AlwaysScrollableScrollPhysics(),
-              ),
-              itemCount: 5 + (widget.header != null ? 1 : 0),
-              itemBuilder: (context, index) {
-                if (widget.header != null && index == 0) {
-                  return widget.header!;
-                }
-                return const FeedsCardSkeleton();
-              },
-            ),
-          )
-        else
-          // 加载完成：展示实际帖子列表
-          NotificationListener<ScrollNotification>(
-            onNotification: _handleScrollNotification,
-            child: ListView.builder(
-              controller: _scrollController,
-              padding: EdgeInsets.zero,
-              physics: const BouncingScrollPhysics(
-                parent: AlwaysScrollableScrollPhysics(),
-              ),
-              itemCount:
-                  mockPosts.length + 10 + (widget.header != null ? 1 : 0),
-              itemBuilder: (context, index) {
-                if (widget.header != null) {
-                  if (index == 0) return widget.header!;
-                  final postIndex = index - 1;
-                  final post = mockPosts[postIndex % mockPosts.length];
-                  return _AnimatedPostItem(
-                    index: postIndex,
-                    child: PostCard(
-                      post: post,
-                      onTap: () => _navigateToDetail(post),
+        NestedScrollView(
+          key: PageStorageKey<String>(widget.feedType), // 关键：持久化滚动位置
+          headerSliverBuilder: (context, innerBoxIsScrolled) {
+            return [
+              SliverOverlapAbsorber(
+                handle: NestedScrollView.sliverOverlapAbsorberHandleFor(
+                  context,
+                ),
+                sliver: SliverAppBar(
+                  backgroundColor: Colors.transparent, // 透明以支持玻璃拟态
+                  elevation: 0,
+                  scrolledUnderElevation: 0,
+                  toolbarHeight: 0,
+                  floating: true,
+                  snap: true,
+                  pinned: false,
+                  forceElevated: innerBoxIsScrolled,
+                  bottom: PreferredSize(
+                    preferredSize: const Size.fromHeight(48.5),
+                    child: ClipRRect(
+                      child: BackdropFilter(
+                        filter: ImageFilter.blur(sigmaX: 12, sigmaY: 12),
+                        child: Container(
+                          height: 48.5,
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: AppSpacing.lg,
+                          ),
+                          decoration: BoxDecoration(
+                            color: AppColors.background.withValues(alpha: 0.8),
+                            border: const Border(
+                              bottom: BorderSide(
+                                color: AppColors.border,
+                                width: 0.5,
+                              ),
+                            ),
+                          ),
+                          child: TabBar(
+                            controller: widget.tabController,
+                            isScrollable: true,
+                            tabAlignment: TabAlignment.center,
+                            dividerColor: Colors.transparent,
+                            indicatorColor: AppColors.primary,
+                            indicatorSize: TabBarIndicatorSize.label,
+                            indicatorWeight: 3,
+                            indicatorPadding: const EdgeInsets.only(top: 44),
+                            labelColor: AppColors.primary,
+                            unselectedLabelColor: AppColors.mutedForeground,
+                            labelStyle: const TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.w700,
+                              letterSpacing: -0.2,
+                            ),
+                            unselectedLabelStyle: const TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.w500,
+                              letterSpacing: -0.2,
+                            ),
+                            overlayColor: WidgetStateProperty.all(
+                              Colors.transparent,
+                            ),
+                            tabs: const [
+                              Tab(text: '推荐'),
+                              Tab(text: '关注'),
+                            ],
+                          ),
+                        ),
+                      ),
                     ),
-                  );
-                }
-
-                final post = mockPosts[index % mockPosts.length];
-                return _AnimatedPostItem(
-                  index: index,
-                  child: PostCard(
-                    post: post,
-                    onTap: () => _navigateToDetail(post),
                   ),
-                );
-              },
-            ),
+                ),
+              ),
+            ];
+          },
+          body: Builder(
+            builder: (context) {
+              return NotificationListener<ScrollNotification>(
+                onNotification: _handleScrollNotification,
+                child: CustomScrollView(
+                  controller: widget.controller,
+                  physics: const BouncingScrollPhysics(
+                    parent: AlwaysScrollableScrollPhysics(),
+                  ),
+                  slivers: [
+                    // 关键：注入重叠区域，解决 NestedScrollView 头部浮动时的位置补偿
+                    SliverOverlapInjector(
+                      handle: NestedScrollView.sliverOverlapAbsorberHandleFor(
+                        context,
+                      ),
+                    ),
+
+                    // 列表头部（如果存在）
+                    if (widget.header != null)
+                      SliverToBoxAdapter(child: widget.header!),
+
+                    if (_isLoading)
+                      // 加载中：展示骨架屏 SliverList
+                      SliverList(
+                        delegate: SliverChildBuilderDelegate(
+                          (context, index) => const Padding(
+                            padding: EdgeInsets.symmetric(vertical: 0),
+                            child: FeedsCardSkeleton(),
+                          ),
+                          childCount: 5,
+                        ),
+                      )
+                    else
+                      // 加载完成：展示实际帖子 SliverList
+                      SliverList(
+                        delegate: SliverChildBuilderDelegate(
+                          (context, index) {
+                            final post = mockPosts[index % mockPosts.length];
+                            return _AnimatedPostItem(
+                              index: index,
+                              child: PostCard(
+                                post: post,
+                                onTap: () => _navigateToDetail(post),
+                              ),
+                            );
+                          },
+                          childCount: mockPosts.length + 20, // 增加页数模拟
+                        ),
+                      ),
+                  ],
+                ),
+              );
+            },
           ),
+        ),
 
         // 悬浮按钮组：使用 ValueListenableBuilder 局部刷新
         ValueListenableBuilder<bool>(
