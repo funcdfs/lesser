@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import '../../../../shared/theme/theme.dart';
-import '../../../../shared/widgets/avatar.dart';
 import 'feed_screen.dart';
 import 'following_feed_screen.dart';
 
@@ -48,26 +47,15 @@ class _HomeScreenState extends State<HomeScreen>
                   AppSpacing.lg,
                   8,
                 ),
-                child: Stack(
-                  alignment: Alignment.center,
-                  children: [
-                    const Align(
-                      alignment: Alignment.centerLeft,
-                      child: Avatar(
-                        avatarUrl: 'https://via.placeholder.com/150',
-                        fallbackInitials: 'F',
-                        size: 32,
-                      ),
+                child: const Center(
+                  child: Text(
+                    'Lesser',
+                    style: TextStyle(
+                      fontSize: 26,
+                      fontWeight: FontWeight.bold,
+                      letterSpacing: -0.8,
                     ),
-                    const Text(
-                      'Lesser',
-                      style: TextStyle(
-                        fontSize: 26,
-                        fontWeight: FontWeight.bold,
-                        letterSpacing: -0.8,
-                      ),
-                    ),
-                  ],
+                  ),
                 ),
               ),
             ),
