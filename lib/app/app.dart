@@ -1,6 +1,23 @@
 import 'package:flutter/material.dart';
 import '../features/features.dart';
-import '../shared/theme/theme.dart';
+import '../shared/theme/theme.dart' as shared_theme;
+import 'app_theme.dart';
+
+class LesserApp extends StatelessWidget {
+  const LesserApp({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return MaterialApp(
+      title: 'Lesser',
+      theme: AppTheme.lightTheme(),
+      darkTheme: AppTheme.darkTheme(),
+      themeMode: ThemeMode.light,
+      home: const MainScreen(),
+      debugShowCheckedModeBanner: false,
+    );
+  }
+}
 
 /// 应用程序主框架屏幕
 ///
@@ -69,7 +86,7 @@ class _MainScreenState extends State<MainScreen> {
         // 当宽度大于等于 640 时，使用桌面/平板布局
         if (constraints.maxWidth >= 640) {
           return Scaffold(
-            backgroundColor: AppColors.background,
+            backgroundColor: shared_theme.AppColors.background,
             body: Row(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [

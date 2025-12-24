@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'app/lesser_app.dart';
+import 'app/app.dart';
 import 'shared/utils/logger_service.dart';
 
 void main() {
