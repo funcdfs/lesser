@@ -18,54 +18,14 @@ class User {
 /// 模拟关注的用户列表
 /// 用于展示在搜索页或侧边栏等位置
 final List<User> mockFollowingUsers = [
-  User(
-    id: 1,
-    name: 'Sarah Chen',
-    username: '@sarahchen',
-    avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=Sarah',
-  ),
-  User(
-    id: 2,
-    name: 'Alex Rivera',
-    username: '@alexrivera',
-    avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=Alex',
-  ),
-  User(
-    id: 3,
-    name: 'Maya Patel',
-    username: '@mayapatel',
-    avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=Maya',
-  ),
-  User(
-    id: 4,
-    name: 'David Kim',
-    username: '@davidkim',
-    avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=David',
-  ),
-  User(
-    id: 5,
-    name: 'Emma Wilson',
-    username: '@emmawilson',
-    avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=Emma',
-  ),
-  User(
-    id: 6,
-    name: 'James Anderson',
-    username: '@jamesanderson',
-    avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=James',
-  ),
-  User(
-    id: 7,
-    name: 'Lisa Park',
-    username: '@lisapark',
-    avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=Lisa',
-  ),
-  User(
-    id: 8,
-    name: 'Nina Rodriguez',
-    username: '@ninarodriguez',
-    avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=Nina',
-  ),
+  User(id: 1, name: 'Sarah Chen', username: '@sarahchen', avatar: ''),
+  User(id: 2, name: 'Alex Rivera', username: '@alexrivera', avatar: ''),
+  User(id: 3, name: 'Maya Patel', username: '@mayapatel', avatar: ''),
+  User(id: 4, name: 'David Kim', username: '@davidkim', avatar: ''),
+  User(id: 5, name: 'Emma Wilson', username: '@emmawilson', avatar: ''),
+  User(id: 6, name: 'James Anderson', username: '@jamesanderson', avatar: ''),
+  User(id: 7, name: 'Lisa Park', username: '@lisapark', avatar: ''),
+  User(id: 8, name: 'Nina Rodriguez', username: '@ninarodriguez', avatar: ''),
 ];
 
 /// 模拟动态帖子数据
@@ -75,7 +35,7 @@ final List<Post> mockPosts = [
     id: '1',
     author: 'Sarah Chen',
     authorHandle: '@sarahchen',
-    authorAvatarUrl: 'https://api.dicebear.com/7.x/avataaars/svg?seed=Sarah',
+    authorAvatarUrl: '',
     content: '刚发布了我的新 React 设计系统！🎨 快来看看，告诉我你的想法。专为无障碍访问和高性能打造。',
     timestamp: DateTime.now().subtract(const Duration(hours: 2)),
     likesCount: 2345, // 2.3千
@@ -86,16 +46,16 @@ final List<Post> mockPosts = [
     title: '',
     location: '上海, 中国',
     imageUrls: [
-      'https://images.unsplash.com/photo-1555041469-a586c61ea9bc?w=800&auto=format',
-      'https://images.unsplash.com/photo-1550745165-9bc0b252726f?w=800&auto=format',
-      'https://images.unsplash.com/photo-1550751827-4bd374c3f58b?w=800&auto=format',
+      'https://tiebapic.baidu.com/forum/pic/item/962bd40735fae6cd7d3d75004ab30f2442a7d97e.jpg',
+      'https://tiebapic.baidu.com/forum/pic/item/7ea6a61ea8d3fd1f26f28689714e251f95ca5f33.jpg',
+      'https://tiebapic.baidu.com/forum/pic/item/2cf5e0fe9925bc3146d2cb7c1edf8db1cb137021.jpg',
     ],
   ),
   Post(
     id: '2',
     author: 'Alex Rivera',
     authorHandle: '@alexrivera',
-    authorAvatarUrl: 'https://api.dicebear.com/7.x/avataaars/svg?seed=Alex',
+    authorAvatarUrl: '',
     content:
         '暴论：最好的代码就是没有代码。简单 > 复杂，永远如此。\n\n我们在构建软件时，经常陷入"为了做而做"的陷阱。我们引入复杂的架构、分层、模式，却忘了软件的本质是解决问题。\n\n每一行你写的代码，都是未来的技术债务。它需要被阅读、被理解、被测试、被维护。\n\n保持简单 (KISS) 不仅仅是一个原则，它是一种生存策略。当你的系统变得过于复杂，没人能完全理解它时，你就失去了对它的控制。\n\n所以，在写下一行代码之前，问问自己：真的需要吗？有没有更简单的方法？能不能复用现有的东西？\n\n少即是多。LESS IS MORE.',
     timestamp: DateTime.now().subtract(const Duration(hours: 4)),
@@ -111,7 +71,7 @@ final List<Post> mockPosts = [
     id: '3',
     author: 'Maya Patel',
     authorHandle: '@mayapatel',
-    authorAvatarUrl: 'https://api.dicebear.com/7.x/avataaars/svg?seed=Maya',
+    authorAvatarUrl: '',
     content: '正在写一篇关于现代 Web 应用状态管理模式的新文章。大家有什么特别想看的话题吗？',
     timestamp: DateTime.now().subtract(const Duration(hours: 6)),
     likesCount: 123456789, // 1.2亿
@@ -122,14 +82,14 @@ final List<Post> mockPosts = [
     title: '',
     location: 'London, UK',
     imageUrls: [
-      'https://images.unsplash.com/photo-1461749280684-dccba630e2f6?w=800&auto=format',
+      'https://tiebapic.baidu.com/forum/pic/item/b3fb43166d224f4af7fa079919f790529922d100.jpg',
     ],
   ),
   Post(
     id: '4',
     author: 'David Kim',
     authorHandle: '@davidkim',
-    authorAvatarUrl: 'https://api.dicebear.com/7.x/avataaars/svg?seed=David',
+    authorAvatarUrl: '',
     content: 'Web 开发的未来一片光明！WebAssembly、边缘计算和 AI 驱动的工具正在改变一切。',
     timestamp: DateTime.now().subtract(const Duration(hours: 8)),
     likesCount: 567,
@@ -140,18 +100,18 @@ final List<Post> mockPosts = [
     title: '',
     location: 'Seoul, Korea',
     imageUrls: [
-      'https://images.unsplash.com/photo-1498050108023-c5249f4df085?w=800&auto=format',
-      'https://images.unsplash.com/photo-1504639725590-34d0984388bd?w=800&auto=format',
-      'https://images.unsplash.com/photo-1551288049-bebda4e38f71?w=800&auto=format',
-      'https://images.unsplash.com/photo-1488590528505-98d2b5aba04b?w=800&auto=format',
-      'https://images.unsplash.com/photo-1496181133206-80ce9b88a853?w=800&auto=format',
+      'https://tiebapic.baidu.com/forum/pic/item/08f790529822720e6f28490a3bcb0a46f31fabe7.jpg',
+      'https://tiebapic.baidu.com/forum/pic/item/0823dd54564e9258284814e49982d158ccbf4e7e.jpg',
+      'https://tiebapic.baidu.com/forum/pic/item/d439b6003af33a87ec09e663c15c10385343b57e.jpg',
+      'https://tiebapic.baidu.com/forum/pic/item/91ef76094b36acaf447386007dd98d1001e9917e.jpg',
+      'https://tiebapic.baidu.com/forum/pic/item/0df3d7ca7bcb0a469cd2f6026e63f6246b60af33.jpg',
     ],
   ),
   Post(
     id: '5',
     author: 'Emma Wilson',
     authorHandle: '@emmawilson',
-    authorAvatarUrl: 'https://api.dicebear.com/7.x/avataaars/svg?seed=Emma',
+    authorAvatarUrl: '',
     content: '刚读完一篇很棒的 CSS Grid 文章。都 2025 年了我还在学新技巧！学无止境 📚',
     timestamp: DateTime.now().subtract(const Duration(hours: 12)),
     likesCount: 312,
@@ -166,7 +126,7 @@ final List<Post> mockPosts = [
     id: '6',
     author: 'Lucas Garcia',
     authorHandle: '@lucas_g',
-    authorAvatarUrl: 'https://api.dicebear.com/7.x/avataaars/svg?seed=Lucas',
+    authorAvatarUrl: '',
     content: '周末去爬山了，风景真不错！🏔️ 强烈推荐大家多出去走走，呼吸新鲜空气。',
     timestamp: DateTime.now().subtract(const Duration(days: 1, hours: 2)),
     likesCount: 56,
@@ -181,7 +141,7 @@ final List<Post> mockPosts = [
     id: '7',
     author: 'Yuki Tanaka',
     authorHandle: '@yuki_dev',
-    authorAvatarUrl: 'https://api.dicebear.com/7.x/avataaars/svg?seed=Yuki',
+    authorAvatarUrl: '',
     content:
         'Flutter 3.x is amazing! The performance improvements are noticeable. 🚀 #Flutter #MobileDev',
     timestamp: DateTime.now().subtract(const Duration(days: 1, hours: 5)),
@@ -197,7 +157,7 @@ final List<Post> mockPosts = [
     id: '8',
     author: 'Oliver Smith',
     authorHandle: '@oli_smith',
-    authorAvatarUrl: 'https://api.dicebear.com/7.x/avataaars/svg?seed=Oliver',
+    authorAvatarUrl: '',
     content:
         'Just tried the new coffee shop downtown. Their latte art is on point! ☕️',
     timestamp: DateTime.now().subtract(const Duration(days: 2)),
@@ -213,7 +173,7 @@ final List<Post> mockPosts = [
     id: '9',
     author: 'Zara Khan',
     authorHandle: '@zara_k',
-    authorAvatarUrl: 'https://api.dicebear.com/7.x/avataaars/svg?seed=Zara',
+    authorAvatarUrl: '',
     content:
         'Thinking about switching from VS Code to Zed. Has anyone tried it extensively for Python development? 🤔',
     timestamp: DateTime.now().subtract(const Duration(days: 2, hours: 10)),
@@ -229,7 +189,7 @@ final List<Post> mockPosts = [
     id: '10',
     author: 'Chen Wei',
     authorHandle: '@wei_chen',
-    authorAvatarUrl: 'https://api.dicebear.com/7.x/avataaars/svg?seed=Chen',
+    authorAvatarUrl: '',
     content: '今天尝试做了一下红烧肉，虽然卖相一般，但是味道还可以！📖 下次继续努力。',
     timestamp: DateTime.now().subtract(const Duration(days: 3)),
     likesCount: 23,
@@ -244,7 +204,7 @@ final List<Post> mockPosts = [
     id: '11',
     author: 'Isabella Ross',
     authorHandle: '@bella_ross',
-    authorAvatarUrl: 'https://api.dicebear.com/7.x/avataaars/svg?seed=Isabella',
+    authorAvatarUrl: '',
     content:
         'Designing a new logo for a client. Minimalist style is always challenging but rewarding. ✍️',
     timestamp: DateTime.now().subtract(const Duration(days: 4)),
@@ -260,7 +220,7 @@ final List<Post> mockPosts = [
     id: '12',
     author: 'Mohammed Al-Fayed',
     authorHandle: '@mo_fayed',
-    authorAvatarUrl: 'https://api.dicebear.com/7.x/avataaars/svg?seed=Mohammed',
+    authorAvatarUrl: '',
     content: 'The sunset today was breathtaking. 🌅',
     timestamp: DateTime.now().subtract(const Duration(days: 5)),
     likesCount: 89000, // 8.9万
@@ -275,7 +235,7 @@ final List<Post> mockPosts = [
     id: '13',
     author: 'Sophia Nilsson',
     authorHandle: '@sophia_n',
-    authorAvatarUrl: 'https://api.dicebear.com/7.x/avataaars/svg?seed=Sophia',
+    authorAvatarUrl: '',
     content: 'Reading "The Pragmatic Programmer" again. It never gets old. 📚',
     timestamp: DateTime.now().subtract(const Duration(days: 6)),
     likesCount: 234,
@@ -290,7 +250,7 @@ final List<Post> mockPosts = [
     id: '14',
     author: 'Rajesh Kumar',
     authorHandle: '@raj_k',
-    authorAvatarUrl: 'https://api.dicebear.com/7.x/avataaars/svg?seed=Rajesh',
+    authorAvatarUrl: '',
     content:
         'AI is evolving so fast! It\'s hard to keep up with all the new papers coming out every week. 🤖',
     timestamp: DateTime.now().subtract(const Duration(days: 7)),
@@ -306,7 +266,7 @@ final List<Post> mockPosts = [
     id: '15',
     author: 'Emily Davis',
     authorHandle: '@emily_d',
-    authorAvatarUrl: 'https://api.dicebear.com/7.x/avataaars/svg?seed=Emily2',
+    authorAvatarUrl: '',
     content:
         'Does anyone have recommendations for good sci-fi movies on Netflix right now? 📽',
     timestamp: DateTime.now().subtract(const Duration(days: 9)),
@@ -385,9 +345,9 @@ final List<Article> mockArticles = [
     title: '简单又健康的早餐食谱合集',
     excerpt: '每天早上不知道吃什么？这里有10个快速又营养的早餐食谱，让你精力充沛开始新的一天。',
     author: 'Sarah Chen',
-    avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=Sarah',
+    avatar: '',
     coverImage:
-        'https://images.unsplash.com/photo-1533089860892-a7c6f0a88666?w=800&auto=format',
+        'https://tiebapic.baidu.com/forum/pic/item/8326cffc1e178a82d6199320f303738da977e8ea.jpg',
     readTime: '5 min read',
     likes: 1256,
     comments: 89,
@@ -400,9 +360,9 @@ final List<Article> mockArticles = [
     title: '家居收纳技巧大公开',
     excerpt: '小户型也能井井有条！学习这些收纳技巧，让你的家变得更加整洁舒适。',
     author: 'Alex Rivera',
-    avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=Alex',
+    avatar: '',
     coverImage:
-        'https://images.unsplash.com/photo-1556909114-f6e7ad7d3136?w=800&auto=format',
+        'https://tiebapic.baidu.com/forum/pic/item/bba1cd11728b47103e6834b9cfcec3fdfd0323ea.jpg',
     readTime: '8 min read',
     likes: 2341,
     comments: 156,
@@ -415,9 +375,9 @@ final List<Article> mockArticles = [
     title: '亲子旅行目的地推荐',
     excerpt: '带孩子去哪里玩？为你推荐最适合家庭出游的旅行地点，让全家都能享受美好时光。',
     author: 'Maya Patel',
-    avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=Maya',
+    avatar: '',
     coverImage:
-        'https://images.unsplash.com/photo-1527631746610-bca00a040d60?w=800&auto=format',
+        'https://tiebapic.baidu.com/forum/pic/item/7aec54e736d12f2ea06efb0849c2d562853568ea.jpg',
     readTime: '10 min read',
     likes: 3456,
     comments: 234,
@@ -430,9 +390,9 @@ final List<Article> mockArticles = [
     title: '护肤步骤详解：从清洁到保养',
     excerpt: '正确的护肤步骤能让你的皮肤更健康。这篇文章详细讲解每个步骤的要点和产品推荐。',
     author: 'Emma Wilson',
-    avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=Emma',
+    avatar: '',
     coverImage:
-        'https://images.unsplash.com/photo-1556228578-0d85b1a4d571?w=800&auto=format',
+        'https://tiebapic.baidu.com/forum/pic/item/d62a6059252dd42ad1f4f5a3063b5bb5c8eab8ea.jpg',
     readTime: '7 min read',
     likes: 1890,
     comments: 145,
@@ -445,9 +405,9 @@ final List<Article> mockArticles = [
     title: 'DIY手工：制作个性化笔记本',
     excerpt: '跟着步骤图，轻松制作属于自己的手工笔记本。送礼自用都很棒！',
     author: 'David Kim',
-    avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=David',
+    avatar: '',
     coverImage:
-        'https://images.unsplash.com/photo-1517842645767-c639042777db?w=800&auto=format',
+        'https://tiebapic.baidu.com/forum/pic/item/a8014c086e061d9539d09c3e7ef40ad162d9caea.jpg',
     readTime: '12 min read',
     likes: 987,
     comments: 67,
@@ -481,13 +441,13 @@ final Map<int, List<Story>> mockStories = {
     Story(
       id: 's1-1',
       imageUrl:
-          'https://images.unsplash.com/photo-1515886657613-9f3515b0c78f?w=800&auto=format',
+          'https://tiebapic.baidu.com/forum/pic/item/0823dd54564e9258284814e49982d158ccbf4e7e.jpg',
       timestamp: DateTime.now().subtract(const Duration(hours: 2)),
     ),
     Story(
       id: 's1-2',
       imageUrl:
-          'https://images.unsplash.com/photo-1529626455594-4ff0802cfb7e?w=800&auto=format',
+          'https://tiebapic.baidu.com/forum/pic/item/d439b6003af33a87ec09e663c15c10385343b57e.jpg',
       timestamp: DateTime.now().subtract(const Duration(hours: 1)),
     ),
   ],
@@ -496,7 +456,7 @@ final Map<int, List<Story>> mockStories = {
     Story(
       id: 's2-1',
       imageUrl:
-          'https://images.unsplash.com/photo-1492633423870-43d1cd2775eb?w=800&auto=format',
+          'https://tiebapic.baidu.com/forum/pic/item/91ef76094b36acaf447386007dd98d1001e9917e.jpg',
       timestamp: DateTime.now().subtract(const Duration(hours: 4)),
     ),
   ],
@@ -505,7 +465,7 @@ final Map<int, List<Story>> mockStories = {
     Story(
       id: 's3-1',
       imageUrl:
-          'https://images.unsplash.com/photo-1517404215738-15263e9f9178?w=800&auto=format',
+          'https://tiebapic.baidu.com/forum/pic/item/0df3d7ca7bcb0a469cd2f6026e63f6246b60af33.jpg',
       timestamp: DateTime.now().subtract(const Duration(hours: 6)),
     ),
   ],
@@ -514,7 +474,7 @@ final Map<int, List<Story>> mockStories = {
     Story(
       id: 's4-1',
       imageUrl:
-          'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=800&auto=format',
+          'https://tiebapic.baidu.com/forum/pic/item/b3fb43166d224f4af7fa079919f790529922d100.jpg',
       timestamp: DateTime.now().subtract(const Duration(hours: 3)),
     ),
   ],

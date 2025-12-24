@@ -54,7 +54,7 @@ class _NewPostScreenState extends State<NewPostScreen> {
   void _addMockImage() {
     setState(() {
       _selectedImages.add(
-        'https://picsum.photos/seed/${DateTime.now().millisecondsSinceEpoch}/400/400',
+        'https://tiebapic.baidu.com/forum/pic/item/962bd40735fae6cd7d3d75004ab30f2442a7d97e.jpg',
       );
     });
     _onTextChanged();
@@ -141,11 +141,7 @@ class _NewPostScreenState extends State<NewPostScreen> {
       children: [
         Column(
           children: [
-            const Avatar(
-              avatarUrl: 'https://via.placeholder.com/150',
-              fallbackInitials: 'F',
-              size: 40,
-            ),
+            const Avatar(avatarUrl: '', fallbackInitials: 'F', size: 40),
             const SizedBox(height: 8),
             // 连接线效果（模拟串文）
             Container(
@@ -156,11 +152,7 @@ class _NewPostScreenState extends State<NewPostScreen> {
             const SizedBox(height: 4),
             const Opacity(
               opacity: 0.5,
-              child: Avatar(
-                avatarUrl: 'https://via.placeholder.com/150',
-                fallbackInitials: 'F',
-                size: 20,
-              ),
+              child: Avatar(avatarUrl: '', fallbackInitials: 'F', size: 20),
             ),
           ],
         ),
@@ -256,6 +248,12 @@ class _NewPostScreenState extends State<NewPostScreen> {
                   height: 200,
                   width: 150,
                   fit: BoxFit.cover,
+                  errorBuilder: (context, error, stackTrace) => Container(
+                    height: 200,
+                    width: 150,
+                    color: AppColors.muted,
+                    child: const Icon(Icons.broken_image, color: Colors.white),
+                  ),
                 ),
               ),
               Positioned(
@@ -289,11 +287,7 @@ class _NewPostScreenState extends State<NewPostScreen> {
       children: const [
         Opacity(
           opacity: 0.5,
-          child: Avatar(
-            avatarUrl: 'https://via.placeholder.com/150',
-            fallbackInitials: 'F',
-            size: 24,
-          ),
+          child: Avatar(avatarUrl: '', fallbackInitials: 'F', size: 24),
         ),
         SizedBox(width: 8),
         Text('添加到串文', style: TextStyle(color: AppColors.mutedForeground)),

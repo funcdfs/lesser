@@ -21,35 +21,35 @@ class _SearchScreenState extends State<SearchScreen> {
       'author': 'Sarah Chen',
       'heat': '1256 热度',
       'image':
-          'https://images.unsplash.com/photo-1546069901-ba9599a7e63c?q=80&w=800&auto=format&fit=crop',
+          'https://tiebapic.baidu.com/forum/pic/item/8326cffc1e178a82d6199320f303738da977e8ea.jpg',
     },
     {
       'title': '家居收纳技巧大公开',
       'author': 'Alex Rivera',
       'heat': '2341 热度',
       'image':
-          'https://images.unsplash.com/photo-1556911220-bff31c812dba?q=80&w=800&auto=format&fit=crop',
+          'https://tiebapic.baidu.com/forum/pic/item/bba1cd11728b47103e6834b9cfcec3fdfd0323ea.jpg',
     },
     {
       'title': '亲子旅行目的地推荐',
       'author': 'Maya Patel',
       'heat': '3456 热度',
       'image':
-          'https://images.unsplash.com/photo-1563911302254-5235f3964645?q=80&w=800&auto=format&fit=crop',
+          'https://tiebapic.baidu.com/forum/pic/item/7aec54e736d12f2ea06efb0849c2d562853568ea.jpg',
     },
     {
       'title': '护肤步骤详解：从清洁到保养',
       'author': 'Emma Wilson',
       'heat': '1890 热度',
       'image':
-          'https://images.unsplash.com/photo-1556228852-6d45a3390979?q=80&w=800&auto=format&fit=crop',
+          'https://tiebapic.baidu.com/forum/pic/item/d62a6059252dd42ad1f4f5a3063b5bb5c8eab8ea.jpg',
     },
     {
       'title': 'DIY手工：制作个性化笔记本',
       'author': 'David Kim',
       'heat': '987 热度',
       'image':
-          'https://images.unsplash.com/photo-1456735190827-d1262f71b8a3?q=80&w=800&auto=format&fit=crop',
+          'https://tiebapic.baidu.com/forum/pic/item/a8014c086e061d9539d09c3e7ef40ad162d9caea.jpg',
     },
   ];
 
@@ -237,9 +237,12 @@ class _SearchScreenState extends State<SearchScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text('# 热门标签',
-              style: textTheme.headlineSmall
-                  ?.copyWith(color: const Color(0xFF4CAF50))),
+          Text(
+            '# 热门标签',
+            style: textTheme.headlineSmall?.copyWith(
+              color: const Color(0xFF4CAF50),
+            ),
+          ),
           const SizedBox(height: AppSpacing.md),
           Wrap(
             spacing: AppSpacing.sm,
