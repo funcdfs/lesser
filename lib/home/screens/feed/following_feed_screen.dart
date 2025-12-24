@@ -19,7 +19,7 @@ class FollowingFeedScreen extends StatelessWidget {
         // 顶部横向滚动的故事栏
         const SliverToBoxAdapter(child: StoriesBar()),
         const SliverToBoxAdapter(
-          child: Divider(color: ShadcnColors.border, thickness: 1, height: 1),
+          child: Divider(color: AppColors.border, thickness: 1, height: 1),
         ),
 
         // 动态列表部分（使用 SliverList 实现）

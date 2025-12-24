@@ -23,7 +23,7 @@ class TopIconItem extends StatelessWidget {
           width: 48,
           height: 48,
           decoration: BoxDecoration(
-            color: ShadcnColors.secondary,
+            color: AppColors.secondary,
             borderRadius: BorderRadius.circular(16),
           ),
           child: Icon(icon, color: color, size: 24),
@@ -37,7 +37,7 @@ class TopIconItem extends StatelessWidget {
             style: const TextStyle(
               fontSize: 12,
               fontWeight: FontWeight.w500,
-              color: ShadcnColors.foreground,
+              color: AppColors.foreground,
             ),
             maxLines: 2,
             overflow: TextOverflow.ellipsis,

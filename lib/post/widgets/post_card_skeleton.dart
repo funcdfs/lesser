@@ -43,11 +43,11 @@ class _PostCardSkeletonState extends State<PostCardSkeleton>
       },
       child: Container(
         padding: const EdgeInsets.symmetric(
-          horizontal: ShadcnSpacing.lg,
-          vertical: ShadcnSpacing.md,
+          horizontal: AppSpacing.lg,
+          vertical: AppSpacing.md,
         ),
         decoration: const BoxDecoration(
-          border: Border(bottom: BorderSide(color: ShadcnColors.border)),
+          border: Border(bottom: BorderSide(color: AppColors.border)),
         ),
         child: Row(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -57,11 +57,11 @@ class _PostCardSkeletonState extends State<PostCardSkeleton>
               width: 40,
               height: 40,
               decoration: const BoxDecoration(
-                color: ShadcnColors.secondary,
+                color: AppColors.secondary,
                 shape: BoxShape.circle,
               ),
             ),
-            const SizedBox(width: ShadcnSpacing.md),
+            const SizedBox(width: AppSpacing.md),
             // 内容骨架
             Expanded(
               child: Column(
@@ -74,7 +74,7 @@ class _PostCardSkeletonState extends State<PostCardSkeleton>
                         width: 100,
                         height: 14,
                         decoration: BoxDecoration(
-                          color: ShadcnColors.secondary,
+                          color: AppColors.secondary,
                           borderRadius: BorderRadius.circular(4),
                         ),
                       ),
@@ -83,7 +83,7 @@ class _PostCardSkeletonState extends State<PostCardSkeleton>
                         width: 60,
                         height: 12,
                         decoration: BoxDecoration(
-                          color: ShadcnColors.secondary,
+                          color: AppColors.secondary,
                           borderRadius: BorderRadius.circular(4),
                         ),
                       ),
@@ -95,7 +95,7 @@ class _PostCardSkeletonState extends State<PostCardSkeleton>
                     width: double.infinity,
                     height: 14,
                     decoration: BoxDecoration(
-                      color: ShadcnColors.secondary,
+                      color: AppColors.secondary,
                       borderRadius: BorderRadius.circular(4),
                     ),
                   ),
@@ -104,7 +104,7 @@ class _PostCardSkeletonState extends State<PostCardSkeleton>
                     width: double.infinity,
                     height: 14,
                     decoration: BoxDecoration(
-                      color: ShadcnColors.secondary,
+                      color: AppColors.secondary,
                       borderRadius: BorderRadius.circular(4),
                     ),
                   ),
@@ -113,7 +113,7 @@ class _PostCardSkeletonState extends State<PostCardSkeleton>
                     width: 200,
                     height: 14,
                     decoration: BoxDecoration(
-                      color: ShadcnColors.secondary,
+                      color: AppColors.secondary,
                       borderRadius: BorderRadius.circular(4),
                     ),
                   ),
@@ -143,7 +143,7 @@ class _PostCardSkeletonState extends State<PostCardSkeleton>
       width: 40,
       height: 20,
       decoration: BoxDecoration(
-        color: ShadcnColors.secondary,
+        color: AppColors.secondary,
         borderRadius: BorderRadius.circular(4),
       ),
     );

@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import '../../theme/theme.dart';
+import '../../../theme/theme.dart';
 
 /// Shadcn 风格的列表项组件
 /// 对标准的 ListTile 进行了风格统一。
@@ -37,16 +37,13 @@ class ShadcnListTile extends StatelessWidget {
     final content = Padding(
       padding:
           padding ??
-          const EdgeInsets.symmetric(
-            horizontal: ShadcnSpacing.lg,
-            vertical: ShadcnSpacing.md,
+          EdgeInsets.symmetric(
+            horizontal: AppSpacing.lg,
+            vertical: AppSpacing.md,
           ),
       child: Row(
         children: [
-          if (leading != null) ...[
-            leading!,
-            const SizedBox(width: ShadcnSpacing.md),
-          ],
+          if (leading != null) ...[leading!, SizedBox(width: AppSpacing.md)],
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -57,7 +54,7 @@ class ShadcnListTile extends StatelessWidget {
                   style: const TextStyle(
                     fontSize: 16,
                     fontWeight: FontWeight.w500,
-                    color: ShadcnColors.foreground,
+                    color: AppColors.foreground,
                   ),
                 ),
                 if (subtitle != null) ...[
@@ -66,17 +63,14 @@ class ShadcnListTile extends StatelessWidget {
                     subtitle!,
                     style: const TextStyle(
                       fontSize: 13,
-                      color: ShadcnColors.mutedForeground,
+                      color: AppColors.mutedForeground,
                     ),
                   ),
                 ],
               ],
             ),
           ),
-          if (trailing != null) ...[
-            const SizedBox(width: ShadcnSpacing.md),
-            trailing!,
-          ],
+          if (trailing != null) ...[SizedBox(width: AppSpacing.md), trailing!],
         ],
       ),
     );

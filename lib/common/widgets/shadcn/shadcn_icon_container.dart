@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import '../../theme/theme.dart';
+import '../../../theme/theme.dart';
 
 /// 带有统一样式的图标容器组件
 /// 提供一致的圆角背景和图标间距装饰。
@@ -26,7 +26,7 @@ class ShadcnIconContainer extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final effectiveIconColor = iconColor ?? ShadcnColors.foreground;
+    final effectiveIconColor = iconColor ?? AppColors.foreground;
     // 如果未提供背景色，则使用图标颜色的 10% 透明度作为背景
     final effectiveBackgroundColor =
         backgroundColor ?? effectiveIconColor.withValues(alpha: 0.1);
@@ -36,7 +36,7 @@ class ShadcnIconContainer extends StatelessWidget {
       height: size,
       decoration: BoxDecoration(
         color: effectiveBackgroundColor,
-        borderRadius: BorderRadius.circular(ShadcnRadius.lg),
+        borderRadius: BorderRadius.circular(AppRadius.lg),
       ),
       child: Icon(icon, color: effectiveIconColor, size: size * 0.55),
     );

@@ -94,7 +94,7 @@ class _PostCardState extends State<PostCard> {
           children: [
             /// 左侧：用户头像
             _buildUserAvatar(),
-            const SizedBox(width: ShadcnSpacing.md),
+            const SizedBox(width: AppSpacing.md),
 
             /// 右侧：主要内容
             Expanded(
@@ -170,7 +170,7 @@ class _PostCardState extends State<PostCard> {
     return Row(
       children: [
         Text(widget.post.author, style: PostThemeConstants.postAuthorNameStyle),
-        const SizedBox(width: ShadcnSpacing.xs),
+        const SizedBox(width: AppSpacing.xs),
         Flexible(
           child: Text(
             widget.post.authorHandle,
@@ -195,7 +195,7 @@ class _PostCardState extends State<PostCard> {
       children: [
         Text(relativeTime, style: PostThemeConstants.postTimestampStyle),
         Padding(
-          padding: const EdgeInsets.symmetric(horizontal: ShadcnSpacing.xs),
+          padding: const EdgeInsets.symmetric(horizontal: AppSpacing.xs),
           child: Container(
             width: 12,
             height: 1,
@@ -243,7 +243,7 @@ class _PostCardState extends State<PostCard> {
       backgroundColor: PostThemeConstants.postBackgroundColor,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(
-          top: Radius.circular(ShadcnRadius.xl),
+          top: Radius.circular(AppRadius.xl),
         ),
       ),
       builder: (context) => _buildActionMenuSheet(context),
@@ -254,7 +254,7 @@ class _PostCardState extends State<PostCard> {
   Widget _buildActionMenuSheet(BuildContext context) {
     return SafeArea(
       child: Padding(
-        padding: const EdgeInsets.symmetric(vertical: ShadcnSpacing.lg),
+        padding: const EdgeInsets.symmetric(vertical: AppSpacing.lg),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
@@ -306,8 +306,8 @@ class _PostCardState extends State<PostCard> {
       },
       child: Padding(
         padding: const EdgeInsets.symmetric(
-          horizontal: ShadcnSpacing.lg,
-          vertical: ShadcnSpacing.md + 4,
+          horizontal: AppSpacing.lg,
+          vertical: AppSpacing.md + 4,
         ),
         child: Row(
           children: [
@@ -318,7 +318,7 @@ class _PostCardState extends State<PostCard> {
                   ? ThemeConstants.errorColor
                   : ThemeConstants.enabledColor,
             ),
-            const SizedBox(width: ShadcnSpacing.lg),
+            const SizedBox(width: AppSpacing.lg),
             Text(
               label,
               style: TextStyle(

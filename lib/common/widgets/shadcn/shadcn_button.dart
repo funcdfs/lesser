@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import '../../theme/theme.dart';
+import '../../../theme/theme.dart';
 
 /// Shadcn 按钮变体类型
 enum ShadcnButtonVariant {
@@ -49,7 +49,7 @@ class ShadcnButton extends StatelessWidget {
       child: Icon(
         icon,
         size: size ?? 20,
-        color: color ?? ShadcnColors.mutedForeground,
+        color: color ?? AppColors.mutedForeground,
       ),
     );
   }
@@ -67,12 +67,12 @@ class ShadcnButton extends StatelessWidget {
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(icon, size: 16, color: color ?? ShadcnColors.mutedForeground),
+          Icon(icon, size: 16, color: color ?? AppColors.mutedForeground),
           const SizedBox(width: 8),
           Text(
             label,
             style: TextStyle(
-              color: color ?? ShadcnColors.mutedForeground,
+              color: color ?? AppColors.mutedForeground,
               fontSize: 14,
               fontWeight: FontWeight.w500,
             ),
@@ -91,32 +91,32 @@ class ShadcnButton extends StatelessWidget {
     // 根据变体设置颜色和样式
     switch (variant) {
       case ShadcnButtonVariant.primary:
-        backgroundColor = ShadcnColors.primary;
-        foregroundColor = ShadcnColors.primaryForeground;
+        backgroundColor = AppColors.primary;
+        foregroundColor = AppColors.primaryForeground;
         break;
       case ShadcnButtonVariant.secondary:
-        backgroundColor = ShadcnColors.secondary;
-        foregroundColor = ShadcnColors.secondaryForeground;
+        backgroundColor = AppColors.secondary;
+        foregroundColor = AppColors.secondaryForeground;
         break;
       case ShadcnButtonVariant.ghost:
         backgroundColor = Colors.transparent;
-        foregroundColor = ShadcnColors.foreground;
+        foregroundColor = AppColors.foreground;
         break;
       case ShadcnButtonVariant.outline:
         backgroundColor = Colors.transparent;
-        foregroundColor = ShadcnColors.foreground;
-        border = Border.all(color: ShadcnColors.border);
+        foregroundColor = AppColors.foreground;
+        border = Border.all(color: AppColors.border);
         break;
     }
 
     return Material(
       color: backgroundColor,
-      borderRadius: BorderRadius.circular(ShadcnRadius.md),
+      borderRadius: BorderRadius.circular(AppRadius.md),
       clipBehavior: Clip.antiAlias,
       shape: border != null
           ? RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(ShadcnRadius.md),
-              side: BorderSide(color: ShadcnColors.border),
+              borderRadius: BorderRadius.circular(AppRadius.md),
+              side: BorderSide(color: AppColors.border),
             )
           : null,
       child: InkWell(

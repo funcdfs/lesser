@@ -19,18 +19,18 @@ class CommentSection extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Divider(color: ShadcnColors.border, thickness: 8, height: 8),
+        const Divider(color: AppColors.border, thickness: 8, height: 8),
 
         // 评论标题
         Container(
-          padding: const EdgeInsets.all(ShadcnSpacing.lg),
+          padding: const EdgeInsets.all(AppSpacing.lg),
           alignment: Alignment.centerLeft,
           child: Text(
             '评论${commentCount != null ? ' ($commentCount)' : ''}',
             style: const TextStyle(
               fontSize: 18,
               fontWeight: FontWeight.bold,
-              color: ShadcnColors.foreground,
+              color: AppColors.foreground,
             ),
           ),
         ),
@@ -41,12 +41,12 @@ class CommentSection extends StatelessWidget {
           shrinkWrap: true,
           itemCount: 3, // 模拟3条评论
           separatorBuilder: (context, index) =>
-              const Divider(color: ShadcnColors.border, height: 1),
+              const Divider(color: AppColors.border, height: 1),
           itemBuilder: (context, index) {
             return Padding(
               padding: const EdgeInsets.symmetric(
-                horizontal: ShadcnSpacing.lg,
-                vertical: ShadcnSpacing.lg,
+                horizontal: AppSpacing.lg,
+                vertical: AppSpacing.lg,
               ),
               child: Row(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -55,7 +55,7 @@ class CommentSection extends StatelessWidget {
                     width: 36,
                     height: 36,
                     decoration: const BoxDecoration(
-                      color: ShadcnColors.secondary,
+                      color: AppColors.secondary,
                       shape: BoxShape.circle,
                     ),
                     alignment: Alignment.center,
@@ -64,11 +64,11 @@ class CommentSection extends StatelessWidget {
                       style: const TextStyle(
                         fontSize: 12,
                         fontWeight: FontWeight.bold,
-                        color: ShadcnColors.foreground,
+                        color: AppColors.foreground,
                       ),
                     ),
                   ),
-                  const SizedBox(width: ShadcnSpacing.md),
+                  const SizedBox(width: AppSpacing.md),
                   Expanded(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
@@ -79,14 +79,14 @@ class CommentSection extends StatelessWidget {
                               '用户 ${index + 1}',
                               style: const TextStyle(
                                 fontWeight: FontWeight.w600,
-                                color: ShadcnColors.foreground,
+                                color: AppColors.foreground,
                               ),
                             ),
                             const SizedBox(width: 8),
                             const Text(
                               '2h',
                               style: TextStyle(
-                                color: ShadcnColors.mutedForeground,
+                                color: AppColors.mutedForeground,
                                 fontSize: 12,
                               ),
                             ),
@@ -95,7 +95,7 @@ class CommentSection extends StatelessWidget {
                         const SizedBox(height: 4),
                         const Text(
                           '这是一个评论占位符。真正的评论功能将在稍后实现。',
-                          style: TextStyle(color: ShadcnColors.foreground),
+                          style: TextStyle(color: AppColors.foreground),
                         ),
                       ],
                     ),

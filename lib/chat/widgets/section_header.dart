@@ -11,17 +11,17 @@ class SectionHeader extends StatelessWidget {
   Widget build(BuildContext context) {
     return Padding(
       padding: const EdgeInsets.fromLTRB(
-        ShadcnSpacing.xl,
-        ShadcnSpacing.sm,
-        ShadcnSpacing.xl,
-        ShadcnSpacing.sm,
+        AppSpacing.xl,
+        AppSpacing.sm,
+        AppSpacing.xl,
+        AppSpacing.sm,
       ),
       child: Text(
         title,
         style: const TextStyle(
           fontSize: 13,
           fontWeight: FontWeight.w600,
-          color: ShadcnColors.mutedForeground,
+          color: AppColors.mutedForeground,
           letterSpacing: 0.5,
         ),
       ),

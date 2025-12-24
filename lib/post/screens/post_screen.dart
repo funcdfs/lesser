@@ -107,7 +107,7 @@ class _PostScreenState extends State<PostScreen> {
                 Row(
                   children: [
                     Text('funcdfs', style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold)),
-                    Text(' › 添加话题', style: TextStyle(color: ShadcnColors.mutedForeground)),
+                    Text(' › 添加话题', style: TextStyle(color: AppColors.mutedForeground)),
                   ],
                 ),
                 const SizedBox(height: 8),
@@ -120,12 +120,12 @@ class _PostScreenState extends State<PostScreen> {
                   decoration: InputDecoration(
                     hintText: '有什么新鲜事吗?',
                     border: InputBorder.none,
-                    hintStyle: TextStyle(color: ShadcnColors.mutedForeground),
+                    hintStyle: TextStyle(color: AppColors.mutedForeground),
                   ),
                 ),
                 const SizedBox(height: 20),
                 _buildActionIcons(),
-                Divider(color: ShadcnColors.border, height: 32),
+                Divider(color: AppColors.border, height: 32),
                 Row(
                   children: [
                     ShadcnAvatar(
@@ -134,7 +134,7 @@ class _PostScreenState extends State<PostScreen> {
                       size: 24,
                     ),
                     const SizedBox(width: 8),
-                    Text('添加到串文', style: TextStyle(color: ShadcnColors.mutedForeground)),
+                    Text('添加到串文', style: TextStyle(color: AppColors.mutedForeground)),
                   ],
                 )
               ],
@@ -146,7 +146,7 @@ class _PostScreenState extends State<PostScreen> {
   }
 
   Widget _buildActionIcons() {
-    final iconColor = ShadcnColors.mutedForeground;
+    final iconColor = AppColors.mutedForeground;
     return Row(
       children: [
         IconButton(icon: Icon(Icons.photo_outlined, color: iconColor), onPressed: () {}),
@@ -154,7 +154,7 @@ class _PostScreenState extends State<PostScreen> {
         Container(
           padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
           decoration: BoxDecoration(
-            border: Border.all(color: ShadcnColors.border),
+            border: Border.all(color: AppColors.border),
             borderRadius: BorderRadius.circular(8),
           ),
           child: const Text('GIF', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
@@ -174,8 +174,8 @@ class _PostScreenState extends State<PostScreen> {
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
           TextButton.icon(
-            icon: Icon(Icons.sync_alt, color: ShadcnColors.mutedForeground),
-            label: Text('回复选项', style: TextStyle(color: ShadcnColors.mutedForeground)),
+            icon: Icon(Icons.sync_alt, color: AppColors.mutedForeground),
+            label: Text('回复选项', style: TextStyle(color: AppColors.mutedForeground)),
             onPressed: () {},
           ),
           ShadcnButton(

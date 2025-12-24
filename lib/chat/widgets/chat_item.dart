@@ -29,12 +29,12 @@ class ChatItem extends StatelessWidget {
   Widget build(BuildContext context) {
     return ShadcnListTile(
       padding: const EdgeInsets.symmetric(
-        horizontal: ShadcnSpacing.lg,
-        vertical: ShadcnSpacing.md,
+        horizontal: AppSpacing.lg,
+        vertical: AppSpacing.md,
       ),
       leading: ShadcnIconContainer(
         icon: icon,
-        iconColor: ShadcnColors.mutedForeground,
+        iconColor: AppColors.mutedForeground,
         size: 48,
       ),
       title: title,
@@ -48,7 +48,7 @@ class ChatItem extends StatelessWidget {
               time,
               style: const TextStyle(
                 fontSize: 12,
-                color: ShadcnColors.mutedForeground,
+                color: AppColors.mutedForeground,
               ),
             ),
           if (unreadCount > 0) ...[
@@ -59,7 +59,7 @@ class ChatItem extends StatelessWidget {
           ] else if (showArrow)
             const Icon(
               Icons.chevron_right,
-              color: ShadcnColors.mutedForeground,
+              color: AppColors.mutedForeground,
               size: 18,
             ),
         ],

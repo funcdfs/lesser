@@ -207,7 +207,7 @@ class _FeedListState extends State<FeedList>
         width: 48,
         height: 48,
         decoration: BoxDecoration(
-          color: ShadcnColors.primary,
+          color: AppColors.primary,
           shape: BoxShape.circle,
           boxShadow: [
             BoxShadow(
@@ -217,7 +217,7 @@ class _FeedListState extends State<FeedList>
             ),
           ],
         ),
-        child: Icon(icon, color: ShadcnColors.primaryForeground, size: 24),
+        child: Icon(icon, color: AppColors.primaryForeground, size: 24),
       ),
     );
   }
@@ -250,7 +250,7 @@ class _FeedListState extends State<FeedList>
                         style: const TextStyle(
                           fontWeight: FontWeight.w600,
                           fontSize: 15,
-                          color: ShadcnColors.foreground,
+                          color: AppColors.foreground,
                         ),
                       ),
                       const SizedBox(width: 4),
@@ -258,7 +258,7 @@ class _FeedListState extends State<FeedList>
                         child: Text(
                           '${post.authorHandle} · 2h',
                           style: const TextStyle(
-                            color: ShadcnColors.mutedForeground,
+                            color: AppColors.mutedForeground,
                             fontSize: 14,
                           ),
                           overflow: TextOverflow.ellipsis,
@@ -267,7 +267,7 @@ class _FeedListState extends State<FeedList>
                       const Icon(
                         Icons.more_horiz,
                         size: 16,
-                        color: ShadcnColors.mutedForeground,
+                        color: AppColors.mutedForeground,
                       ),
                     ],
                   ),
@@ -278,7 +278,7 @@ class _FeedListState extends State<FeedList>
                     style: const TextStyle(
                       fontSize: 15,
                       height: 1.4,
-                      color: ShadcnColors.foreground,
+                      color: AppColors.foreground,
                     ),
                   ),
                   // 图片区域
@@ -320,14 +320,14 @@ class _FeedListState extends State<FeedList>
   Widget _buildAction(IconData icon, String label) {
     return Row(
       children: [
-        Icon(icon, size: 18, color: ShadcnColors.mutedForeground),
+        Icon(icon, size: 18, color: AppColors.mutedForeground),
         if (label.isNotEmpty) ...[
           const SizedBox(width: 4),
           Text(
             label,
             style: const TextStyle(
               fontSize: 13,
-              color: ShadcnColors.mutedForeground,
+              color: AppColors.mutedForeground,
             ),
           ),
         ],

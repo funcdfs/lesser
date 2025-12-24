@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import '../../theme/theme.dart';
+import '../../../theme/theme.dart';
 
 /// Shadcn 风格的卡片组件
 /// 提供统一的背景、圆角、边框和阴影样式。
@@ -7,7 +7,7 @@ class ShadcnCard extends StatelessWidget {
   /// 卡片内容
   final Widget child;
 
-  /// 内边距（可选，默认为 ShadcnSpacing.lg）
+  /// 内边距（可选，默认为 AppSpacing.lg）
   final EdgeInsetsGeometry? padding;
 
   /// 点击回调（可选）
@@ -19,15 +19,15 @@ class ShadcnCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final card = Container(
       decoration: BoxDecoration(
-        color: ShadcnColors.card,
-        borderRadius: BorderRadius.circular(ShadcnRadius.lg),
-        border: Border.all(color: ShadcnColors.border),
-        boxShadow: ShadcnShadows.subtle,
+        color: AppColors.card,
+        borderRadius: BorderRadius.circular(AppRadius.lg),
+        border: Border.all(color: AppColors.border),
+        boxShadow: AppShadows.subtle,
       ),
       child: ClipRRect(
-        borderRadius: BorderRadius.circular(ShadcnRadius.lg),
+        borderRadius: BorderRadius.circular(AppRadius.lg),
         child: Padding(
-          padding: padding ?? const EdgeInsets.all(ShadcnSpacing.lg),
+          padding: padding ?? EdgeInsets.all(AppSpacing.lg),
           child: child,
         ),
       ),
@@ -37,7 +37,7 @@ class ShadcnCard extends StatelessWidget {
     if (onTap != null) {
       return InkWell(
         onTap: onTap,
-        borderRadius: BorderRadius.circular(ShadcnRadius.lg),
+        borderRadius: BorderRadius.circular(AppRadius.lg),
         child: card,
       );
     }

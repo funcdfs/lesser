@@ -131,13 +131,13 @@ class _PostActionsBarState extends State<PostActionsBar> {
               isLiked: _userLiked,
               isLikeButton: true,
             ),
-            const SizedBox(width: ShadcnSpacing.lg),
+            const SizedBox(width: AppSpacing.lg),
             PostActionButton(
               icon: Icons.chat_bubble_outline,
               count: widget.commentsCount,
               onTap: widget.onComment,
             ),
-            const SizedBox(width: ShadcnSpacing.lg),
+            const SizedBox(width: AppSpacing.lg),
             PostActionButton(
               icon: Icons.repeat,
               count: widget.repostsCount,
@@ -155,7 +155,7 @@ class _PostActionsBarState extends State<PostActionsBar> {
                 onTap: widget.onBookmark,
               ),
             if (widget.bookmarksCount != null && widget.sharesCount != null)
-              const SizedBox(width: ShadcnSpacing.lg),
+              const SizedBox(width: AppSpacing.lg),
             if (widget.sharesCount != null)
               PostActionButton(
                 icon: Icons.share_outlined,
@@ -187,13 +187,13 @@ class _PostActionsBarState extends State<PostActionsBar> {
                   isLiked: _userLiked,
                   isLikeButton: true,
                 ),
-                const SizedBox(width: ShadcnSpacing.sm),
+                const SizedBox(width: AppSpacing.sm),
                 PostActionButton(
                   icon: Icons.chat_bubble_outline,
                   count: widget.commentsCount,
                   onTap: widget.onComment,
                 ),
-                const SizedBox(width: ShadcnSpacing.sm),
+                const SizedBox(width: AppSpacing.sm),
                 PostActionButton(
                   icon: Icons.repeat,
                   count: widget.repostsCount,
@@ -216,7 +216,7 @@ class _PostActionsBarState extends State<PostActionsBar> {
                   icon: Icons.bookmark_border,
                   onTap: widget.onBookmark,
                 ),
-                const SizedBox(width: ShadcnSpacing.xs),
+                const SizedBox(width: AppSpacing.xs),
                 PostActionButton(
                   icon: Icons.share_outlined,
                   onTap: widget.onShare,
@@ -247,13 +247,13 @@ class _PostActionsBarState extends State<PostActionsBar> {
                 isLiked: _userLiked,
                 isLikeButton: true,
               ),
-              const SizedBox(width: ShadcnSpacing.sm),
+              const SizedBox(width: AppSpacing.sm),
               PostActionButton(
                 icon: Icons.chat_bubble_outline,
                 count: widget.commentsCount,
                 onTap: widget.onComment,
               ),
-              const SizedBox(width: ShadcnSpacing.sm),
+              const SizedBox(width: AppSpacing.sm),
               PostActionButton(
                 icon: Icons.repeat,
                 count: widget.repostsCount,
@@ -272,7 +272,7 @@ class _PostActionsBarState extends State<PostActionsBar> {
                 icon: Icons.bookmark_border,
                 onTap: widget.onBookmark,
               ),
-              const SizedBox(width: ShadcnSpacing.xs),
+              const SizedBox(width: AppSpacing.xs),
               PostActionButton(
                 icon: Icons.share_outlined,
                 onTap: widget.onShare,
@@ -447,7 +447,7 @@ class _PostActionButtonState extends State<PostActionButton>
     // 根据按钮类型确定 hover 时的背景色
     final hoverBackgroundColor = widget.isLikeButton && widget.isLiked
         ? ActionButtonThemeConstants.likeButtonColor.withValues(alpha: 0.1)
-        : ShadcnColors.secondary.withValues(alpha: 0.6);
+        : AppColors.secondary.withValues(alpha: 0.6);
 
     // 根据按钮类型确定 hover 时的图标颜色
     final hoverIconColor = widget.isLikeButton && widget.isLiked
@@ -474,11 +474,11 @@ class _PostActionButtonState extends State<PostActionButton>
                 duration: ThemeConstants.standardAnimationDuration,
                 curve: Curves.easeInOut,
                 padding: const EdgeInsets.symmetric(
-                  horizontal: ShadcnSpacing.sm,
-                  vertical: ShadcnSpacing.xs,
+                  horizontal: AppSpacing.sm,
+                  vertical: AppSpacing.xs,
                 ),
                 decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(ShadcnRadius.full),
+                  borderRadius: BorderRadius.circular(AppRadius.full),
                   color: _isHovered || _isPressed
                       ? hoverBackgroundColor
                       : Colors.transparent,
@@ -501,7 +501,7 @@ class _PostActionButtonState extends State<PostActionButton>
                                   ? ActionButtonThemeConstants.likeButtonColor
                                   : ActionButtonThemeConstants
                                       .normalButtonHoverColor)
-                              : ShadcnColors.mutedForeground,
+                              : AppColors.mutedForeground,
                           fontWeight: _isHovered || _isPressed
                               ? FontWeight.w600
                               : FontWeight.normal,

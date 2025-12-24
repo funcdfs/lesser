@@ -41,14 +41,14 @@ class _DetailScreenState extends State<DetailScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: ShadcnColors.background,
+      backgroundColor: AppColors.background,
       appBar: AppBar(
-        backgroundColor: ShadcnColors.background,
-        iconTheme: const IconThemeData(color: ShadcnColors.foreground),
+        backgroundColor: AppColors.background,
+        iconTheme: const IconThemeData(color: AppColors.foreground),
         title: const Text(
           '帖子详情',
           style: TextStyle(
-            color: ShadcnColors.foreground,
+            color: AppColors.foreground,
             fontSize: 18,
             fontWeight: FontWeight.w600,
           ),
@@ -57,7 +57,7 @@ class _DetailScreenState extends State<DetailScreen> {
         elevation: 0,
         bottom: PreferredSize(
           preferredSize: const Size.fromHeight(1),
-          child: Container(color: ShadcnColors.border, height: 1),
+          child: Container(color: AppColors.border, height: 1),
         ),
       ),
       body: SingleChildScrollView(
@@ -65,7 +65,7 @@ class _DetailScreenState extends State<DetailScreen> {
           children: [
             // 帖子核心内容区块
             Padding(
-              padding: const EdgeInsets.all(ShadcnSpacing.lg),
+              padding: const EdgeInsets.all(AppSpacing.lg),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
@@ -77,7 +77,7 @@ class _DetailScreenState extends State<DetailScreen> {
                         fallbackInitials: widget.post.author,
                         size: 48,
                       ),
-                      const SizedBox(width: ShadcnSpacing.md),
+                      const SizedBox(width: AppSpacing.md),
                       Expanded(
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
@@ -87,13 +87,13 @@ class _DetailScreenState extends State<DetailScreen> {
                               style: const TextStyle(
                                 fontWeight: FontWeight.w600,
                                 fontSize: 16,
-                                color: ShadcnColors.foreground,
+                                color: AppColors.foreground,
                               ),
                             ),
                             Text(
                               widget.post.authorHandle,
                               style: const TextStyle(
-                                color: ShadcnColors.mutedForeground,
+                                color: AppColors.mutedForeground,
                                 fontSize: 14,
                               ),
                             ),
@@ -103,13 +103,13 @@ class _DetailScreenState extends State<DetailScreen> {
                       IconButton(
                         icon: const Icon(
                           Icons.more_horiz,
-                          color: ShadcnColors.mutedForeground,
+                          color: AppColors.mutedForeground,
                         ),
                         onPressed: () => _showActionMenu(context),
                       ),
                     ],
                   ),
-                  const SizedBox(height: ShadcnSpacing.lg),
+                  const SizedBox(height: AppSpacing.lg),
 
                   // 帖子正文文本
                   Text(
@@ -117,10 +117,10 @@ class _DetailScreenState extends State<DetailScreen> {
                     style: const TextStyle(
                       fontSize: 16,
                       height: 1.5,
-                      color: ShadcnColors.foreground,
+                      color: AppColors.foreground,
                     ),
                   ),
-                  const SizedBox(height: ShadcnSpacing.lg),
+                  const SizedBox(height: AppSpacing.lg),
 
                   // 发布时间与位置信息
                   Column(
@@ -131,34 +131,34 @@ class _DetailScreenState extends State<DetailScreen> {
                           const Text(
                             '发布时间 ',
                             style: TextStyle(
-                              color: ShadcnColors.mutedForeground,
+                              color: AppColors.mutedForeground,
                               fontSize: 14,
                             ),
                           ),
                           Text(
                             _formatFullDate(widget.post.timestamp),
                             style: const TextStyle(
-                              color: ShadcnColors.mutedForeground,
+                              color: AppColors.mutedForeground,
                               fontSize: 14,
                             ),
                           ),
                         ],
                       ),
                       if (widget.post.location != null) ...[
-                        const SizedBox(height: ShadcnSpacing.sm),
+                        const SizedBox(height: AppSpacing.sm),
                         Text(
                           '地点 ${widget.post.location!}',
                           style: const TextStyle(
-                            color: ShadcnColors.primary,
+                            color: AppColors.primary,
                             fontSize: 14,
                           ),
                         ),
                       ],
                     ],
                   ),
-                  const SizedBox(height: ShadcnSpacing.lg),
-                  const Divider(color: ShadcnColors.border),
-                  const SizedBox(height: ShadcnSpacing.md),
+                  const SizedBox(height: AppSpacing.lg),
+                  const Divider(color: AppColors.border),
+                  const SizedBox(height: AppSpacing.md),
 
                   // 交互操作栏封装组件
                   PostActionsBar(
@@ -171,7 +171,7 @@ class _DetailScreenState extends State<DetailScreen> {
                     onLikeToggle: _toggleLike,
                     responsive: false, // 详情页通常固定排版
                   ),
-                  const SizedBox(height: ShadcnSpacing.md),
+                  const SizedBox(height: AppSpacing.md),
                 ],
               ),
             ),
@@ -188,15 +188,15 @@ class _DetailScreenState extends State<DetailScreen> {
   void _showActionMenu(BuildContext context) {
     showModalBottomSheet(
       context: context,
-      backgroundColor: ShadcnColors.background,
+      backgroundColor: AppColors.background,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(
-          top: Radius.circular(ShadcnRadius.xl),
+          top: Radius.circular(AppRadius.xl),
         ),
       ),
       builder: (context) => SafeArea(
         child: Padding(
-          padding: const EdgeInsets.symmetric(vertical: ShadcnSpacing.lg),
+          padding: const EdgeInsets.symmetric(vertical: AppSpacing.lg),
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
@@ -221,7 +221,7 @@ class _DetailScreenState extends State<DetailScreen> {
                 Icons.do_not_disturb_on_outlined,
                 isDestructive: true,
               ),
-              const Divider(height: 1, color: ShadcnColors.border),
+              const Divider(height: 1, color: AppColors.border),
               _buildActionItem(
                 context,
                 '举报帖子',
@@ -249,8 +249,8 @@ class _DetailScreenState extends State<DetailScreen> {
       },
       child: Padding(
         padding: const EdgeInsets.symmetric(
-          horizontal: ShadcnSpacing.lg,
-          vertical: ShadcnSpacing.md + 4,
+          horizontal: AppSpacing.lg,
+          vertical: AppSpacing.md + 4,
         ),
         child: Row(
           children: [
@@ -258,18 +258,18 @@ class _DetailScreenState extends State<DetailScreen> {
               icon,
               size: 24,
               color: isDestructive
-                  ? ShadcnColors.destructive
-                  : ShadcnColors.foreground,
+                  ? AppColors.destructive
+                  : AppColors.foreground,
             ),
-            const SizedBox(width: ShadcnSpacing.lg),
+            const SizedBox(width: AppSpacing.lg),
             Text(
               title,
               style: TextStyle(
                 fontSize: 16,
                 fontWeight: FontWeight.w500,
                 color: isDestructive
-                    ? ShadcnColors.destructive
-                    : ShadcnColors.foreground,
+                    ? AppColors.destructive
+                    : AppColors.foreground,
               ),
             ),
           ],

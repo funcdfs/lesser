@@ -73,7 +73,7 @@ class _ExpandableTextState extends State<ExpandableText> {
                 child: Text(
                   _isExpanded ? '收起' : '全文',
                   style: TextStyle(
-                    color: ShadcnColors.primary,
+                    color: AppColors.primary,
                     fontWeight: FontWeight.w500,
                     fontSize: (widget.style?.fontSize ?? 14),
                   ),

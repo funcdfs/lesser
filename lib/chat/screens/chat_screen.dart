@@ -23,21 +23,21 @@ class _ChatScreenState extends State<ChatScreen> {
   void _showCreateMenu() {
     showModalBottomSheet(
       context: context,
-      backgroundColor: ShadcnColors.background,
+      backgroundColor: AppColors.background,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(
-          top: Radius.circular(ShadcnRadius.xl),
+          top: Radius.circular(AppRadius.xl),
         ),
       ),
       builder: (context) => SafeArea(
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            const SizedBox(height: ShadcnSpacing.sm),
+            const SizedBox(height: AppSpacing.sm),
             ShadcnListTile(
               leading: const Icon(
                 Icons.group_add,
-                color: ShadcnColors.foreground,
+                color: AppColors.foreground,
               ),
               title: '创建群组 (Group)',
               onTap: () {
@@ -48,7 +48,7 @@ class _ChatScreenState extends State<ChatScreen> {
             ShadcnListTile(
               leading: const Icon(
                 Icons.podcasts,
-                color: ShadcnColors.foreground,
+                color: AppColors.foreground,
               ),
               title: '创建频道 (Channel)',
               onTap: () {
@@ -56,7 +56,7 @@ class _ChatScreenState extends State<ChatScreen> {
                 // TODO: 执行创建频道逻辑
               },
             ),
-            const SizedBox(height: ShadcnSpacing.lg),
+            const SizedBox(height: AppSpacing.lg),
           ],
         ),
       ),
@@ -66,31 +66,31 @@ class _ChatScreenState extends State<ChatScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: ShadcnColors.background,
+      backgroundColor: AppColors.background,
       appBar: AppBar(
         title: const Text(
           '消息中心',
           style: TextStyle(
             fontWeight: FontWeight.bold,
             fontSize: 18,
-            color: ShadcnColors.foreground,
+            color: AppColors.foreground,
           ),
         ),
         centerTitle: false,
-        backgroundColor: ShadcnColors.background,
+        backgroundColor: AppColors.background,
         elevation: 0,
       ),
       body: Column(
         children: [
           Expanded(
             child: ListView(
-              padding: const EdgeInsets.symmetric(vertical: ShadcnSpacing.md),
+              padding: const EdgeInsets.symmetric(vertical: AppSpacing.md),
               children: [
                 // 顶部四大功能入口：喜欢、评论、收藏、粉丝
                 Padding(
                   padding: const EdgeInsets.symmetric(
-                    horizontal: ShadcnSpacing.md,
-                    vertical: ShadcnSpacing.sm,
+                    horizontal: AppSpacing.md,
+                    vertical: AppSpacing.sm,
                   ),
                   child: Row(
                     mainAxisAlignment: MainAxisAlignment.spaceAround,
@@ -98,33 +98,33 @@ class _ChatScreenState extends State<ChatScreen> {
                     children: [
                       TopIconItem(
                         icon: Icons.favorite,
-                        color: ShadcnColors.mutedForeground,
+                        color: AppColors.mutedForeground,
                         label: '收到的喜欢',
                       ),
                       TopIconItem(
                         icon: Icons.comment,
-                        color: ShadcnColors.mutedForeground,
+                        color: AppColors.mutedForeground,
                         label: '评论和回复',
                       ),
                       TopIconItem(
                         icon: Icons.bookmark,
-                        color: ShadcnColors.mutedForeground,
+                        color: AppColors.mutedForeground,
                         label: '收藏和@',
                       ),
                       TopIconItem(
                         icon: Icons.person_add,
-                        color: ShadcnColors.mutedForeground,
+                        color: AppColors.mutedForeground,
                         label: '新增粉丝',
                       ),
                     ],
                   ),
                 ),
 
-                const SizedBox(height: ShadcnSpacing.md),
+                const SizedBox(height: AppSpacing.md),
                 const Divider(
                   height: 1,
                   thickness: 1,
-                  color: ShadcnColors.border,
+                  color: AppColors.border,
                 ),
 
                 // 活跃聊天会话部分
@@ -154,7 +154,7 @@ class _ChatScreenState extends State<ChatScreen> {
                   unreadCount: 0,
                 ),
 
-                const SizedBox(height: ShadcnSpacing.lg),
+                const SizedBox(height: AppSpacing.lg),
 
                 // 特殊分类：网络邻居/发现
                 const SectionHeader(title: '网络邻居'),
@@ -174,14 +174,14 @@ class _ChatScreenState extends State<ChatScreen> {
           // 底部悬浮操作栏
           Container(
             decoration: const BoxDecoration(
-              color: ShadcnColors.background,
+              color: AppColors.background,
               border: Border(
-                top: BorderSide(color: ShadcnColors.border, width: 1),
+                top: BorderSide(color: AppColors.border, width: 1),
               ),
             ),
             padding: const EdgeInsets.symmetric(
-              horizontal: ShadcnSpacing.lg,
-              vertical: ShadcnSpacing.md,
+              horizontal: AppSpacing.lg,
+              vertical: AppSpacing.md,
             ),
             child: SafeArea(
               top: false,
@@ -194,18 +194,18 @@ class _ChatScreenState extends State<ChatScreen> {
                       icon: const Icon(Icons.people, size: 18),
                       label: const Text('我的互关'),
                       style: OutlinedButton.styleFrom(
-                        foregroundColor: ShadcnColors.foreground,
-                        side: const BorderSide(color: ShadcnColors.border),
+                        foregroundColor: AppColors.foreground,
+                        side: const BorderSide(color: AppColors.border),
                         padding: const EdgeInsets.symmetric(
-                          vertical: ShadcnSpacing.md,
+                          vertical: AppSpacing.md,
                         ),
                         shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(ShadcnRadius.md),
+                          borderRadius: BorderRadius.circular(AppRadius.md),
                         ),
                       ),
                     ),
                   ),
-                  const SizedBox(width: ShadcnSpacing.md),
+                  const SizedBox(width: AppSpacing.md),
                   // “创建”主按钮
                   Expanded(
                     child: ElevatedButton.icon(
@@ -213,14 +213,14 @@ class _ChatScreenState extends State<ChatScreen> {
                       icon: const Icon(Icons.add, size: 18),
                       label: const Text('发起对话'),
                       style: ElevatedButton.styleFrom(
-                        backgroundColor: ShadcnColors.primary,
-                        foregroundColor: ShadcnColors.primaryForeground,
+                        backgroundColor: AppColors.primary,
+                        foregroundColor: AppColors.primaryForeground,
                         padding: const EdgeInsets.symmetric(
-                          vertical: ShadcnSpacing.md,
+                          vertical: AppSpacing.md,
                         ),
                         elevation: 0,
                         shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(ShadcnRadius.md),
+                          borderRadius: BorderRadius.circular(AppRadius.md),
                         ),
                       ),
                     ),

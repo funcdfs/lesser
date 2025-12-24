@@ -31,7 +31,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: ShadcnColors.zinc50,
+      backgroundColor: AppColors.zinc50,
       body: CustomScrollView(
         slivers: [
           // 顶部个人信息卡片区域
@@ -40,23 +40,23 @@ class _ProfileScreenState extends State<ProfileScreen> {
           // 会员与个性化设置区块
           SliverToBoxAdapter(child: _buildMembershipSection()),
 
-          const SliverToBoxAdapter(child: SizedBox(height: ShadcnSpacing.md)),
+          const SliverToBoxAdapter(child: SizedBox(height: AppSpacing.md)),
 
           // 内容输出控制面板（我的发布/收藏等）
           SliverToBoxAdapter(child: _buildPublishingPanel()),
 
-          const SliverToBoxAdapter(child: SizedBox(height: ShadcnSpacing.md)),
+          const SliverToBoxAdapter(child: SizedBox(height: AppSpacing.md)),
 
           // 意见反馈与联系客服
           SliverToBoxAdapter(child: _buildFeedbackSection()),
 
-          const SliverToBoxAdapter(child: SizedBox(height: ShadcnSpacing.md)),
+          const SliverToBoxAdapter(child: SizedBox(height: AppSpacing.md)),
 
           // 通用应用设置区块
           SliverToBoxAdapter(child: _buildAppSettings()),
 
           // 底部留白，保障在带 Home Indicator 的设备上显示良好
-          const SliverToBoxAdapter(child: SizedBox(height: ShadcnSpacing.xl2)),
+          const SliverToBoxAdapter(child: SizedBox(height: AppSpacing.xl2)),
         ],
       ),
     );
@@ -65,12 +65,12 @@ class _ProfileScreenState extends State<ProfileScreen> {
   /// 构建个人资料卡片：头像、名字、ID、统计数据
   Widget _buildPersonalCard() {
     return Container(
-      margin: const EdgeInsets.all(ShadcnSpacing.lg),
-      padding: const EdgeInsets.all(ShadcnSpacing.xl2),
+      margin: const EdgeInsets.all(AppSpacing.lg),
+      padding: const EdgeInsets.all(AppSpacing.xl2),
       decoration: BoxDecoration(
-        color: ShadcnColors.card,
-        borderRadius: BorderRadius.circular(ShadcnRadius.lg),
-        border: Border.all(color: ShadcnColors.border),
+        color: AppColors.card,
+        borderRadius: BorderRadius.circular(AppRadius.lg),
+        border: Border.all(color: AppColors.border),
       ),
       child: Column(
         children: [
@@ -82,16 +82,16 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 height: 68,
                 decoration: BoxDecoration(
                   shape: BoxShape.circle,
-                  color: ShadcnColors.secondary,
-                  border: Border.all(color: ShadcnColors.border, width: 2),
+                  color: AppColors.secondary,
+                  border: Border.all(color: AppColors.border, width: 2),
                 ),
                 child: const Icon(
                   Icons.person,
                   size: 36,
-                  color: ShadcnColors.mutedForeground,
+                  color: AppColors.mutedForeground,
                 ),
               ),
-              const SizedBox(width: ShadcnSpacing.lg),
+              const SizedBox(width: AppSpacing.lg),
               // 用户基本信息文本区
               Expanded(
                 child: Column(
@@ -102,29 +102,29 @@ class _ProfileScreenState extends State<ProfileScreen> {
                         const Text(
                           '用户昵称',
                           style: TextStyle(
-                            color: ShadcnColors.foreground,
+                            color: AppColors.foreground,
                             fontSize: 20,
                             fontWeight: FontWeight.w600,
                             letterSpacing: -0.4,
                           ),
                         ),
                         if (_isVipMember) ...[
-                          const SizedBox(width: ShadcnSpacing.sm),
+                          const SizedBox(width: AppSpacing.sm),
                           Container(
                             padding: const EdgeInsets.symmetric(
-                              horizontal: ShadcnSpacing.sm,
+                              horizontal: AppSpacing.sm,
                               vertical: 2,
                             ),
                             decoration: BoxDecoration(
-                              color: ShadcnColors.foreground,
+                              color: AppColors.foreground,
                               borderRadius: BorderRadius.circular(
-                                ShadcnRadius.sm,
+                                AppRadius.sm,
                               ),
                             ),
                             child: const Text(
                               'VIP',
                               style: TextStyle(
-                                color: ShadcnColors.background,
+                                color: AppColors.background,
                                 fontSize: 11,
                                 fontWeight: FontWeight.w600,
                               ),
@@ -137,15 +137,15 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     const Text(
                       'ID: 123456789',
                       style: TextStyle(
-                        color: ShadcnColors.mutedForeground,
+                        color: AppColors.mutedForeground,
                         fontSize: 13,
                       ),
                     ),
-                    const SizedBox(height: ShadcnSpacing.sm),
+                    const SizedBox(height: AppSpacing.sm),
                     const Text(
                       '热爱生活，分享美好',
                       style: TextStyle(
-                        color: ShadcnColors.mutedForeground,
+                        color: AppColors.mutedForeground,
                         fontSize: 13,
                       ),
                     ),
@@ -157,21 +157,21 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 onPressed: () {},
                 icon: const Icon(
                   Icons.edit_outlined,
-                  color: ShadcnColors.mutedForeground,
+                  color: AppColors.mutedForeground,
                   size: 20,
                 ),
               ),
             ],
           ),
-          const SizedBox(height: ShadcnSpacing.xl),
+          const SizedBox(height: AppSpacing.xl),
           // 统计数据行：关注、粉丝、发布
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceAround,
             children: [
               _buildStatItem('328', '关注'),
-              Container(width: 1, height: 32, color: ShadcnColors.border),
+              Container(width: 1, height: 32, color: AppColors.border),
               _buildStatItem('1.2K', '粉丝'),
-              Container(width: 1, height: 32, color: ShadcnColors.border),
+              Container(width: 1, height: 32, color: AppColors.border),
               _buildStatItem('86', '发布'),
             ],
           ),
@@ -187,7 +187,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
         Text(
           count,
           style: const TextStyle(
-            color: ShadcnColors.foreground,
+            color: AppColors.foreground,
             fontSize: 18,
             fontWeight: FontWeight.w600,
           ),
@@ -196,7 +196,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
         Text(
           label,
           style: const TextStyle(
-            color: ShadcnColors.mutedForeground,
+            color: AppColors.mutedForeground,
             fontSize: 13,
           ),
         ),
@@ -207,7 +207,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
   /// 构建会员中心区块
   Widget _buildMembershipSection() {
     return Container(
-      margin: const EdgeInsets.symmetric(horizontal: ShadcnSpacing.lg),
+      margin: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
       child: ShadcnCard(
         padding: EdgeInsets.zero,
         child: Column(
@@ -215,29 +215,29 @@ class _ProfileScreenState extends State<ProfileScreen> {
             ShadcnListTile(
               leading: const ShadcnIconContainer(
                 icon: Icons.workspace_premium,
-                iconColor: ShadcnColors.mutedForeground,
+                iconColor: AppColors.mutedForeground,
               ),
               title: '会员中心',
               subtitle: _isVipMember ? 'VIP会员 享受专属权益' : '开通会员 解锁更多功能',
               trailing: _isVipMember
                   ? const Icon(
                       Icons.chevron_right,
-                      color: ShadcnColors.mutedForeground,
+                      color: AppColors.mutedForeground,
                       size: 20,
                     )
                   : Container(
                       padding: const EdgeInsets.symmetric(
-                        horizontal: ShadcnSpacing.md,
+                        horizontal: AppSpacing.md,
                         vertical: 4,
                       ),
                       decoration: BoxDecoration(
-                        color: ShadcnColors.foreground,
-                        borderRadius: BorderRadius.circular(ShadcnRadius.full),
+                        color: AppColors.foreground,
+                        borderRadius: BorderRadius.circular(AppRadius.full),
                       ),
                       child: const Text(
                         '立即开通',
                         style: TextStyle(
-                          color: ShadcnColors.background,
+                          color: AppColors.background,
                           fontSize: 12,
                           fontWeight: FontWeight.w500,
                         ),
@@ -249,13 +249,13 @@ class _ProfileScreenState extends State<ProfileScreen> {
             ShadcnListTile(
               leading: const ShadcnIconContainer(
                 icon: Icons.palette_outlined,
-                iconColor: ShadcnColors.mutedForeground,
+                iconColor: AppColors.mutedForeground,
               ),
               title: '个性化设置',
               subtitle: '自定义您的发布样式',
               trailing: const Icon(
                 Icons.chevron_right,
-                color: ShadcnColors.mutedForeground,
+                color: AppColors.mutedForeground,
                 size: 20,
               ),
               onTap: () {},
@@ -269,20 +269,20 @@ class _ProfileScreenState extends State<ProfileScreen> {
   /// 构建内容发布管理面板
   Widget _buildPublishingPanel() {
     return Container(
-      margin: const EdgeInsets.symmetric(horizontal: ShadcnSpacing.lg),
+      margin: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
       child: ShadcnCard(
         padding: EdgeInsets.zero,
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             const Padding(
-              padding: EdgeInsets.all(ShadcnSpacing.lg),
+              padding: EdgeInsets.all(AppSpacing.lg),
               child: Text(
                 '我的发布',
                 style: TextStyle(
                   fontSize: 15,
                   fontWeight: FontWeight.w600,
-                  color: ShadcnColors.foreground,
+                  color: AppColors.foreground,
                 ),
               ),
             ),
@@ -290,13 +290,13 @@ class _ProfileScreenState extends State<ProfileScreen> {
             ShadcnListTile(
               leading: const ShadcnIconContainer(
                 icon: Icons.article_outlined,
-                iconColor: ShadcnColors.mutedForeground,
+                iconColor: AppColors.mutedForeground,
               ),
               title: '我的文章',
               subtitle: '查看和管理已发布的文章',
               trailing: const Icon(
                 Icons.chevron_right,
-                color: ShadcnColors.mutedForeground,
+                color: AppColors.mutedForeground,
                 size: 20,
               ),
               onTap: () {},
@@ -305,13 +305,13 @@ class _ProfileScreenState extends State<ProfileScreen> {
             ShadcnListTile(
               leading: const ShadcnIconContainer(
                 icon: Icons.drafts_outlined,
-                iconColor: ShadcnColors.mutedForeground,
+                iconColor: AppColors.mutedForeground,
               ),
               title: '草稿箱',
               subtitle: '8篇草稿',
               trailing: const Icon(
                 Icons.chevron_right,
-                color: ShadcnColors.mutedForeground,
+                color: AppColors.mutedForeground,
                 size: 20,
               ),
               onTap: () {},
@@ -320,13 +320,13 @@ class _ProfileScreenState extends State<ProfileScreen> {
             ShadcnListTile(
               leading: const ShadcnIconContainer(
                 icon: Icons.favorite_outline,
-                iconColor: ShadcnColors.mutedForeground,
+                iconColor: AppColors.mutedForeground,
               ),
               title: '我的收藏',
               subtitle: '126个收藏',
               trailing: const Icon(
                 Icons.chevron_right,
-                color: ShadcnColors.mutedForeground,
+                color: AppColors.mutedForeground,
                 size: 20,
               ),
               onTap: () {},
@@ -335,13 +335,13 @@ class _ProfileScreenState extends State<ProfileScreen> {
             ShadcnListTile(
               leading: const ShadcnIconContainer(
                 icon: Icons.bar_chart_outlined,
-                iconColor: ShadcnColors.mutedForeground,
+                iconColor: AppColors.mutedForeground,
               ),
               title: '数据统计',
               subtitle: '查看发布数据和互动情况',
               trailing: const Icon(
                 Icons.chevron_right,
-                color: ShadcnColors.mutedForeground,
+                color: AppColors.mutedForeground,
                 size: 20,
               ),
               onTap: () {},
@@ -355,7 +355,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
   /// 构建各反馈区块
   Widget _buildFeedbackSection() {
     return Container(
-      margin: const EdgeInsets.symmetric(horizontal: ShadcnSpacing.lg),
+      margin: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
       child: ShadcnCard(
         padding: EdgeInsets.zero,
         child: Column(
@@ -363,13 +363,13 @@ class _ProfileScreenState extends State<ProfileScreen> {
             ShadcnListTile(
               leading: const ShadcnIconContainer(
                 icon: Icons.feedback_outlined,
-                iconColor: ShadcnColors.mutedForeground,
+                iconColor: AppColors.mutedForeground,
               ),
               title: '意见反馈',
               subtitle: '告诉我们您的建议',
               trailing: const Icon(
                 Icons.chevron_right,
-                color: ShadcnColors.mutedForeground,
+                color: AppColors.mutedForeground,
                 size: 20,
               ),
               onTap: () {},
@@ -378,13 +378,13 @@ class _ProfileScreenState extends State<ProfileScreen> {
             ShadcnListTile(
               leading: const ShadcnIconContainer(
                 icon: Icons.support_agent_outlined,
-                iconColor: ShadcnColors.mutedForeground,
+                iconColor: AppColors.mutedForeground,
               ),
               title: '联系客服',
               subtitle: '在线客服 09:00-21:00',
               trailing: const Icon(
                 Icons.chevron_right,
-                color: ShadcnColors.mutedForeground,
+                color: AppColors.mutedForeground,
                 size: 20,
               ),
               onTap: () {},
@@ -393,13 +393,13 @@ class _ProfileScreenState extends State<ProfileScreen> {
             ShadcnListTile(
               leading: const ShadcnIconContainer(
                 icon: Icons.help_outline,
-                iconColor: ShadcnColors.mutedForeground,
+                iconColor: AppColors.mutedForeground,
               ),
               title: '帮助中心',
               subtitle: '常见问题与使用指南',
               trailing: const Icon(
                 Icons.chevron_right,
-                color: ShadcnColors.mutedForeground,
+                color: AppColors.mutedForeground,
                 size: 20,
               ),
               onTap: () {},
@@ -413,20 +413,20 @@ class _ProfileScreenState extends State<ProfileScreen> {
   /// 构建通用应用设置区块
   Widget _buildAppSettings() {
     return Container(
-      margin: const EdgeInsets.symmetric(horizontal: ShadcnSpacing.lg),
+      margin: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
       child: ShadcnCard(
         padding: EdgeInsets.zero,
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             const Padding(
-              padding: EdgeInsets.all(ShadcnSpacing.lg),
+              padding: EdgeInsets.all(AppSpacing.lg),
               child: Text(
                 '应用设置',
                 style: TextStyle(
                   fontSize: 15,
                   fontWeight: FontWeight.w600,
-                  color: ShadcnColors.foreground,
+                  color: AppColors.foreground,
                 ),
               ),
             ),
@@ -434,16 +434,16 @@ class _ProfileScreenState extends State<ProfileScreen> {
             // 特殊样式：带开关的 ListTile 模拟
             Padding(
               padding: const EdgeInsets.symmetric(
-                horizontal: ShadcnSpacing.lg,
-                vertical: ShadcnSpacing.md,
+                horizontal: AppSpacing.lg,
+                vertical: AppSpacing.md,
               ),
               child: Row(
                 children: [
                   const ShadcnIconContainer(
                     icon: Icons.dark_mode_outlined,
-                    iconColor: ShadcnColors.mutedForeground,
+                    iconColor: AppColors.mutedForeground,
                   ),
-                  const SizedBox(width: ShadcnSpacing.md),
+                  const SizedBox(width: AppSpacing.md),
                   const Expanded(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
@@ -453,7 +453,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                           style: TextStyle(
                             fontSize: 16,
                             fontWeight: FontWeight.w500,
-                            color: ShadcnColors.foreground,
+                            color: AppColors.foreground,
                           ),
                         ),
                         SizedBox(height: 2),
@@ -461,7 +461,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                           '保护眼睛，节省电量',
                           style: TextStyle(
                             fontSize: 13,
-                            color: ShadcnColors.mutedForeground,
+                            color: AppColors.mutedForeground,
                           ),
                         ),
                       ],
@@ -474,7 +474,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                         _isDarkMode = value;
                       });
                     },
-                    activeTrackColor: ShadcnColors.foreground,
+                    activeTrackColor: AppColors.foreground,
                   ),
                 ],
               ),
@@ -483,13 +483,13 @@ class _ProfileScreenState extends State<ProfileScreen> {
             ShadcnListTile(
               leading: const ShadcnIconContainer(
                 icon: Icons.notifications_outlined,
-                iconColor: ShadcnColors.mutedForeground,
+                iconColor: AppColors.mutedForeground,
               ),
               title: '通知设置',
               subtitle: '管理推送通知',
               trailing: const Icon(
                 Icons.chevron_right,
-                color: ShadcnColors.mutedForeground,
+                color: AppColors.mutedForeground,
                 size: 20,
               ),
               onTap: () {},
@@ -498,13 +498,13 @@ class _ProfileScreenState extends State<ProfileScreen> {
             ShadcnListTile(
               leading: const ShadcnIconContainer(
                 icon: Icons.language_outlined,
-                iconColor: ShadcnColors.mutedForeground,
+                iconColor: AppColors.mutedForeground,
               ),
               title: '语言设置',
               subtitle: '简体中文',
               trailing: const Icon(
                 Icons.chevron_right,
-                color: ShadcnColors.mutedForeground,
+                color: AppColors.mutedForeground,
                 size: 20,
               ),
               onTap: () {},
@@ -513,13 +513,13 @@ class _ProfileScreenState extends State<ProfileScreen> {
             ShadcnListTile(
               leading: const ShadcnIconContainer(
                 icon: Icons.privacy_tip_outlined,
-                iconColor: ShadcnColors.mutedForeground,
+                iconColor: AppColors.mutedForeground,
               ),
               title: '隐私设置',
               subtitle: '账号与隐私管理',
               trailing: const Icon(
                 Icons.chevron_right,
-                color: ShadcnColors.mutedForeground,
+                color: AppColors.mutedForeground,
                 size: 20,
               ),
               onTap: () {},
@@ -528,13 +528,13 @@ class _ProfileScreenState extends State<ProfileScreen> {
             ShadcnListTile(
               leading: const ShadcnIconContainer(
                 icon: Icons.info_outline,
-                iconColor: ShadcnColors.mutedForeground,
+                iconColor: AppColors.mutedForeground,
               ),
               title: '关于我们',
               subtitle: 'v1.0.0',
               trailing: const Icon(
                 Icons.chevron_right,
-                color: ShadcnColors.mutedForeground,
+                color: AppColors.mutedForeground,
                 size: 20,
               ),
               onTap: () {},

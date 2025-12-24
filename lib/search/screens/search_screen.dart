@@ -88,15 +88,13 @@ class _SearchScreenState extends State<SearchScreen> {
   void _showSearchSettings() {
     showModalBottomSheet(
       context: context,
-      backgroundColor: ShadcnColors.background,
+      backgroundColor: AppColors.background,
       shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(
-          top: Radius.circular(ShadcnRadius.xl),
-        ),
+        borderRadius: BorderRadius.vertical(top: Radius.circular(AppRadius.xl)),
       ),
       builder: (context) => SafeArea(
         child: Padding(
-          padding: const EdgeInsets.all(ShadcnSpacing.xl),
+          padding: const EdgeInsets.all(AppSpacing.xl),
           child: Column(
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -106,38 +104,38 @@ class _SearchScreenState extends State<SearchScreen> {
                 style: TextStyle(
                   fontSize: 20,
                   fontWeight: FontWeight.bold,
-                  color: ShadcnColors.foreground,
+                  color: AppColors.foreground,
                 ),
               ),
-              const SizedBox(height: ShadcnSpacing.lg),
+              const SizedBox(height: AppSpacing.lg),
               ListTile(
                 leading: const Icon(
                   Icons.history,
-                  color: ShadcnColors.mutedForeground,
+                  color: AppColors.mutedForeground,
                 ),
                 title: const Text(
                   '搜索历史',
-                  style: TextStyle(color: ShadcnColors.foreground),
+                  style: TextStyle(color: AppColors.foreground),
                 ),
               ),
               ListTile(
                 leading: const Icon(
                   Icons.filter_list,
-                  color: ShadcnColors.mutedForeground,
+                  color: AppColors.mutedForeground,
                 ),
                 title: const Text(
                   '搜索过滤',
-                  style: TextStyle(color: ShadcnColors.foreground),
+                  style: TextStyle(color: AppColors.foreground),
                 ),
               ),
               ListTile(
                 leading: const Icon(
                   Icons.settings,
-                  color: ShadcnColors.mutedForeground,
+                  color: AppColors.mutedForeground,
                 ),
                 title: const Text(
                   '高级设置',
-                  style: TextStyle(color: ShadcnColors.foreground),
+                  style: TextStyle(color: AppColors.foreground),
                 ),
               ),
             ],
@@ -150,25 +148,21 @@ class _SearchScreenState extends State<SearchScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: ShadcnColors.background,
+      backgroundColor: AppColors.background,
       body: SafeArea(
         child: CustomScrollView(
           slivers: [
             // 顶部搜索搜索
             SliverToBoxAdapter(child: _buildSearchBar()),
-            const SliverToBoxAdapter(child: SizedBox(height: ShadcnSpacing.lg)),
+            const SliverToBoxAdapter(child: SizedBox(height: AppSpacing.lg)),
 
             // 热门榜单
             SliverToBoxAdapter(child: _buildHotSection()),
-            const SliverToBoxAdapter(
-              child: SizedBox(height: ShadcnSpacing.xl2),
-            ),
+            const SliverToBoxAdapter(child: SizedBox(height: AppSpacing.xl2)),
 
             // 热门标签
             SliverToBoxAdapter(child: _buildHotTagsSection()),
-            const SliverToBoxAdapter(
-              child: SizedBox(height: ShadcnSpacing.xl4),
-            ),
+            const SliverToBoxAdapter(child: SizedBox(height: AppSpacing.xl4)),
           ],
         ),
       ),
@@ -179,33 +173,33 @@ class _SearchScreenState extends State<SearchScreen> {
   Widget _buildSearchBar() {
     return Padding(
       padding: const EdgeInsets.fromLTRB(
-        ShadcnSpacing.lg,
-        ShadcnSpacing.lg,
-        ShadcnSpacing.lg,
+        AppSpacing.lg,
+        AppSpacing.lg,
+        AppSpacing.lg,
         0,
       ),
       child: Container(
         decoration: BoxDecoration(
-          color: ShadcnColors.secondary,
-          borderRadius: BorderRadius.circular(ShadcnRadius.lg),
+          color: AppColors.secondary,
+          borderRadius: BorderRadius.circular(AppRadius.lg),
         ),
         child: TextField(
           controller: _searchController,
-          style: const TextStyle(color: ShadcnColors.foreground),
+          style: const TextStyle(color: AppColors.foreground),
           decoration: InputDecoration(
             hintText: '搜索文章、话题、用户...',
-            hintStyle: const TextStyle(color: ShadcnColors.mutedForeground),
+            hintStyle: const TextStyle(color: AppColors.mutedForeground),
             prefixIcon: const Icon(
               Icons.search,
-              color: ShadcnColors.mutedForeground,
+              color: AppColors.mutedForeground,
             ),
             suffixIcon: IconButton(
-              icon: const Icon(Icons.tune, color: ShadcnColors.mutedForeground),
+              icon: const Icon(Icons.tune, color: AppColors.mutedForeground),
               onPressed: _showSearchSettings,
             ),
             border: InputBorder.none,
             contentPadding: const EdgeInsets.symmetric(
-              horizontal: ShadcnSpacing.lg,
+              horizontal: AppSpacing.lg,
               vertical: 14,
             ),
           ),
@@ -230,19 +224,15 @@ class _SearchScreenState extends State<SearchScreen> {
         // 区块标题
         Padding(
           padding: const EdgeInsets.fromLTRB(
-            ShadcnSpacing.lg,
+            AppSpacing.lg,
             0,
-            ShadcnSpacing.lg,
-            ShadcnSpacing.md,
+            AppSpacing.lg,
+            AppSpacing.md,
           ),
           child: Row(
             children: [
-              const Icon(
-                Icons.show_chart,
-                color: ShadcnColors.primary,
-                size: 20,
-              ),
-              const SizedBox(width: ShadcnSpacing.sm),
+              const Icon(Icons.show_chart, color: AppColors.primary, size: 20),
+              const SizedBox(width: AppSpacing.sm),
               Text(
                 '热门榜单',
                 style: Theme.of(context).textTheme.headlineMedium?.copyWith(
@@ -257,12 +247,12 @@ class _SearchScreenState extends State<SearchScreen> {
         // 分类切换栏
         SingleChildScrollView(
           scrollDirection: Axis.horizontal,
-          padding: const EdgeInsets.symmetric(horizontal: ShadcnSpacing.lg),
+          padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
           child: Row(
             children: List.generate(tabs.length, (index) {
               final isSelected = _hotIndex == index;
               return Padding(
-                padding: const EdgeInsets.only(right: ShadcnSpacing.md),
+                padding: const EdgeInsets.only(right: AppSpacing.md),
                 child: GestureDetector(
                   onTap: () => setState(() => _hotIndex = index),
                   child: AnimatedContainer(
@@ -273,13 +263,13 @@ class _SearchScreenState extends State<SearchScreen> {
                     ),
                     decoration: BoxDecoration(
                       color: isSelected
-                          ? ShadcnColors.foreground
+                          ? AppColors.foreground
                           : Colors.transparent,
-                      borderRadius: BorderRadius.circular(ShadcnRadius.full),
+                      borderRadius: BorderRadius.circular(AppRadius.full),
                       border: Border.all(
                         color: isSelected
-                            ? ShadcnColors.foreground
-                            : ShadcnColors.border,
+                            ? AppColors.foreground
+                            : AppColors.border,
                       ),
                     ),
                     child: Text(
@@ -288,8 +278,8 @@ class _SearchScreenState extends State<SearchScreen> {
                         fontSize: 13,
                         fontWeight: FontWeight.w600,
                         color: isSelected
-                            ? ShadcnColors.background
-                            : ShadcnColors.mutedForeground,
+                            ? AppColors.background
+                            : AppColors.mutedForeground,
                       ),
                     ),
                   ),
@@ -299,7 +289,7 @@ class _SearchScreenState extends State<SearchScreen> {
           ),
         ),
 
-        const SizedBox(height: ShadcnSpacing.lg),
+        const SizedBox(height: AppSpacing.lg),
 
         // 实际的排行列表。使用 AnimatedSwitcher 提供切换时的平滑过渡。
         AnimatedSwitcher(
@@ -314,8 +304,8 @@ class _SearchScreenState extends State<SearchScreen> {
               separatorBuilder: (context, index) => const Divider(
                 height: 1,
                 thickness: 0.5,
-                indent: ShadcnSpacing.lg + 24,
-                color: ShadcnColors.border,
+                indent: AppSpacing.lg + 24,
+                color: AppColors.border,
               ),
               itemBuilder: (context, index) {
                 return _RankedArticleItem(
@@ -336,11 +326,11 @@ class _SearchScreenState extends State<SearchScreen> {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Padding(
-          padding: const EdgeInsets.symmetric(horizontal: ShadcnSpacing.lg),
+          padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
           child: Row(
             children: [
-              const Icon(Icons.tag, color: ShadcnColors.foreground, size: 20),
-              const SizedBox(width: ShadcnSpacing.sm),
+              const Icon(Icons.tag, color: AppColors.foreground, size: 20),
+              const SizedBox(width: AppSpacing.sm),
               Text(
                 '热门标签',
                 style: Theme.of(context).textTheme.headlineMedium?.copyWith(
@@ -351,12 +341,12 @@ class _SearchScreenState extends State<SearchScreen> {
             ],
           ),
         ),
-        const SizedBox(height: ShadcnSpacing.lg),
+        const SizedBox(height: AppSpacing.lg),
         Padding(
-          padding: const EdgeInsets.symmetric(horizontal: ShadcnSpacing.lg),
+          padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
           child: Wrap(
-            spacing: ShadcnSpacing.md,
-            runSpacing: ShadcnSpacing.md,
+            spacing: AppSpacing.md,
+            runSpacing: AppSpacing.md,
             children: _hotTags.map((tag) => ShadcnChip(label: tag)).toList(),
           ),
         ),
@@ -378,8 +368,8 @@ class _RankedArticleItem extends StatelessWidget {
       onTap: () {},
       child: Padding(
         padding: const EdgeInsets.symmetric(
-          horizontal: ShadcnSpacing.lg,
-          vertical: ShadcnSpacing.md,
+          horizontal: AppSpacing.lg,
+          vertical: AppSpacing.md,
         ),
         child: Row(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -394,11 +384,11 @@ class _RankedArticleItem extends StatelessWidget {
                   fontSize: 18,
                   fontWeight: FontWeight.w800,
                   fontStyle: FontStyle.italic,
-                  color: ShadcnColors.mutedForeground,
+                  color: AppColors.mutedForeground,
                 ),
               ),
             ),
-            const SizedBox(width: ShadcnSpacing.md),
+            const SizedBox(width: AppSpacing.md),
 
             // 文本信息部分
             Expanded(
@@ -412,7 +402,7 @@ class _RankedArticleItem extends StatelessWidget {
                     style: const TextStyle(
                       fontSize: 15,
                       fontWeight: FontWeight.w600,
-                      color: ShadcnColors.foreground,
+                      color: AppColors.foreground,
                       height: 1.3,
                     ),
                   ),
@@ -423,7 +413,7 @@ class _RankedArticleItem extends StatelessWidget {
                         article.author,
                         style: const TextStyle(
                           fontSize: 12,
-                          color: ShadcnColors.mutedForeground,
+                          color: AppColors.mutedForeground,
                         ),
                       ),
                       const SizedBox(width: 8),
@@ -432,7 +422,7 @@ class _RankedArticleItem extends StatelessWidget {
                         width: 3,
                         height: 3,
                         decoration: const BoxDecoration(
-                          color: ShadcnColors.mutedForeground,
+                          color: AppColors.mutedForeground,
                           shape: BoxShape.circle,
                         ),
                       ),
@@ -441,7 +431,7 @@ class _RankedArticleItem extends StatelessWidget {
                         '${article.likes} 热度',
                         style: const TextStyle(
                           fontSize: 12,
-                          color: ShadcnColors.mutedForeground,
+                          color: AppColors.mutedForeground,
                         ),
                       ),
                     ],
@@ -450,13 +440,13 @@ class _RankedArticleItem extends StatelessWidget {
               ),
             ),
 
-            const SizedBox(width: ShadcnSpacing.md),
+            const SizedBox(width: AppSpacing.md),
 
             // 封面图片（右侧）
             ClipRRect(
-              borderRadius: BorderRadius.circular(ShadcnRadius.md),
+              borderRadius: BorderRadius.circular(AppRadius.md),
               child: Container(
-                color: ShadcnColors.secondary,
+                color: AppColors.secondary,
                 child: Image.network(
                   article.coverImage,
                   width: 80,
@@ -465,10 +455,7 @@ class _RankedArticleItem extends StatelessWidget {
                   errorBuilder: (context, error, stackTrace) => const SizedBox(
                     width: 80,
                     height: 60,
-                    child: Icon(
-                      Icons.image,
-                      color: ShadcnColors.mutedForeground,
-                    ),
+                    child: Icon(Icons.image, color: AppColors.mutedForeground),
                   ),
                 ),
               ),

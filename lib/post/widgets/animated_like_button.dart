@@ -99,8 +99,8 @@ class _AnimatedLikeButtonState extends State<AnimatedLikeButton>
             child: Icon(
               _isLiked ? Icons.favorite : Icons.favorite_border,
               color: _isLiked
-                  ? (widget.activeColor ?? ShadcnColors.foreground)
-                  : (widget.inactiveColor ?? ShadcnColors.mutedForeground),
+                  ? (widget.activeColor ?? AppColors.foreground)
+                  : (widget.inactiveColor ?? AppColors.mutedForeground),
               size: widget.size,
             ),
           );
