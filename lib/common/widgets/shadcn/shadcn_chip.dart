@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import '../../config/shadcn_theme.dart';
+import '../../theme/theme.dart';
 
 /// Shadcn 风格的标签/碎片组件
 class ShadcnChip extends StatelessWidget {

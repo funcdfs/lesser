@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import '../../common/config/shadcn_theme.dart';
+import '../../theme/theme.dart';
 import '../../common/widgets/shadcn/shadcn_list_tile.dart';
 import '../widgets/top_icon_item.dart';
 import '../widgets/section_header.dart';

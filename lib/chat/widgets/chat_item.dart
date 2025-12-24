@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../common/widgets/shadcn/shadcn_list_tile.dart';
 import '../../common/widgets/shadcn/shadcn_icon_container.dart';
-import '../../common/config/shadcn_theme.dart';
+import '../../theme/theme.dart';
 import '../../common/widgets/shadcn/shadcn_chip.dart';
 
 /// 单个聊天会话/功能项样式

@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../../common/data/mock_data.dart';
-import '../../../common/config/shadcn_theme.dart';
+import '../../../theme/theme.dart';
 import '../../../common/widgets/shadcn/shadcn_avatar.dart';
 import 'story_view_screen.dart';
 

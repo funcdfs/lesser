@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import '../../config/shadcn_theme.dart';
+import '../../theme/theme.dart';
 
 /// Shadcn 风格的卡片组件
 /// 提供统一的背景、圆角、边框和阴影样式。

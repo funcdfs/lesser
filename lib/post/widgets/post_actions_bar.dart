@@ -1,8 +1,8 @@
 import 'dart:math';
 import 'package:flutter/material.dart';
-import '../../common/config/shadcn_theme.dart';
+import '../../theme/theme.dart';
 import '../../common/utils/number_formatter.dart';
-import '../../common/utils/theme_constants.dart';
+import '../../theme/theme.dart';
 import '../../common/utils/constants.dart';
 
 /// 帖子底部操作栏组件
@@ -324,17 +324,26 @@ class _PostActionButtonState extends State<PostActionButton>
   /// 鼠标悬停状态
   bool _isHovered = false;
 
+  /// 按钮按下状态
+  bool _isPressed = false;
+
   /// 波纹扩散动画控制器
   late AnimationController _rippleAnimController;
 
   /// 粒子爆发动画控制器
   late AnimationController _burstAnimController;
 
+  /// 缩放动画控制器（用于 hover 和点击效果）
+  late AnimationController _scaleAnimController;
+
   /// 波纹扩散动画
   late Animation<double> _rippleAnimation;
 
   /// 粒子爆发动画
   late Animation<double> _burstAnimation;
+
+  /// 缩放动画
+  late Animation<double> _scaleAnimation;
 
   @override
   void initState() {
@@ -360,6 +369,18 @@ class _PostActionButtonState extends State<PostActionButton>
     _burstAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
       CurvedAnimation(parent: _burstAnimController, curve: Curves.easeOut),
     );
+
+    // 缩放动画 - 用于 hover 和点击效果
+    _scaleAnimController = AnimationController(
+      duration: ThemeConstants.standardAnimationDuration,
+      vsync: this,
+    );
+    _scaleAnimation = Tween<double>(begin: 1.0, end: 1.08).animate(
+      CurvedAnimation(
+        parent: _scaleAnimController,
+        curve: Curves.easeInOut,
+      ),
+    );
   }
 
   @override
@@ -376,67 +397,164 @@ class _PostActionButtonState extends State<PostActionButton>
   void dispose() {
     _rippleAnimController.dispose();
     _burstAnimController.dispose();
+    _scaleAnimController.dispose();
     super.dispose();
+  }
+
+  /// 处理鼠标进入
+  void _handleMouseEnter() {
+    setState(() => _isHovered = true);
+    _scaleAnimController.forward();
+  }
+
+  /// 处理鼠标离开
+  void _handleMouseExit() {
+    setState(() => _isHovered = false);
+    _scaleAnimController.reverse();
+  }
+
+  /// 处理按下
+  void _handleTapDown(TapDownDetails details) {
+    setState(() => _isPressed = true);
+    // 按下时缩小，使用动画控制器直接设置值并停止当前动画
+    _scaleAnimController.stop();
+    _scaleAnimController.value = 0.92; // 按下时缩小到 92%
+  }
+
+  /// 处理释放
+  void _handleTapUp(TapUpDetails details) {
+    setState(() => _isPressed = false);
+    // 释放时根据 hover 状态恢复
+    if (_isHovered) {
+      _scaleAnimController.forward(); // 恢复到 hover 状态 (1.08)
+    } else {
+      _scaleAnimController.reverse(); // 恢复到正常状态 (1.0)
+    }
+  }
+
+  /// 处理取消
+  void _handleTapCancel() {
+    setState(() => _isPressed = false);
+    // 取消时根据 hover 状态恢复
+    if (_isHovered) {
+      _scaleAnimController.forward(); // 恢复到 hover 状态
+    } else {
+      _scaleAnimController.reverse(); // 恢复到正常状态
+    }
   }
 
   @override
   Widget build(BuildContext context) {
-    return MouseRegion(
-      onEnter: (_) => setState(() => _isHovered = true),
-      onExit: (_) => setState(() => _isHovered = false),
-      child: InkWell(
-        onTap: widget.onTap ?? () {},
-        borderRadius: BorderRadius.circular(ShadcnRadius.full),
-        child: AnimatedContainer(
-          duration: ThemeConstants.standardAnimationDuration,
-          padding: const EdgeInsets.symmetric(
-            horizontal: ShadcnSpacing.sm,
-            vertical: ShadcnSpacing.xs,
-          ),
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(ShadcnRadius.full),
-            color: _isHovered
-                ? ShadcnColors.secondary.withValues(alpha: 0.5)
-                : Colors.transparent,
-          ),
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              // 图标容器（包含动画效果）
-              _buildIconWithEffects(),
+    // 根据按钮类型确定 hover 时的背景色
+    final hoverBackgroundColor = widget.isLikeButton && widget.isLiked
+        ? ActionButtonThemeConstants.likeButtonColor.withValues(alpha: 0.1)
+        : ShadcnColors.secondary.withValues(alpha: 0.6);
 
-              // 计数文本
-              if (widget.count != null && widget.count! > 0) ...[
-                const SizedBox(width: 6),
-                Text(
-                  formatCount(widget.count!),
-                  style: const TextStyle(
-                    fontSize: 13,
-                    color: ShadcnColors.mutedForeground,
-                  ),
+    // 根据按钮类型确定 hover 时的图标颜色
+    final hoverIconColor = widget.isLikeButton && widget.isLiked
+        ? ActionButtonThemeConstants.likeButtonColor
+        : (_isHovered
+            ? ActionButtonThemeConstants.normalButtonHoverColor
+            : ThemeConstants.iconColorDefault);
+
+    return MouseRegion(
+      onEnter: (_) => _handleMouseEnter(),
+      onExit: (_) => _handleMouseExit(),
+      cursor: SystemMouseCursors.click,
+      child: GestureDetector(
+        onTapDown: _handleTapDown,
+        onTapUp: _handleTapUp,
+        onTapCancel: _handleTapCancel,
+        onTap: widget.onTap ?? () {},
+        child: AnimatedBuilder(
+          animation: _scaleAnimation,
+          builder: (context, child) {
+            return Transform.scale(
+              scale: _scaleAnimation.value,
+              child: AnimatedContainer(
+                duration: ThemeConstants.standardAnimationDuration,
+                curve: Curves.easeInOut,
+                padding: const EdgeInsets.symmetric(
+                  horizontal: ShadcnSpacing.sm,
+                  vertical: ShadcnSpacing.xs,
                 ),
-              ],
-            ],
-          ),
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(ShadcnRadius.full),
+                  color: _isHovered || _isPressed
+                      ? hoverBackgroundColor
+                      : Colors.transparent,
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    // 图标容器（包含动画效果）
+                    _buildIconWithEffects(hoverIconColor),
+
+                    // 计数文本
+                    if (widget.count != null && widget.count! > 0) ...[
+                      const SizedBox(width: 6),
+                      AnimatedDefaultTextStyle(
+                        duration: ThemeConstants.standardAnimationDuration,
+                        style: TextStyle(
+                          fontSize: 13,
+                          color: _isHovered || _isPressed
+                              ? (widget.isLikeButton && widget.isLiked
+                                  ? ActionButtonThemeConstants.likeButtonColor
+                                  : ActionButtonThemeConstants
+                                      .normalButtonHoverColor)
+                              : ShadcnColors.mutedForeground,
+                          fontWeight: _isHovered || _isPressed
+                              ? FontWeight.w600
+                              : FontWeight.normal,
+                        ),
+                        child: Text(formatCount(widget.count!)),
+                      ),
+                    ],
+                  ],
+                ),
+              ),
+            );
+          },
         ),
       ),
     );
   }
 
   /// 构建带动画效果的图标
-  Widget _buildIconWithEffects() {
+  Widget _buildIconWithEffects(Color hoverIconColor) {
+    // 确定目标图标颜色
+    final targetIconColor = widget.isLikeButton && widget.isLiked
+        ? ActionButtonThemeConstants.likeButtonColor
+        : hoverIconColor;
+
     return Stack(
       clipBehavior: Clip.none,
       children: [
-        // 主图标
-        Icon(
-          widget.isLikeButton && widget.isLiked ? Icons.favorite : widget.icon,
-          size: ActionButtonThemeConstants.buttonIconSize,
-          color: widget.isLikeButton && widget.isLiked
-              ? ActionButtonThemeConstants.likeButtonColor
-              : (_isHovered
-                    ? ThemeConstants.iconColorActive
-                    : ThemeConstants.iconColorDefault),
+        // 主图标 - 使用 AnimatedSwitcher 处理图标切换，使用 TweenAnimationBuilder 处理颜色变化
+        AnimatedSwitcher(
+          duration: ThemeConstants.standardAnimationDuration,
+          transitionBuilder: (child, animation) {
+            return ScaleTransition(
+              scale: animation,
+              child: child,
+            );
+          },
+          child: TweenAnimationBuilder<Color?>(
+            duration: ThemeConstants.standardAnimationDuration,
+            curve: Curves.easeInOut,
+            tween: ColorTween(end: targetIconColor),
+            builder: (context, color, child) {
+              return Icon(
+                widget.isLikeButton && widget.isLiked
+                    ? Icons.favorite
+                    : widget.icon,
+                key: ValueKey(
+                    '${widget.isLikeButton}_${widget.isLiked}_${widget.icon}'),
+                size: ActionButtonThemeConstants.buttonIconSize,
+                color: color ?? targetIconColor,
+              );
+            },
+          ),
         ),
 
         // 波纹扩散效果（仅在点赞按钮上）
@@ -560,3 +678,4 @@ class _BurstEffectPainter extends CustomPainter {
     return oldDelegate.progress != progress;
   }
 }
+

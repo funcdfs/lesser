@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../common/data/mock_data.dart';
-import '../../common/config/shadcn_theme.dart';
+import '../../theme/theme.dart';
 import '../../common/widgets/shadcn/shadcn_chip.dart';
 
 /// 搜索与发现屏幕

@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import '../../config/shadcn_theme.dart';
+import '../../theme/theme.dart';
 
 /// Shadcn 按钮变体类型
 enum ShadcnButtonVariant {

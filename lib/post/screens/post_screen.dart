@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import '../../common/config/shadcn_theme.dart';
+import '../../theme/theme.dart';
 import '../../common/widgets/shadcn/shadcn_avatar.dart';
 import '../../common/widgets/shadcn/shadcn_button.dart';
 

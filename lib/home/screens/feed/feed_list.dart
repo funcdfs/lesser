@@ -1,14 +1,14 @@
 import 'package:flutter/material.dart';
 import '../../../common/data/mock_data.dart';
 import '../../../common/models/post.dart';
-import '../../../common/config/shadcn_theme.dart';
+import '../../../theme/theme.dart';
 import '../../../common/widgets/shadcn/shadcn_avatar.dart';
 import '../../../post/screens/detail_screen.dart';
 import '../../../common/utils/number_formatter.dart';
-import '../../widgets/post_card_skeleton.dart';
-import '../../widgets/post_images_widget.dart';
-import '../../widgets/expandable_text.dart';
-import '../../widgets/animated_like_button.dart';
+import '../../../post/widgets/post_card_skeleton.dart';
+import '../../../post/widgets/post_images_widget.dart';
+import '../../../common/widgets/expandable_text.dart';
+import '../../../post/widgets/animated_like_button.dart';
 
 /// 动态流列表组件 (Feed List)
 ///

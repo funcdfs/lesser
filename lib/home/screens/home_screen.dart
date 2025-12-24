@@ -1,12 +1,14 @@
 import 'package:flutter/material.dart';
-import '../../common/config/shadcn_theme.dart';
+import '../../theme/theme.dart';
 import '../../common/utils/inner_drag_lock.dart';
 import 'feed/feed_screen.dart';
-import 'feed/stories_bar.dart';
+import 'feed/following_feed_screen.dart';
 
 /// 首页屏幕组件
 ///
-/// 包含了“推荐”和“关注”两个选项卡，用于切换不同的内容流。
+/// 职责：只负责导航栏和推荐/关注切换
+/// - 顶部导航栏：包含"推荐"和"关注"两个选项卡
+/// - 内容区域：根据选中的选项卡显示对应的 feed 子组件
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
 
@@ -63,36 +65,14 @@ class _HomeScreenState extends State<HomeScreen>
             // 当内部横向滑动发生时，禁用 TabBarView 的左右滑动以避免冲突
             physics: isDragging ? const NeverScrollableScrollPhysics() : null,
             children: const [
-              // 推荐流（不带故事栏）
+              // 推荐流（独立的 feed 子组件）
               FeedScreen(feedMode: 'trending'),
-              // 关注流（带故事栏）
-              _FollowFeed(),
+              // 关注流（独立的 feed 子组件，包含故事栏）
+              FollowingFeedScreen(),
             ],
           );
         },
       ),
-    );
-  }
-}
-
-/// 内部私有：关注流页面布局
-/// 它由头部的“故事栏”和底部的“动态列表”组合而成。
-class _FollowFeed extends StatelessWidget {
-  const _FollowFeed();
-
-  @override
-  Widget build(BuildContext context) {
-    return CustomScrollView(
-      slivers: [
-        // 顶部横向滚动的故事栏
-        const SliverToBoxAdapter(child: StoriesBar()),
-        const SliverToBoxAdapter(
-          child: Divider(color: ShadcnColors.border, thickness: 1, height: 1),
-        ),
-
-        // 动态列表部分（使用 SliverList 实现）
-        const FeedList(feedMode: 'following'),
-      ],
     );
   }
 }

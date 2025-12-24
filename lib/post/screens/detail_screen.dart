@@ -1,8 +1,9 @@
 import 'package:flutter/material.dart';
 import '../../common/models/post.dart';
-import '../../common/config/shadcn_theme.dart';
+import '../../theme/theme.dart';
 import '../../common/widgets/shadcn/shadcn_avatar.dart';
-import '../../home/widgets/post_actions_bar.dart';
+import '../widgets/post_actions_bar.dart';
+import '../widgets/comment_section.dart';
 
 /// 帖子详情屏幕 (Post Detail Screen)
 ///
@@ -175,94 +176,8 @@ class _DetailScreenState extends State<DetailScreen> {
               ),
             ),
 
-            const Divider(color: ShadcnColors.border, thickness: 8, height: 8),
-
-            // 评论区块占位
-            Container(
-              padding: const EdgeInsets.all(ShadcnSpacing.lg),
-              alignment: Alignment.centerLeft,
-              child: const Text(
-                '评论',
-                style: TextStyle(
-                  fontSize: 18,
-                  fontWeight: FontWeight.bold,
-                  color: ShadcnColors.foreground,
-                ),
-              ),
-            ),
-
-            // 模拟评论列表
-            ListView.separated(
-              physics: const NeverScrollableScrollPhysics(),
-              shrinkWrap: true,
-              itemCount: 3,
-              separatorBuilder: (context, index) =>
-                  const Divider(color: ShadcnColors.border, height: 1),
-              itemBuilder: (context, index) {
-                return Padding(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: ShadcnSpacing.lg,
-                    vertical: ShadcnSpacing.lg,
-                  ),
-                  child: Row(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Container(
-                        width: 36,
-                        height: 36,
-                        decoration: const BoxDecoration(
-                          color: ShadcnColors.secondary,
-                          shape: BoxShape.circle,
-                        ),
-                        alignment: Alignment.center,
-                        child: Text(
-                          'U${index + 1}',
-                          style: const TextStyle(
-                            fontSize: 12,
-                            fontWeight: FontWeight.bold,
-                            color: ShadcnColors.foreground,
-                          ),
-                        ),
-                      ),
-                      const SizedBox(width: ShadcnSpacing.md),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Row(
-                              children: [
-                                Text(
-                                  '用户 ${index + 1}',
-                                  style: const TextStyle(
-                                    fontWeight: FontWeight.w600,
-                                    color: ShadcnColors.foreground,
-                                  ),
-                                ),
-                                const SizedBox(width: 8),
-                                const Text(
-                                  '2h',
-                                  style: TextStyle(
-                                    color: ShadcnColors.mutedForeground,
-                                    fontSize: 12,
-                                  ),
-                                ),
-                              ],
-                            ),
-                            const SizedBox(height: 4),
-                            const Text(
-                              '这是一个评论占位符。真正的评论功能将在稍后实现。',
-                              style: TextStyle(color: ShadcnColors.foreground),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ],
-                  ),
-                );
-              },
-            ),
-            // 底部间距
-            const SizedBox(height: 40),
+            // 评论区组件
+            CommentSection(commentCount: widget.post.commentsCount),
           ],
         ),
       ),

@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import '../../config/shadcn_theme.dart';
+import '../../theme/theme.dart';
 
 /// Shadcn 风格的列表项组件
 /// 对标准的 ListTile 进行了风格统一。

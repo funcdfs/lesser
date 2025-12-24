@@ -1,7 +1,3 @@
-// 首页（推荐、关注）相关组件导出
-export 'post_card.dart';
-export 'post_actions_bar.dart';
-export 'post_images_widget.dart';
-export 'post_card_skeleton.dart';
-export 'expandable_text.dart';
-export 'animated_like_button.dart';
+// 首页相关组件导出
+// 注意：post 相关组件已移至 lib/post/widgets/
+// 通用组件已移至 lib/common/widgets/

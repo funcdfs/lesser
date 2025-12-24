@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import '../../common/config/shadcn_theme.dart';
+import '../../theme/theme.dart';
 
 /// 可展开/折叠的文本组件
 /// 当文本行数超过指定的最大行数时，显示"全文"按钮，点击后可展开显示全部内容。
@@ -86,3 +86,4 @@ class _ExpandableTextState extends State<ExpandableText> {
     );
   }
 }
+

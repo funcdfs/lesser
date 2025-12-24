@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import '../../common/config/shadcn_theme.dart';
+import '../../theme/theme.dart';
 
 /// 列表区块标题（如：聊天、网络邻居）
 class SectionHeader extends StatelessWidget {

@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
-import '../../config/shadcn_theme.dart';
+import '../../theme/theme.dart';
 
 /// Shadcn 风格的头像组件
 /// 支持网络图片、SVG 格式头像以及在加载失败或无 URL 时显示首字母占位符。

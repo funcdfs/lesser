@@ -4,7 +4,7 @@ import '../../search/screens/search_screen.dart';
 import '../../post/screens/post_screen.dart';
 import '../../chat/screens/chat_screen.dart';
 import '../../profile/screens/profile_screen.dart';
-import '../config/shadcn_theme.dart';
+import '../../theme/theme.dart';
 
 /// 应用程序主外壳屏幕
 ///

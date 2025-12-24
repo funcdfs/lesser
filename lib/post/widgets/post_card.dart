@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
-import '../../common/config/shadcn_theme.dart';
+import '../../theme/theme.dart';
 import '../../common/widgets/shadcn/shadcn_avatar.dart';
 import 'post_actions_bar.dart';
 import '../../common/models/post.dart';
-import '../../common/utils/theme_constants.dart';
+import '../../theme/theme.dart';
 import '../../common/utils/time_formatter.dart';
 
 /// 帖子卡片组件
@@ -336,3 +336,4 @@ class _PostCardState extends State<PostCard> {
     );
   }
 }
+
