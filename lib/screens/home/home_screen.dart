@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../config/shadcn_theme.dart';
+import '../../utils/inner_drag_lock.dart';
 import '../feed/feed_screen.dart';
 import '../feed/stories_bar.dart';
 
@@ -54,15 +55,21 @@ class _HomeScreenState extends State<HomeScreen>
           ],
         ),
       ),
-      body: TabBarView(
-        controller: _tabController,
-        physics: const NeverScrollableScrollPhysics(), // 禁用左右滑动切换，防止与横向图片冲突
-        children: const [
-          // 推荐流（不带故事栏）
-          FeedScreen(feedMode: 'trending'),
-          // 关注流（带故事栏）
-          _FollowFeed(),
-        ],
+      body: ValueListenableBuilder<bool>(
+        valueListenable: InnerDragLock.isDragging,
+        builder: (context, isDragging, child) {
+          return TabBarView(
+            controller: _tabController,
+            // 当内部横向滑动发生时，禁用 TabBarView 的左右滑动以避免冲突
+            physics: isDragging ? const NeverScrollableScrollPhysics() : null,
+            children: const [
+              // 推荐流（不带故事栏）
+              FeedScreen(feedMode: 'trending'),
+              // 关注流（带故事栏）
+              _FollowFeed(),
+            ],
+          );
+        },
       ),
     );
   }

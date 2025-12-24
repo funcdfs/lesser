@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../utils/inner_drag_lock.dart';
 
 /// 帖子图片展示组件
 /// 支持单张图片全屏显示和多张图片的横向滚动浏览（瀑布流/轮播）。
@@ -45,22 +46,36 @@ class PostImagesWidget extends StatelessWidget {
     return SizedBox(
       height: height,
       width: maxWidth,
-      child: ListView.separated(
-        scrollDirection: Axis.horizontal,
-        itemCount: displayUrls.length,
-        separatorBuilder: (context, index) => const SizedBox(width: 8),
-        itemBuilder: (context, index) {
-          return Container(
-            width: 250, // 轮播中每张图片的固定宽度
-            decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(12),
-              image: DecorationImage(
-                image: NetworkImage(displayUrls[index]),
-                fit: BoxFit.cover,
-              ),
-            ),
-          );
+      child: NotificationListener<ScrollNotification>(
+        onNotification: (notification) {
+          if (notification is ScrollStartNotification) {
+            // 开始横向滚动，通知外层禁止翻页
+            InnerDragLock.start();
+          } else if (notification is ScrollEndNotification ||
+              notification is ScrollUpdateNotification &&
+                  notification.metrics.outOfRange) {
+            // 滚动结束或超出后尝试释放锁
+            InnerDragLock.end();
+          }
+          return false;
         },
+        child: ListView.separated(
+          scrollDirection: Axis.horizontal,
+          itemCount: displayUrls.length,
+          separatorBuilder: (context, index) => const SizedBox(width: 8),
+          itemBuilder: (context, index) {
+            return Container(
+              width: 250, // 轮播中每张图片的固定宽度
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(12),
+                image: DecorationImage(
+                  image: NetworkImage(displayUrls[index]),
+                  fit: BoxFit.cover,
+                ),
+              ),
+            );
+          },
+        ),
       ),
     );
   }

@@ -4,9 +4,9 @@ import 'package:lesser/main.dart';
 void main() {
   testWidgets('App smoke test', (WidgetTester tester) async {
     // Build our app and trigger a frame.
-    await tester.pumpWidget(const InviteFeedApp());
+    await tester.pumpWidget(const LesserApp());
 
     // Verify that the title shows up.
-    expect(find.text('Invitation Feed'), findsOneWidget);
+    expect(find.text('Lesser'), findsOneWidget);
   });
 }
