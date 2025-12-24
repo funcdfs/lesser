@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import '../../theme/theme.dart';
+import 'package:lesser/shared/theme/theme.dart';
 
 /// 列表项组件
 /// 对标准的 ListTile 进行了风格统一。

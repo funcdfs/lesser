@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import '../../theme/theme.dart';
+import 'package:lesser/shared/theme/theme.dart';
 
 /// 卡片组件
 /// 提供统一的背景、圆角、边框和阴影样式。

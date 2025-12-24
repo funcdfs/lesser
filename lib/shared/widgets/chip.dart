@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import '../../theme/theme.dart';
+import 'package:lesser/shared/theme/theme.dart';
 
 /// 标签/碎片组件
 class AppChip extends StatelessWidget {

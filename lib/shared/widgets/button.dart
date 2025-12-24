@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import '../../theme/theme.dart';
+import 'package:lesser/shared/theme/theme.dart';
 
 /// 按钮变体类型
 enum ButtonVariant {

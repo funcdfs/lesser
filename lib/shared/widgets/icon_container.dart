@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import '../../theme/theme.dart';
+import 'package:lesser/shared/theme/theme.dart';
 
 /// 带有统一样式的图标容器组件
 /// 提供一致的圆角背景和图标间距装饰。
