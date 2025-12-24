@@ -25,8 +25,8 @@ class _PostDetailScreenState extends State<PostDetailScreen>
   late bool _isLiked;
   late int _likesCount;
 
-  /// 当前垂直拖动的偏移量 (初始预留 1.5 行高度，约 36px)
-  double _dragOffset = 36.0;
+  /// 当前垂直交互产生的偏移量 (相对于 36.0 的物理间距基准)
+  double _dragOffset = 0.0;
 
   /// 用于“回弹”动画的控制器
   late AnimationController _snapController;
@@ -71,7 +71,8 @@ class _PostDetailScreenState extends State<PostDetailScreen>
       child: Scaffold(
         backgroundColor: Colors.transparent,
         body: Transform.translate(
-          offset: Offset(0, _dragOffset),
+          // 始终保持 36.0 的物理间距，再加上当前的交互偏移量
+          offset: Offset(0, 36.0 + _dragOffset),
           child: Container(
             decoration: BoxDecoration(
               boxShadow: [
@@ -89,13 +90,11 @@ class _PostDetailScreenState extends State<PostDetailScreen>
               ),
               child: Scaffold(
                 backgroundColor: AppColors.background,
-                // 移除 AppBar 以消除不可点击的“死区”，将整个顶部区域统一为退出触发器
                 appBar: null,
                 body: Stack(
                   children: [
                     /// 主要内容区域
                     SingleChildScrollView(
-                      // 增加顶部内边距，确保内容不被固定的交互手柄遮挡，但不再留出过大空白
                       padding: const EdgeInsets.only(top: 48),
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
@@ -246,7 +245,7 @@ class _PostDetailScreenState extends State<PostDetailScreen>
                       ),
                     ),
 
-                    /// 顶部交互手柄 - 固定在顶端且支持点击/交互式下滑关闭
+                    /// 顶部交互手柄 + 详情框顶部触碰区
                     Positioned(
                       top: 0,
                       left: 0,
@@ -254,45 +253,47 @@ class _PostDetailScreenState extends State<PostDetailScreen>
                       child: GestureDetector(
                         onTap: () => Navigator.pop(context),
                         behavior: HitTestBehavior.opaque,
+                        onVerticalDragStart: (_) {
+                          // 开始拖动时立即停止回弹动画，防止动画竞争导致的“向上滑动”错觉
+                          _snapController.stop();
+                        },
                         onVerticalDragUpdate: (details) {
                           setState(() {
-                            // 仅允许向下拖动，最小值为 36.0 (初始位置)
+                            // 仅允许向下拖动，基准线为 0.0，锁定向上
                             _dragOffset = (_dragOffset + details.primaryDelta!)
-                                .clamp(36.0, double.infinity);
+                                .clamp(0.0, double.infinity);
                           });
                         },
                         onVerticalDragEnd: (details) {
-                          // 如果拖动距离超过 200px (从 36px 开始) 或 向下速度够快 (v > 500)，则关闭
-                          if (_dragOffset > 200 ||
+                          // 如果拖动距离超过 164 px (对应之前的 200px 绝对位置) 或 向下速度够快，则关闭
+                          if (_dragOffset > 164 ||
                               details.primaryVelocity! > 500) {
                             Navigator.pop(context);
                           } else {
-                            // 否则，平滑回弹到初始位置 (36.0)
+                            // 平滑回弹到基准位置 (0.0)
                             _snapController.value = _dragOffset;
                             _snapController.animateTo(
-                              36.0,
+                              0.0,
                               curve: Curves.easeOutQuint,
                             );
                           }
                         },
                         child: Container(
                           width: double.infinity,
-                          height: 80, // 保持 80px 的大热区
+                          height: 64, // 稍微优化高度，覆盖手柄及卡片顶部
                           color: Colors.transparent,
                           alignment: Alignment.topCenter,
                           child: Column(
                             mainAxisSize: MainAxisSize.min,
                             children: [
-                              /// “弧形/阔角”手柄：代替生硬的横条，更具拉伸感
+                              /// “弧形/阔角”手柄
                               SizedBox(
                                 width: double.infinity,
-                                height: 28, // 稍微增加高度以容纳阴影/线条
+                                height: 28,
                                 child: SvgPicture.string(
                                   '''
                         <svg viewBox="0 0 400 24" preserveAspectRatio="none" xmlns="http://www.w3.org/2000/svg">
-                          <!-- 阔角形状主体，略微加深透明度 -->
                           <path d="M0 0 L200 14 L400 0 V24 H0 Z" fill="currentColor" fill-opacity="0.25"/>
-                          <!-- 定义边缘线，增强视觉引导性 -->
                           <path d="M0 0 L200 14 L400 0" fill="none" stroke="currentColor" stroke-width="2.5" stroke-opacity="0.4" stroke-linecap="round" stroke-linejoin="round"/>
                         </svg>
                         ''',

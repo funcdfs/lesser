@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:cached_network_image/cached_network_image.dart';
 import '../../../../shared/theme/theme.dart';
 import '../../../../shared/utils/inner_drag_lock.dart';
+import 'image_preview_screen.dart';
 
 /// Feed 图片展示组件
 /// 支持单张图片全屏显示和多张图片的横向滚动浏览（瀑布流/轮播）。
@@ -30,14 +32,28 @@ class FeedImagesWidget extends StatelessWidget {
 
     // 情况 1: 只有一张图片时，占满宽度显示
     if (displayUrls.length == 1) {
-      return Container(
-        constraints: BoxConstraints(maxHeight: height, maxWidth: maxWidth),
-        width: double.infinity,
-        decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(AppRadius.lg),
-          image: DecorationImage(
-            image: NetworkImage(displayUrls.first),
-            fit: BoxFit.cover,
+      return GestureDetector(
+        onTap: () => _openImagePreview(context, displayUrls, 0),
+        child: Container(
+          constraints: BoxConstraints(maxHeight: height, maxWidth: maxWidth),
+          width: double.infinity,
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(AppRadius.lg),
+          ),
+          child: ClipRRect(
+            borderRadius: BorderRadius.circular(AppRadius.lg),
+            child: Hero(
+              tag: displayUrls.first,
+              child: CachedNetworkImage(
+                imageUrl: displayUrls.first,
+                fit: BoxFit.cover,
+                placeholder: (context, url) => Container(
+                  color: AppColors.muted.withValues(alpha: 0.1),
+                  child: const Center(child: CircularProgressIndicator()),
+                ),
+                errorWidget: (context, url, error) => const Icon(Icons.error),
+              ),
+            ),
           ),
         ),
       );
@@ -66,18 +82,47 @@ class FeedImagesWidget extends StatelessWidget {
           separatorBuilder: (context, index) =>
               const SizedBox(width: AppSpacing.sm),
           itemBuilder: (context, index) {
-            return Container(
-              width: 250, // 轮播中每张图片的固定宽度
-              decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(AppRadius.lg),
-                image: DecorationImage(
-                  image: NetworkImage(displayUrls[index]),
-                  fit: BoxFit.cover,
+            return GestureDetector(
+              onTap: () => _openImagePreview(context, displayUrls, index),
+              child: Container(
+                width: 250, // 轮播中每张图片的固定宽度
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(AppRadius.lg),
+                ),
+                child: ClipRRect(
+                  borderRadius: BorderRadius.circular(AppRadius.lg),
+                  child: Hero(
+                    tag: displayUrls[index],
+                    child: CachedNetworkImage(
+                      imageUrl: displayUrls[index],
+                      fit: BoxFit.cover,
+                      placeholder: (context, url) => Container(
+                        color: AppColors.muted.withValues(alpha: 0.1),
+                        child: const Center(child: CircularProgressIndicator()),
+                      ),
+                      errorWidget: (context, url, error) =>
+                          const Icon(Icons.error),
+                    ),
+                  ),
                 ),
               ),
             );
           },
         ),
+      ),
+    );
+  }
+
+  void _openImagePreview(BuildContext context, List<String> urls, int index) {
+    Navigator.of(context).push(
+      PageRouteBuilder(
+        opaque: false,
+        pageBuilder: (context, animation, secondaryAnimation) {
+          return FadeTransition(
+            opacity: animation,
+            child: ImagePreviewScreen(imageUrls: urls, initialIndex: index),
+          );
+        },
       ),
     );
   }
