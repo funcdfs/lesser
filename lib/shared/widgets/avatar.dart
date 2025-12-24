@@ -61,9 +61,11 @@ class Avatar extends StatelessWidget {
 
   /// 构建占位符内容
   Widget _buildFallback() {
+    final initials = fallbackInitials.trim();
+    final firstChar = initials.isNotEmpty ? initials.substring(0, 1) : '?';
     return Center(
       child: Text(
-        fallbackInitials.substring(0, 1).toUpperCase(),
+        firstChar.toUpperCase(),
         style: TextStyle(
           color: AppColors.secondaryForeground,
           fontWeight: FontWeight.w600,

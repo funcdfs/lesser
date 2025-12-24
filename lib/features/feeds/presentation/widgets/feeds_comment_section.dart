@@ -90,17 +90,17 @@ class _FeedsCommentSectionState extends State<FeedsCommentSection> {
           const Divider(height: 1),
 
           // Comment List
-          Expanded(
-            child: ListView.builder(
-              padding: const EdgeInsets.symmetric(
-                horizontal: AppSpacing.lg,
-                vertical: AppSpacing.md,
-              ),
-              itemCount: _mockComments.length,
-              itemBuilder: (context, index) {
-                return _CommentItem(comment: _mockComments[index]);
-              },
+          ListView.builder(
+            shrinkWrap: true,
+            physics: const NeverScrollableScrollPhysics(),
+            padding: const EdgeInsets.symmetric(
+              horizontal: AppSpacing.lg,
+              vertical: AppSpacing.md,
             ),
+            itemCount: _mockComments.length,
+            itemBuilder: (context, index) {
+              return _CommentItem(comment: _mockComments[index]);
+            },
           ),
 
           // Sticky Input Field
