@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import '../config/shadcn_theme.dart';
+import '../../common/config/shadcn_theme.dart';
 
 /// 帖子卡片的骨架屏组件
 /// 用于在内容加载时展示占位符，减少视觉抖动。

@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
-import 'screens/main_screen.dart';
-import 'utils/logger/logger_service.dart';
-import 'config/shadcn_theme.dart';
+import 'common/navigation/main_screen.dart';
+import 'common/utils/logger/logger_service.dart';
+import 'common/config/shadcn_theme.dart';
 
 void main() {
   // 记录应用启动日志

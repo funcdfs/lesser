@@ -1,9 +1,9 @@
 import 'dart:math';
 import 'package:flutter/material.dart';
-import '../config/shadcn_theme.dart';
-import '../utils/number_formatter.dart';
-import '../utils/theme_constants.dart';
-import '../utils/constants.dart';
+import '../../common/config/shadcn_theme.dart';
+import '../../common/utils/number_formatter.dart';
+import '../../common/utils/theme_constants.dart';
+import '../../common/utils/constants.dart';
 
 /// 帖子底部操作栏组件
 ///

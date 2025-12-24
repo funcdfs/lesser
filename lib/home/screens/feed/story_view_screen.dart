@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
-import '../../data/mock_data.dart';
-import '../../widgets/shadcn/shadcn_avatar.dart';
+import '../../../common/data/mock_data.dart';
+import '../../../common/widgets/shadcn/shadcn_avatar.dart';
 import 'package:cached_network_image/cached_network_image.dart';
-import '../../utils/inner_drag_lock.dart';
+import '../../../common/utils/inner_drag_lock.dart';
 
 /// 全屏故事浏览屏幕
 ///

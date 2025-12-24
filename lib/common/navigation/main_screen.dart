@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
-import 'home/home_screen.dart';
-import 'search/search_screen.dart';
-import 'post_screen.dart';
-import 'chat_screen.dart';
-import 'profile_screen.dart';
+import '../../home/screens/home_screen.dart';
+import '../../search/screens/search_screen.dart';
+import '../../post/screens/post_screen.dart';
+import '../../chat/screens/chat_screen.dart';
+import '../../profile/screens/profile_screen.dart';
 import '../config/shadcn_theme.dart';
 
 /// 应用程序主外壳屏幕
@@ -27,19 +27,30 @@ class _MainScreenState extends State<MainScreen> {
   final List<Widget> _screens = [
     const HomeScreen(),
     const SearchScreen(),
-    const PostScreen(), // 占位：发布面
+    Container(), // 中间按钮的占位符，因为其功能是弹窗
     const ChatScreen(),
     const ProfileScreen(),
   ];
 
   /// 处理导航项点击
   void _onItemTapped(int index) {
+    // 索引为 2 的是中心“发布”按钮，触发模态框
     if (index == 2) {
-      // 索引为 2 的是中心“发布”按钮，触发模态框
-      // TODO: 实现发布帖子的模态弹出框
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(const SnackBar(content: Text('打开发布模态框')));
+      showModalBottomSheet(
+        context: context,
+        isScrollControlled: true, // 允许模态框高度超过屏幕一半
+        backgroundColor: Colors.transparent, // 使模态框背景透明
+        builder: (context) {
+          // 使用 FractionallySizedBox 控制模态框的高度为屏幕的 90%
+          return FractionallySizedBox(
+            heightFactor: 0.9,
+            child: ClipRRect(
+              borderRadius: const BorderRadius.vertical(top: Radius.circular(16.0)),
+              child: const PostScreen(),
+            ),
+          );
+        },
+      );
       return;
     }
     setState(() {

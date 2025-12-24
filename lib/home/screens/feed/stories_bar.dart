@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
-import '../../data/mock_data.dart';
-import '../../config/shadcn_theme.dart';
-import '../../widgets/shadcn/shadcn_avatar.dart';
+import '../../../common/data/mock_data.dart';
+import '../../../common/config/shadcn_theme.dart';
+import '../../../common/widgets/shadcn/shadcn_avatar.dart';
 import 'story_view_screen.dart';
 
 /// 故事栏组件 (Stories Bar)

@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
-import '../../data/mock_data.dart';
-import '../../models/post.dart';
+import '../../../common/data/mock_data.dart';
+import '../../../common/models/post.dart';
 import '../../widgets/post_card.dart';
-import '../detail_screen.dart';
+import '../../../post/screens/detail_screen.dart';
 
 /// 帖子动态流屏幕
 ///

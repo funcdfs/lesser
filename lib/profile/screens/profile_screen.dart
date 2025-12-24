@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/cupertino.dart';
-import '../config/shadcn_theme.dart';
-import '../widgets/shadcn/shadcn_card.dart';
-import '../widgets/shadcn/shadcn_list_tile.dart';
-import '../widgets/shadcn/shadcn_icon_container.dart';
+import '../../common/config/shadcn_theme.dart';
+import '../../common/widgets/shadcn/shadcn_card.dart';
+import '../../common/widgets/shadcn/shadcn_list_tile.dart';
+import '../../common/widgets/shadcn/shadcn_icon_container.dart';
 
 /// 个人中心屏幕 (Profile Screen)
 ///

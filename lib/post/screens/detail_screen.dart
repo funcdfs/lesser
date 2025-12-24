@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
-import '../models/post.dart';
-import '../config/shadcn_theme.dart';
-import '../widgets/shadcn/shadcn_avatar.dart';
-import '../widgets/post_actions_bar.dart';
+import '../../common/models/post.dart';
+import '../../common/config/shadcn_theme.dart';
+import '../../common/widgets/shadcn/shadcn_avatar.dart';
+import '../../home/widgets/post_actions_bar.dart';
 
 /// 帖子详情屏幕 (Post Detail Screen)
 ///

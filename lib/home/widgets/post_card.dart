@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
-import '../config/shadcn_theme.dart';
-import '../widgets/shadcn/shadcn_avatar.dart';
-import '../widgets/post_actions_bar.dart';
-import '../models/post.dart';
-import '../utils/theme_constants.dart';
-import '../utils/time_formatter.dart';
+import '../../common/config/shadcn_theme.dart';
+import '../../common/widgets/shadcn/shadcn_avatar.dart';
+import 'post_actions_bar.dart';
+import '../../common/models/post.dart';
+import '../../common/utils/theme_constants.dart';
+import '../../common/utils/time_formatter.dart';
 
 /// 帖子卡片组件
 ///
@@ -25,7 +25,7 @@ class PostCard extends StatefulWidget {
   /// 点赞状态发生改变时的回调（用于父组件同步状态）
   final ValueChanged<bool>? onLikeChanged;
 
-  /// 点击顶部“更多”按钮时的回调
+  /// 点击顶部"更多"按钮时的回调
   final VoidCallback? onMoreTapped;
 
   const PostCard({

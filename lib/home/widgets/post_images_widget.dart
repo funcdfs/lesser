@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import '../utils/inner_drag_lock.dart';
+import '../../common/utils/inner_drag_lock.dart';
 
 /// 帖子图片展示组件
 /// 支持单张图片全屏显示和多张图片的横向滚动浏览（瀑布流/轮播）。

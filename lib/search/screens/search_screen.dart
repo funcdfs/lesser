@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
-import '../../data/mock_data.dart';
-import '../../config/shadcn_theme.dart';
-import '../../widgets/shadcn/shadcn_chip.dart';
+import '../../common/data/mock_data.dart';
+import '../../common/config/shadcn_theme.dart';
+import '../../common/widgets/shadcn/shadcn_chip.dart';
 
 /// 搜索与发现屏幕
 ///

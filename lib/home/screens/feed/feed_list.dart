@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
-import '../../data/mock_data.dart';
-import '../../models/post.dart';
-import '../../config/shadcn_theme.dart';
-import '../../widgets/shadcn/shadcn_avatar.dart';
-import '../detail_screen.dart';
-import '../../utils/number_formatter.dart';
+import '../../../common/data/mock_data.dart';
+import '../../../common/models/post.dart';
+import '../../../common/config/shadcn_theme.dart';
+import '../../../common/widgets/shadcn/shadcn_avatar.dart';
+import '../../../post/screens/detail_screen.dart';
+import '../../../common/utils/number_formatter.dart';
 import '../../widgets/post_card_skeleton.dart';
 import '../../widgets/post_images_widget.dart';
 import '../../widgets/expandable_text.dart';

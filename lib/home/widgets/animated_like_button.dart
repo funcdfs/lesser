@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import '../config/shadcn_theme.dart';
+import '../../common/config/shadcn_theme.dart';
 
 /// 带有动画效果的点赞按钮组件
 class AnimatedLikeButton extends StatefulWidget {

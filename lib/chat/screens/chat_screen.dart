@@ -1,8 +1,9 @@
 import 'package:flutter/material.dart';
-import '../config/shadcn_theme.dart';
-import '../widgets/shadcn/shadcn_list_tile.dart';
-import '../widgets/shadcn/shadcn_icon_container.dart';
-import '../widgets/shadcn/shadcn_chip.dart';
+import '../../common/config/shadcn_theme.dart';
+import '../../common/widgets/shadcn/shadcn_list_tile.dart';
+import '../widgets/top_icon_item.dart';
+import '../widgets/section_header.dart';
+import '../widgets/chat_item.dart';
 
 /// 消息列表/聊天中心屏幕
 ///
@@ -95,22 +96,22 @@ class _ChatScreenState extends State<ChatScreen> {
                     mainAxisAlignment: MainAxisAlignment.spaceAround,
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      _TopIconItem(
+                      TopIconItem(
                         icon: Icons.favorite,
                         color: ShadcnColors.mutedForeground,
                         label: '收到的喜欢',
                       ),
-                      _TopIconItem(
+                      TopIconItem(
                         icon: Icons.comment,
                         color: ShadcnColors.mutedForeground,
                         label: '评论和回复',
                       ),
-                      _TopIconItem(
+                      TopIconItem(
                         icon: Icons.bookmark,
                         color: ShadcnColors.mutedForeground,
                         label: '收藏和@',
                       ),
-                      _TopIconItem(
+                      TopIconItem(
                         icon: Icons.person_add,
                         color: ShadcnColors.mutedForeground,
                         label: '新增粉丝',
@@ -127,8 +128,8 @@ class _ChatScreenState extends State<ChatScreen> {
                 ),
 
                 // 活跃聊天会话部分
-                const _SectionHeader(title: '聊天'),
-                _ChatItem(
+                const SectionHeader(title: '聊天'),
+                ChatItem(
                   icon: Icons.group,
                   iconColor: Colors.blue,
                   title: '公共群聊',
@@ -136,7 +137,7 @@ class _ChatScreenState extends State<ChatScreen> {
                   time: '10:30',
                   unreadCount: 5,
                 ),
-                _ChatItem(
+                ChatItem(
                   icon: Icons.podcasts,
                   iconColor: Colors.purple,
                   title: '订阅频道',
@@ -144,7 +145,7 @@ class _ChatScreenState extends State<ChatScreen> {
                   time: '昨天',
                   unreadCount: 2,
                 ),
-                _ChatItem(
+                ChatItem(
                   icon: Icons.person,
                   iconColor: Colors.green,
                   title: '私人对话',
@@ -156,8 +157,8 @@ class _ChatScreenState extends State<ChatScreen> {
                 const SizedBox(height: ShadcnSpacing.lg),
 
                 // 特殊分类：网络邻居/发现
-                const _SectionHeader(title: '网络邻居'),
-                _ChatItem(
+                const SectionHeader(title: '网络邻居'),
+                ChatItem(
                   icon: Icons.people_outline,
                   iconColor: Colors.orange,
                   title: '附近的人',
@@ -230,146 +231,6 @@ class _ChatScreenState extends State<ChatScreen> {
           ),
         ],
       ),
-    );
-  }
-}
-
-/// 顶部四大分类图标项
-class _TopIconItem extends StatelessWidget {
-  final IconData icon;
-  final Color color;
-  final String label;
-
-  const _TopIconItem({
-    required this.icon,
-    required this.color,
-    required this.label,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Column(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        Container(
-          width: 48,
-          height: 48,
-          decoration: BoxDecoration(
-            color: ShadcnColors.secondary,
-            borderRadius: BorderRadius.circular(16),
-          ),
-          child: Icon(icon, color: color, size: 24),
-        ),
-        const SizedBox(height: 8),
-        SizedBox(
-          width: 64, // 限制宽度使文字折行
-          child: Text(
-            label,
-            textAlign: TextAlign.center,
-            style: const TextStyle(
-              fontSize: 12,
-              fontWeight: FontWeight.w500,
-              color: ShadcnColors.foreground,
-            ),
-            maxLines: 2,
-            overflow: TextOverflow.ellipsis,
-          ),
-        ),
-      ],
-    );
-  }
-}
-
-/// 列表区块标题（如：聊天、网络邻居）
-class _SectionHeader extends StatelessWidget {
-  final String title;
-
-  const _SectionHeader({required this.title});
-
-  @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(
-        ShadcnSpacing.xl,
-        ShadcnSpacing.sm,
-        ShadcnSpacing.xl,
-        ShadcnSpacing.sm,
-      ),
-      child: Text(
-        title,
-        style: const TextStyle(
-          fontSize: 13,
-          fontWeight: FontWeight.w600,
-          color: ShadcnColors.mutedForeground,
-          letterSpacing: 0.5,
-        ),
-      ),
-    );
-  }
-}
-
-/// 单个聊天会话/功能项样式
-class _ChatItem extends StatelessWidget {
-  final IconData icon;
-  final Color iconColor;
-  final String title;
-  final String subtitle;
-  final String time;
-  final int unreadCount;
-  final bool showArrow;
-
-  const _ChatItem({
-    required this.icon,
-    required this.iconColor,
-    required this.title,
-    required this.subtitle,
-    required this.time,
-    required this.unreadCount,
-    this.showArrow = false,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return ShadcnListTile(
-      padding: const EdgeInsets.symmetric(
-        horizontal: ShadcnSpacing.lg,
-        vertical: ShadcnSpacing.md,
-      ),
-      leading: ShadcnIconContainer(
-        icon: icon,
-        iconColor: ShadcnColors.mutedForeground,
-        size: 48,
-      ),
-      title: title,
-      subtitle: subtitle,
-      trailing: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        crossAxisAlignment: CrossAxisAlignment.end,
-        children: [
-          if (time.isNotEmpty)
-            Text(
-              time,
-              style: const TextStyle(
-                fontSize: 12,
-                color: ShadcnColors.mutedForeground,
-              ),
-            ),
-          if (unreadCount > 0) ...[
-            const SizedBox(height: 4),
-            ShadcnBadge(
-              text: unreadCount > 99 ? '99+' : unreadCount.toString(),
-            ),
-          ] else if (showArrow)
-            const Icon(
-              Icons.chevron_right,
-              color: ShadcnColors.mutedForeground,
-              size: 18,
-            ),
-        ],
-      ),
-      onTap: () {
-        // TODO: 跳转至聊天详情页
-      },
     );
   }
 }

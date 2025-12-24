@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
-import '../../config/shadcn_theme.dart';
-import '../../utils/inner_drag_lock.dart';
-import '../feed/feed_screen.dart';
-import '../feed/stories_bar.dart';
+import '../../common/config/shadcn_theme.dart';
+import '../../common/utils/inner_drag_lock.dart';
+import 'feed/feed_screen.dart';
+import 'feed/stories_bar.dart';
 
 /// 首页屏幕组件
 ///
