@@ -1,4 +1,3 @@
-import 'dart:ui';
 import 'package:flutter/material.dart';
 import '../../../../shared/data/mock_data.dart';
 import '../../../../shared/models/post.dart';
