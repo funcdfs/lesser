@@ -27,6 +27,19 @@ mixin _$Post {
   @JsonKey(name: 'created_at')
   String get createdAt => throw _privateConstructorUsedError;
   int get likes => throw _privateConstructorUsedError;
+  String? get location => throw _privateConstructorUsedError;
+  @JsonKey(name: 'image_urls')
+  List<String> get imageUrls => throw _privateConstructorUsedError;
+  @JsonKey(name: 'comments_count')
+  int get commentsCount => throw _privateConstructorUsedError;
+  @JsonKey(name: 'reposts_count')
+  int get repostsCount => throw _privateConstructorUsedError;
+  @JsonKey(name: 'bookmarks_count')
+  int get bookmarksCount => throw _privateConstructorUsedError;
+  @JsonKey(name: 'shares_count')
+  int get sharesCount => throw _privateConstructorUsedError;
+  @JsonKey(name: 'is_liked')
+  bool get isLiked => throw _privateConstructorUsedError;
 
   /// Serializes this Post to a JSON map.
   Map<String, dynamic> toJson() => throw _privateConstructorUsedError;
@@ -48,6 +61,13 @@ abstract class $PostCopyWith<$Res> {
     String content,
     @JsonKey(name: 'created_at') String createdAt,
     int likes,
+    String? location,
+    @JsonKey(name: 'image_urls') List<String> imageUrls,
+    @JsonKey(name: 'comments_count') int commentsCount,
+    @JsonKey(name: 'reposts_count') int repostsCount,
+    @JsonKey(name: 'bookmarks_count') int bookmarksCount,
+    @JsonKey(name: 'shares_count') int sharesCount,
+    @JsonKey(name: 'is_liked') bool isLiked,
   });
 }
 
@@ -71,6 +91,13 @@ class _$PostCopyWithImpl<$Res, $Val extends Post>
     Object? content = null,
     Object? createdAt = null,
     Object? likes = null,
+    Object? location = freezed,
+    Object? imageUrls = null,
+    Object? commentsCount = null,
+    Object? repostsCount = null,
+    Object? bookmarksCount = null,
+    Object? sharesCount = null,
+    Object? isLiked = null,
   }) {
     return _then(
       _value.copyWith(
@@ -94,6 +121,34 @@ class _$PostCopyWithImpl<$Res, $Val extends Post>
                 ? _value.likes
                 : likes // ignore: cast_nullable_to_non_nullable
                       as int,
+            location: freezed == location
+                ? _value.location
+                : location // ignore: cast_nullable_to_non_nullable
+                      as String?,
+            imageUrls: null == imageUrls
+                ? _value.imageUrls
+                : imageUrls // ignore: cast_nullable_to_non_nullable
+                      as List<String>,
+            commentsCount: null == commentsCount
+                ? _value.commentsCount
+                : commentsCount // ignore: cast_nullable_to_non_nullable
+                      as int,
+            repostsCount: null == repostsCount
+                ? _value.repostsCount
+                : repostsCount // ignore: cast_nullable_to_non_nullable
+                      as int,
+            bookmarksCount: null == bookmarksCount
+                ? _value.bookmarksCount
+                : bookmarksCount // ignore: cast_nullable_to_non_nullable
+                      as int,
+            sharesCount: null == sharesCount
+                ? _value.sharesCount
+                : sharesCount // ignore: cast_nullable_to_non_nullable
+                      as int,
+            isLiked: null == isLiked
+                ? _value.isLiked
+                : isLiked // ignore: cast_nullable_to_non_nullable
+                      as bool,
           )
           as $Val,
     );
@@ -114,6 +169,13 @@ abstract class _$$PostImplCopyWith<$Res> implements $PostCopyWith<$Res> {
     String content,
     @JsonKey(name: 'created_at') String createdAt,
     int likes,
+    String? location,
+    @JsonKey(name: 'image_urls') List<String> imageUrls,
+    @JsonKey(name: 'comments_count') int commentsCount,
+    @JsonKey(name: 'reposts_count') int repostsCount,
+    @JsonKey(name: 'bookmarks_count') int bookmarksCount,
+    @JsonKey(name: 'shares_count') int sharesCount,
+    @JsonKey(name: 'is_liked') bool isLiked,
   });
 }
 
@@ -134,6 +196,13 @@ class __$$PostImplCopyWithImpl<$Res>
     Object? content = null,
     Object? createdAt = null,
     Object? likes = null,
+    Object? location = freezed,
+    Object? imageUrls = null,
+    Object? commentsCount = null,
+    Object? repostsCount = null,
+    Object? bookmarksCount = null,
+    Object? sharesCount = null,
+    Object? isLiked = null,
   }) {
     return _then(
       _$PostImpl(
@@ -157,6 +226,34 @@ class __$$PostImplCopyWithImpl<$Res>
             ? _value.likes
             : likes // ignore: cast_nullable_to_non_nullable
                   as int,
+        location: freezed == location
+            ? _value.location
+            : location // ignore: cast_nullable_to_non_nullable
+                  as String?,
+        imageUrls: null == imageUrls
+            ? _value._imageUrls
+            : imageUrls // ignore: cast_nullable_to_non_nullable
+                  as List<String>,
+        commentsCount: null == commentsCount
+            ? _value.commentsCount
+            : commentsCount // ignore: cast_nullable_to_non_nullable
+                  as int,
+        repostsCount: null == repostsCount
+            ? _value.repostsCount
+            : repostsCount // ignore: cast_nullable_to_non_nullable
+                  as int,
+        bookmarksCount: null == bookmarksCount
+            ? _value.bookmarksCount
+            : bookmarksCount // ignore: cast_nullable_to_non_nullable
+                  as int,
+        sharesCount: null == sharesCount
+            ? _value.sharesCount
+            : sharesCount // ignore: cast_nullable_to_non_nullable
+                  as int,
+        isLiked: null == isLiked
+            ? _value.isLiked
+            : isLiked // ignore: cast_nullable_to_non_nullable
+                  as bool,
       ),
     );
   }
@@ -171,7 +268,14 @@ class _$PostImpl implements _Post {
     required this.content,
     @JsonKey(name: 'created_at') required this.createdAt,
     this.likes = 0,
-  });
+    this.location,
+    @JsonKey(name: 'image_urls') final List<String> imageUrls = const [],
+    @JsonKey(name: 'comments_count') this.commentsCount = 0,
+    @JsonKey(name: 'reposts_count') this.repostsCount = 0,
+    @JsonKey(name: 'bookmarks_count') this.bookmarksCount = 0,
+    @JsonKey(name: 'shares_count') this.sharesCount = 0,
+    @JsonKey(name: 'is_liked') this.isLiked = false,
+  }) : _imageUrls = imageUrls;
 
   factory _$PostImpl.fromJson(Map<String, dynamic> json) =>
       _$$PostImplFromJson(json);
@@ -188,10 +292,36 @@ class _$PostImpl implements _Post {
   @override
   @JsonKey()
   final int likes;
+  @override
+  final String? location;
+  final List<String> _imageUrls;
+  @override
+  @JsonKey(name: 'image_urls')
+  List<String> get imageUrls {
+    if (_imageUrls is EqualUnmodifiableListView) return _imageUrls;
+    // ignore: implicit_dynamic_type
+    return EqualUnmodifiableListView(_imageUrls);
+  }
+
+  @override
+  @JsonKey(name: 'comments_count')
+  final int commentsCount;
+  @override
+  @JsonKey(name: 'reposts_count')
+  final int repostsCount;
+  @override
+  @JsonKey(name: 'bookmarks_count')
+  final int bookmarksCount;
+  @override
+  @JsonKey(name: 'shares_count')
+  final int sharesCount;
+  @override
+  @JsonKey(name: 'is_liked')
+  final bool isLiked;
 
   @override
   String toString() {
-    return 'Post(id: $id, username: $username, content: $content, createdAt: $createdAt, likes: $likes)';
+    return 'Post(id: $id, username: $username, content: $content, createdAt: $createdAt, likes: $likes, location: $location, imageUrls: $imageUrls, commentsCount: $commentsCount, repostsCount: $repostsCount, bookmarksCount: $bookmarksCount, sharesCount: $sharesCount, isLiked: $isLiked)';
   }
 
   @override
@@ -205,13 +335,41 @@ class _$PostImpl implements _Post {
             (identical(other.content, content) || other.content == content) &&
             (identical(other.createdAt, createdAt) ||
                 other.createdAt == createdAt) &&
-            (identical(other.likes, likes) || other.likes == likes));
+            (identical(other.likes, likes) || other.likes == likes) &&
+            (identical(other.location, location) ||
+                other.location == location) &&
+            const DeepCollectionEquality().equals(
+              other._imageUrls,
+              _imageUrls,
+            ) &&
+            (identical(other.commentsCount, commentsCount) ||
+                other.commentsCount == commentsCount) &&
+            (identical(other.repostsCount, repostsCount) ||
+                other.repostsCount == repostsCount) &&
+            (identical(other.bookmarksCount, bookmarksCount) ||
+                other.bookmarksCount == bookmarksCount) &&
+            (identical(other.sharesCount, sharesCount) ||
+                other.sharesCount == sharesCount) &&
+            (identical(other.isLiked, isLiked) || other.isLiked == isLiked));
   }
 
   @JsonKey(includeFromJson: false, includeToJson: false)
   @override
-  int get hashCode =>
-      Object.hash(runtimeType, id, username, content, createdAt, likes);
+  int get hashCode => Object.hash(
+    runtimeType,
+    id,
+    username,
+    content,
+    createdAt,
+    likes,
+    location,
+    const DeepCollectionEquality().hash(_imageUrls),
+    commentsCount,
+    repostsCount,
+    bookmarksCount,
+    sharesCount,
+    isLiked,
+  );
 
   /// Create a copy of Post
   /// with the given fields replaced by the non-null parameter values.
@@ -234,6 +392,13 @@ abstract class _Post implements Post {
     required final String content,
     @JsonKey(name: 'created_at') required final String createdAt,
     final int likes,
+    final String? location,
+    @JsonKey(name: 'image_urls') final List<String> imageUrls,
+    @JsonKey(name: 'comments_count') final int commentsCount,
+    @JsonKey(name: 'reposts_count') final int repostsCount,
+    @JsonKey(name: 'bookmarks_count') final int bookmarksCount,
+    @JsonKey(name: 'shares_count') final int sharesCount,
+    @JsonKey(name: 'is_liked') final bool isLiked,
   }) = _$PostImpl;
 
   factory _Post.fromJson(Map<String, dynamic> json) = _$PostImpl.fromJson;
@@ -249,6 +414,26 @@ abstract class _Post implements Post {
   String get createdAt;
   @override
   int get likes;
+  @override
+  String? get location;
+  @override
+  @JsonKey(name: 'image_urls')
+  List<String> get imageUrls;
+  @override
+  @JsonKey(name: 'comments_count')
+  int get commentsCount;
+  @override
+  @JsonKey(name: 'reposts_count')
+  int get repostsCount;
+  @override
+  @JsonKey(name: 'bookmarks_count')
+  int get bookmarksCount;
+  @override
+  @JsonKey(name: 'shares_count')
+  int get sharesCount;
+  @override
+  @JsonKey(name: 'is_liked')
+  bool get isLiked;
 
   /// Create a copy of Post
   /// with the given fields replaced by the non-null parameter values.

@@ -45,8 +45,8 @@ class StoriesBar extends StatelessWidget {
               );
             },
             child: _StoryItem(
-              name: user.name,
-              imageUrl: user.avatar,
+              name: user.username,
+              imageUrl: null, // User model currently doesn't have avatar
               hasUnseenStory: index % 3 != 0, // 模拟未读状态
             ),
           );

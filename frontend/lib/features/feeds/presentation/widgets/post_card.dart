@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import '../../../../shared/theme/theme.dart';
 import '../../../../shared/widgets/avatar.dart';
 import '../../../../shared/utils/time_formatter.dart';
-import '../../../../shared/models/post.dart';
+import 'package:lesser/features/feeds/domain/models/post.dart';
 import 'feeds_actions_bar.dart';
 import 'feed_images_widget.dart';
 import '../../../../shared/widgets/expandable_text.dart';
@@ -52,7 +52,7 @@ class _PostCardState extends State<PostCard> {
   void initState() {
     super.initState();
     _postIsLiked = widget.post.isLiked;
-    _currentLikeCount = widget.post.likesCount;
+    _currentLikeCount = widget.post.likes;
   }
 
   /// 处理点赞按钮点击
@@ -85,9 +85,9 @@ class _PostCardState extends State<PostCard> {
             children: [
               /// 左侧：用户头像
               Avatar(
-                avatarUrl: widget.post.authorAvatarUrl,
-                fallbackInitials: widget.post.author.isNotEmpty
-                    ? widget.post.author[0]
+                avatarUrl: '', // Currently not in new model, can add later
+                fallbackInitials: widget.post.username.isNotEmpty
+                    ? widget.post.username[0]
                     : 'U',
                 size: 40,
               ),
@@ -151,7 +151,7 @@ class _PostCardState extends State<PostCard> {
             Row(
               children: [
                 Text(
-                  widget.post.author,
+                  widget.post.username,
                   style: const TextStyle(
                     fontWeight: FontWeight.w600,
                     fontSize: 15,
@@ -161,7 +161,7 @@ class _PostCardState extends State<PostCard> {
                 const SizedBox(width: AppSpacing.xs),
                 Flexible(
                   child: Text(
-                    widget.post.authorHandle,
+                    '@${widget.post.username.toLowerCase().replaceAll(' ', '_')}',
                     style: const TextStyle(
                       color: AppColors.mutedForeground,
                       fontSize: 14,
@@ -177,7 +177,9 @@ class _PostCardState extends State<PostCard> {
             Row(
               children: [
                 Text(
-                  TimeFormatter.formatRelativeTime(widget.post.timestamp),
+                  TimeFormatter.formatRelativeTime(
+                    DateTime.parse(widget.post.createdAt),
+                  ),
                   style: const TextStyle(
                     color: AppColors.mutedForeground,
                     fontSize: 11,
@@ -196,7 +198,9 @@ class _PostCardState extends State<PostCard> {
                 ),
                 Expanded(
                   child: Text(
-                    TimeFormatter.formatAbsoluteTime(widget.post.timestamp),
+                    TimeFormatter.formatAbsoluteTime(
+                      DateTime.parse(widget.post.createdAt),
+                    ),
                     style: const TextStyle(
                       color: AppColors.mutedForeground,
                       fontSize: 11,
@@ -256,17 +260,17 @@ class _PostCardState extends State<PostCard> {
             ),
             _buildActionMenuItem(
               context,
-              '取消关注 ${widget.post.author}',
+              '取消关注 ${widget.post.username}',
               Icons.person_remove_outlined,
             ),
             _buildActionMenuItem(
               context,
-              '单向隐藏 ${widget.post.author}',
+              '单向隐藏 ${widget.post.username}',
               Icons.block_outlined,
             ),
             _buildActionMenuItem(
               context,
-              '双向屏蔽 ${widget.post.author}',
+              '双向屏蔽 ${widget.post.username}',
               Icons.do_not_disturb_on_outlined,
               isDestructive: true,
             ),

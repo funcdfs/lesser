@@ -4,6 +4,8 @@ import '../../../../shared/widgets/avatar.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import '../../../../shared/utils/inner_drag_lock.dart';
 
+import '../../../../features/auth/domain/models/user.dart';
+
 /// 全屏故事浏览屏幕
 ///
 /// 该组件模拟了类 Instagram/Threads 的故事(Story)交互逻辑：
@@ -124,7 +126,7 @@ class _StoryViewScreenState extends State<StoryViewScreen> {
                 if (stories.isEmpty) {
                   return Center(
                     child: Text(
-                      '用户 ${user.name} 暂无故事',
+                      '用户 ${user.username} 暂无故事',
                       style: const TextStyle(color: Colors.white),
                     ),
                   );
@@ -226,13 +228,13 @@ class _StoryViewScreenState extends State<StoryViewScreen> {
                                 Row(
                                   children: [
                                     Avatar(
-                                      avatarUrl: user.avatar,
-                                      fallbackInitials: user.name,
+                                      avatarUrl: '', // Avatar URL placeholder
+                                      fallbackInitials: user.username,
                                       size: 32,
                                     ),
                                     const SizedBox(width: 8),
                                     Text(
-                                      user.name,
+                                      user.username,
                                       style: const TextStyle(
                                         color: Colors.white,
                                         fontWeight: FontWeight.bold,

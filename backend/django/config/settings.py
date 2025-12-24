@@ -33,7 +33,7 @@ INSTALLED_APPS = [
     "corsheaders",
     "ninja",
     # Local apps
-    # "core.apps.CoreConfig",
+    "social",
 ]
 
 MIDDLEWARE = [

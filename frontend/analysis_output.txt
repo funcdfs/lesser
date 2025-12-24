@@ -1,0 +1,20 @@
+Analyzing frontend...                                           
+
+   info • 'ApiClientRef' is deprecated and shouldn't be used. Will be removed in 3.0. Use Ref instead • lib/core/network/api_provider.dart:7:21 • deprecated_member_use_from_same_package
+   info • The import of 'package:json_annotation/json_annotation.dart' is unnecessary because all of the used elements are also provided by the import of 'package:freezed_annotation/freezed_annotation.dart' • lib/features/auth/domain/models/user.dart:2:8 • unnecessary_import
+warning • The annotation 'JsonKey.new' can only be used on fields or getters • lib/features/auth/domain/models/user.dart:13:6 • invalid_annotation_target
+warning • The annotation 'JsonKey.new' can only be used on fields or getters • lib/features/auth/domain/models/user.dart:14:6 • invalid_annotation_target
+   info • 'UserRepositoryRef' is deprecated and shouldn't be used. Will be removed in 3.0. Use Ref instead • lib/features/auth/presentation/providers/user_provider.dart:9:31 • deprecated_member_use_from_same_package
+   info • 'CurrentUserRef' is deprecated and shouldn't be used. Will be removed in 3.0. Use Ref instead • lib/features/auth/presentation/providers/user_provider.dart:15:26 • deprecated_member_use_from_same_package
+   info • The import of 'package:json_annotation/json_annotation.dart' is unnecessary because all of the used elements are also provided by the import of 'package:freezed_annotation/freezed_annotation.dart' • lib/features/feeds/domain/models/post.dart:2:8 • unnecessary_import
+warning • The annotation 'JsonKey.new' can only be used on fields or getters • lib/features/feeds/domain/models/post.dart:13:6 • invalid_annotation_target
+warning • The annotation 'JsonKey.new' can only be used on fields or getters • lib/features/feeds/domain/models/post.dart:16:19 • invalid_annotation_target
+warning • The annotation 'JsonKey.new' can only be used on fields or getters • lib/features/feeds/domain/models/post.dart:17:18 • invalid_annotation_target
+warning • The annotation 'JsonKey.new' can only be used on fields or getters • lib/features/feeds/domain/models/post.dart:18:18 • invalid_annotation_target
+warning • The annotation 'JsonKey.new' can only be used on fields or getters • lib/features/feeds/domain/models/post.dart:19:18 • invalid_annotation_target
+warning • The annotation 'JsonKey.new' can only be used on fields or getters • lib/features/feeds/domain/models/post.dart:20:18 • invalid_annotation_target
+warning • The annotation 'JsonKey.new' can only be used on fields or getters • lib/features/feeds/domain/models/post.dart:21:22 • invalid_annotation_target
+   info • 'FeedsRepositoryRef' is deprecated and shouldn't be used. Will be removed in 3.0. Use Ref instead • lib/features/feeds/presentation/providers/feeds_provider.dart:9:33 • deprecated_member_use_from_same_package
+   info • 'FeedsListRef' is deprecated and shouldn't be used. Will be removed in 3.0. Use Ref instead • lib/features/feeds/presentation/providers/feeds_provider.dart:15:30 • deprecated_member_use_from_same_package
+warning • Unused import: '../../features/feeds/domain/models/post.dart' • lib/shared/data/mock_data.dart:3:8 • unused_import
+
