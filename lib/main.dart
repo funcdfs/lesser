@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
-import 'common/navigation/main_screen.dart';
-import 'common/utils/logger/logger_service.dart';
+import 'home/navigation/main_screen.dart';
+import 'common/utils/logger_service.dart';
 import 'theme/theme.dart';
 
 void main() {
