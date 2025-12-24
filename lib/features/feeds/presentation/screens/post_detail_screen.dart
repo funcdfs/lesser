@@ -41,17 +41,14 @@ class _PostDetailScreenState extends State<PostDetailScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: AppColors.background,
-      appBar: AppBar(
-        centerTitle: true,
-        backgroundColor: AppColors.background,
-        elevation: 0,
-        automaticallyImplyLeading: false, // 移除左侧返回按钮
-      ),
+      // 移除 AppBar 以消除不可点击的“死区”，将整个顶部区域统一为退出触发器
+      appBar: null,
       body: Stack(
         children: [
           /// 主要内容区域
           SingleChildScrollView(
-            padding: const EdgeInsets.only(top: 24), // 为顶端手柄留出空间
+            // 增加顶部内边距，确保内容不被固定的交互手柄遮挡，但不再留出过大空白
+            padding: const EdgeInsets.only(top: 48),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
@@ -204,25 +201,32 @@ class _PostDetailScreenState extends State<PostDetailScreen> {
               },
               child: Container(
                 width: double.infinity,
-                height: 60, // 显著增加感应热区
+                height: 80, // 保持 80px 的大热区，确保任何触碰都能响应
                 color: Colors.transparent,
-                alignment: Alignment.center,
+                alignment: Alignment.topCenter, // 使手柄靠近顶端，模拟纸张边缘
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    /// 视觉提示：短横线 + 向下箭头，更明确的动作意图
-                    Container(
-                      width: 32,
-                      height: 4,
-                      decoration: BoxDecoration(
-                        color: AppColors.border.withValues(alpha: 0.5),
-                        borderRadius: BorderRadius.circular(2),
+                    const SizedBox(height: 12), // 顶端留出极小空隙
+                    /// “纸张边缘”手柄：极细、极宽、半透明，完全融入背景
+                    FractionallySizedBox(
+                      widthFactor: 0.8, // 宽度扩大到 80%
+                      child: Container(
+                        height: 3, // 更加纤细 (从 4px 减到 3px)
+                        decoration: BoxDecoration(
+                          color: AppColors.border.withValues(
+                            alpha: 0.2,
+                          ), // 极低透明度
+                          borderRadius: BorderRadius.circular(1.5),
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.black.withValues(alpha: 0.02),
+                              blurRadius: 2,
+                              offset: const Offset(0, 1),
+                            ),
+                          ],
+                        ),
                       ),
-                    ),
-                    const Icon(
-                      Icons.keyboard_arrow_down_rounded,
-                      color: AppColors.mutedForeground,
-                      size: 24,
                     ),
                   ],
                 ),

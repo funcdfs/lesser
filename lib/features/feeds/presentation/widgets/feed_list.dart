@@ -29,8 +29,6 @@ class FeedList extends StatefulWidget {
 
 class _FeedListState extends State<FeedList>
     with AutomaticKeepAliveClientMixin {
-  ScrollController? _scrollController;
-
   /// 是否显示右下角的悬浮按钮组
   bool _showBottomActions = false;
 
@@ -54,47 +52,35 @@ class _FeedListState extends State<FeedList>
   }
 
   @override
-  void didChangeDependencies() {
-    super.didChangeDependencies();
-    // 获取当前环境的滚动控制器（通常由父级的 NestedScrollView 提供）
-    final newController = PrimaryScrollController.of(context);
-    if (_scrollController != newController) {
-      _scrollController?.removeListener(_onScroll);
-      _scrollController = newController;
-      _scrollController?.addListener(_onScroll);
-    }
-  }
-
-  @override
   void dispose() {
-    _scrollController?.removeListener(_onScroll);
     super.dispose();
   }
 
-  /// 滚动监听，决定何时显示返回顶部按钮
-  void _onScroll() {
-    if (_scrollController == null || !_scrollController!.hasClients) return;
-
-    final currentScroll = _scrollController!.position.pixels;
-
-    // 当滚动超过一屏高度时，显示悬浮按钮
-    final show = currentScroll > MediaQuery.of(context).size.height;
-    if (show != _showBottomActions) {
-      setState(() {
-        _showBottomActions = show;
-      });
+  /// 处理滚动通知，决定何时显示返回顶部按钮
+  bool _handleScrollNotification(ScrollNotification notification) {
+    if (notification is ScrollUpdateNotification) {
+      final currentScroll = notification.metrics.pixels;
+      // 当滚动超过一屏高度时，显示悬浮按钮
+      final show = currentScroll > MediaQuery.of(context).size.height;
+      if (show != _showBottomActions) {
+        setState(() {
+          _showBottomActions = show;
+        });
+      }
     }
+    return false; // 允许通知继续向上冒泡
   }
 
   /// 滚动回顶部
   void _scrollToTop() {
-    if (_scrollController == null || !_scrollController!.hasClients) return;
-
-    _scrollController!.animateTo(
-      0.0,
-      duration: const Duration(milliseconds: 600),
-      curve: Curves.easeInOutCubic,
-    );
+    final controller = PrimaryScrollController.of(context);
+    if (controller.hasClients) {
+      controller.animateTo(
+        0.0,
+        duration: const Duration(milliseconds: 600),
+        curve: Curves.easeInOutCubic,
+      );
+    }
   }
 
   /// 刷新动态流
@@ -134,11 +120,11 @@ class _FeedListState extends State<FeedList>
         );
       },
       transitionBuilder: (context, anim1, anim2, child) {
-        return ScaleTransition(
-          scale: Tween<double>(
-            begin: 0.9,
-            end: 1.0,
-          ).animate(CurvedAnimation(parent: anim1, curve: Curves.easeOutCubic)),
+        return SlideTransition(
+          position: Tween<Offset>(
+            begin: const Offset(0, 1),
+            end: Offset.zero,
+          ).animate(CurvedAnimation(parent: anim1, curve: Curves.easeOutQuint)),
           child: FadeTransition(opacity: anim1, child: child),
         );
       },
@@ -153,50 +139,57 @@ class _FeedListState extends State<FeedList>
       children: [
         if (_isLoading)
           // 加载中：展示骨架屏
-          ListView.builder(
-            padding: EdgeInsets.zero,
-            physics: const BouncingScrollPhysics(
-              parent: NeverScrollableScrollPhysics(),
+          NotificationListener<ScrollNotification>(
+            onNotification: _handleScrollNotification,
+            child: ListView.builder(
+              padding: EdgeInsets.zero,
+              physics: const BouncingScrollPhysics(
+                parent: NeverScrollableScrollPhysics(),
+              ),
+              itemCount: 5 + (widget.header != null ? 1 : 0),
+              itemBuilder: (context, index) {
+                if (widget.header != null && index == 0) {
+                  return widget.header!;
+                }
+                return const FeedsCardSkeleton();
+              },
             ),
-            itemCount: 5 + (widget.header != null ? 1 : 0),
-            itemBuilder: (context, index) {
-              if (widget.header != null && index == 0) {
-                return widget.header!;
-              }
-              return const FeedsCardSkeleton();
-            },
           )
         else
           // 加载完成：展示实际帖子列表
-          ListView.builder(
-            padding: EdgeInsets.zero,
-            physics: const BouncingScrollPhysics(
-              parent: AlwaysScrollableScrollPhysics(),
-            ),
-            itemCount: mockPosts.length + 10 + (widget.header != null ? 1 : 0),
-            itemBuilder: (context, index) {
-              if (widget.header != null) {
-                if (index == 0) return widget.header!;
-                final postIndex = index - 1;
-                final post = mockPosts[postIndex % mockPosts.length];
+          NotificationListener<ScrollNotification>(
+            onNotification: _handleScrollNotification,
+            child: ListView.builder(
+              padding: EdgeInsets.zero,
+              physics: const BouncingScrollPhysics(
+                parent: AlwaysScrollableScrollPhysics(),
+              ),
+              itemCount:
+                  mockPosts.length + 10 + (widget.header != null ? 1 : 0),
+              itemBuilder: (context, index) {
+                if (widget.header != null) {
+                  if (index == 0) return widget.header!;
+                  final postIndex = index - 1;
+                  final post = mockPosts[postIndex % mockPosts.length];
+                  return _AnimatedPostItem(
+                    index: postIndex,
+                    child: PostCard(
+                      post: post,
+                      onTap: () => _navigateToDetail(post),
+                    ),
+                  );
+                }
+
+                final post = mockPosts[index % mockPosts.length];
                 return _AnimatedPostItem(
-                  index: postIndex,
+                  index: index,
                   child: PostCard(
                     post: post,
                     onTap: () => _navigateToDetail(post),
                   ),
                 );
-              }
-
-              final post = mockPosts[index % mockPosts.length];
-              return _AnimatedPostItem(
-                index: index,
-                child: PostCard(
-                  post: post,
-                  onTap: () => _navigateToDetail(post),
-                ),
-              );
-            },
+              },
+            ),
           ),
 
         // 悬浮按钮组
