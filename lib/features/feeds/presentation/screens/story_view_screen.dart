@@ -147,7 +147,7 @@ class _StoryViewScreenState extends State<StoryViewScreen> {
                         color: Colors.black,
                         boxShadow: [
                           BoxShadow(
-                            color: Colors.black.withOpacity(0.5),
+                            color: Colors.black.withValues(alpha: 0.5),
                             blurRadius: 20,
                             spreadRadius: 5,
                           ),
@@ -210,7 +210,9 @@ class _StoryViewScreenState extends State<StoryViewScreen> {
                                         decoration: BoxDecoration(
                                           color: i == safeStoryIndex
                                               ? Colors.white
-                                              : Colors.white.withOpacity(0.3),
+                                              : Colors.white.withValues(
+                                                  alpha: 0.3,
+                                                ),
                                           borderRadius: BorderRadius.circular(
                                             1.5,
                                           ),
@@ -241,7 +243,9 @@ class _StoryViewScreenState extends State<StoryViewScreen> {
                                     Text(
                                       _getTimeAgo(story.timestamp),
                                       style: TextStyle(
-                                        color: Colors.white.withOpacity(0.7),
+                                        color: Colors.white.withValues(
+                                          alpha: 0.7,
+                                        ),
                                         fontSize: 12,
                                       ),
                                     ),
@@ -274,10 +278,14 @@ class _StoryViewScreenState extends State<StoryViewScreen> {
                                       horizontal: 16,
                                     ),
                                     decoration: BoxDecoration(
-                                      color: Colors.black.withOpacity(0.4),
+                                      color: Colors.black.withValues(
+                                        alpha: 0.4,
+                                      ),
                                       borderRadius: BorderRadius.circular(22),
                                       border: Border.all(
-                                        color: Colors.white.withOpacity(0.2),
+                                        color: Colors.white.withValues(
+                                          alpha: 0.2,
+                                        ),
                                       ),
                                     ),
                                     child: const Row(
@@ -287,7 +295,7 @@ class _StoryViewScreenState extends State<StoryViewScreen> {
                                           color: Colors.white70,
                                           size: 20,
                                         ),
-                                        const SizedBox(width: 8),
+                                        SizedBox(width: 8),
                                         Text(
                                           "发送私信...",
                                           style: TextStyle(
@@ -342,9 +350,9 @@ class _StoryViewScreenState extends State<StoryViewScreen> {
         width: 44,
         height: 44,
         decoration: BoxDecoration(
-          color: Colors.black.withOpacity(0.4),
+          color: Colors.black.withValues(alpha: 0.4),
           shape: BoxShape.circle,
-          border: Border.all(color: Colors.white.withOpacity(0.2)),
+          border: Border.all(color: Colors.white.withValues(alpha: 0.2)),
         ),
         child: Icon(icon, color: Colors.white, size: 24),
       ),

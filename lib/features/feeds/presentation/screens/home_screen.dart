@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../../../shared/theme/theme.dart';
+import '../../../../shared/widgets/avatar.dart';
 import 'feed_screen.dart';
 import 'following_feed_screen.dart';
 
@@ -39,22 +40,34 @@ class _HomeScreenState extends State<HomeScreen>
       body: NestedScrollView(
         headerSliverBuilder: (context, innerBoxIsScrolled) {
           return [
-            /// 顶部 Logo 区域 - 随动滚动
-            const SliverToBoxAdapter(
+            SliverToBoxAdapter(
               child: Padding(
-                padding: EdgeInsets.fromLTRB(
+                padding: const EdgeInsets.fromLTRB(
                   AppSpacing.lg,
                   12,
                   AppSpacing.lg,
                   8,
                 ),
-                child: Text(
-                  'Lesser',
-                  style: TextStyle(
-                    fontSize: 26,
-                    fontWeight: FontWeight.bold,
-                    letterSpacing: -0.8,
-                  ),
+                child: Stack(
+                  alignment: Alignment.center,
+                  children: [
+                    const Align(
+                      alignment: Alignment.centerLeft,
+                      child: Avatar(
+                        avatarUrl: 'https://via.placeholder.com/150',
+                        fallbackInitials: 'F',
+                        size: 32,
+                      ),
+                    ),
+                    const Text(
+                      'Lesser',
+                      style: TextStyle(
+                        fontSize: 26,
+                        fontWeight: FontWeight.bold,
+                        letterSpacing: -0.8,
+                      ),
+                    ),
+                  ],
                 ),
               ),
             ),

@@ -151,7 +151,7 @@ class _NewPostScreenState extends State<NewPostScreen> {
             Container(
               width: 2,
               height: 40,
-              color: AppColors.border.withOpacity(0.5),
+              color: AppColors.border.withValues(alpha: 0.5),
             ),
             const SizedBox(height: 4),
             const Opacity(
@@ -196,7 +196,9 @@ class _NewPostScreenState extends State<NewPostScreen> {
                             vertical: 2,
                           ),
                           decoration: BoxDecoration(
-                            color: theme.colorScheme.primary.withOpacity(0.1),
+                            color: theme.colorScheme.primary.withValues(
+                              alpha: 0.1,
+                            ),
                             borderRadius: BorderRadius.circular(12),
                           ),
                           child: Text(
@@ -243,7 +245,7 @@ class _NewPostScreenState extends State<NewPostScreen> {
       child: ListView.separated(
         scrollDirection: Axis.horizontal,
         itemCount: _selectedImages.length,
-        separatorBuilder: (_, __) => const SizedBox(width: 12),
+        separatorBuilder: (context, index) => const SizedBox(width: 12),
         itemBuilder: (context, index) {
           return Stack(
             children: [
@@ -264,7 +266,7 @@ class _NewPostScreenState extends State<NewPostScreen> {
                   child: Container(
                     padding: const EdgeInsets.all(4),
                     decoration: BoxDecoration(
-                      color: Colors.black.withOpacity(0.6),
+                      color: Colors.black.withValues(alpha: 0.6),
                       shape: BoxShape.circle,
                     ),
                     child: const Icon(
