@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../../../shared/theme/theme.dart';
 import 'feed_screen.dart';
 import 'following_feed_screen.dart';
 
@@ -34,25 +35,87 @@ class _HomeScreenState extends State<HomeScreen>
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Lesser'),
-        elevation: 0,
-        bottom: TabBar(
+      backgroundColor: AppColors.background,
+      body: NestedScrollView(
+        headerSliverBuilder: (context, innerBoxIsScrolled) {
+          return [
+            /// 顶部 Logo 区域 - 随动滚动
+            const SliverToBoxAdapter(
+              child: Padding(
+                padding: EdgeInsets.fromLTRB(
+                  AppSpacing.lg,
+                  12,
+                  AppSpacing.lg,
+                  8,
+                ),
+                child: Text(
+                  'Lesser',
+                  style: TextStyle(
+                    fontSize: 26,
+                    fontWeight: FontWeight.bold,
+                    letterSpacing: -0.8,
+                  ),
+                ),
+              ),
+            ),
+
+            /// 分段导航 - 固定在顶部
+            SliverAppBar(
+              backgroundColor: AppColors.background,
+              elevation: 0,
+              scrolledUnderElevation: 0,
+              toolbarHeight: 0, // 隐藏标题栏以仅显示 TabBar
+              floating: false,
+              pinned: true,
+              bottom: PreferredSize(
+                preferredSize: const Size.fromHeight(48.5),
+                child: Container(
+                  height: 48.5,
+                  decoration: const BoxDecoration(
+                    border: Border(
+                      bottom: BorderSide(color: AppColors.border, width: 0.5),
+                    ),
+                  ),
+                  child: TabBar(
+                    controller: _tabController,
+                    isScrollable: false, // 使 Tab 各占据 50% 宽度
+                    dividerColor: Colors.transparent,
+                    indicatorColor: AppColors.primary,
+                    indicatorSize: TabBarIndicatorSize.label,
+                    indicatorWeight: 2,
+                    indicatorPadding: const EdgeInsets.only(top: 44),
+                    labelColor: AppColors.primary,
+                    unselectedLabelColor: AppColors.mutedForeground,
+                    labelStyle: const TextStyle(
+                      fontSize: 15,
+                      fontWeight: FontWeight.w600,
+                      letterSpacing: -0.2,
+                    ),
+                    unselectedLabelStyle: const TextStyle(
+                      fontSize: 15,
+                      fontWeight: FontWeight.w400,
+                      letterSpacing: -0.2,
+                    ),
+                    overlayColor: WidgetStateProperty.all(Colors.transparent),
+                    tabs: const [
+                      Tab(text: 'For You'),
+                      Tab(text: 'Following'),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+          ];
+        },
+        body: TabBarView(
           controller: _tabController,
-          tabs: const [
-            Tab(text: 'For You'),
-            Tab(text: 'Following'),
+          children: const [
+            // 推荐信息流
+            FeedScreen(),
+            // 关注信息流
+            FollowingFeedScreen(),
           ],
         ),
-      ),
-      body: TabBarView(
-        controller: _tabController,
-        children: const [
-          // 推荐信息流
-          FeedScreen(),
-          // 关注信息流
-          FollowingFeedScreen(),
-        ],
       ),
     );
   }

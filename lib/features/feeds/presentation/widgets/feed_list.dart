@@ -88,10 +88,12 @@ class _FeedListState extends State<FeedList>
 
   /// 滚动回顶部
   void _scrollToTop() {
-    _scrollController?.animateTo(
-      0,
-      duration: const Duration(milliseconds: 500),
-      curve: Curves.easeOut,
+    if (_scrollController == null || !_scrollController!.hasClients) return;
+
+    _scrollController!.animateTo(
+      0.0,
+      duration: const Duration(milliseconds: 600),
+      curve: Curves.easeInOutCubic,
     );
   }
 
@@ -99,11 +101,15 @@ class _FeedListState extends State<FeedList>
   Future<void> _refreshFeed() async {
     _scrollToTop();
     // 模拟刷新请求
-    await Future.delayed(const Duration(milliseconds: 500));
+    await Future.delayed(const Duration(milliseconds: 800));
     if (mounted) {
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(const SnackBar(content: Text('动态已更新')));
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('动态已更新'),
+          behavior: SnackBarBehavior.floating,
+          duration: Duration(seconds: 1),
+        ),
+      );
     }
   }
 
@@ -149,7 +155,9 @@ class _FeedListState extends State<FeedList>
           // 加载中：展示骨架屏
           ListView.builder(
             padding: EdgeInsets.zero,
-            physics: const NeverScrollableScrollPhysics(),
+            physics: const BouncingScrollPhysics(
+              parent: NeverScrollableScrollPhysics(),
+            ),
             itemCount: 5 + (widget.header != null ? 1 : 0),
             itemBuilder: (context, index) {
               if (widget.header != null && index == 0) {
@@ -162,6 +170,9 @@ class _FeedListState extends State<FeedList>
           // 加载完成：展示实际帖子列表
           ListView.builder(
             padding: EdgeInsets.zero,
+            physics: const BouncingScrollPhysics(
+              parent: AlwaysScrollableScrollPhysics(),
+            ),
             itemCount: mockPosts.length + 10 + (widget.header != null ? 1 : 0),
             itemBuilder: (context, index) {
               if (widget.header != null) {
@@ -191,11 +202,12 @@ class _FeedListState extends State<FeedList>
         // 悬浮按钮组
         if (_showBottomActions && !_isLoading)
           Positioned(
-            bottom: 24,
-            right: 16,
+            bottom: 32,
+            right: 24,
             child: TweenAnimationBuilder<double>(
               tween: Tween(begin: 0.0, end: 1.0),
-              duration: const Duration(milliseconds: 300),
+              duration: const Duration(milliseconds: 400),
+              curve: Curves.easeOutBack,
               builder: (context, value, child) {
                 return Transform.scale(
                   scale: value,
@@ -206,12 +218,12 @@ class _FeedListState extends State<FeedList>
                 mainAxisSize: MainAxisSize.min,
                 children: [
                   _buildFloatingButton(
-                    icon: Icons.refresh,
+                    icon: Icons.refresh_rounded,
                     onTap: _refreshFeed,
                   ),
-                  const SizedBox(height: 12),
+                  const SizedBox(height: 16),
                   _buildFloatingButton(
-                    icon: Icons.arrow_upward,
+                    icon: Icons.arrow_upward_rounded,
                     onTap: _scrollToTop,
                   ),
                 ],
@@ -222,28 +234,62 @@ class _FeedListState extends State<FeedList>
     );
   }
 
-  /// 构建圆形悬浮按钮
+  /// 构建圆形悬浮按钮 - 使用半透明高级感
   Widget _buildFloatingButton({
     required IconData icon,
     required VoidCallback onTap,
   }) {
-    return GestureDetector(
+    return _AnimatedScaleButton(
       onTap: onTap,
       child: Container(
-        width: 48,
-        height: 48,
+        width: 44,
+        height: 44,
         decoration: BoxDecoration(
-          color: AppColors.primary,
+          color: AppColors.primary.withValues(alpha: 0.8),
           shape: BoxShape.circle,
+          border: Border.all(
+            color: Colors.white.withValues(alpha: 0.1),
+            width: 0.5,
+          ),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withValues(alpha: 0.1),
-              blurRadius: 8,
-              offset: const Offset(0, 4),
+              color: Colors.black.withValues(alpha: 0.15),
+              blurRadius: 12,
+              offset: const Offset(0, 6),
             ),
           ],
         ),
-        child: Icon(icon, color: AppColors.primaryForeground, size: 24),
+        child: Icon(icon, color: AppColors.primaryForeground, size: 20),
+      ),
+    );
+  }
+}
+
+/// 内部私有：为悬浮按钮添加点击缩放反馈
+class _AnimatedScaleButton extends StatefulWidget {
+  final Widget child;
+  final VoidCallback onTap;
+
+  const _AnimatedScaleButton({required this.child, required this.onTap});
+
+  @override
+  State<_AnimatedScaleButton> createState() => _AnimatedScaleButtonState();
+}
+
+class _AnimatedScaleButtonState extends State<_AnimatedScaleButton> {
+  bool _isPressed = false;
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTapDown: (_) => setState(() => _isPressed = true),
+      onTapUp: (_) => setState(() => _isPressed = false),
+      onTapCancel: () => setState(() => _isPressed = false),
+      onTap: widget.onTap,
+      child: AnimatedScale(
+        scale: _isPressed ? 0.9 : 1.0,
+        duration: const Duration(milliseconds: 100),
+        child: widget.child,
       ),
     );
   }
@@ -301,9 +347,11 @@ class _AnimatedPostItemState extends State<_AnimatedPostItem>
 
   @override
   Widget build(BuildContext context) {
-    return FadeTransition(
-      opacity: _fadeAnimation,
-      child: SlideTransition(position: _slideAnimation, child: widget.child),
+    return RepaintBoundary(
+      child: FadeTransition(
+        opacity: _fadeAnimation,
+        child: SlideTransition(position: _slideAnimation, child: widget.child),
+      ),
     );
   }
 }

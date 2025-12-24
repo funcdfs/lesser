@@ -1,61 +1,124 @@
 import 'package:flutter/material.dart';
+import '../../../../shared/theme/theme.dart';
+import '../../../../shared/widgets/shimmer.dart';
 
-/// Feed 卡片骨架屏
+/// Feed 卡片骨架屏 (Shimmer 优化版)
 ///
-/// 用于加载状态下显示占位符，改善用户体验
+/// 职责：在加载状态下提供与实际 PostCard 结构一致的占位视图，并附带平滑的扫光动画。
 class FeedsCardSkeleton extends StatelessWidget {
   const FeedsCardSkeleton({super.key});
 
   @override
   Widget build(BuildContext context) {
-    return Card(
-      margin: const EdgeInsets.symmetric(vertical: 8, horizontal: 12),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // 用户信息骨架
-          Padding(
-            padding: const EdgeInsets.all(12),
-            child: Row(
-              children: [
-                Container(
-                  width: 40,
-                  height: 40,
-                  decoration: BoxDecoration(
-                    shape: BoxShape.circle,
-                    color: Colors.grey[300],
-                  ),
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
+    return ShimmerLoading(
+      child: Padding(
+        padding: const EdgeInsets.symmetric(
+          horizontal: AppSpacing.lg,
+          vertical: AppSpacing.md,
+        ),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            /// 左侧：用户头像骨架
+            Container(
+              width: 40,
+              height: 40,
+              decoration: const BoxDecoration(
+                shape: BoxShape.circle,
+                color: AppColors.secondary,
+              ),
+            ),
+            const SizedBox(width: AppSpacing.md),
+
+            /// 右侧：内容骨架
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  /// 标题栏骨架
+                  Row(
                     children: [
-                      Container(height: 12, color: Colors.grey[300]),
-                      const SizedBox(height: 8),
-                      Container(height: 10, width: 80, color: Colors.grey[300]),
+                      Container(
+                        height: 14,
+                        width: 80,
+                        decoration: BoxDecoration(
+                          color: AppColors.secondary,
+                          borderRadius: BorderRadius.circular(AppRadius.sm),
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      Container(
+                        height: 14,
+                        width: 60,
+                        decoration: BoxDecoration(
+                          color: AppColors.secondary,
+                          borderRadius: BorderRadius.circular(AppRadius.sm),
+                        ),
+                      ),
                     ],
                   ),
-                ),
-              ],
+                  const SizedBox(height: 12),
+
+                  /// 文本内容骨架
+                  Container(
+                    height: 14,
+                    width: double.infinity,
+                    decoration: BoxDecoration(
+                      color: AppColors.secondary,
+                      borderRadius: BorderRadius.circular(AppRadius.sm),
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  Container(
+                    height: 14,
+                    width: double.infinity,
+                    decoration: BoxDecoration(
+                      color: AppColors.secondary,
+                      borderRadius: BorderRadius.circular(AppRadius.sm),
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  Container(
+                    height: 14,
+                    width: MediaQuery.of(context).size.width * 0.4,
+                    decoration: BoxDecoration(
+                      color: AppColors.secondary,
+                      borderRadius: BorderRadius.circular(AppRadius.sm),
+                    ),
+                  ),
+
+                  /// 图片骨架
+                  const SizedBox(height: 16),
+                  Container(
+                    height: 200,
+                    width: double.infinity,
+                    decoration: BoxDecoration(
+                      color: AppColors.secondary,
+                      borderRadius: BorderRadius.circular(AppRadius.lg),
+                    ),
+                  ),
+
+                  /// 操作栏骨架
+                  const SizedBox(height: 16),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: List.generate(
+                      4,
+                      (_) => Container(
+                        height: 20,
+                        width: 20,
+                        decoration: const BoxDecoration(
+                          shape: BoxShape.circle,
+                          color: AppColors.secondary,
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
             ),
-          ),
-          // 图片骨架
-          Container(color: Colors.grey[200], height: 300),
-          // 操作栏骨架
-          Padding(
-            padding: const EdgeInsets.all(12),
-            child: Row(
-              children: [
-                Container(height: 20, width: 20, color: Colors.grey[300]),
-                const SizedBox(width: 20),
-                Container(height: 20, width: 20, color: Colors.grey[300]),
-                const SizedBox(width: 20),
-                Container(height: 20, width: 20, color: Colors.grey[300]),
-              ],
-            ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }

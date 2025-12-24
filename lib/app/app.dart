@@ -153,16 +153,21 @@ class _MainScreenState extends State<MainScreen> {
 
                 const VerticalDivider(width: 1, thickness: 1),
 
-                // 中间/主要内容区域 - 限制最大宽度以实现良好的阅读体验
-                const SizedBox(width: 40), // 增加侧边栏与内容之间的间距
-                ConstrainedBox(
-                  constraints: const BoxConstraints(maxWidth: 700),
-                  child: IndexedStack(
-                    index: _selectedIndex,
-                    children: _screens,
+                // 中间/主要内容区域 - 使用 Expanded 包裹以解决垂直溢出问题并限制最大宽度
+                const SizedBox(width: 40),
+                Expanded(
+                  child: Align(
+                    alignment: Alignment.topCenter,
+                    child: ConstrainedBox(
+                      constraints: const BoxConstraints(maxWidth: 700),
+                      child: IndexedStack(
+                        index: _selectedIndex,
+                        children: _screens,
+                      ),
+                    ),
                   ),
                 ),
-                const SizedBox(width: 40), // 右侧也保持平衡
+                const SizedBox(width: 40),
               ],
             ),
           );

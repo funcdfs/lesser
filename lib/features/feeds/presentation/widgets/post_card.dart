@@ -72,68 +72,70 @@ class _PostCardState extends State<PostCard> {
 
   @override
   Widget build(BuildContext context) {
-    return InkWell(
-      onTap: widget.onTap,
-      child: Padding(
-        padding: const EdgeInsets.symmetric(
-          horizontal: AppSpacing.lg,
-          vertical: AppSpacing.md,
-        ),
-        child: Row(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            /// 左侧：用户头像
-            Avatar(
-              avatarUrl: widget.post.authorAvatarUrl,
-              fallbackInitials: widget.post.author.isNotEmpty
-                  ? widget.post.author[0]
-                  : 'U',
-              size: 40,
-            ),
-            const SizedBox(width: AppSpacing.md),
-
-            /// 右侧：主要内容
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  /// 标题栏：用户名、句柄、时间、更多菜单
-                  _buildHeaderRow(),
-                  const SizedBox(height: 8),
-
-                  /// 帖子文本内容
-                  ExpandableText(
-                    text: widget.post.content,
-                    style: const TextStyle(
-                      fontSize: 15,
-                      height: 1.4,
-                      color: AppColors.foreground,
-                    ),
-                  ),
-
-                  /// 图片区域
-                  if (widget.post.imageUrls.isNotEmpty) ...[
-                    const SizedBox(height: 12),
-                    FeedImagesWidget(imageUrls: widget.post.imageUrls),
-                  ],
-
-                  const SizedBox(height: 12),
-
-                  /// 操作栏（点赞、评论、转发等）
-                  FeedsActionsBar(
-                    likesCount: _currentLikeCount,
-                    commentsCount: widget.post.commentsCount,
-                    repostsCount: widget.post.repostsCount,
-                    bookmarksCount: widget.post.bookmarksCount,
-                    sharesCount: widget.post.sharesCount,
-                    initiallyLiked: _postIsLiked,
-                    onLikeToggle: _handleLikeTap,
-                    responsive: true,
-                  ),
-                ],
+    return RepaintBoundary(
+      child: InkWell(
+        onTap: widget.onTap,
+        child: Padding(
+          padding: const EdgeInsets.symmetric(
+            horizontal: AppSpacing.lg,
+            vertical: AppSpacing.md,
+          ),
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              /// 左侧：用户头像
+              Avatar(
+                avatarUrl: widget.post.authorAvatarUrl,
+                fallbackInitials: widget.post.author.isNotEmpty
+                    ? widget.post.author[0]
+                    : 'U',
+                size: 40,
               ),
-            ),
-          ],
+              const SizedBox(width: AppSpacing.md),
+
+              /// 右侧：主要内容
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    /// 标题栏：用户名、句柄、时间、更多菜单
+                    _buildHeaderRow(),
+                    const SizedBox(height: 8),
+
+                    /// 帖子文本内容
+                    ExpandableText(
+                      text: widget.post.content,
+                      style: const TextStyle(
+                        fontSize: 15,
+                        height: 1.4,
+                        color: AppColors.foreground,
+                      ),
+                    ),
+
+                    /// 图片区域
+                    if (widget.post.imageUrls.isNotEmpty) ...[
+                      const SizedBox(height: 12),
+                      FeedImagesWidget(imageUrls: widget.post.imageUrls),
+                    ],
+
+                    const SizedBox(height: 12),
+
+                    /// 操作栏（点赞、评论、转发等）
+                    FeedsActionsBar(
+                      likesCount: _currentLikeCount,
+                      commentsCount: widget.post.commentsCount,
+                      repostsCount: widget.post.repostsCount,
+                      bookmarksCount: widget.post.bookmarksCount,
+                      sharesCount: widget.post.sharesCount,
+                      initiallyLiked: _postIsLiked,
+                      onLikeToggle: _handleLikeTap,
+                      responsive: true,
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );

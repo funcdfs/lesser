@@ -42,159 +42,194 @@ class _PostDetailScreenState extends State<PostDetailScreen> {
     return Scaffold(
       backgroundColor: AppColors.background,
       appBar: AppBar(
-        title: const Text('帖子', style: TextStyle(fontWeight: FontWeight.w600)),
         centerTitle: true,
         backgroundColor: AppColors.background,
         elevation: 0,
-        leading: IconButton(
-          icon: const Icon(Icons.close, size: 24),
-          onPressed: () => Navigator.pop(context),
-        ),
+        automaticallyImplyLeading: false, // 移除左侧返回按钮
       ),
-      body: SingleChildScrollView(
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            /// 顶部模态指示器（可选）
-            Center(
-              child: Container(
-                margin: const EdgeInsets.only(top: 12),
-                width: 40,
-                height: 4,
-                decoration: BoxDecoration(
-                  color: AppColors.border,
-                  borderRadius: BorderRadius.circular(2),
-                ),
-              ),
-            ),
-
-            /// 头部：用户信息
-            Padding(
-              padding: const EdgeInsets.all(AppSpacing.lg),
-              child: Row(
-                children: [
-                  Avatar(
-                    avatarUrl: widget.post.authorAvatarUrl,
-                    fallbackInitials: widget.post.author.isNotEmpty
-                        ? widget.post.author[0]
-                        : 'U',
-                    size: 44,
-                  ),
-                  const SizedBox(width: AppSpacing.md),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          widget.post.author,
-                          style: const TextStyle(
-                            fontWeight: FontWeight.bold,
-                            fontSize: 16,
-                          ),
-                        ),
-                        Text(
-                          widget.post.authorHandle,
-                          style: const TextStyle(
-                            color: AppColors.mutedForeground,
-                            fontSize: 14,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                  OutlinedButton(
-                    onPressed: () {},
-                    style: OutlinedButton.styleFrom(
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(AppRadius.full),
+      body: Stack(
+        children: [
+          /// 主要内容区域
+          SingleChildScrollView(
+            padding: const EdgeInsets.only(top: 24), // 为顶端手柄留出空间
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                /// 头部：用户信息
+                Padding(
+                  padding: const EdgeInsets.all(AppSpacing.lg),
+                  child: Row(
+                    children: [
+                      Avatar(
+                        avatarUrl: widget.post.authorAvatarUrl,
+                        fallbackInitials: widget.post.author.isNotEmpty
+                            ? widget.post.author[0]
+                            : 'U',
+                        size: 44,
                       ),
-                      side: const BorderSide(color: AppColors.border),
+                      const SizedBox(width: AppSpacing.md),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              widget.post.author,
+                              style: const TextStyle(
+                                fontWeight: FontWeight.bold,
+                                fontSize: 16,
+                              ),
+                            ),
+                            Text(
+                              widget.post.authorHandle,
+                              style: const TextStyle(
+                                color: AppColors.mutedForeground,
+                                fontSize: 14,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      OutlinedButton(
+                        onPressed: () {},
+                        style: OutlinedButton.styleFrom(
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(AppRadius.full),
+                          ),
+                          side: const BorderSide(color: AppColors.border),
+                        ),
+                        child: const Text(
+                          '关注',
+                          style: TextStyle(color: AppColors.foreground),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+
+                /// 内容：正文
+                Padding(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: AppSpacing.lg,
+                  ),
+                  child: Text(
+                    widget.post.content,
+                    style: const TextStyle(
+                      fontSize: 17,
+                      height: 1.5,
+                      color: AppColors.foreground,
                     ),
-                    child: const Text(
-                      '关注',
-                      style: TextStyle(color: AppColors.foreground),
+                  ),
+                ),
+
+                /// 内容：图片
+                if (widget.post.imageUrls.isNotEmpty) ...[
+                  const SizedBox(height: 16),
+                  Padding(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: AppSpacing.lg,
                     ),
+                    child: FeedImagesWidget(imageUrls: widget.post.imageUrls),
                   ),
                 ],
-              ),
-            ),
 
-            /// 内容：正文
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
-              child: Text(
-                widget.post.content,
-                style: const TextStyle(
-                  fontSize: 17,
-                  height: 1.5,
-                  color: AppColors.foreground,
+                /// 时间
+                Padding(
+                  padding: const EdgeInsets.all(AppSpacing.lg),
+                  child: Text(
+                    '${TimeFormatter.formatAbsoluteTime(widget.post.timestamp)} · ${TimeFormatter.formatRelativeTime(widget.post.timestamp)}',
+                    style: const TextStyle(
+                      color: AppColors.mutedForeground,
+                      fontSize: 13,
+                    ),
+                  ),
+                ),
+
+                const Divider(height: 1, color: AppColors.border),
+
+                /// 交互栏
+                Padding(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: AppSpacing.lg,
+                    vertical: AppSpacing.xs,
+                  ),
+                  child: FeedsActionsBar(
+                    likesCount: _likesCount,
+                    commentsCount: widget.post.commentsCount,
+                    repostsCount: widget.post.repostsCount,
+                    bookmarksCount: widget.post.bookmarksCount,
+                    sharesCount: widget.post.sharesCount,
+                    initiallyLiked: _isLiked,
+                    onLikeToggle: _handleLikeToggle,
+                    responsive: false, // 详情页通常固定布局
+                  ),
+                ),
+
+                const Divider(height: 1, color: AppColors.border),
+
+                /// 评论区标题
+                const Padding(
+                  padding: EdgeInsets.fromLTRB(
+                    AppSpacing.lg,
+                    AppSpacing.lg,
+                    AppSpacing.lg,
+                    0,
+                  ),
+                  child: Text(
+                    '评论',
+                    style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18),
+                  ),
+                ),
+
+                /// 评论列表 placeholder
+                const FeedsCommentSection(),
+
+                const SizedBox(height: 100), // 为底部输入留白
+              ],
+            ),
+          ),
+
+          /// 顶部交互手柄 - 固定在顶端且支持点击/下滑关闭
+          Positioned(
+            top: 0,
+            left: 0,
+            right: 0,
+            child: GestureDetector(
+              onTap: () => Navigator.pop(context),
+              behavior: HitTestBehavior.opaque, // 确保透明区域也能拦截手势
+              onVerticalDragUpdate: (details) {
+                // 如果向下拖动超过一定阈值，则关闭
+                if (details.primaryDelta != null && details.primaryDelta! > 8) {
+                  Navigator.pop(context);
+                }
+              },
+              child: Container(
+                width: double.infinity,
+                height: 60, // 显著增加感应热区
+                color: Colors.transparent,
+                alignment: Alignment.center,
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    /// 视觉提示：短横线 + 向下箭头，更明确的动作意图
+                    Container(
+                      width: 32,
+                      height: 4,
+                      decoration: BoxDecoration(
+                        color: AppColors.border.withValues(alpha: 0.5),
+                        borderRadius: BorderRadius.circular(2),
+                      ),
+                    ),
+                    const Icon(
+                      Icons.keyboard_arrow_down_rounded,
+                      color: AppColors.mutedForeground,
+                      size: 24,
+                    ),
+                  ],
                 ),
               ),
             ),
-
-            /// 内容：图片
-            if (widget.post.imageUrls.isNotEmpty) ...[
-              const SizedBox(height: 16),
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
-                child: FeedImagesWidget(imageUrls: widget.post.imageUrls),
-              ),
-            ],
-
-            /// 时间
-            Padding(
-              padding: const EdgeInsets.all(AppSpacing.lg),
-              child: Text(
-                '${TimeFormatter.formatAbsoluteTime(widget.post.timestamp)} · ${TimeFormatter.formatRelativeTime(widget.post.timestamp)}',
-                style: const TextStyle(
-                  color: AppColors.mutedForeground,
-                  fontSize: 13,
-                ),
-              ),
-            ),
-
-            const Divider(height: 1, color: AppColors.border),
-
-            /// 交互栏
-            Padding(
-              padding: const EdgeInsets.symmetric(
-                horizontal: AppSpacing.lg,
-                vertical: AppSpacing.xs,
-              ),
-              child: FeedsActionsBar(
-                likesCount: _likesCount,
-                commentsCount: widget.post.commentsCount,
-                repostsCount: widget.post.repostsCount,
-                bookmarksCount: widget.post.bookmarksCount,
-                sharesCount: widget.post.sharesCount,
-                initiallyLiked: _isLiked,
-                onLikeToggle: _handleLikeToggle,
-                responsive: false, // 详情页通常固定布局
-              ),
-            ),
-
-            const Divider(height: 1, color: AppColors.border),
-
-            /// 评论区标题
-            const Padding(
-              padding: EdgeInsets.fromLTRB(
-                AppSpacing.lg,
-                AppSpacing.lg,
-                AppSpacing.lg,
-                0,
-              ),
-              child: Text(
-                '评论',
-                style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18),
-              ),
-            ),
-
-            /// 评论列表 placeholder
-            const FeedsCommentSection(),
-
-            const SizedBox(height: 100), // 为底部输入留白
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }
