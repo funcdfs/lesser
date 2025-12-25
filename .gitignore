@@ -145,3 +145,11 @@ frontend/linux/flutter/ephemeral/
 frontend/windows/flutter/ephemeral/
 frontend/windows/CMakeSettings.json
 frontend/windows/out/
+
+
+# ==========================================
+# Database related 
+# PostgreSQL (Docker volume data)
+# ==========================================
+/docker/postgres/
+/docker/redis/
