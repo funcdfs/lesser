@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../features/features.dart';
 import '../shared/theme/theme.dart' as shared_theme;
 import 'app_theme.dart';
+import 'app_router.dart';
 
 class LesserApp extends StatelessWidget {
   const LesserApp({super.key});
@@ -13,7 +14,8 @@ class LesserApp extends StatelessWidget {
       theme: AppTheme.lightTheme(),
       darkTheme: AppTheme.darkTheme(),
       themeMode: ThemeMode.light,
-      home: const MainScreen(),
+      initialRoute: '/',
+      onGenerateRoute: AppRouter.generateRoute,
       debugShowCheckedModeBanner: false,
     );
   }

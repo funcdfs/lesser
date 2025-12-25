@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import './app.dart';
+import '../features/test/presentation/screens/api_test_screen.dart';
+import '../features/auth/presentation/screens/login_screen.dart';
 // import 'package:go_router/go_router.dart'; // User recommended go_router
 
 /// 路由管理类
@@ -12,7 +14,13 @@ class AppRouter {
   static Route<dynamic> generateRoute(RouteSettings settings) {
     switch (settings.name) {
       case '/':
+        return MaterialPageRoute(builder: (_) => const LoginScreen());
+      case '/register':
+        return MaterialPageRoute(builder: (_) => const RegisterScreen());
+      case '/main':
         return MaterialPageRoute(builder: (_) => const MainScreen());
+      case '/api-test':
+        return MaterialPageRoute(builder: (_) => const ApiTestScreen());
       default:
         return MaterialPageRoute(
           builder: (_) => Scaffold(

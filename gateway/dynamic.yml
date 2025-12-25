@@ -1,0 +1,117 @@
+# Traefik 动态配置文件
+
+# HTTP 中间件
+http:
+  middlewares:
+    # 基本认证中间件（可选）
+    basicAuth:
+      basicAuth:
+        users:
+          - "admin:$apr1$FfT5$Y9fK7z8Z7Q8W9E6R5T4Y3U2I1O0P9A8S7D6F5G4H3J2K1L0"
+    
+    # CORS 中间件
+    corsHeaders:
+      headers:
+        accessControlAllowOriginList:
+          - "*"
+        accessControlAllowMethods:
+          - GET
+          - POST
+          - PUT
+          - DELETE
+          - OPTIONS
+        accessControlAllowHeaders:
+          - Origin
+          - Content-Type
+          - Accept
+          - Authorization
+        accessControlMaxAge: 100
+        addVaryHeader: true
+    
+    # 压缩中间件
+    compress:
+      compress:
+        excludedContentTypes:
+          - "text/event-stream"
+    
+    # 速率限制中间件
+    rateLimit:
+      rateLimit:
+        average: 100
+        burst: 200
+
+  # 后端服务配置
+  services:
+    # Django 后端服务
+    djangoService:
+      loadBalancer:
+        servers:
+          - url: "http://django:8000"
+    
+    # Golang 热点服务
+    golangService:
+      loadBalancer:
+        servers:
+          - url: "http://golang:8080"
+    
+    # Rust Feed 服务
+    rustService:
+      loadBalancer:
+        servers:
+          - url: "http://rust:8081"
+    
+    # 前端服务
+    frontendService:
+      loadBalancer:
+        servers:
+          - url: "http://frontend:80"
+
+  # 路由规则
+  routers:
+    # Django 后端路由
+    djangoRouter:
+      entryPoints:
+        - websecure
+      rule: "PathPrefix(`/api/`)"
+      service: djangoService
+      middlewares:
+        - corsHeaders
+        - compress
+        - rateLimit
+      tls:
+        certResolver: myresolver
+    
+    # Golang 热点服务路由
+    golangRouter:
+      entryPoints:
+        - websecure
+      rule: "PathPrefix(`/hot/`)"
+      service: golangService
+      middlewares:
+        - corsHeaders
+        - compress
+      tls:
+        certResolver: myresolver
+    
+    # Rust Feed 服务路由
+    rustRouter:
+      entryPoints:
+        - websecure
+      rule: "PathPrefix(`/feed/`)"
+      service: rustService
+      middlewares:
+        - corsHeaders
+        - compress
+      tls:
+        certResolver: myresolver
+    
+    # 前端路由
+    frontendRouter:
+      entryPoints:
+        - websecure
+      rule: "PathPrefix(`/`)"
+      service: frontendService
+      middlewares:
+        - compress
+      tls:
+        certResolver: myresolver

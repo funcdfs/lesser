@@ -1,21 +1,24 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../shared/theme/theme.dart';
 import '../../../../shared/widgets/avatar.dart';
 import '../../../../shared/widgets/button.dart';
+import '../providers/create_post_provider.dart';
 
 /// 发布页面
-class NewPostScreen extends StatefulWidget {
+class NewPostScreen extends ConsumerStatefulWidget {
   const NewPostScreen({super.key});
 
   @override
-  State<NewPostScreen> createState() => _NewPostScreenState();
+  ConsumerState<NewPostScreen> createState() => _NewPostScreenState();
 }
 
-class _NewPostScreenState extends State<NewPostScreen> {
+class _NewPostScreenState extends ConsumerState<NewPostScreen> {
   final _textController = TextEditingController();
   final _focusNode = FocusNode();
   bool _isPostButtonEnabled = false;
   bool _isContentVisible = false;
+  bool _isTyping = false;
 
   // 新增状态
   final List<String> _selectedImages = [];
@@ -27,8 +30,15 @@ class _NewPostScreenState extends State<NewPostScreen> {
   void initState() {
     super.initState();
     _textController.addListener(_onTextChanged);
+    _focusNode.addListener(_onFocusChanged);
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (mounted) setState(() => _isContentVisible = true);
+    });
+  }
+
+  void _onFocusChanged() {
+    setState(() {
+      _isTyping = _focusNode.hasFocus;
     });
   }
 
@@ -71,6 +81,10 @@ class _NewPostScreenState extends State<NewPostScreen> {
     showModalBottomSheet(
       context: context,
       backgroundColor: Colors.transparent,
+      isScrollControlled: true,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      ),
       builder: (context) => _ReplySettingsSheet(
         currentSetting: _replySetting,
         onChanged: (val) => setState(() => _replySetting = val),
@@ -88,19 +102,17 @@ class _NewPostScreenState extends State<NewPostScreen> {
         leading: Center(
           child: TextButton(
             onPressed: () => Navigator.of(context).pop(),
-            child: Text(
-              '取消',
-              style: TextStyle(
-                color: theme.colorScheme.onSurface,
-                fontSize: 16,
-              ),
+            style: TextButton.styleFrom(
+              foregroundColor: theme.colorScheme.onSurface,
+              textStyle: const TextStyle(fontSize: 16),
             ),
+            child: const Text('取消'),
           ),
         ),
         title: Text(
           '新建串文',
           style: theme.textTheme.titleMedium?.copyWith(
-            fontWeight: FontWeight.bold,
+            fontWeight: FontWeight.w600,
           ),
         ),
         centerTitle: true,
@@ -113,12 +125,14 @@ class _NewPostScreenState extends State<NewPostScreen> {
         ],
         backgroundColor: theme.scaffoldBackgroundColor,
         elevation: 0,
+        shadowColor: Colors.transparent,
+        scrolledUnderElevation: 0,
       ),
       backgroundColor: theme.scaffoldBackgroundColor,
       body: AnimatedOpacity(
         opacity: _isContentVisible ? 1.0 : 0.0,
-        duration: const Duration(milliseconds: 200),
-        curve: Curves.easeIn,
+        duration: const Duration(milliseconds: 300),
+        curve: Curves.easeOut,
         child: Column(
           children: [
             Expanded(
@@ -166,39 +180,43 @@ class _NewPostScreenState extends State<NewPostScreen> {
                   Text(
                     'funcdfs',
                     style: theme.textTheme.titleMedium?.copyWith(
-                      fontWeight: FontWeight.bold,
+                      fontWeight: FontWeight.w600,
                     ),
                   ),
+                  const SizedBox(width: 4),
                   if (_selectedTopic == null)
                     GestureDetector(
                       onTap: () => setState(() => _selectedTopic = '话题'),
-                      child: const Text(
-                        ' › 添加话题',
-                        style: TextStyle(color: AppColors.mutedForeground),
+                      child: Text(
+                        '› 添加话题',
+                        style: TextStyle(
+                          color: AppColors.mutedForeground,
+                          fontSize: 15,
+                        ),
                       ),
                     )
                   else
                     Padding(
-                      padding: const EdgeInsets.only(left: 8.0),
+                      padding: const EdgeInsets.only(left: 4.0),
                       child: GestureDetector(
                         onTap: () => setState(() => _selectedTopic = null),
                         child: Container(
                           padding: const EdgeInsets.symmetric(
-                            horizontal: 8,
-                            vertical: 2,
+                            horizontal: 10,
+                            vertical: 3,
                           ),
                           decoration: BoxDecoration(
                             color: theme.colorScheme.primary.withValues(
-                              alpha: 0.1,
+                              alpha: 0.08,
                             ),
-                            borderRadius: BorderRadius.circular(12),
+                            borderRadius: BorderRadius.circular(16),
                           ),
                           child: Text(
                             '#$_selectedTopic',
                             style: TextStyle(
                               color: theme.colorScheme.primary,
-                              fontSize: 12,
-                              fontWeight: FontWeight.bold,
+                              fontSize: 13,
+                              fontWeight: FontWeight.w500,
                             ),
                           ),
                         ),
@@ -210,12 +228,20 @@ class _NewPostScreenState extends State<NewPostScreen> {
                 controller: _textController,
                 focusNode: _focusNode,
                 autofocus: true,
-                style: const TextStyle(fontSize: 16),
+                style: TextStyle(
+                  fontSize: 16,
+                  height: 1.5,
+                  color: theme.colorScheme.onSurface,
+                ),
                 maxLines: null,
                 decoration: const InputDecoration(
                   hintText: '有什么新鲜事吗?',
                   border: InputBorder.none,
-                  hintStyle: TextStyle(color: AppColors.mutedForeground),
+                  hintStyle: TextStyle(
+                    color: AppColors.mutedForeground,
+                    fontSize: 16,
+                  ),
+                  contentPadding: EdgeInsets.only(top: 8, bottom: 8),
                 ),
               ),
               if (_selectedImages.isNotEmpty) _buildImagePreviews(),
@@ -233,7 +259,7 @@ class _NewPostScreenState extends State<NewPostScreen> {
   Widget _buildImagePreviews() {
     return Container(
       height: 200,
-      margin: const EdgeInsets.only(top: 12),
+      margin: const EdgeInsets.only(top: 12, bottom: 8),
       child: ListView.separated(
         scrollDirection: Axis.horizontal,
         itemCount: _selectedImages.length,
@@ -242,35 +268,68 @@ class _NewPostScreenState extends State<NewPostScreen> {
           return Stack(
             children: [
               ClipRRect(
-                borderRadius: BorderRadius.circular(12),
+                borderRadius: BorderRadius.circular(14),
                 child: Image.network(
                   _selectedImages[index],
                   height: 200,
                   width: 150,
                   fit: BoxFit.cover,
+                  loadingBuilder: (context, child, loadingProgress) {
+                    if (loadingProgress == null) return child;
+                    return Container(
+                      height: 200,
+                      width: 150,
+                      color: AppColors.muted,
+                      child: Center(
+                        child: CircularProgressIndicator(
+                          value: loadingProgress.expectedTotalBytes != null
+                              ? loadingProgress.cumulativeBytesLoaded /
+                                    loadingProgress.expectedTotalBytes!
+                              : null,
+                          strokeWidth: 2,
+                        ),
+                      ),
+                    );
+                  },
                   errorBuilder: (context, error, stackTrace) => Container(
                     height: 200,
                     width: 150,
                     color: AppColors.muted,
-                    child: const Icon(Icons.broken_image, color: Colors.white),
+                    child: const Icon(
+                      Icons.broken_image,
+                      color: Colors.white54,
+                      size: 32,
+                    ),
                   ),
                 ),
               ),
               Positioned(
                 top: 8,
                 right: 8,
-                child: GestureDetector(
-                  onTap: () => _removeImage(index),
-                  child: Container(
-                    padding: const EdgeInsets.all(4),
-                    decoration: BoxDecoration(
-                      color: Colors.black.withValues(alpha: 0.6),
-                      shape: BoxShape.circle,
-                    ),
-                    child: const Icon(
-                      Icons.close,
-                      color: Colors.white,
-                      size: 16,
+                child: AnimatedOpacity(
+                  opacity: 1.0,
+                  duration: const Duration(milliseconds: 200),
+                  child: InkWell(
+                    onTap: () => _removeImage(index),
+                    borderRadius: BorderRadius.circular(50),
+                    child: Container(
+                      padding: const EdgeInsets.all(4),
+                      decoration: BoxDecoration(
+                        color: Colors.black.withValues(alpha: 0.6),
+                        shape: BoxShape.circle,
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.black.withValues(alpha: 0.2),
+                            blurRadius: 4,
+                            offset: const Offset(0, 2),
+                          ),
+                        ],
+                      ),
+                      child: const Icon(
+                        Icons.close,
+                        color: Colors.white,
+                        size: 16,
+                      ),
                     ),
                   ),
                 ),
@@ -284,13 +343,16 @@ class _NewPostScreenState extends State<NewPostScreen> {
 
   Widget _buildAddThreadButton() {
     return Row(
-      children: const [
+      children: [
         Opacity(
           opacity: 0.5,
-          child: Avatar(avatarUrl: '', fallbackInitials: 'F', size: 24),
+          child: const Avatar(avatarUrl: '', fallbackInitials: 'F', size: 24),
         ),
-        SizedBox(width: 8),
-        Text('添加到串文', style: TextStyle(color: AppColors.mutedForeground)),
+        const SizedBox(width: 8),
+        Text(
+          '添加到串文',
+          style: TextStyle(color: AppColors.mutedForeground, fontSize: 14),
+        ),
       ],
     );
   }
@@ -302,14 +364,17 @@ class _NewPostScreenState extends State<NewPostScreen> {
         IconButton(
           icon: const Icon(Icons.photo_outlined, color: iconColor, size: 24),
           onPressed: _addMockImage,
+          splashRadius: 24,
         ),
         IconButton(
           icon: const Icon(Icons.alternate_email, color: iconColor, size: 24),
           onPressed: () {},
+          splashRadius: 24,
         ),
         IconButton(
           icon: const Icon(Icons.tag_outlined, color: iconColor, size: 24),
           onPressed: () => setState(() => _selectedTopic = '探索'),
+          splashRadius: 24,
         ),
         IconButton(
           icon: const Icon(
@@ -318,6 +383,7 @@ class _NewPostScreenState extends State<NewPostScreen> {
             size: 24,
           ),
           onPressed: () {},
+          splashRadius: 24,
         ),
         IconButton(
           icon: const Icon(
@@ -326,12 +392,14 @@ class _NewPostScreenState extends State<NewPostScreen> {
             size: 24,
           ),
           onPressed: () {},
+          splashRadius: 24,
         ),
       ],
     );
   }
 
   Widget _buildBottomBar(BuildContext context) {
+    final theme = Theme.of(context);
     final charCount = _textController.text.length;
     final isOverLimit = charCount > _maxChars;
     final progress = charCount / _maxChars;
@@ -339,56 +407,93 @@ class _NewPostScreenState extends State<NewPostScreen> {
     return Container(
       padding: EdgeInsets.only(
         bottom: MediaQuery.of(context).padding.bottom + 16,
-        top: 8,
+        top: 12,
         left: 16,
         right: 16,
       ),
-      decoration: const BoxDecoration(
+      decoration: BoxDecoration(
         border: Border(top: BorderSide(color: AppColors.border, width: 0.5)),
+        color: theme.scaffoldBackgroundColor,
+        boxShadow: [
+          if (_isTyping)
+            BoxShadow(
+              color: Colors.black.withValues(alpha: 0.05),
+              blurRadius: 8,
+              offset: const Offset(0, -2),
+            ),
+        ],
       ),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          GestureDetector(
+          InkWell(
             onTap: _showReplySettings,
-            child: Row(
-              children: [
-                const Icon(
-                  Icons.public,
-                  size: 16,
-                  color: AppColors.mutedForeground,
-                ),
-                const SizedBox(width: 4),
-                Text(
-                  '谁可以回复: $_replySetting',
-                  style: const TextStyle(
+            borderRadius: BorderRadius.circular(8),
+            child: Padding(
+              padding: const EdgeInsets.all(4),
+              child: Row(
+                children: [
+                  const Icon(
+                    Icons.public,
+                    size: 16,
                     color: AppColors.mutedForeground,
-                    fontSize: 13,
                   ),
-                ),
-              ],
+                  const SizedBox(width: 4),
+                  Text(
+                    '谁可以回复: $_replySetting',
+                    style: TextStyle(
+                      color: AppColors.mutedForeground,
+                      fontSize: 13,
+                      fontWeight: FontWeight.w400,
+                    ),
+                  ),
+                ],
+              ),
             ),
           ),
           Row(
             children: [
               if (charCount > 0) ...[
                 SizedBox(
-                  width: 24,
-                  height: 24,
-                  child: CircularProgressIndicator(
-                    value: progress > 1 ? 1 : progress,
-                    strokeWidth: 2,
-                    backgroundColor: AppColors.border,
-                    color: isOverLimit
-                        ? Colors.red
-                        : (progress > 0.9 ? Colors.orange : Colors.blue),
+                  width: 28,
+                  height: 28,
+                  child: Stack(
+                    alignment: Alignment.center,
+                    children: [
+                      CircularProgressIndicator(
+                        value: progress > 1 ? 1 : progress,
+                        strokeWidth: 2,
+                        backgroundColor: AppColors.border,
+                        color: isOverLimit
+                            ? theme.colorScheme.error
+                            : (progress > 0.9
+                                  ? Colors.orange.shade600
+                                  : theme.colorScheme.primary),
+                      ),
+                      Text(
+                        charCount.toString(),
+                        style: TextStyle(
+                          fontSize: 11,
+                          fontWeight: FontWeight.w500,
+                          color: isOverLimit
+                              ? theme.colorScheme.error
+                              : AppColors.mutedForeground,
+                        ),
+                      ),
+                    ],
                   ),
                 ),
                 const SizedBox(width: 16),
               ],
               AppButton(
                 onPressed: _isPostButtonEnabled && !isOverLimit
-                    ? () {
+                    ? () async {
+                        await ref
+                            .read(createPostProvider.notifier)
+                            .createPost(
+                              content: _textController.text,
+                              location: null, // 暂时不支持位置信息
+                            );
                         Navigator.of(context).pop();
                       }
                     : () {}, // 提供空函数以符合非空要求
@@ -419,39 +524,59 @@ class _ReplySettingsSheet extends StatelessWidget {
     return Container(
       decoration: BoxDecoration(
         color: theme.scaffoldBackgroundColor,
-        borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
+        borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.1),
+            blurRadius: 10,
+            offset: const Offset(0, -5),
+          ),
+        ],
       ),
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          const SizedBox(height: 12),
+          const SizedBox(height: 16),
           Container(
-            width: 40,
+            width: 44,
             height: 4,
             decoration: BoxDecoration(
               color: AppColors.border,
               borderRadius: BorderRadius.circular(2),
             ),
           ),
-          const SizedBox(height: 24),
-          const Text(
+          const SizedBox(height: 28),
+          Text(
             '谁可以回复',
-            style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18),
+            style: theme.textTheme.titleMedium?.copyWith(
+              fontWeight: FontWeight.w600,
+              fontSize: 18,
+            ),
           ),
-          const SizedBox(height: 16),
+          const SizedBox(height: 24),
           ...options.map(
             (option) => ListTile(
-              title: Text(option),
+              title: Text(option, style: const TextStyle(fontSize: 16)),
               trailing: currentSetting == option
-                  ? Icon(Icons.check, color: theme.colorScheme.primary)
-                  : null,
+                  ? Icon(
+                      Icons.check_circle,
+                      color: theme.colorScheme.primary,
+                      size: 24,
+                    )
+                  : const Icon(
+                      Icons.circle_outlined,
+                      size: 24,
+                      color: AppColors.mutedForeground,
+                    ),
               onTap: () {
                 onChanged(option);
                 Navigator.pop(context);
               },
+              contentPadding: const EdgeInsets.symmetric(horizontal: 24),
+              minVerticalPadding: 16,
             ),
           ),
-          const SizedBox(height: 32),
+          const SizedBox(height: 48),
         ],
       ),
     );

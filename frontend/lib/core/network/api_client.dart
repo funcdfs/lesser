@@ -1,8 +1,11 @@
 import 'package:dio/dio.dart';
+import 'package:logger/logger.dart';
+import 'package:lesser/core/network/token_manager.dart';
 import 'api_endpoints.dart';
 
 class ApiClient {
   late final Dio _dio;
+  final Logger _logger = Logger();
 
   ApiClient() {
     _dio = Dio(
@@ -17,9 +20,29 @@ class ApiClient {
       ),
     );
 
+    // Add token interceptor
+    _dio.interceptors.add(
+      InterceptorsWrapper(
+        onRequest: (options, handler) async {
+          final token = await TokenManager.getToken();
+          if (token != null) {
+            options.headers['Authorization'] = 'Token $token';
+          }
+          handler.next(options);
+        },
+      ),
+    );
+
     // Initial log interceptor for debugging
     _dio.interceptors.add(
-      LogInterceptor(requestBody: true, responseBody: true),
+      LogInterceptor(
+        requestBody: true,
+        responseBody: true,
+        requestHeader: true,
+        responseHeader: true,
+        error: true,
+        logPrint: (object) => _logger.i(object),
+      ),
     );
   }
 

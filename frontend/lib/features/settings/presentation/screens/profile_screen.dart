@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lesser/shared/theme/theme.dart';
 import 'package:lesser/features/auth/presentation/providers/user_provider.dart';
+import 'package:lesser/app/app_router.dart';
 
 /// 个人资料和设置页面
 class ProfileScreen extends ConsumerWidget {
@@ -9,7 +10,7 @@ class ProfileScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    return const Scaffold(
+    return Scaffold(
       backgroundColor: AppColors.zinc100,
       body: SafeArea(
         child: SingleChildScrollView(
@@ -58,7 +59,7 @@ class ProfileScreen extends ConsumerWidget {
               SizedBox(height: AppSpacing.md),
               _MenuGroup(
                 title: '通用',
-                items: [
+                items: <_MenuItem>[
                   _MenuItem(
                     icon: Icons.feedback_outlined,
                     title: '意见反馈',
@@ -68,6 +69,13 @@ class ProfileScreen extends ConsumerWidget {
                     icon: Icons.support_agent_outlined,
                     title: '联系客服',
                     subtitle: '在线客服 09:00-21:00',
+                  ),
+                  _MenuItem(
+                    icon: Icons.api_outlined,
+                    title: 'API测试',
+                    subtitle: '测试Django和Flutter通信',
+                    onTap: (context) =>
+                        Navigator.pushNamed(context, '/api-test'),
                   ),
                 ],
               ),
@@ -279,18 +287,20 @@ class _MenuItem extends StatelessWidget {
   final IconData icon;
   final String title;
   final String subtitle;
+  final Function(BuildContext)? onTap;
 
-  const _MenuItem({
+  _MenuItem({
     required this.icon,
     required this.title,
     required this.subtitle,
+    this.onTap,
   });
 
   @override
   Widget build(BuildContext context) {
     final textTheme = Theme.of(context).textTheme;
     return GestureDetector(
-      onTap: () {},
+      onTap: () => onTap?.call(context),
       child: Padding(
         padding: const EdgeInsets.symmetric(vertical: AppSpacing.sm),
         child: Row(

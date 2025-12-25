@@ -15,5 +15,5 @@ UserRepository userRepository(Ref ref) {
 @riverpod
 Future<User> currentUser(Ref ref) async {
   final repository = ref.watch(userRepositoryProvider);
-  return repository.getMe();
+  return repository.getProfile();
 }
