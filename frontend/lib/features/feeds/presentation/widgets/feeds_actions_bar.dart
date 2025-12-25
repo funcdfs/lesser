@@ -109,9 +109,14 @@ class _FeedsActionsBarState extends State<FeedsActionsBar> {
         if (widget.bookmarksCount != null)
           FeedsActionButton(
             icon: Icons.bookmark_outline,
+            count: widget.bookmarksCount,
             onTap: widget.onBookmark,
           ),
-        FeedsActionButton(icon: Icons.share_outlined, onTap: widget.onShare),
+        FeedsActionButton(
+          icon: Icons.share_outlined,
+          count: widget.sharesCount,
+          onTap: widget.onShare,
+        ),
       ],
     );
   }
@@ -146,11 +151,16 @@ class _FeedsActionsBarState extends State<FeedsActionsBar> {
         if (widget.bookmarksCount != null) ...[
           FeedsActionButton(
             icon: Icons.bookmark_outline,
+            count: widget.bookmarksCount,
             onTap: widget.onBookmark,
           ),
-          const SizedBox(width: AppSpacing.sm),
+          const SizedBox(width: AppSpacing.md),
         ],
-        FeedsActionButton(icon: Icons.share_outlined, onTap: widget.onShare),
+        FeedsActionButton(
+          icon: Icons.share_outlined,
+          count: widget.sharesCount,
+          onTap: widget.onShare,
+        ),
       ],
     );
   }

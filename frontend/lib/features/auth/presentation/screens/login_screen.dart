@@ -75,17 +75,21 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
       ScaffoldMessenger.of(
         context,
       ).showSnackBar(const SnackBar(content: Text('登录成功')));
-      // 导航到主页面
-      Navigator.pushReplacementNamed(context, '/main');
     } catch (e) {
       logger.e('登录失败: $e');
       setState(() {
         _errorMessage = '登录失败，请检查用户名和密码';
       });
+      // 显示登录失败的提示
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('登录失败，将以访客身份进入')));
     } finally {
       setState(() {
         _isLoading = false;
       });
+      // 无论登录成功还是失败，都导航到主页面
+      Navigator.pushReplacementNamed(context, '/main');
     }
   }
 
@@ -336,7 +340,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                       child: const Text(
                         '立即注册',
                         style: TextStyle(
-                          color: const Color(0xFFEE1D52),
+                          color: Color(0xFFEE1D52),
                           fontSize: 14,
                           fontWeight: FontWeight.w600,
                         ),

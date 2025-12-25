@@ -1,4 +1,29 @@
 services:
+  # Traefik Gateway
+  traefik:
+    image: traefik:v3.0
+    container_name: traefik
+    restart: unless-stopped
+    ports:
+      - "80:80"      # HTTP 端口
+      - "443:443"    # HTTPS 端口
+      - "8080:8080"  # 控制面板端口
+    volumes:
+      - ./gateway/traefik.yml:/etc/traefik/traefik.yml:ro
+      - ./gateway/dynamic.yml:/etc/traefik/dynamic.yml:ro
+      - ./gateway/certs:/etc/traefik/certs:ro
+      - ./gateway/acme.json:/etc/traefik/acme.json
+      - /var/run/docker.sock:/var/run/docker.sock:ro  # 允许 Traefik 访问 Docker API
+    environment:
+      - "TZ=Asia/Shanghai"
+    networks:
+      - gateway
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.traefik.rule=Host(`traefik.localhost`)"
+      - "traefik.http.routers.traefik.service=api@internal"
+
+  # PostgreSQL 数据库
   postgres:
     image: postgres:18
     restart: unless-stopped
@@ -6,8 +31,6 @@ services:
       - .env
     volumes:
       - ./docker/postgres/data:/var/lib/postgresql
-    ports:
-      - "5432:5432"
     environment:
       POSTGRES_USER: ${POSTGRES_USER}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
@@ -17,7 +40,10 @@ services:
       - postgres
       - -c
       - listen_addresses=0.0.0.0
+    networks:
+      - gateway
 
+  # Redis 缓存
   redis:
     image: redis:8
     command:
@@ -27,36 +53,51 @@ services:
     restart: unless-stopped
     volumes:
       - ./docker/redis/data:/data
-    ports:
-      - "6379:6379"
+    networks:
+      - gateway
 
-  # meilisearch:
-  #   image: getmeili/meilisearch:v1.8
-  #   environment:
-  #     MEILI_NO_ANALYTICS: "true"
-  #   volumes:
-  #     - ./docker/meilisearch/data:/meili_data
-  #   ports: ["7700:7700"]
+  # Django 后端
+  django:
+    build: ./backend/django_code
+    command: python manage.py runserver 0.0.0.0:8000
+    restart: unless-stopped
+    volumes:
+      - ./backend/django_code:/app
+    env_file: .env
+    depends_on:
+      - postgres
+      - redis
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health/"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - gateway
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.services.djangoService.loadbalancer.server.port=8000"
 
-# todo÷÷
-  # django:
-  #   build: ./backend/django_code
-  #   command: python manage.py runserver 0.0.0.0:8000
-  #   restart: unless-stopped
-  #   volumes:
-  #     - ./backend/django_code:/app
-  #   env_file: .env
-  #   ports: ["8000:8000"]
-  #   depends_on:
-  #     - postgres
-  #     - redis
-  #     # - meilisearch
-  #   healthcheck:
-  #     test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
-  #     interval: 10s
-  #     timeout: 5s
-  #     retries: 5
+  # Golang 热点服务
+  golang:
+    build: ./backend/golang_hot
+    restart: unless-stopped
+    depends_on:
+      - redis
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - gateway
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.services.golangService.loadbalancer.server.port=8080"
 
-  # golang-service:
-  #   build: ./backend/golang-code
-  #   ports: ["7701:7701"]
+
+
+networks:
+  gateway:
+    external: false
+    name: gateway_network

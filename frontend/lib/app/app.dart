@@ -3,6 +3,7 @@ import '../features/features.dart';
 import '../shared/theme/theme.dart' as shared_theme;
 import 'app_theme.dart';
 import 'app_router.dart';
+import '../features/create/presentation/widgets/create_post_floating_sheet.dart';
 
 class LesserApp extends StatelessWidget {
   const LesserApp({super.key});
@@ -55,30 +56,20 @@ class _MainScreenState extends State<MainScreen> {
 
   /// 处理导航项点击
   void _onItemTapped(int index) {
-    // 索引为 2 的是中心"发布"按钮，触发模态框
+    // 如果点击的是添加按钮，显示悬浮框而不是导航
     if (index == 2) {
       showModalBottomSheet(
         context: context,
-        isScrollControlled: true, // 允许模态框高度超过屏幕一半
-        backgroundColor: Colors.transparent, // 使模态框背景透明
-        builder: (context) {
-          // 使用 FractionallySizedBox 控制模态框的高度为屏幕的 90%
-          return FractionallySizedBox(
-            heightFactor: 0.9,
-            child: ClipRRect(
-              borderRadius: const BorderRadius.vertical(
-                top: Radius.circular(16.0),
-              ),
-              child: const NewPostScreen(),
-            ),
-          );
-        },
+        backgroundColor: Colors.transparent,
+        isScrollControlled: true,
+        builder: (context) =>
+            const SizedBox(height: 600, child: CreatePostFloatingSheet()),
       );
-      return;
+    } else {
+      setState(() {
+        _selectedIndex = index;
+      });
     }
-    setState(() {
-      _selectedIndex = index;
-    });
   }
 
   @override

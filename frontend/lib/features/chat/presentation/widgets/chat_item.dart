@@ -4,6 +4,9 @@ import '../../../../shared/widgets/list_tile.dart';
 import '../../../../shared/widgets/icon_container.dart';
 import '../../../../shared/widgets/chip.dart';
 
+/// 聊天类型枚举
+enum ChatType { group, channel, private }
+
 /// 单个聊天会话/功能项样式
 class ChatItem extends StatelessWidget {
   final IconData icon;
@@ -14,6 +17,9 @@ class ChatItem extends StatelessWidget {
   final int unreadCount;
   final bool showArrow;
   final bool isMuted;
+  final ChatType chatType;
+  final bool hasAvatar;
+  final String? avatarUrl;
 
   const ChatItem({
     super.key,
@@ -25,6 +31,9 @@ class ChatItem extends StatelessWidget {
     this.unreadCount = 0,
     this.showArrow = false,
     this.isMuted = false,
+    required this.chatType,
+    this.hasAvatar = false,
+    this.avatarUrl,
   });
 
   @override
@@ -34,10 +43,20 @@ class ChatItem extends StatelessWidget {
         horizontal: AppSpacing.lg,
         vertical: AppSpacing.md,
       ),
-      leading: IconContainer(
-        icon: icon,
-        iconColor: AppColors.mutedForeground,
-        size: 48,
+      leading: Stack(
+        children: [
+          hasAvatar && avatarUrl != null
+              ? CircleAvatar(
+                  radius: 24,
+                  backgroundImage: NetworkImage(avatarUrl!),
+                )
+              : IconContainer(
+                  icon: icon,
+                  iconColor: AppColors.mutedForeground,
+                  size: 48,
+                ),
+          Positioned(bottom: 0, right: 0, child: _buildChatTypeBadge(chatType)),
+        ],
       ),
       title: title,
       subtitle: subtitle,
@@ -79,6 +98,51 @@ class ChatItem extends StatelessWidget {
       onTap: () {
         // TODO: 跳转至聊天详情页
       },
+    );
+  }
+
+  /// 构建聊天类型标识
+  Widget _buildChatTypeBadge(ChatType type) {
+    String text;
+    Color color1;
+    Color color2;
+
+    switch (type) {
+      case ChatType.group:
+        text = 'Group';
+        color1 = Colors.blue;
+        color2 = Colors.purple;
+        break;
+      case ChatType.channel:
+        text = 'Channel';
+        color1 = Colors.orange;
+        color2 = Colors.red;
+        break;
+      case ChatType.private:
+        text = 'Private';
+        color1 = Colors.green;
+        color2 = Colors.teal;
+        break;
+    }
+
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          colors: [color1, color2],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
+        borderRadius: BorderRadius.circular(10),
+      ),
+      child: Text(
+        text,
+        style: const TextStyle(
+          fontSize: 8,
+          fontWeight: FontWeight.bold,
+          color: AppColors.background,
+        ),
+      ),
     );
   }
 }

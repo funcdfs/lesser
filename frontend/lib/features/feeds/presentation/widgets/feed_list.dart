@@ -24,11 +24,19 @@ class FeedList extends ConsumerStatefulWidget {
   ConsumerState<FeedList> createState() => _FeedListState();
 }
 
-class _FeedListState extends ConsumerState<FeedList> with AutomaticKeepAliveClientMixin {
+class _FeedListState extends ConsumerState<FeedList>
+    with AutomaticKeepAliveClientMixin {
   final ValueNotifier<bool> _showBottomActions = ValueNotifier<bool>(false);
+  late ScrollController _internalController;
 
-  ScrollController? get _effectiveController =>
-      widget.controller ?? (PrimaryScrollController.maybeOf(context));
+  ScrollController get _effectiveController =>
+      widget.controller ?? _internalController;
+
+  @override
+  void initState() {
+    super.initState();
+    _internalController = ScrollController();
+  }
 
   @override
   bool get wantKeepAlive => true;
@@ -36,12 +44,14 @@ class _FeedListState extends ConsumerState<FeedList> with AutomaticKeepAliveClie
   @override
   void dispose() {
     _showBottomActions.dispose();
+    _internalController.dispose();
     super.dispose();
   }
 
   bool _handleScrollNotification(ScrollNotification notification) {
     if (notification is ScrollUpdateNotification) {
-      final show = notification.metrics.pixels > MediaQuery.of(context).size.height;
+      final show =
+          notification.metrics.pixels > MediaQuery.of(context).size.height;
       if (show != _showBottomActions.value) {
         _showBottomActions.value = show;
       }
@@ -51,7 +61,7 @@ class _FeedListState extends ConsumerState<FeedList> with AutomaticKeepAliveClie
 
   void _scrollToTop() {
     final controller = _effectiveController;
-    if (controller != null && controller.hasClients) {
+    if (controller.hasClients) {
       controller.animateTo(
         0.0,
         duration: const Duration(milliseconds: 600),
@@ -102,32 +112,32 @@ class _FeedListState extends ConsumerState<FeedList> with AutomaticKeepAliveClie
           onNotification: _handleScrollNotification,
           child: CustomScrollView(
             key: PageStorageKey<String>(widget.feedType),
-            controller: widget.controller,
+            controller: _effectiveController,
+            primary: false,
             physics: const BouncingScrollPhysics(
               parent: AlwaysScrollableScrollPhysics(),
             ),
             slivers: [
               SliverOverlapInjector(
-                handle: NestedScrollView.sliverOverlapAbsorberHandleFor(context),
+                handle: NestedScrollView.sliverOverlapAbsorberHandleFor(
+                  context,
+                ),
               ),
               if (widget.header != null)
                 SliverToBoxAdapter(child: widget.header!),
-              
+
               feedsAsync.when(
                 data: (posts) => SliverList(
-                  delegate: SliverChildBuilderDelegate(
-                    (context, index) {
-                      final post = posts[index];
-                      return _AnimatedPostItem(
-                        index: index,
-                        child: PostCard(
-                          post: post,
-                          onTap: () => _navigateToDetail(post),
-                        ),
-                      );
-                    },
-                    childCount: posts.length,
-                  ),
+                  delegate: SliverChildBuilderDelegate((context, index) {
+                    final post = posts[index];
+                    return _AnimatedPostItem(
+                      index: index,
+                      child: PostCard(
+                        post: post,
+                        onTap: () => _navigateToDetail(post),
+                      ),
+                    );
+                  }, childCount: posts.length),
                 ),
                 loading: () => SliverList(
                   delegate: SliverChildBuilderDelegate(
@@ -166,7 +176,10 @@ class _FloatingButtons extends StatelessWidget {
   final VoidCallback onRefresh;
   final VoidCallback onScrollToTop;
 
-  const _FloatingButtons({required this.onRefresh, required this.onScrollToTop});
+  const _FloatingButtons({
+    required this.onRefresh,
+    required this.onScrollToTop,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -188,7 +201,10 @@ class _FloatingButtons extends StatelessWidget {
           children: [
             _buildButton(icon: Icons.refresh_rounded, onTap: onRefresh),
             const SizedBox(height: 16),
-            _buildButton(icon: Icons.arrow_upward_rounded, onTap: onScrollToTop),
+            _buildButton(
+              icon: Icons.arrow_upward_rounded,
+              onTap: onScrollToTop,
+            ),
           ],
         ),
       ),
@@ -252,7 +268,8 @@ class _AnimatedPostItem extends StatefulWidget {
   State<_AnimatedPostItem> createState() => _AnimatedPostItemState();
 }
 
-class _AnimatedPostItemState extends State<_AnimatedPostItem> with SingleTickerProviderStateMixin {
+class _AnimatedPostItemState extends State<_AnimatedPostItem>
+    with SingleTickerProviderStateMixin {
   late AnimationController _controller;
   late Animation<Offset> _slideAnimation;
   late Animation<double> _fadeAnimation;
@@ -260,11 +277,18 @@ class _AnimatedPostItemState extends State<_AnimatedPostItem> with SingleTickerP
   @override
   void initState() {
     super.initState();
-    _controller = AnimationController(vsync: this, duration: const Duration(milliseconds: 400));
-    _slideAnimation = Tween<Offset>(begin: const Offset(0, 0.1), end: Offset.zero)
-        .animate(CurvedAnimation(parent: _controller, curve: Curves.easeOutQuad));
-    _fadeAnimation = Tween<double>(begin: 0.0, end: 1.0)
-        .animate(CurvedAnimation(parent: _controller, curve: Curves.easeOut));
+    _controller = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 400),
+    );
+    _slideAnimation = Tween<Offset>(
+      begin: const Offset(0, 0.1),
+      end: Offset.zero,
+    ).animate(CurvedAnimation(parent: _controller, curve: Curves.easeOutQuad));
+    _fadeAnimation = Tween<double>(
+      begin: 0.0,
+      end: 1.0,
+    ).animate(CurvedAnimation(parent: _controller, curve: Curves.easeOut));
     Future.delayed(Duration(milliseconds: (widget.index % 10) * 50), () {
       if (mounted) _controller.forward();
     });

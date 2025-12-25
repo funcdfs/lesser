@@ -6,7 +6,7 @@ part of 'user_provider.dart';
 // RiverpodGenerator
 // **************************************************************************
 
-String _$userRepositoryHash() => r'cc90fd8a9e3afcb4a32f037079834ec6f1b057ec';
+String _$userRepositoryHash() => r'96f0c11c70328b9dabd61788290cccc36326d546';
 
 /// See also [userRepository].
 @ProviderFor(userRepository)
@@ -23,7 +23,7 @@ final userRepositoryProvider = AutoDisposeProvider<UserRepository>.internal(
 @Deprecated('Will be removed in 3.0. Use Ref instead')
 // ignore: unused_element
 typedef UserRepositoryRef = AutoDisposeProviderRef<UserRepository>;
-String _$currentUserHash() => r'72a6bd763537b0ad879622db2c07f07448af09e6';
+String _$currentUserHash() => r'ac11e9eafc8cda705c3f5e2623e8d812029c51ce';
 
 /// See also [currentUser].
 @ProviderFor(currentUser)

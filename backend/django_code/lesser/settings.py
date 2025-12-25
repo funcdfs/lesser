@@ -40,9 +40,11 @@ INSTALLED_APPS = [
     "debug_toolbar",
     "rest_framework",
     "rest_framework.authtoken",
-    "feeds.apps.FeedsConfig",
-    "users.apps.UsersConfig",
     "corsheaders",
+    "users.apps.UsersConfig",
+    "content.apps.ContentConfig",
+    "chat.apps.ChatConfig",
+    "friend.apps.FriendConfig",
 ]
 
 MIDDLEWARE = [
@@ -80,7 +82,7 @@ TEMPLATES = [
 ]
 
 
-WSGI_APPLICATION = 'lesser.wsgi.application'
+ASGI_APPLICATION = 'lesser.asgi.application'
 
 
 # Database
@@ -107,8 +109,8 @@ DATABASES = {
         # 数据库用户密码
         "PASSWORD": "fw142857",
 
-        # 数据库服务器地址（空字符串或 "localhost" 表示本机）
-        "HOST": "localhost",
+        # 数据库服务器地址（Docker 环境中使用服务名称）
+        "HOST": "postgres",
 
         # PostgreSQL 默认端口
         "PORT": "5432",
@@ -135,6 +137,9 @@ REST_FRAMEWORK = {
         'rest_framework.permissions.IsAuthenticated',
     ],
 }
+
+# 自定义用户模型
+AUTH_USER_MODEL = 'users.CustomUser'
 
 # Password validation
 # https://docs.djangoproject.com/en/6.0/ref/settings/#auth-password-validators

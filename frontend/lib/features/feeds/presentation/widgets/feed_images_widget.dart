@@ -27,8 +27,9 @@ class FeedImagesWidget extends StatelessWidget {
     final displayUrls = imageUrls.take(50).toList();
 
     // 获取屏幕宽度以在宽屏（如平板、桌面）上应用最大宽度限制
+    // 对于图片内容，设置更小的最大宽度，与文字内容的最大宽度区分开
     final screenWidth = MediaQuery.of(context).size.width;
-    final maxWidth = screenWidth > 640 ? 600.0 : double.infinity;
+    final maxWidth = screenWidth > 640 ? 450.0 : double.infinity;
 
     // 情况 1: 只有一张图片时，占满宽度显示
     if (displayUrls.length == 1) {

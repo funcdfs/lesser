@@ -52,6 +52,7 @@ class _ChatScreenState extends State<ChatScreen> {
       children: const [
         SectionHeader(title: '聊天'),
         ChatItem(
+          chatType: ChatType.group,
           icon: Icons.people_outline,
           iconColor: Colors.blue,
           title: 'Group Chat',
@@ -60,6 +61,7 @@ class _ChatScreenState extends State<ChatScreen> {
           unreadCount: 5,
         ),
         ChatItem(
+          chatType: ChatType.channel,
           icon: Icons.campaign_outlined,
           iconColor: Colors.orange,
           title: 'Channel',
@@ -69,6 +71,7 @@ class _ChatScreenState extends State<ChatScreen> {
           isMuted: true,
         ),
         ChatItem(
+          chatType: ChatType.private,
           icon: Icons.person_outline,
           iconColor: Colors.green,
           title: 'Private Chat',

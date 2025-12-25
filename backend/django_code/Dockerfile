@@ -11,6 +11,6 @@ RUN apt-get update && apt-get install -y \
 RUN pip install uv gunicorn
 
 COPY pyproject.toml uv.lock ./
-RUN uv pip install --system
+RUN uv pip install --system -e .
 
 COPY . .

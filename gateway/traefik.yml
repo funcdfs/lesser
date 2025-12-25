@@ -10,7 +10,6 @@ log:
 
 # 访问日志
 accessLog:
-  enabled: true
   format: json
   filePath: /var/log/traefik/access.log
 
