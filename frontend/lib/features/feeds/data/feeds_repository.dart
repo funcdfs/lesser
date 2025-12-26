@@ -1,6 +1,5 @@
 import 'package:lesser/core/data/base_repository.dart';
 import 'package:lesser/core/network/api_client.dart';
-import 'package:lesser/core/network/api_endpoints.dart';
 import 'package:lesser/features/feeds/domain/models/post.dart';
 
 class FeedsRepository extends BaseRepository {
@@ -8,9 +7,9 @@ class FeedsRepository extends BaseRepository {
 
   FeedsRepository(this._apiClient);
 
-  Future<List<Post>> getFeeds() async {
+  Future<List<Post>> getFeeds({int page = 1, int limit = 20}) async {
     return safeApiCall(
-      () => _apiClient.dio.get(ApiEndpoints.feeds),
+      () => _apiClient.apiService.getFeeds(page, limit),
       mapper: (data) => (data as List).map((e) => Post.fromJson(e)).toList(),
     );
   }

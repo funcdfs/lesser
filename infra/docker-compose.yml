@@ -1,0 +1,110 @@
+services:
+  # ------------------ Traefik 网关 ------------------
+  traefik:
+    image: traefik:v3
+    container_name: traefik
+    command:
+      - "--providers.docker=true"
+      - "--entrypoints.web.address=:80"
+      - "--entrypoints.websecure.address=:443"
+      - "--api.insecure=true"
+    ports:
+      - "80:80"
+      - "443:443"
+      - "8080:8080"
+    volumes:
+      - "/var/run/docker.sock:/var/run/docker.sock:ro"
+      - "./traefik/traefik.yml:/traefik.yml"
+      - "./traefik/acme.json:/acme.json"
+    networks:
+      - backend
+      - web
+
+  # ------------------ 数据库 ------------------
+  postgres:
+    image: postgres:16
+    container_name: postgres
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-funcdfs}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-secret}
+      POSTGRES_DB: ${POSTGRES_DB:-lesser_db}
+    volumes:
+      - ../docker/postgres/data:/var/lib/postgresql/data
+    networks:
+      - backend
+
+  redis:
+    image: redis:8
+    container_name: redis
+    volumes:
+      - ../docker/redis/data:/data
+    networks:
+      - backend
+
+  # ------------------ Django 后端 ------------------
+  django:
+    build:
+      context: ../backend/django_code
+    container_name: django
+    command: python manage.py runserver 0.0.0.0:8000
+    volumes:
+      - ../backend/django_code:/app
+    ports:
+      - "8001:8000"
+    env_file:
+      - .env
+    environment:
+      - POSTGRES_HOST=postgres
+      - REDIS_HOST=redis
+    depends_on:
+      - postgres
+      - redis
+    networks:
+      - backend
+      - web
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.django.rule=Host(`django.localhost`)"
+      - "traefik.http.services.django.loadbalancer.server.port=8000"
+
+  # # ------------------ Go 服务 ------------------
+  # go-service:
+  #   build:
+  #     context: ./go_service
+  #   container_name: go-service
+  #   networks:
+  #     - backend
+  #   labels:
+  #     - "traefik.enable=true"
+  #     - "traefik.http.routers.go-service.rule=Host(`go.localhost`)"
+  #     - "traefik.http.services.go-service.loadbalancer.server.port=8080"
+
+  # # ------------------ Rust 服务 ------------------
+  # rust-service:
+  #   build:
+  #     context: ./rust_service
+  #   container_name: rust-service
+  #   networks:
+  #     - backend
+  #   labels:
+  #     - "traefik.enable=true"
+  #     - "traefik.http.routers.rust-service.rule=Host(`rust.localhost`)"
+  #     - "traefik.http.services.rust-service.loadbalancer.server.port=8080"
+
+  # # ------------------ C++ 服务 ------------------
+  # cpp-service:
+  #   build:
+  #     context: ./cpp_service
+  #   container_name: cpp-service
+  #   networks:
+  #     - backend
+  #   labels:
+  #     - "traefik.enable=true"
+  #     - "traefik.http.routers.cpp-service.rule=Host(`cpp.localhost`)"
+  #     - "traefik.http.services.cpp-service.loadbalancer.server.port=8080"
+
+networks:
+  backend:
+    driver: bridge
+  web:
+    driver: bridge

@@ -16,7 +16,8 @@ class LesserApp extends StatelessWidget {
       darkTheme: AppTheme.darkTheme(),
       themeMode: ThemeMode.light,
       initialRoute: '/',
-      onGenerateRoute: AppRouter.generateRoute,
+      onGenerateRoute: AppRouter.routeGenerator,
+      navigatorKey: AppRouter.navigatorKey,
       debugShowCheckedModeBanner: false,
     );
   }

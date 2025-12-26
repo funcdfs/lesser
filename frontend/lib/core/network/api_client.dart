@@ -1,50 +1,49 @@
-import 'package:dio/dio.dart';
+import 'package:chopper/chopper.dart';
+import 'package:http/http.dart' as http;
 import 'package:logger/logger.dart';
 import 'package:lesser/core/network/token_manager.dart';
+import 'package:lesser/core/network/chopper_api_service.dart';
 import 'api_endpoints.dart';
 
 class ApiClient {
-  late final Dio _dio;
+  late final ChopperClient _chopperClient;
+  late final ChopperApiService _apiService;
   final Logger _logger = Logger();
 
   ApiClient() {
-    _dio = Dio(
-      BaseOptions(
-        baseUrl: ApiEndpoints.baseUrl,
-        connectTimeout: const Duration(seconds: 15),
-        receiveTimeout: const Duration(seconds: 15),
-        headers: {
-          'Content-Type': 'application/json',
-          'Accept': 'application/json',
-        },
-      ),
-    );
-
-    // Add token interceptor
-    _dio.interceptors.add(
-      InterceptorsWrapper(
-        onRequest: (options, handler) async {
+    // Create Chopper client
+    _chopperClient = ChopperClient(
+      baseUrl: Uri.parse(ApiEndpoints.baseUrl),
+      client: http.Client(),
+      interceptors: [
+        // Add token interceptor
+        (Request request) async {
           final token = await TokenManager.getToken();
           if (token != null) {
-            options.headers['Authorization'] = 'Token $token';
+            request.headers['Authorization'] = 'Token $token';
           }
-          handler.next(options);
+          return request;
         },
-      ),
+        // Logging interceptor
+        (Request request) async {
+          _logger.i('Request: ${request.method} ${request.url}');
+          _logger.i('Headers: ${request.headers}');
+          _logger.i('Body: ${request.body}');
+          return request;
+        },
+        (Response response) async {
+          _logger.i('Response: ${response.statusCode} ${response.body}');
+          return response;
+        },
+      ],
+      converter: const JsonConverter(),
+      errorConverter: const JsonConverter(),
     );
 
-    // Initial log interceptor for debugging
-    _dio.interceptors.add(
-      LogInterceptor(
-        requestBody: true,
-        responseBody: true,
-        requestHeader: true,
-        responseHeader: true,
-        error: true,
-        logPrint: (object) => _logger.i(object),
-      ),
-    );
+    // Create API service
+    _apiService = ChopperApiService.create(_chopperClient);
   }
 
-  Dio get dio => _dio;
+  ChopperApiService get apiService => _apiService;
+  ChopperClient get chopperClient => _chopperClient;
 }

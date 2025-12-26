@@ -2,9 +2,8 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lesser/core/network/api_client.dart';
-import 'package:lesser/core/network/api_endpoints.dart';
+import 'package:lesser/core/network/api_provider.dart';
 import 'package:lesser/core/network/token_manager.dart';
-import 'package:lesser/shared/theme/theme.dart';
 import 'package:logger/logger.dart';
 
 final logger = Logger();
@@ -57,39 +56,57 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
     });
 
     try {
-      final apiClient = ApiClient();
-      final response = await apiClient.dio.post(
-        ApiEndpoints.login,
-        data: {'username': username, 'password': password},
-      );
+      // 使用provider获取ApiClient实例，确保使用正确的配置
+      final apiClient = ref.watch(apiClientProvider);
 
-      logger.i('登录成功: ${response.data}');
+      final response = await apiClient.apiService.login({
+        'username': username,
+        'password': password,
+      });
 
-      // 保存认证令牌
-      final token = response.data['token'];
-      if (token != null) {
-        await TokenManager.saveToken(token);
+      logger.i('登录响应: ${response.body}, 状态码: ${response.statusCode}');
+
+      // 检查响应是否成功
+      if (response.isSuccessful && response.body != null) {
+        // 保存认证令牌
+        final token = response.body['token'];
+        if (token != null) {
+          await TokenManager.saveToken(token);
+          logger.i('Token保存成功');
+        }
+
+        // 登录成功后导航到主页
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(const SnackBar(content: Text('登录成功')));
+        Navigator.pushReplacementNamed(context, '/main');
+      } else {
+        // 处理API返回的错误
+        logger.e(
+          '登录失败 - API错误: ${response.statusCode}, 错误信息: ${response.body}',
+        );
+        setState(() {
+          _errorMessage = response.body?['error'] ?? '登录失败，请检查用户名和密码';
+        });
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('登录失败: ${response.body?['error'] ?? '用户名或密码错误'}'),
+          ),
+        );
       }
-
-      // 登录成功后导航到主页
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(const SnackBar(content: Text('登录成功')));
     } catch (e) {
-      logger.e('登录失败: $e');
+      logger.e('登录失败 - 异常: $e');
       setState(() {
-        _errorMessage = '登录失败，请检查用户名和密码';
+        _errorMessage = '登录失败，请检查网络连接或稍后重试';
       });
       // 显示登录失败的提示
       ScaffoldMessenger.of(
         context,
-      ).showSnackBar(const SnackBar(content: Text('登录失败，将以访客身份进入')));
+      ).showSnackBar(SnackBar(content: Text('登录失败: $e')));
     } finally {
       setState(() {
         _isLoading = false;
       });
-      // 无论登录成功还是失败，都导航到主页面
-      Navigator.pushReplacementNamed(context, '/main');
     }
   }
 
@@ -402,16 +419,13 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
 
     try {
       final apiClient = ApiClient();
-      final response = await apiClient.dio.post(
-        ApiEndpoints.register,
-        data: {
-          'username': username,
-          'password1': password1,
-          'password2': password2,
-        },
-      );
+      final response = await apiClient.apiService.register({
+        'username': username,
+        'password1': password1,
+        'password2': password2,
+      });
 
-      logger.i('注册成功: ${response.data}');
+      logger.i('注册成功: ${response.body}');
       // 注册成功后的处理
       ScaffoldMessenger.of(
         context,

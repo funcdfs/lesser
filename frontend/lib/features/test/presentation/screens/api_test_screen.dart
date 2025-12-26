@@ -32,13 +32,13 @@ class _ApiTestScreenState extends ConsumerState<ApiTestScreen> {
       // 测试用户登录 API (使用已存在的用户)
       logger.i('请求URL: ${ApiEndpoints.baseUrl}${ApiEndpoints.login}');
       logger.i('请求数据: {username: testuser5, password: testpassword123}');
-      final loginResponse = await apiClient.dio.post(
-        ApiEndpoints.login,
-        data: {'username': 'testuser5', 'password': 'testpassword123'},
-      );
+      final loginResponse = await apiClient.apiService.login({
+        'username': 'testuser5',
+        'password': 'testpassword123',
+      });
 
-      logger.i('登录成功: ${loginResponse.data}');
-      _result = '登录成功: ${loginResponse.data}';
+      logger.i('登录成功: ${loginResponse.body}');
+      _result = '登录成功: ${loginResponse.body}';
     } catch (e) {
       logger.e('API测试失败: $e');
       setState(() {
@@ -63,13 +63,13 @@ class _ApiTestScreenState extends ConsumerState<ApiTestScreen> {
       final apiClient = ApiClient();
 
       // 测试用户登录 API
-      final loginResponse = await apiClient.dio.post(
-        ApiEndpoints.login,
-        data: {'username': 'testuser5', 'password': 'testpassword123'},
-      );
+      final loginResponse = await apiClient.apiService.login({
+        'username': 'testuser5',
+        'password': 'testpassword123',
+      });
 
-      logger.i('登录成功: ${loginResponse.data}');
-      _result = '登录成功: ${loginResponse.data}';
+      logger.i('登录成功: ${loginResponse.body}');
+      _result = '登录成功: ${loginResponse.body}';
     } catch (e) {
       logger.e('登录测试失败: $e');
       setState(() {

@@ -13,57 +13,74 @@ FeedsRepository feedsRepository(FeedsRepositoryRef ref) {
 }
 
 @riverpod
-Future<List<Post>> feedsList(FeedsListRef ref) async {
-  if (DebugConfig.debugLocal) {
-    // 纯前端调试模式：返回fake数据
-    await Future.delayed(const Duration(milliseconds: 800)); // 模拟网络延迟
-    return [
-      Post(
-        id: '1',
-        username: 'debug_user',
-        content: '这是一条测试帖子，用于纯前端调试模式。',
-        createdAt: '2024-01-15T10:30:00Z',
-        likes: 123,
-        location: '北京',
-        imageUrls: [],
-        commentsCount: 23,
-        repostsCount: 15,
-        bookmarksCount: 45,
-        sharesCount: 8,
-        isLiked: false,
-      ),
-      Post(
-        id: '2',
-        username: 'test_user',
-        content: '这是另一条测试帖子，展示了图片功能。',
-        createdAt: '2024-01-15T09:15:00Z',
-        likes: 256,
-        location: '上海',
-        imageUrls: ['https://picsum.photos/seed/test1/600/400'],
-        commentsCount: 42,
-        repostsCount: 33,
-        bookmarksCount: 78,
-        sharesCount: 12,
-        isLiked: true,
-      ),
-      Post(
-        id: '3',
-        username: 'developer',
-        content: 'Flutter开发真的很有趣！',
-        createdAt: '2024-01-14T16:45:00Z',
-        likes: 89,
-        location: '深圳',
-        imageUrls: [],
-        commentsCount: 11,
-        repostsCount: 7,
-        bookmarksCount: 24,
-        sharesCount: 5,
-        isLiked: false,
-      ),
-    ];
-  } else {
-    // 前后端联动调试模式：调用API获取真实数据
-    final repository = ref.watch(feedsRepositoryProvider);
-    return repository.getFeeds();
+class PagedFeeds extends _$PagedFeeds {
+  @override
+  Future<List<Post>> build() async {
+    // 初始加载第一页
+    return fetchPage(1);
+  }
+
+  Future<List<Post>> fetchPage(int page) async {
+    if (DebugConfig.debugLocal) {
+      // 纯前端调试模式：返回fake数据
+      await Future.delayed(const Duration(milliseconds: 800)); // 模拟网络延迟
+
+      // 模拟分页数据
+      final posts = List.generate(10, (index) {
+        final postIndex = (page - 1) * 10 + index + 1;
+        return Post(
+          id: postIndex.toString(),
+          username: 'debug_user',
+          content: '这是第 $postIndex 条测试帖子，用于纯前端调试模式。',
+          createdAt: '2024-01-15T10:30:00Z',
+          likes: 123 + postIndex,
+          location: '北京',
+          imageUrls: postIndex % 3 == 0
+              ? ['https://picsum.photos/seed/test$postIndex/600/400']
+              : [],
+          commentsCount: 23 + postIndex,
+          repostsCount: 15 + postIndex,
+          bookmarksCount: 45 + postIndex,
+          sharesCount: 8 + postIndex,
+          isLiked: postIndex % 2 == 0,
+        );
+      });
+
+      // 模拟只有3页数据
+      if (page > 3) {
+        return [];
+      }
+
+      return posts;
+    } else {
+      // 前后端联动调试模式：调用API获取真实数据
+      final repository = ref.watch(feedsRepositoryProvider);
+      return repository.getFeeds(page: page, limit: 10);
+    }
+  }
+
+  Future<void> loadNextPage() async {
+    if (state is AsyncLoading) return;
+
+    final currentState = state as AsyncData<List<Post>>;
+    final currentPosts = currentState.value ?? [];
+    final nextPage = (currentPosts.length ~/ 10) + 1;
+
+    state = const AsyncLoading();
+    try {
+      final newPosts = await fetchPage(nextPage);
+      if (newPosts.isEmpty) {
+        // No more posts to load
+        return;
+      }
+      state = AsyncData([...currentPosts, ...newPosts]);
+    } catch (e) {
+      state = AsyncError(e, StackTrace.current);
+    }
+  }
+
+  Future<void> refresh() async {
+    state = const AsyncLoading();
+    state = await AsyncValue.guard(() => fetchPage(1));
   }
 }

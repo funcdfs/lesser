@@ -1,5 +1,5 @@
 from django.urls import path
-from ..views.views import RegisterAPI, LoginAPI, LogoutAPI, UserAPI
+from .views import RegisterAPI, LoginAPI, LogoutAPI, UserAPI
 
 app_name = 'users'
 urlpatterns = [

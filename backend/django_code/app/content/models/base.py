@@ -1,5 +1,7 @@
 from django.db import models
 from django.conf import settings
+from django.contrib.contenttypes.fields import GenericForeignKey
+from django.contrib.contenttypes.models import ContentType
 
 # 获取用户模型
 User = settings.AUTH_USER_MODEL
@@ -29,13 +31,17 @@ class ContentInteraction(models.Model):
     user = models.ForeignKey(User, on_delete=models.CASCADE)
     created_at = models.DateTimeField(auto_now_add=True)
     
+    # 使用泛型外键替代直接外键
+    content_type = models.ForeignKey(ContentType, on_delete=models.CASCADE)
+    object_id = models.PositiveIntegerField()
+    content = GenericForeignKey('content_type', 'object_id')
+    
     class Meta:
         abstract = True
-        unique_together = ('user', 'content')
+        unique_together = ('user', 'content_type', 'object_id')
 
 class ContentComment(ContentInteraction):
     """内容评论模型"""
-    content = models.ForeignKey(BaseContent, on_delete=models.CASCADE, related_name='comments')
     text = models.TextField()
     
     def __str__(self):
@@ -43,21 +49,18 @@ class ContentComment(ContentInteraction):
 
 class ContentLike(ContentInteraction):
     """内容点赞模型"""
-    content = models.ForeignKey(BaseContent, on_delete=models.CASCADE, related_name='likes')
     
     def __str__(self):
         return f"Like by {self.user} on {self.content}"
 
 class ContentBookmark(ContentInteraction):
     """内容收藏模型"""
-    content = models.ForeignKey(BaseContent, on_delete=models.CASCADE, related_name='bookmarks')
     
     def __str__(self):
         return f"Bookmark by {self.user} on {self.content}"
 
 class ContentRepost(ContentInteraction):
     """内容转发模型"""
-    content = models.ForeignKey(BaseContent, on_delete=models.CASCADE, related_name='reposts')
     
     def __str__(self):
         return f"Repost by {self.user} on {self.content}"

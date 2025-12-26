@@ -20,25 +20,20 @@ final userRepositoryProvider = AutoDisposeProvider<UserRepository>.internal(
   allTransitiveDependencies: null,
 );
 
-@Deprecated('Will be removed in 3.0. Use Ref instead')
-// ignore: unused_element
 typedef UserRepositoryRef = AutoDisposeProviderRef<UserRepository>;
-String _$currentUserHash() => r'ac11e9eafc8cda705c3f5e2623e8d812029c51ce';
+String _$currentUserHash() => r'1a0d97e1ec8e8abd5f66a8c6f241e0126fca2886';
 
 /// See also [currentUser].
 @ProviderFor(currentUser)
 final currentUserProvider = AutoDisposeFutureProvider<User>.internal(
   currentUser,
   name: r'currentUserProvider',
-  debugGetCreateSourceHash: const bool.fromEnvironment('dart.vm.product')
-      ? null
-      : _$currentUserHash,
+  debugGetCreateSourceHash:
+      const bool.fromEnvironment('dart.vm.product') ? null : _$currentUserHash,
   dependencies: null,
   allTransitiveDependencies: null,
 );
 
-@Deprecated('Will be removed in 3.0. Use Ref instead')
-// ignore: unused_element
 typedef CurrentUserRef = AutoDisposeFutureProviderRef<User>;
 // ignore_for_file: type=lint
-// ignore_for_file: subtype_of_sealed_class, invalid_use_of_internal_member, invalid_use_of_visible_for_testing_member, deprecated_member_use_from_same_package
+// ignore_for_file: subtype_of_sealed_class, invalid_use_of_internal_member, invalid_use_of_visible_for_testing_member

@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:lesser/shared/theme/theme.dart';
 import 'package:lesser/shared/widgets/button.dart';
-import 'package:lesser/shared/widgets/avatar.dart';
 
 /// 创建内容的悬浮框组件
 class CreatePostFloatingSheet extends StatefulWidget {

@@ -1,0 +1,17 @@
+# Traefik 配置文件
+
+# API 配置
+api:
+  insecure: true
+
+# Docker 提供者配置
+providers:
+  docker:
+    exposedByDefault: false
+
+# 入口点配置
+entryPoints:
+  web:
+    address: ":80"
+  websecure:
+    address: ":443"

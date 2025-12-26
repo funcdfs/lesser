@@ -7,23 +7,22 @@ part of 'post.dart';
 // **************************************************************************
 
 _$PostImpl _$$PostImplFromJson(Map<String, dynamic> json) => _$PostImpl(
-  id: json['id'] as String,
-  username: json['username'] as String,
-  content: json['content'] as String,
-  createdAt: json['created_at'] as String,
-  likes: (json['likes'] as num?)?.toInt() ?? 0,
-  location: json['location'] as String?,
-  imageUrls:
-      (json['image_urls'] as List<dynamic>?)
-          ?.map((e) => e as String)
-          .toList() ??
-      const [],
-  commentsCount: (json['comments_count'] as num?)?.toInt() ?? 0,
-  repostsCount: (json['reposts_count'] as num?)?.toInt() ?? 0,
-  bookmarksCount: (json['bookmarks_count'] as num?)?.toInt() ?? 0,
-  sharesCount: (json['shares_count'] as num?)?.toInt() ?? 0,
-  isLiked: json['is_liked'] as bool? ?? false,
-);
+      id: json['id'] as String,
+      username: json['username'] as String,
+      content: json['content'] as String,
+      createdAt: json['created_at'] as String,
+      likes: (json['likes'] as num?)?.toInt() ?? 0,
+      location: json['location'] as String?,
+      imageUrls: (json['image_urls'] as List<dynamic>?)
+              ?.map((e) => e as String)
+              .toList() ??
+          const [],
+      commentsCount: (json['comments_count'] as num?)?.toInt() ?? 0,
+      repostsCount: (json['reposts_count'] as num?)?.toInt() ?? 0,
+      bookmarksCount: (json['bookmarks_count'] as num?)?.toInt() ?? 0,
+      sharesCount: (json['shares_count'] as num?)?.toInt() ?? 0,
+      isLiked: json['is_liked'] as bool? ?? false,
+    );
 
 Map<String, dynamic> _$$PostImplToJson(_$PostImpl instance) =>
     <String, dynamic>{

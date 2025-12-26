@@ -1,4 +1,4 @@
-import 'package:dio/dio.dart';
+import 'package:chopper/chopper.dart';
 import 'package:logger/logger.dart';
 
 abstract class BaseRepository {
@@ -10,27 +10,25 @@ abstract class BaseRepository {
   }) async {
     try {
       final response = await call();
-      return mapper(response.data);
-    } on DioException catch (e) {
-      logger.e('API Error: ${e.message}', error: e);
-      throw _handleDioError(e);
+      if (response.isSuccessful) {
+        return mapper(response.body);
+      } else {
+        logger.e('API Error: ${response.statusCode}', error: response.error);
+        throw _handleChopperError(response);
+      }
     } catch (e) {
       logger.e('Unexpected Error', error: e);
       throw Exception('An unexpected error occurred');
     }
   }
 
-  Exception _handleDioError(DioException error) {
-    switch (error.type) {
-      case DioExceptionType.connectionTimeout:
-      case DioExceptionType.sendTimeout:
-      case DioExceptionType.receiveTimeout:
-        return Exception('Connection timed out');
-      case DioExceptionType.badResponse:
-        final statusCode = error.response?.statusCode;
-        return Exception('Server error: $statusCode');
-      default:
-        return Exception('Network error occurred');
+  Exception _handleChopperError(Response response) {
+    final statusCode = response.statusCode;
+    if (statusCode >= 400 && statusCode < 500) {
+      return Exception('Client error: $statusCode');
+    } else if (statusCode >= 500) {
+      return Exception('Server error: $statusCode');
     }
+      return Exception('Network error occurred');
   }
 }

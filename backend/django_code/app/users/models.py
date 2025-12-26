@@ -28,6 +28,10 @@ class CustomUser(AbstractUser):
     # 兴趣标签 - 使用JSONField存储数组
     interests = models.JSONField(_('兴趣标签'), blank=True, null=True)
     
+    # 粉丝数和关注数
+    followers_count = models.IntegerField(_('粉丝数'), default=0)
+    following_count = models.IntegerField(_('关注数'), default=0)
+    
     class Meta:
         verbose_name = _('用户')
         verbose_name_plural = _('用户')
