@@ -8,10 +8,8 @@ class ApiEndpoints {
       // 生产环境使用API Gateway地址
       return AppConstants.apiBaseUrl;
     } else {
-      // 开发环境可以根据平台自动选择地址
-      // 对于移动设备，使用开发电脑的IP地址
-      // 对于Web，使用相对路径或本地地址
-      return 'http://192.168.31.168:8001/api';
+      // 开发环境使用APISIX网关
+      return 'http://127.0.0.1:9080/api';
     }
   }
 

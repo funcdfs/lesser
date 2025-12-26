@@ -23,34 +23,44 @@ class FeedList extends ConsumerStatefulWidget {
 }
 
 class _FeedListState extends ConsumerState<FeedList> {
-  late final PagingController<int, Post> _pagingController;
+  int _currentPage = 0;
+  final List<Post> _posts = [];
+  bool _isLoading = false;
+  bool _hasNextPage = true;
+  Object? _error;
 
   @override
   void initState() {
     super.initState();
-    _pagingController = PagingController(firstPageKey: 0);
-    _pagingController.addPageRequestListener(_fetchPage);
+    _fetchPage();
   }
 
-  @override
-  void dispose() {
-    _pagingController.dispose();
-    super.dispose();
-  }
+  Future<void> _fetchPage() async {
+    if (_isLoading || !_hasNextPage) return;
 
-  Future<void> _fetchPage(int pageKey) async {
+    setState(() {
+      _isLoading = true;
+      _error = null;
+    });
+
     try {
-      final posts = await ref
+      final newPosts = await ref
           .read(pagedFeedsProvider.notifier)
-          .fetchPage(pageKey + 1);
-      final isLastPage = posts.isEmpty;
-      if (isLastPage) {
-        _pagingController.appendLastPage(posts);
-      } else {
-        _pagingController.appendPage(posts, pageKey + 1);
-      }
+          .fetchPage(_currentPage + 1);
+
+      setState(() {
+        _posts.addAll(newPosts);
+        _isLoading = false;
+        _hasNextPage = newPosts.isNotEmpty;
+        if (_hasNextPage) {
+          _currentPage++;
+        }
+      });
     } catch (error) {
-      _pagingController.error = error;
+      setState(() {
+        _isLoading = false;
+        _error = error;
+      });
     }
   }
 
@@ -60,6 +70,14 @@ class _FeedListState extends ConsumerState<FeedList> {
 
   @override
   Widget build(BuildContext context) {
+    final pagingState = PagingState(
+      pages: [_posts],
+      keys: [0],
+      hasNextPage: _hasNextPage,
+      isLoading: _isLoading,
+      error: _error,
+    );
+
     return CustomScrollView(
       key: PageStorageKey<String>(widget.feedType),
       controller: widget.controller,
@@ -73,7 +91,8 @@ class _FeedListState extends ConsumerState<FeedList> {
         ),
         if (widget.header != null) SliverToBoxAdapter(child: widget.header!),
         PagedSliverList<int, Post>(
-          pagingController: _pagingController,
+          state: pagingState,
+          fetchNextPage: _fetchPage,
           builderDelegate: PagedChildBuilderDelegate<Post>(
             itemBuilder: (context, post, index) =>
                 PostCard(post: post, onTap: () => _navigateToDetail(post)),
@@ -83,6 +102,8 @@ class _FeedListState extends ConsumerState<FeedList> {
                 const Center(child: CircularProgressIndicator()),
             noItemsFoundIndicatorBuilder: (_) =>
                 const Center(child: Text('No posts found')),
+            firstPageErrorIndicatorBuilder: (_) =>
+                const Center(child: Text('Error loading posts')),
           ),
         ),
       ],

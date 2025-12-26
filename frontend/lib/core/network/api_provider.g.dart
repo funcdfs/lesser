@@ -6,34 +6,93 @@ part of 'api_provider.dart';
 // RiverpodGenerator
 // **************************************************************************
 
+// GENERATED CODE - DO NOT MODIFY BY HAND
+// ignore_for_file: type=lint, type=warning
+
+@ProviderFor(apiClient)
+const apiClientProvider = ApiClientProvider._();
+
+final class ApiClientProvider
+    extends $FunctionalProvider<ApiClient, ApiClient, ApiClient>
+    with $Provider<ApiClient> {
+  const ApiClientProvider._()
+    : super(
+        from: null,
+        argument: null,
+        retry: null,
+        name: r'apiClientProvider',
+        isAutoDispose: false,
+        dependencies: null,
+        $allTransitiveDependencies: null,
+      );
+
+  @override
+  String debugGetCreateSourceHash() => _$apiClientHash();
+
+  @$internal
+  @override
+  $ProviderElement<ApiClient> $createElement($ProviderPointer pointer) =>
+      $ProviderElement(pointer);
+
+  @override
+  ApiClient create(Ref ref) {
+    return apiClient(ref);
+  }
+
+  /// {@macro riverpod.override_with_value}
+  Override overrideWithValue(ApiClient value) {
+    return $ProviderOverride(
+      origin: this,
+      providerOverride: $SyncValueProvider<ApiClient>(value),
+    );
+  }
+}
+
 String _$apiClientHash() => r'8883a92aa0365c63196894792e12892a5f4e1f5d';
 
-/// See also [apiClient].
-@ProviderFor(apiClient)
-final apiClientProvider = Provider<ApiClient>.internal(
-  apiClient,
-  name: r'apiClientProvider',
-  debugGetCreateSourceHash:
-      const bool.fromEnvironment('dart.vm.product') ? null : _$apiClientHash,
-  dependencies: null,
-  allTransitiveDependencies: null,
-);
-
-typedef ApiClientRef = ProviderRef<ApiClient>;
-String _$chopperApiServiceHash() => r'24761e706ee1aa4f1e711693e8fd3fa739310bbe';
-
-/// See also [chopperApiService].
 @ProviderFor(chopperApiService)
-final chopperApiServiceProvider = Provider<ChopperApiService>.internal(
-  chopperApiService,
-  name: r'chopperApiServiceProvider',
-  debugGetCreateSourceHash: const bool.fromEnvironment('dart.vm.product')
-      ? null
-      : _$chopperApiServiceHash,
-  dependencies: null,
-  allTransitiveDependencies: null,
-);
+const chopperApiServiceProvider = ChopperApiServiceProvider._();
 
-typedef ChopperApiServiceRef = ProviderRef<ChopperApiService>;
-// ignore_for_file: type=lint
-// ignore_for_file: subtype_of_sealed_class, invalid_use_of_internal_member, invalid_use_of_visible_for_testing_member
+final class ChopperApiServiceProvider
+    extends
+        $FunctionalProvider<
+          ChopperApiService,
+          ChopperApiService,
+          ChopperApiService
+        >
+    with $Provider<ChopperApiService> {
+  const ChopperApiServiceProvider._()
+    : super(
+        from: null,
+        argument: null,
+        retry: null,
+        name: r'chopperApiServiceProvider',
+        isAutoDispose: false,
+        dependencies: null,
+        $allTransitiveDependencies: null,
+      );
+
+  @override
+  String debugGetCreateSourceHash() => _$chopperApiServiceHash();
+
+  @$internal
+  @override
+  $ProviderElement<ChopperApiService> $createElement(
+    $ProviderPointer pointer,
+  ) => $ProviderElement(pointer);
+
+  @override
+  ChopperApiService create(Ref ref) {
+    return chopperApiService(ref);
+  }
+
+  /// {@macro riverpod.override_with_value}
+  Override overrideWithValue(ChopperApiService value) {
+    return $ProviderOverride(
+      origin: this,
+      providerOverride: $SyncValueProvider<ChopperApiService>(value),
+    );
+  }
+}
+
+String _$chopperApiServiceHash() => r'24761e706ee1aa4f1e711693e8fd3fa739310bbe';

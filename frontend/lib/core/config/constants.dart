@@ -3,7 +3,7 @@
 /// 负责：
 /// - 尺寸常量
 /// - 分页大小
-/// - 环境配置
+/// - 环境配置（从 .env.dev 或构建参数中读取）
 /// - API 基础配置
 ///
 /// ❌ 不允许放业务字段（业务常量应在各 feature 内部定义）
@@ -11,7 +11,7 @@ class AppConstants {
   AppConstants._();
 
   // ============================================================================
-  // 环境配置
+  // 环境配置（从 .env.dev 通过构建参数或环境变量读取）
   // ============================================================================
 
   /// 应用名称
@@ -21,17 +21,41 @@ class AppConstants {
   static const String appVersion = '1.0.0';
 
   /// 是否为生产环境
-  static const bool isProduction = false;
+  /// 说明：
+  ///   - 开发环境：使用本地 APISIX 网关 (localhost:9080)
+  ///   - 生产环境：使用生产 API 网关
+  ///
+  /// 在 .env.dev 中配置，通过构建参数传入
+  static const bool isProduction = bool.fromEnvironment(
+    'IS_PRODUCTION',
+    defaultValue: false,
+  );
 
   /// 是否为调试模式
   static const bool isDebugMode = !isProduction;
 
   // ============================================================================
-  // API 配置
+  // API 配置（从 .env.dev 中读取）
   // ============================================================================
 
   /// API 基础 URL
-  static const String apiBaseUrl = 'https://api.example.com';
+  /// 开发环境：http://localhost:9080/api (APISIX 网关)
+  /// 生产环境：https://api.example.com (生产网关)
+  ///
+  /// 读取优先级：
+  /// 1. 构建参数 API_BASE_URL
+  /// 2. 默认开发地址
+  static const String apiBaseUrl = String.fromEnvironment(
+    'API_BASE_URL',
+    defaultValue: 'http://localhost:9080/api',
+  );
+
+  /// API 超时时间（毫秒）
+  /// 从 .env.dev 的 API_TIMEOUT 读取，默认 30 秒
+  static const int apiTimeout = int.fromEnvironment(
+    'API_TIMEOUT',
+    defaultValue: 30000,
+  );
 
   /// 连接超时时间（毫秒）
   static const int connectTimeout = 30000;

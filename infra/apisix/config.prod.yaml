@@ -1,0 +1,154 @@
+# APISIX 生产环境配置文件
+# 
+# 相比开发环境，生产配置优化了：
+# - 更严格的安全设置
+# - 性能调优参数
+# - 高可用配置
+# - 监控和日志配置
+
+apisix:
+  node_listen:
+    - port: 9080
+      bind: 0.0.0.0
+    - port: 9443
+      bind: 0.0.0.0
+      ssl: true
+  
+  # 心跳检查 - 集群节点健康监测
+  enable_heartbeat: true
+  heartbeat:
+    interval: 5
+  
+  # 管理员 API 配置
+  enable_admin: true
+  admin_listen:
+    ip: 0.0.0.0
+    port: 9180
+  
+  # 管理员认证密钥
+  # 生产环境必须更改此密钥！
+  admin_key:
+    - name: "admin"
+      key: "edd1c9f034335f136f87ad84b625c8f1"  # 改为安全的密钥
+      role: admin
+  
+  # 限制访问管理 API 的 IP 地址
+  allow_admin:
+    - 127.0.0.1  # 只允许本地访问
+    # - 10.0.0.0/8  # 内网 IP（如果需要）
+  
+  # 控制 API - 运行时配置修改
+  enable_control: true
+  control:
+    ip: "0.0.0.0"
+    port: 9090
+
+# 部署模式配置
+deployment:
+  role: traditional
+  role_traditional:
+    config_provider: etcd
+  
+  # etcd 配置中心
+  etcd:
+    host:
+      - "http://etcd:2379"
+    prefix: "/apisix"
+    timeout: 30
+    # 高可用配置
+    resync_delay: 5
+    health_check_interval: 10
+
+# 插件属性配置
+plugin_attr:
+  # Prometheus 监控指标导出
+  prometheus:
+    export_addr:
+      ip: "0.0.0.0"
+      port: 9091
+  
+  # 日志配置
+  file-logger:
+    path: /usr/local/apisix/logs/access.log
+  
+  # gzip 压缩
+  gzip:
+    types:
+      - application/json
+      - application/xml
+      - text/html
+      - text/css
+      - text/plain
+      - text/javascript
+    min_length: 1024
+    comp_level: 6
+
+# 启用的插件列表 - 生产精简版本
+# 只加载实际需要的插件以提升性能
+plugins:
+  # 认证
+  - jwt-auth
+  - key-auth
+  - basic-auth
+  - openid-connect
+  - multi-auth
+  
+  # 限流和熔断
+  - limit-req
+  - limit-conn
+  - limit-count
+  - api-breaker
+  - traffic-split
+  
+  # 请求处理
+  - request-id
+  - request-validation
+  - response-rewrite
+  - proxy-rewrite
+  - cors
+  
+  # 日志和监控
+  - http-logger
+  - syslog
+  - tcp-logger
+  - prometheus
+  - skywalking
+  
+  # 其他
+  - echo
+  - gzip
+  - redirect
+  - referer-restriction
+  - uri-blocker
+  - server-info
+
+# 性能优化配置
+upstream:
+  keepalive: 256              # 保活连接数（为高并发调整）
+  keepalive_requests: 100     # 每个连接的请求数
+  keepalive_timeout: 60       # 保活超时（秒）
+  keepalive_pool:
+    idle_timeout: 60          # 空闲连接超时
+
+# HTTP 配置
+http:
+  enable_gzip: true
+  gzip_comp_level: 6
+  gzip_types:
+    - application/json
+    - application/xml
+    - text/html
+    - text/css
+    - text/plain
+    - text/javascript
+
+# 日志和诊断
+nginx_http_upstream_module: true
+disable_http_access_log: false
+
+# 缓存配置
+apisix_lua_home: /usr/local/apisix
+
+# 性能相关参数
+worker_processes: auto        # 自动选择 worker 进程数
+worker_rlimit_nofile: 65535   # 文件描述符限制

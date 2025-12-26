@@ -14,7 +14,11 @@ dependencies = [
     "psycopg2-binary>=2.9.0",
     "djangorestframework-stubs>=3.16.6",
     "pillow>=12.0.0",
+    "python-dotenv>=1.0.0",  # 用于加载 .env 文件配置
 ]
+
+[tool.setuptools]
+packages = ["app", "lesser_root_folder"]
 
 [dependency-groups]
 dev = [

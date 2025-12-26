@@ -1,0 +1,390 @@
+# docker-compose.prod.yml - Lesser 项目生产环境配置
+#
+# 说明:
+#   生产环境优化版本，包含：
+#   - 最新稳定版本的 Docker 镜像
+#   - 生产级别的性能和安全配置
+#   - 持久化存储和备份配置
+#   - 资源限制和健康检查
+#   - 日志聚合和监控配置
+#
+# 使用方法:
+#   启动生产环境: docker-compose -f docker-compose.prod.yml up -d
+#   查看日志:    docker-compose -f docker-compose.prod.yml logs -f
+#   停止服务:    docker-compose -f docker-compose.prod.yml down
+#
+# 访问地址:
+#   - APISIX 网关:         http://localhost:9080/
+#   - APISIX Dashboard:    http://localhost:9000/
+#
+# 性能优化:
+#   - 使用 Alpine 镜像减少容器大小
+#   - 启用所有健康检查
+#   - 配置内存和 CPU 限制
+#   - 优化 APISIX 配置以处理高并发
+
+version: '3.8'
+
+services:
+  # ============================================================================
+  # 配置中心 - etcd (生产版)
+  # ============================================================================
+  # 生产特性:
+  #   - Alpine 基础镜像，更小的容器体积
+  #   - 持久化存储
+  #   - 资源限制
+  etcd:
+    image: quay.io/coreos/etcd:v3.5.15-alpine
+    container_name: etcd-prod
+    restart: always
+    
+    # 环境变量
+    environment:
+      - ETCD_LISTEN_CLIENT_URLS=http://0.0.0.0:2379
+      - ETCD_ADVERTISE_CLIENT_URLS=http://etcd:2379
+      - ETCD_LISTEN_PEER_URLS=http://0.0.0.0:2380
+      - ETCD_NAME=etcd-prod
+      # 集群配置（如果需要高可用）
+      # - ETCD_INITIAL_CLUSTER=etcd-prod=http://etcd:2380
+      # - ETCD_INITIAL_CLUSTER_STATE=new
+    
+    # 数据持久化
+    volumes:
+      - etcd_data_prod:/etcd-data
+    
+    # 端口映射（生产环境建议限制访问）
+    ports:
+      - "2379:2379"
+      # - "2380:2380"  # 生产环境不应暴露此端口
+    
+    # 资源限制
+    deploy:
+      resources:
+        limits:
+          cpus: '2'
+          memory: 2G
+        reservations:
+          cpus: '1'
+          memory: 1G
+    
+    # 健康检查
+    healthcheck:
+      test: ["CMD", "etcdctl", "--endpoints=localhost:2379", "member", "list"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 20s
+    
+    networks:
+      - backend
+      - web
+
+  # ============================================================================
+  # API 网关 - Apache APISIX (生产版)
+  # ============================================================================
+  # 生产特性:
+  #   - Alpine 基础镜像
+  #   - 完整的日志配置
+  #   - 性能调优
+  #   - 资源限制
+  #   - 健康检查
+  apisix:
+    image: apache/apisix:3.9.1-alpine
+    container_name: apisix-prod
+    restart: always
+    
+    # 配置文件
+    volumes:
+      - ./apisix/config.prod.yaml:/usr/local/apisix/conf/config.yaml:ro
+      - ./apisix/logs:/usr/local/apisix/logs
+    
+    # 依赖关系
+    depends_on:
+      etcd:
+        condition: service_healthy
+    
+    # 端口映射
+    ports:
+      - "9080:9080"   # HTTP
+      - "9443:9443"   # HTTPS
+      - "9180:9180"   # Admin API（生产环境应限制访问）
+      - "9090:9090"   # Control API
+      - "9091:9091"   # Prometheus
+    
+    # 环境变量
+    environment:
+      - APISIX_ETCD_HOST=etcd
+      - APISIX_ETCD_PORT=2379
+      - TZ=UTC
+    
+    # 资源限制
+    deploy:
+      resources:
+        limits:
+          cpus: '4'
+          memory: 4G
+        reservations:
+          cpus: '2'
+          memory: 2G
+    
+    # 健康检查
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9080/apisix/admin/healthz"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 20s
+    
+    networks:
+      - backend
+      - web
+
+  # ============================================================================
+  # APISIX Dashboard (生产版)
+  # ============================================================================
+  # 生产特性:
+  #   - Alpine 基础镜像
+  #   - 安全的认证配置
+  #   - 资源限制
+  apisix-dashboard:
+    image: apache/apisix-dashboard:3.1.0-alpine
+    container_name: apisix-dashboard-prod
+    restart: always
+    
+    # 配置文件
+    volumes:
+      - ./apisix/dashboard_conf.prod.yaml:/usr/local/apisix-dashboard/conf/conf.yaml:ro
+    
+    # 依赖关系
+    depends_on:
+      apisix:
+        condition: service_healthy
+      etcd:
+        condition: service_healthy
+    
+    # 端口映射（生产环境建议通过反向代理访问）
+    ports:
+      - "9000:9000"
+    
+    # 环境变量
+    environment:
+      - APISIX_ADMIN_API_URL=http://apisix:9180
+      - ETCD_ENDPOINTS=http://etcd:2379
+      - TZ=UTC
+    
+    # 资源限制
+    deploy:
+      resources:
+        limits:
+          cpus: '1'
+          memory: 512M
+        reservations:
+          cpus: '0.5'
+          memory: 256M
+    
+    # 健康检查
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9000/api/v1/system/info"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 20s
+    
+    networks:
+      - backend
+      - web
+
+  # ============================================================================
+  # 数据库 - PostgreSQL (生产版)
+  # ============================================================================
+  # 生产特性:
+  #   - Alpine 基础镜像
+  #   - WAL 日志启用
+  #   - 性能优化参数
+  #   - 资源限制
+  postgres:
+    image: postgres:17-alpine
+    container_name: postgres-prod
+    restart: always
+    
+    # 环境变量
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-funcdfs}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-very_secure_password}
+      POSTGRES_DB: ${POSTGRES_DB:-lesser_db}
+      # 性能优化
+      POSTGRES_INITDB_ARGS: "-c shared_buffers=256MB -c max_connections=200"
+    
+    # 数据持久化
+    volumes:
+      - postgres_data_prod:/var/lib/postgresql/data
+      - postgres_backup_prod:/var/lib/postgresql/backup
+    
+    # 资源限制
+    deploy:
+      resources:
+        limits:
+          cpus: '4'
+          memory: 4G
+        reservations:
+          cpus: '2'
+          memory: 2G
+    
+    # 健康检查
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-funcdfs}"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    
+    networks:
+      - backend
+
+  # ============================================================================
+  # 缓存 - Redis (生产版)
+  # ============================================================================
+  # 生产特性:
+  #   - Alpine 基础镜像
+  #   - RDB + AOF 持久化
+  #   - 性能优化配置
+  #   - 资源限制
+  redis:
+    image: redis:8-alpine
+    container_name: redis-prod
+    restart: always
+    
+    # 启动命令 - 优化配置
+    command: >
+      redis-server
+      --appendonly yes
+      --appendfsync everysec
+      --save 900 1
+      --save 300 10
+      --save 60 10000
+      --maxmemory 2gb
+      --maxmemory-policy allkeys-lru
+      --tcp-backlog 511
+      --timeout 0
+      --tcp-keepalive 300
+    
+    # 数据持久化
+    volumes:
+      - redis_data_prod:/data
+    
+    # 资源限制
+    deploy:
+      resources:
+        limits:
+          cpus: '2'
+          memory: 2G
+        reservations:
+          cpus: '1'
+          memory: 1G
+    
+    # 健康检查
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 20s
+    
+    networks:
+      - backend
+
+  # ============================================================================
+  # Django 后端应用 (生产版)
+  # ============================================================================
+  # 生产特性:
+  #   - Gunicorn WSGI 服务器
+  #   - 多进程并发处理
+  #   - 资源限制
+  #   - 完整的日志配置
+  django:
+    build:
+      context: ../backend/django_code
+      dockerfile: Dockerfile.prod
+    container_name: django-prod
+    restart: always
+    
+    # 启动命令 - 使用 Gunicorn
+    command: >
+      gunicorn
+      --bind 0.0.0.0:8000
+      --workers 4
+      --worker-class sync
+      --max-requests 1000
+      --max-requests-jitter 100
+      --timeout 30
+      --access-logfile -
+      --error-logfile -
+      lesser_root_folder.wsgi:application
+    
+    # 环境配置
+    env_file:
+      - .env.prod
+    
+    # 环境变量
+    environment:
+      - POSTGRES_HOST=postgres
+      - REDIS_HOST=redis
+      - DEBUG=False
+      - PYTHONUNBUFFERED=1
+    
+    # 依赖关系
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    
+    # 资源限制
+    deploy:
+      resources:
+        limits:
+          cpus: '4'
+          memory: 2G
+        reservations:
+          cpus: '2'
+          memory: 1G
+    
+    # 健康检查
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health/"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+    
+    networks:
+      - backend
+      - web
+
+
+# ============================================================================
+# 网络定义
+# ============================================================================
+networks:
+  backend:
+    driver: bridge
+    driver_opts:
+      com.docker.network.bridge.name: br-backend-prod
+  
+  web:
+    driver: bridge
+    driver_opts:
+      com.docker.network.bridge.name: br-web-prod
+
+# ============================================================================
+# 卷定义
+# ============================================================================
+volumes:
+  etcd_data_prod:
+    driver: local
+  postgres_data_prod:
+    driver: local
+  postgres_backup_prod:
+    driver: local
+  redis_data_prod:
+    driver: local

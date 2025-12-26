@@ -6,35 +6,92 @@ part of 'feeds_provider.dart';
 // RiverpodGenerator
 // **************************************************************************
 
-String _$feedsRepositoryHash() => r'65b5f777901e1029ee7f1f1a6815c781b09a7b75';
+// GENERATED CODE - DO NOT MODIFY BY HAND
+// ignore_for_file: type=lint, type=warning
 
-/// See also [feedsRepository].
 @ProviderFor(feedsRepository)
-final feedsRepositoryProvider = AutoDisposeProvider<FeedsRepository>.internal(
-  feedsRepository,
-  name: r'feedsRepositoryProvider',
-  debugGetCreateSourceHash: const bool.fromEnvironment('dart.vm.product')
-      ? null
-      : _$feedsRepositoryHash,
-  dependencies: null,
-  allTransitiveDependencies: null,
-);
+const feedsRepositoryProvider = FeedsRepositoryProvider._();
 
-typedef FeedsRepositoryRef = AutoDisposeProviderRef<FeedsRepository>;
-String _$pagedFeedsHash() => r'905bac0c5a21d0ba7c061e704b3bfb4f49700ccb';
+final class FeedsRepositoryProvider
+    extends
+        $FunctionalProvider<FeedsRepository, FeedsRepository, FeedsRepository>
+    with $Provider<FeedsRepository> {
+  const FeedsRepositoryProvider._()
+    : super(
+        from: null,
+        argument: null,
+        retry: null,
+        name: r'feedsRepositoryProvider',
+        isAutoDispose: true,
+        dependencies: null,
+        $allTransitiveDependencies: null,
+      );
 
-/// See also [PagedFeeds].
+  @override
+  String debugGetCreateSourceHash() => _$feedsRepositoryHash();
+
+  @$internal
+  @override
+  $ProviderElement<FeedsRepository> $createElement($ProviderPointer pointer) =>
+      $ProviderElement(pointer);
+
+  @override
+  FeedsRepository create(Ref ref) {
+    return feedsRepository(ref);
+  }
+
+  /// {@macro riverpod.override_with_value}
+  Override overrideWithValue(FeedsRepository value) {
+    return $ProviderOverride(
+      origin: this,
+      providerOverride: $SyncValueProvider<FeedsRepository>(value),
+    );
+  }
+}
+
+String _$feedsRepositoryHash() => r'8d6bea753bd624e36ca29a4c9d41dfb81e7b69eb';
+
 @ProviderFor(PagedFeeds)
-final pagedFeedsProvider =
-    AutoDisposeAsyncNotifierProvider<PagedFeeds, List<Post>>.internal(
-  PagedFeeds.new,
-  name: r'pagedFeedsProvider',
-  debugGetCreateSourceHash:
-      const bool.fromEnvironment('dart.vm.product') ? null : _$pagedFeedsHash,
-  dependencies: null,
-  allTransitiveDependencies: null,
-);
+const pagedFeedsProvider = PagedFeedsProvider._();
 
-typedef _$PagedFeeds = AutoDisposeAsyncNotifier<List<Post>>;
-// ignore_for_file: type=lint
-// ignore_for_file: subtype_of_sealed_class, invalid_use_of_internal_member, invalid_use_of_visible_for_testing_member
+final class PagedFeedsProvider
+    extends $AsyncNotifierProvider<PagedFeeds, List<Post>> {
+  const PagedFeedsProvider._()
+    : super(
+        from: null,
+        argument: null,
+        retry: null,
+        name: r'pagedFeedsProvider',
+        isAutoDispose: true,
+        dependencies: null,
+        $allTransitiveDependencies: null,
+      );
+
+  @override
+  String debugGetCreateSourceHash() => _$pagedFeedsHash();
+
+  @$internal
+  @override
+  PagedFeeds create() => PagedFeeds();
+}
+
+String _$pagedFeedsHash() => r'284cf7a76d720d3edd4f2c7e4fe8c1eae6f3d26d';
+
+abstract class _$PagedFeeds extends $AsyncNotifier<List<Post>> {
+  FutureOr<List<Post>> build();
+  @$mustCallSuper
+  @override
+  void runBuild() {
+    final created = build();
+    final ref = this.ref as $Ref<AsyncValue<List<Post>>, List<Post>>;
+    final element =
+        ref.element
+            as $ClassProviderElement<
+              AnyNotifier<AsyncValue<List<Post>>, List<Post>>,
+              AsyncValue<List<Post>>,
+              Object?,
+              Object?
+            >;
+    element.handleValue(ref, created);
+  }
+}

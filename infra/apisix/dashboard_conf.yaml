@@ -1,0 +1,66 @@
+# APISIX Dashboard 配置文件
+# 
+# 此文件配置 Dashboard 的监听端口、etcd 连接、日志和认证等
+
+conf:
+  # HTTP 服务器配置
+  listen:
+    host: 0.0.0.0
+    port: 9000
+  
+  # etcd 配置中心连接
+  etcd:
+    endpoints:
+      - etcd:2379
+    prefix: /apisix
+    timeout: 30
+    # 认证（如果 etcd 启用了认证）
+    # username: root
+    # password: ""
+  
+  # 日志配置
+  log:
+    # 错误日志
+    error_log:
+      level: warn
+      file_path: /dev/stderr
+    # 访问日志
+    access_log:
+      file_path: /dev/stdout
+  
+  # 认证配置
+  authentication:
+    # JWT 签名密钥 - 生产环境应该修改此值
+    secret: secret
+    # 令牌过期时间（秒）
+    expire_time: 3600
+    # 默认用户列表
+    users:
+      - username: admin
+        password: admin
+      - username: user
+        password: user
+  
+  # API 文档配置
+  swagger:
+    enabled: true
+  
+  # 性能优化配置
+  security:
+    # 启用 CORS
+    enable_cors: true
+    # 跨域允许的来源
+    cors_allow_origin: "*"
+    # 跨域允许的方法
+    cors_allow_method:
+      - GET
+      - POST
+      - PUT
+      - DELETE
+      - PATCH
+      - OPTIONS
+    # 跨域允许的头部
+    cors_allow_headers:
+      - Content-Type
+      - Authorization
+      - X-Requested-With

@@ -1,0 +1,74 @@
+# APISIX Dashboard 生产环境配置
+# 
+# 相比开发环境，生产配置强化了安全性和性能
+
+conf:
+  # HTTP 服务器配置
+  listen:
+    host: 0.0.0.0
+    port: 9000
+  
+  # etcd 配置中心连接
+  etcd:
+    endpoints:
+      - etcd:2379
+    prefix: /apisix
+    timeout: 30
+    # 生产环境应配置 etcd 认证
+    # username: root
+    # password: ""
+  
+  # 日志配置
+  log:
+    # 错误日志
+    error_log:
+      level: error          # 生产环境设为 error 级别
+      file_path: /dev/stderr
+    # 访问日志
+    access_log:
+      file_path: /dev/stdout
+  
+  # 认证配置
+  authentication:
+    # JWT 签名密钥 - 必须修改！
+    secret: change_this_to_a_strong_secret_key_in_production
+    # 令牌过期时间（秒）
+    expire_time: 3600
+    # 生产环境应修改默认用户和密码
+    users:
+      - username: admin
+        password: change_admin_password_in_production
+  
+  # API 文档配置
+  swagger:
+    enabled: true
+  
+  # 安全配置
+  security:
+    # 启用 CORS（生产环境应限制来源）
+    enable_cors: true
+    # 跨域允许的来源
+    cors_allow_origin:
+      - "https://yourdomain.com"
+      # - "https://admin.yourdomain.com"
+    # 跨域允许的方法
+    cors_allow_method:
+      - GET
+      - POST
+      - PUT
+      - DELETE
+      - PATCH
+      - OPTIONS
+    # 跨域允许的头部
+    cors_allow_headers:
+      - Content-Type
+      - Authorization
+      - X-Requested-With
+    # 是否允许凭证（Cookie 等）
+    cors_allow_credentials: true
+    # CORS 预检缓存时间（秒）
+    cors_max_age: 86400
+
+  # 数据库配置（如果需要）
+  # database:
+  #   endpoint: postgresql://user:password@host:5432/database

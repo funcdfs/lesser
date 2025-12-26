@@ -369,13 +369,13 @@ class _PostDetailScreenState extends State<PostDetailScreen>
                       decoration: BoxDecoration(
                         boxShadow: [
                           BoxShadow(
-                            color: Colors.black.withOpacity(0.15),
+                            color: Colors.black.withValues(alpha: 0.15 * 255),
                             blurRadius: 30,
                             spreadRadius: 2,
                             offset: const Offset(0, -5),
                           ),
                           BoxShadow(
-                            color: Colors.black.withOpacity(0.08),
+                            color: Colors.black.withValues(alpha: 0.08 * 255),
                             blurRadius: 15,
                             spreadRadius: 1,
                             offset: const Offset(0, -2),

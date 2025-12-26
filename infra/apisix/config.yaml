@@ -1,0 +1,136 @@
+# APISIX 配置文件 - 高性能 API 网关配置
+# 
+# 此配置定义 APISIX 的核心行为，包括：
+# - 监听端口和地址
+# - etcd 连接信息
+# - 插件加载
+# - 性能优化参数
+
+apisix:
+  node_listen:
+    - port: 9080
+      bind: 0.0.0.0
+  
+  # 心跳检查 - 用于集群节点健康监测
+  enable_heartbeat: true
+  
+  # 管理员 API 配置
+  enable_admin: true
+  admin_listen:
+    ip: 0.0.0.0
+    port: 9180
+  
+  # 管理员认证密钥
+  # 生产环境应该更改此密钥
+  admin_key:
+    - name: "admin"
+      key: "edd1c9f034335f136f87ad84b625c8f1"
+      role: admin
+  
+  # 允许访问管理 API 的 IP 地址
+  # 注意：生产环境应限制此值为特定 IP
+  allow_admin:
+    - 0.0.0.0/0
+  
+  # 控制 API - 用于运行时配置修改
+  enable_control: true
+  control:
+    ip: "0.0.0.0"
+    port: 9090
+
+# 部署模式配置
+deployment:
+  role: traditional
+  role_traditional:
+    config_provider: etcd
+  
+  # etcd 配置中心
+  etcd:
+    host:
+      - "http://etcd:2379"
+    prefix: "/apisix"
+    timeout: 30
+
+# 插件属性配置
+plugin_attr:
+  # Prometheus 监控指标导出
+  prometheus:
+    export_addr:
+      ip: "0.0.0.0"
+      port: 9091
+
+# 启用的插件列表
+# 只加载需要的插件可以提升性能
+plugins:
+  # 基础功能插件
+  - api-breaker           # 断路器
+  - basic-auth            # 基本认证
+  - batch-requests        # 批量请求
+  - consumer-restriction  # 消费者限制
+  - cors                  # 跨域资源共享
+  - echo                  # 回显测试
+  
+  # 日志和监控
+  - file-logger           # 文件日志
+  - http-logger           # HTTP 日志
+  - syslog                # Syslog 日志
+  - tcp-logger            # TCP 日志
+  - sls-logger            # SLS 日志
+  - kafka-logger          # Kafka 日志
+  
+  # 认证和授权
+  - authz-keycloak        # Keycloak 认证
+  - authz-casbin          # Casbin 授权
+  - authz-casdoor         # Casdoor 认证
+  - jwt-auth              # JWT 认证
+  - key-auth              # API Key 认证
+  - multi-auth            # 多重认证
+  - openid-connect        # OpenID Connect
+  - wolf-rbac             # Wolf RBAC
+  
+  # 限流和熔断
+  - limit-conn            # 连接限制
+  - limit-count           # 计数限制
+  - limit-req             # 请求限制
+  - traffic-split         # 流量分割
+  - traffic-label         # 流量标签
+  
+  # 请求处理
+  - fault-injection       # 故障注入（测试用）
+  - request-id            # 请求ID
+  - request-validation    # 请求验证
+  - response-rewrite      # 响应重写
+  - proxy-rewrite         # 代理重写
+  - proxy-cache           # 代理缓存
+  - proxy-mirror          # 代理镜像（流量复制）
+  - proxy-control         # 代理控制
+  
+  # 协议支持
+  - grpc-transcode        # gRPC 转码
+  - grpc-web              # gRPC-Web
+  
+  # 工具插件
+  - gzip                  # GZIP 压缩
+  - redirect              # 重定向
+  - referer-restriction   # Referer 限制
+  - uri-blocker           # URI 阻止
+  - ua-restriction        # User-Agent 限制
+  - server-info           # 服务器信息
+  - inspect               # 请求检查
+  
+  # 高级功能
+  - serverless-pre-function   # 预处理函数
+  - serverless-post-function  # 后处理函数
+  - log-rotate            # 日志轮转
+  - skywalking            # SkyWalking 追踪
+  - zipkin                # Zipkin 追踪
+  - mqtt-proxy            # MQTT 代理
+  - dubbo-proxy           # Dubbo 代理
+  - opa                   # OPA 策略引擎
+
+# 性能优化配置
+# 根据实际情况调整
+upstream:
+  keepalive: 100          # 保活连接数
+  keepalive_requests: 100 # 每个连接的请求数
+  keepalive_timeout: 60   # 保活超时（秒）

@@ -39,25 +39,30 @@ dependencies:
   flutter_svg: ^2.2.3
   cached_network_image: ^3.4.1
   flutter_staggered_grid_view: ^0.7.0
+  # Forui Minimalistic UI Library
+  forui: ^0.17.0
 
   # Networking & State Management
-  chopper: ^6.0.0
-  flutter_riverpod: ^2.3.0
-  riverpod_annotation: ^2.3.0
+  chopper: ^8.5.0
+  flutter_riverpod: ^3.0.3
+  riverpod_annotation: ^3.0.3
   json_annotation: ^4.9.0
-  freezed_annotation: ^2.4.4
+  freezed_annotation: ^3.1.0
   shared_preferences: ^2.5.4
-  infinite_scroll_pagination: ^4.0.0
+  infinite_scroll_pagination: ^5.1.1
+  
+  # 环境配置 - 用于开发环境读取 .env.dev
+  flutter_dotenv: ^5.1.0
 
 dev_dependencies:
   flutter_test:
     sdk: flutter
 
-  build_runner: ^2.4.13
-  riverpod_generator: ^2.3.0
-  json_serializable: ^6.8.0
-  freezed: ^2.4.7
-  chopper_generator: ^6.0.0
+  build_runner: ^2.10.4
+  riverpod_generator: ^3.0.3
+  json_serializable: ^6.11.2
+  freezed: ^3.2.3
+  chopper_generator: ^8.5.0
 
   # The "flutter_lints" package below contains a set of recommended lints to
   # encourage good coding practices. The lint set provided by the package is

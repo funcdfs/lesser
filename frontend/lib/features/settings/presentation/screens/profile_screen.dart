@@ -281,19 +281,19 @@ class _RecordsSection extends StatelessWidget {
                       case 1:
                         return const SizedBox.shrink();
                       case 2:
-                        color = AppColors.primary.withOpacity(0.2);
+                        color = AppColors.primary.withValues(alpha: 0.2 * 255);
                         break;
                       case 3:
-                        color = AppColors.primary.withOpacity(0.4);
+                        color = AppColors.primary.withValues(alpha: 0.4 * 255);
                         break;
                       case 4:
-                        color = AppColors.primary.withOpacity(0.6);
+                        color = AppColors.primary.withValues(alpha: 0.6 * 255);
                         break;
                       case 5:
-                        color = AppColors.primary.withOpacity(0.8);
+                        color = AppColors.primary.withValues(alpha: 0.8 * 255);
                         break;
                       default:
-                        color = AppColors.primary.withOpacity(0.2);
+                        color = AppColors.primary.withValues(alpha: 0.2 * 255);
                     }
                     return GestureDetector(
                       onTap: () {

@@ -133,7 +133,9 @@ class _ApiTestScreenState extends ConsumerState<ApiTestScreen> {
                           margin: const EdgeInsets.only(top: AppSpacing.md),
                           padding: const EdgeInsets.all(AppSpacing.md),
                           decoration: BoxDecoration(
-                            color: AppColors.destructive.withOpacity(0.1),
+                            color: AppColors.destructive.withValues(
+                              alpha: 0.1 * 255,
+                            ),
                             borderRadius: BorderRadius.circular(AppRadius.md),
                             border: Border.all(color: AppColors.destructive),
                           ),

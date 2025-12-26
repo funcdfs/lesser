@@ -27,7 +27,18 @@ Future<User> currentUser(Ref ref) async {
     );
   } else {
     // 前后端联动调试模式：调用API获取真实数据
-    final repository = ref.watch(userRepositoryProvider);
-    return repository.getProfile();
+    try {
+      final repository = ref.watch(userRepositoryProvider);
+      return await repository.getProfile();
+    } catch (e) {
+      // 登录失败时，返回一个默认的访客用户
+      return User(
+        id: 0,
+        username: '访客',
+        email: '',
+        firstName: '访客',
+        lastName: '',
+      );
+    }
   }
 }

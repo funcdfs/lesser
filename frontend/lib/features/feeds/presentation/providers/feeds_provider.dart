@@ -7,7 +7,7 @@ import 'package:lesser/core/config/debug_config.dart';
 part 'feeds_provider.g.dart';
 
 @riverpod
-FeedsRepository feedsRepository(FeedsRepositoryRef ref) {
+FeedsRepository feedsRepository(Ref ref) {
   final apiClient = ref.watch(apiClientProvider);
   return FeedsRepository(apiClient);
 }
@@ -63,7 +63,7 @@ class PagedFeeds extends _$PagedFeeds {
     if (state is AsyncLoading) return;
 
     final currentState = state as AsyncData<List<Post>>;
-    final currentPosts = currentState.value ?? [];
+    final currentPosts = currentState.value;
     final nextPage = (currentPosts.length ~/ 10) + 1;
 
     state = const AsyncLoading();
