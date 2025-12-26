@@ -3,18 +3,18 @@ name = "django_code"
 version = "0.1.0"
 description = "Add your description here"
 readme = "README.md"
-requires-python = ">=3.14"
+requires-python = ">=3.11"
 dependencies = [
-    "datetime>=6.0",
-    "django>=6.0",
-    "django-debug-toolbar>=6.1.0",
+    "django>=5.0",
+    "django-debug-toolbar>=5.0.0",
     "pywatchman>=3.0.0",
     "djangorestframework>=3.15.0",
     "django-cors-headers>=4.3.0",
     "psycopg2-binary>=2.9.0",
     "djangorestframework-stubs>=3.16.6",
-    "pillow>=12.0.0",
+    "pillow>=10.0.0",
     "python-dotenv>=1.0.0",  # 用于加载 .env 文件配置
+    "hypothesis>=6.100.0",  # Property-based testing
 ]
 
 [tool.setuptools]
@@ -22,7 +22,7 @@ packages = ["app", "lesser_root_folder"]
 
 [dependency-groups]
 dev = [
-    "django-debug-toolbar>=6.1.0",
+    "django-debug-toolbar>=5.0.0",
 ]
 prod = [
     "uvicorn[standard]>=0.28.0",

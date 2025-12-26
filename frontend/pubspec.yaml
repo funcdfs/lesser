@@ -58,6 +58,9 @@ dev_dependencies:
   flutter_test:
     sdk: flutter
 
+  # Property-based testing
+  glados: ^1.1.1
+
   build_runner: ^2.10.4
   riverpod_generator: ^3.0.3
   json_serializable: ^6.11.2

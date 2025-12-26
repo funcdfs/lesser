@@ -55,10 +55,9 @@ services:
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-secret}
       POSTGRES_DB: ${POSTGRES_DB:-lesser_db}
     
-    # 数据持久化 - 将容器内的数据映射到主机
-    # PostgreSQL 18+ 需要挂载到 /var/lib/postgresql，而非 /var/lib/postgresql/data
+    # 数据持久化 - PostgreSQL 18+ 需要挂载到 /var/lib/postgresql
     volumes:
-      - ../docker/postgres/data:/var/lib/postgresql
+      - postgres_data:/var/lib/postgresql
     
     # 端口映射 - 本地开发用
     ports:
@@ -92,9 +91,9 @@ services:
     # 命令行参数 - 启用持久化
     command: redis-server --appendonly yes
     
-    # 数据持久化 - 将 Redis 数据文件映射到主机
+    # 数据持久化 - 使用 Docker 命名卷
     volumes:
-      - ../docker/redis/data:/data
+      - redis_data:/data
     
     # 端口映射 - 本地开发用
     ports:
@@ -181,7 +180,7 @@ services:
     # 配置文件
     volumes:
       # APISIX 主配置文件（定义节点配置、插件加载等）
-      - ./apisix/config.yaml:/usr/local/apisix/conf/config.yaml:ro
+      - ./apisix/config.yaml:/usr/local/apisix/conf/config.yaml
     
     # 依赖关系 - 等待 etcd 启动
     depends_on:
@@ -355,7 +354,9 @@ networks:
 # 卷定义
 # ============================================================================
 volumes:
+  postgres_data:
+    driver: local
+  redis_data:
+    driver: local
   etcd_data:
     driver: local
-    # etcd 数据持久化
-    # 存储所有动态配置、路由规则等

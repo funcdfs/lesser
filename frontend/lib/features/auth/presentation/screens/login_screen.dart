@@ -4,6 +4,7 @@ import 'package:forui/forui.dart';
 import 'package:lesser/core/utils/snackbar.dart';
 import 'package:lesser/features/auth/presentation/providers/auth_provider.dart';
 import 'package:lesser/features/auth/presentation/screens/register_screen.dart';
+import 'package:lesser/features/auth/domain/models/auth_state.dart';
 
 class LoginScreen extends ConsumerStatefulWidget {
   const LoginScreen({super.key});
@@ -15,39 +16,69 @@ class LoginScreen extends ConsumerStatefulWidget {
 class _LoginScreenState extends ConsumerState<LoginScreen> {
   final TextEditingController _usernameController = TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
-  bool _isLoading = false;
+  bool _obscurePassword = true;
+  String? _localError;
+
+  @override
+  void dispose() {
+    _usernameController.dispose();
+    _passwordController.dispose();
+    super.dispose();
+  }
+
+  bool _validateInputs() {
+    final username = _usernameController.text.trim();
+    final password = _passwordController.text.trim();
+
+    if (username.isEmpty) {
+      setState(() => _localError = '请输入用户名');
+      return false;
+    }
+
+    if (password.isEmpty) {
+      setState(() => _localError = '请输入密码');
+      return false;
+    }
+
+    setState(() => _localError = null);
+    return true;
+  }
 
   Future<void> _handleLogin() async {
-    setState(() {
-      _isLoading = true;
-    });
+    if (!_validateInputs()) return;
 
-    try {
-      await ref
-          .read(authProvider.notifier)
-          .login(
-            username: _usernameController.text,
-            password: _passwordController.text,
-          );
-
-      if (mounted) {
-        Navigator.pushReplacementNamed(context, '/main');
-      }
-    } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(CustomSnackBar.error(message: e.toString()));
-      }
-    } finally {
-      setState(() {
-        _isLoading = false;
-      });
-    }
+    await ref.read(authProvider.notifier).login(
+          username: _usernameController.text.trim(),
+          password: _passwordController.text.trim(),
+        );
   }
 
   @override
   Widget build(BuildContext context) {
+    final authState = ref.watch(authProvider);
+
+    ref.listen<AuthState>(authProvider, (previous, next) {
+      next.when(
+        initial: () {},
+        loading: () {},
+        authenticated: (user) {
+          if (mounted) Navigator.pushReplacementNamed(context, '/main');
+        },
+        unauthenticated: () {},
+        error: (message) {
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              CustomSnackBar.error(message: message),
+            );
+          }
+        },
+      );
+    });
+
+    final isLoading = authState is AuthStateLoading;
+    final authError = authState is AuthStateError ? authState.message : null;
+    final displayError = _localError ?? authError;
+
     return Scaffold(
       body: SafeArea(
         child: Center(
@@ -58,72 +89,92 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
               children: [
                 const SizedBox(height: 40),
                 const Text(
-                  '登录',
-                  style: TextStyle(fontSize: 32, fontWeight: FontWeight.bold),
+                  'Lesser',
+                  style: TextStyle(
+                    fontSize: 48,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.black,
+                  ),
+                ),
+                const SizedBox(height: 8),
+                const Text(
+                  '记录生活的每一个瞬间',
+                  style: TextStyle(fontSize: 16, color: Colors.grey),
                 ),
                 const SizedBox(height: 48),
                 FTextField(
                   controller: _usernameController,
-                  label: '用户名',
+                  label: const Text('用户名'),
                   hint: '请输入用户名',
-                  prefix: const Icon(Icons.person),
-                  validator: (value) {
-                    if (value == null || value.isEmpty) {
-                      return '请输入用户名';
-                    }
-                    return null;
-                  },
+                  enabled: !isLoading,
                 ),
                 const SizedBox(height: 20),
                 FTextField(
                   controller: _passwordController,
-                  label: '密码',
+                  label: const Text('密码'),
                   hint: '请输入密码',
-                  prefix: const Icon(Icons.lock),
+                  obscureText: _obscurePassword,
+                  enabled: !isLoading,
                   suffix: IconButton(
-                    icon: const Icon(Icons.visibility_off),
-                    onPressed: () {
-                      // TODO: 实现密码可见性切换
-                    },
+                    icon: Icon(
+                      _obscurePassword ? Icons.visibility_off : Icons.visibility,
+                      color: Colors.grey,
+                    ),
+                    onPressed: () => setState(() => _obscurePassword = !_obscurePassword),
                   ),
-                  validator: (value) {
-                    if (value == null || value.isEmpty) {
-                      return '请输入密码';
-                    }
-                    return null;
-                  },
-                  obscureText: true,
                 ),
-                const SizedBox(height: 32),
-                FButton(
-                  onPressed: _isLoading ? null : _handleLogin,
-                  text: '登录',
+                const SizedBox(height: 24),
+                if (displayError != null)
+                  Container(
+                    margin: const EdgeInsets.only(bottom: 16),
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFFFF5F5),
+                      borderRadius: BorderRadius.circular(8),
+                      border: Border.all(color: const Color(0xFFFF5252)),
+                    ),
+                    child: Row(
+                      children: [
+                        const Icon(Icons.error_outline, color: Color(0xFFFF5252), size: 20),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: Text(
+                            displayError,
+                            style: const TextStyle(fontSize: 14, color: Color(0xFFFF5252)),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                SizedBox(
                   width: double.infinity,
-                  loading: _isLoading,
+                  child: FButton(
+                    onPress: isLoading ? null : _handleLogin,
+                    label: isLoading
+                        ? const SizedBox(
+                            width: 20,
+                            height: 20,
+                            child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2),
+                          )
+                        : const Text('登录'),
+                  ),
                 ),
                 const SizedBox(height: 24),
                 Row(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    const Text('还没有账号？'),
+                    const Text('还没有账号？', style: TextStyle(fontSize: 14, color: Colors.grey)),
                     TextButton(
-                      onPressed: () {
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (context) => const RegisterScreen(),
-                          ),
-                        );
-                      },
+                      onPressed: isLoading
+                          ? null
+                          : () => Navigator.push(
+                                context,
+                                MaterialPageRoute(builder: (context) => const RegisterScreen()),
+                              ),
                       style: ButtonStyle(
-                        foregroundColor: MaterialStateProperty.all(
-                          const Color(0xFFEE1D52),
-                        ),
-                        textStyle: MaterialStateProperty.all(
-                          const TextStyle(
-                            fontSize: 14,
-                            fontWeight: FontWeight.w600,
-                          ),
+                        foregroundColor: WidgetStateProperty.all(const Color(0xFFEE1D52)),
+                        textStyle: WidgetStateProperty.all(
+                          const TextStyle(fontSize: 14, fontWeight: FontWeight.w600),
                         ),
                       ),
                       child: const Text('立即注册'),

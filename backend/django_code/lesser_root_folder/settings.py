@@ -246,3 +246,6 @@ USE_TZ = True                  # 使用时区感知时间
 # ============================================================================
 
 STATIC_URL = '/static/'
+
+# 默认主键字段类型
+DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
