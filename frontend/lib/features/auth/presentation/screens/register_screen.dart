@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:forui/forui.dart';
 import 'package:lesser/core/utils/snackbar.dart';
+import 'package:lesser/core/validation/validators.dart';
 import 'package:lesser/features/auth/presentation/providers/auth_provider.dart';
 import 'package:lesser/features/auth/domain/models/auth_state.dart';
 
@@ -18,7 +19,8 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
   final TextEditingController _usernameController = TextEditingController();
   final TextEditingController _emailController = TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
-  final TextEditingController _confirmPasswordController = TextEditingController();
+  final TextEditingController _confirmPasswordController =
+      TextEditingController();
   bool _obscurePassword = true;
   bool _obscureConfirmPassword = true;
   String? _localError;
@@ -39,29 +41,34 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
     final password = _passwordController.text.trim();
     final confirmPassword = _confirmPasswordController.text.trim();
 
-    if (username.isEmpty) {
-      setState(() => _localError = '请输入用户名');
+    // Validate username
+    final usernameError = Validators.validateUsername(username);
+    if (usernameError != null) {
+      setState(() => _localError = usernameError);
       return false;
     }
 
-    if (email.isEmpty) {
-      setState(() => _localError = '请输入邮箱');
+    // Validate email
+    final emailError = Validators.validateEmail(email);
+    if (emailError != null) {
+      setState(() => _localError = emailError);
       return false;
     }
 
-    if (password.isEmpty) {
-      setState(() => _localError = '请输入密码');
+    // Validate password
+    final passwordError = Validators.validatePassword(password);
+    if (passwordError != null) {
+      setState(() => _localError = passwordError);
       return false;
     }
 
-    if (confirmPassword.isEmpty) {
-      setState(() => _localError = '请确认密码');
-      return false;
-    }
-
-    // 密码匹配验证 (Requirement 1.2)
-    if (password != confirmPassword) {
-      setState(() => _localError = '两次输入的密码不一致');
+    // Validate confirm password
+    final confirmError = Validators.validatePasswordConfirm(
+      password,
+      confirmPassword,
+    );
+    if (confirmError != null) {
+      setState(() => _localError = confirmError);
       return false;
     }
 
@@ -73,7 +80,9 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
   Future<void> _handleRegister() async {
     if (!_validateInputs()) return;
 
-    await ref.read(authProvider.notifier).register(
+    await ref
+        .read(authProvider.notifier)
+        .register(
           username: _usernameController.text.trim(),
           email: _emailController.text.trim(),
           password: _passwordController.text.trim(),
@@ -92,18 +101,18 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
         loading: () {},
         authenticated: (user) {
           if (mounted) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              CustomSnackBar.success(message: '注册成功'),
-            );
+            ScaffoldMessenger.of(
+              context,
+            ).showSnackBar(CustomSnackBar.success(message: '注册成功'));
             Navigator.pushReplacementNamed(context, '/main');
           }
         },
         unauthenticated: () {},
         error: (message) {
           if (mounted) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              CustomSnackBar.error(message: message),
-            );
+            ScaffoldMessenger.of(
+              context,
+            ).showSnackBar(CustomSnackBar.error(message: message));
           }
         },
       );
@@ -162,10 +171,13 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                   enabled: !isLoading,
                   suffix: IconButton(
                     icon: Icon(
-                      _obscurePassword ? Icons.visibility_off : Icons.visibility,
+                      _obscurePassword
+                          ? Icons.visibility_off
+                          : Icons.visibility,
                       color: Colors.grey,
                     ),
-                    onPressed: () => setState(() => _obscurePassword = !_obscurePassword),
+                    onPressed: () =>
+                        setState(() => _obscurePassword = !_obscurePassword),
                   ),
                 ),
                 const SizedBox(height: 16),
@@ -178,10 +190,14 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                   enabled: !isLoading,
                   suffix: IconButton(
                     icon: Icon(
-                      _obscureConfirmPassword ? Icons.visibility_off : Icons.visibility,
+                      _obscureConfirmPassword
+                          ? Icons.visibility_off
+                          : Icons.visibility,
                       color: Colors.grey,
                     ),
-                    onPressed: () => setState(() => _obscureConfirmPassword = !_obscureConfirmPassword),
+                    onPressed: () => setState(
+                      () => _obscureConfirmPassword = !_obscureConfirmPassword,
+                    ),
                   ),
                 ),
                 const SizedBox(height: 24),
@@ -197,12 +213,19 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                     ),
                     child: Row(
                       children: [
-                        const Icon(Icons.error_outline, color: Color(0xFFFF5252), size: 20),
+                        const Icon(
+                          Icons.error_outline,
+                          color: Color(0xFFFF5252),
+                          size: 20,
+                        ),
                         const SizedBox(width: 8),
                         Expanded(
                           child: Text(
                             displayError,
-                            style: const TextStyle(fontSize: 14, color: Color(0xFFFF5252)),
+                            style: const TextStyle(
+                              fontSize: 14,
+                              color: Color(0xFFFF5252),
+                            ),
                           ),
                         ),
                       ],
@@ -217,7 +240,10 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                         ? const SizedBox(
                             width: 20,
                             height: 20,
-                            child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2),
+                            child: CircularProgressIndicator(
+                              color: Colors.white,
+                              strokeWidth: 2,
+                            ),
                           )
                         : const Text('注册'),
                   ),
@@ -227,15 +253,26 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                 Row(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    const Text('已有账号？', style: TextStyle(fontSize: 14, color: Colors.grey)),
+                    const Text(
+                      '已有账号？',
+                      style: TextStyle(fontSize: 14, color: Colors.grey),
+                    ),
                     TextButton(
                       onPressed: isLoading
                           ? null
-                          : () => Navigator.pushReplacementNamed(context, '/login'),
+                          : () => Navigator.pushReplacementNamed(
+                              context,
+                              '/login',
+                            ),
                       style: ButtonStyle(
-                        foregroundColor: WidgetStateProperty.all(const Color(0xFFEE1D52)),
+                        foregroundColor: WidgetStateProperty.all(
+                          const Color(0xFFEE1D52),
+                        ),
                         textStyle: WidgetStateProperty.all(
-                          const TextStyle(fontSize: 14, fontWeight: FontWeight.w600),
+                          const TextStyle(
+                            fontSize: 14,
+                            fontWeight: FontWeight.w600,
+                          ),
                         ),
                       ),
                       child: const Text('立即登录'),

@@ -1,4 +1,3 @@
-import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 import 'package:lesser/core/network/api_provider.dart';
 import 'package:lesser/core/network/token_manager.dart';
@@ -39,11 +38,11 @@ class Auth extends _$Auth {
       final repository = ref.read(authRepositoryProvider);
       final user = await repository.getProfile();
       state = AuthState.authenticated(user);
-    } on AuthException catch (e) {
+    } on AuthException {
       // Token might be invalid, clear it
       await TokenManager.deleteToken();
       state = const AuthState.unauthenticated();
-    } catch (e) {
+    } catch (_) {
       // On any error, consider unauthenticated
       await TokenManager.deleteToken();
       state = const AuthState.unauthenticated();

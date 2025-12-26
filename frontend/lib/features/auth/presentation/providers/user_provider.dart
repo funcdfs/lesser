@@ -1,4 +1,3 @@
-import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 import 'package:lesser/core/network/api_provider.dart';
 import 'package:lesser/features/auth/data/user_repository.dart';

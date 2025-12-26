@@ -1,20 +1,24 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../features/features.dart';
 import '../shared/theme/theme.dart' as shared_theme;
 import 'app_theme.dart';
 import 'app_router.dart';
 import '../features/create/presentation/widgets/create_post_floating_sheet.dart';
+import '../features/settings/presentation/providers/theme_provider.dart';
 
-class LesserApp extends StatelessWidget {
+class LesserApp extends ConsumerWidget {
   const LesserApp({super.key});
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final themeMode = ref.watch(themeProvider);
+    
     return MaterialApp(
       title: 'Lesser',
       theme: AppTheme.lightTheme(),
       darkTheme: AppTheme.darkTheme(),
-      themeMode: ThemeMode.light,
+      themeMode: themeMode,
       initialRoute: '/',
       onGenerateRoute: AppRouter.routeGenerator,
       navigatorKey: AppRouter.navigatorKey,

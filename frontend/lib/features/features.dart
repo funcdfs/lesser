@@ -18,3 +18,4 @@ export 'search/presentation/screens/search_screen.dart';
 
 // Settings Feature
 export 'settings/presentation/screens/profile_screen.dart';
+export 'settings/presentation/screens/settings_screen.dart';

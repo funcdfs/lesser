@@ -91,6 +91,14 @@ class EnvironmentConfig {
     return dotenv.env['APISIX_ADMIN_API'] ?? 'http://localhost:9180';
   }
 
+  /// 获取 WebSocket URL
+  /// 
+  /// 用于聊天功能的 WebSocket 连接
+  /// 默认值：ws://localhost:9080/ws
+  static String get wsUrl {
+    return dotenv.env['WS_URL'] ?? 'ws://localhost:9080/ws';
+  }
+
   /// 打印所有已加载的环境变量（仅调试用）
   static void printAllEnv() {
     _logger.i('=== 环境配置 ===');

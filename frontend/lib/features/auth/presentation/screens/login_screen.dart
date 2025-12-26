@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:forui/forui.dart';
 import 'package:lesser/core/utils/snackbar.dart';
+import 'package:lesser/core/validation/validators.dart';
 import 'package:lesser/features/auth/presentation/providers/auth_provider.dart';
 import 'package:lesser/features/auth/presentation/screens/register_screen.dart';
 import 'package:lesser/features/auth/domain/models/auth_state.dart';
@@ -30,13 +31,29 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
     final username = _usernameController.text.trim();
     final password = _passwordController.text.trim();
 
+    // Check for empty fields
     if (username.isEmpty) {
-      setState(() => _localError = '请输入用户名');
+      setState(() => _localError = '请输入用户名或邮箱');
       return false;
     }
 
     if (password.isEmpty) {
       setState(() => _localError = '请输入密码');
+      return false;
+    }
+
+    // Validate email format if input looks like email
+    if (username.contains('@')) {
+      final emailError = Validators.validateEmail(username);
+      if (emailError != null) {
+        setState(() => _localError = emailError);
+        return false;
+      }
+    }
+
+    // Validate password length
+    if (password.length < 8) {
+      setState(() => _localError = '密码长度至少为8个字符');
       return false;
     }
 
@@ -47,7 +64,9 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
   Future<void> _handleLogin() async {
     if (!_validateInputs()) return;
 
-    await ref.read(authProvider.notifier).login(
+    await ref
+        .read(authProvider.notifier)
+        .login(
           username: _usernameController.text.trim(),
           password: _passwordController.text.trim(),
         );
@@ -67,9 +86,9 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
         unauthenticated: () {},
         error: (message) {
           if (mounted) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              CustomSnackBar.error(message: message),
-            );
+            ScaffoldMessenger.of(
+              context,
+            ).showSnackBar(CustomSnackBar.error(message: message));
           }
         },
       );
@@ -117,10 +136,13 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                   enabled: !isLoading,
                   suffix: IconButton(
                     icon: Icon(
-                      _obscurePassword ? Icons.visibility_off : Icons.visibility,
+                      _obscurePassword
+                          ? Icons.visibility_off
+                          : Icons.visibility,
                       color: Colors.grey,
                     ),
-                    onPressed: () => setState(() => _obscurePassword = !_obscurePassword),
+                    onPressed: () =>
+                        setState(() => _obscurePassword = !_obscurePassword),
                   ),
                 ),
                 const SizedBox(height: 24),
@@ -135,12 +157,19 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                     ),
                     child: Row(
                       children: [
-                        const Icon(Icons.error_outline, color: Color(0xFFFF5252), size: 20),
+                        const Icon(
+                          Icons.error_outline,
+                          color: Color(0xFFFF5252),
+                          size: 20,
+                        ),
                         const SizedBox(width: 8),
                         Expanded(
                           child: Text(
                             displayError,
-                            style: const TextStyle(fontSize: 14, color: Color(0xFFFF5252)),
+                            style: const TextStyle(
+                              fontSize: 14,
+                              color: Color(0xFFFF5252),
+                            ),
                           ),
                         ),
                       ],
@@ -154,7 +183,10 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                         ? const SizedBox(
                             width: 20,
                             height: 20,
-                            child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2),
+                            child: CircularProgressIndicator(
+                              color: Colors.white,
+                              strokeWidth: 2,
+                            ),
                           )
                         : const Text('登录'),
                   ),
@@ -163,18 +195,28 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                 Row(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    const Text('还没有账号？', style: TextStyle(fontSize: 14, color: Colors.grey)),
+                    const Text(
+                      '还没有账号？',
+                      style: TextStyle(fontSize: 14, color: Colors.grey),
+                    ),
                     TextButton(
                       onPressed: isLoading
                           ? null
                           : () => Navigator.push(
-                                context,
-                                MaterialPageRoute(builder: (context) => const RegisterScreen()),
+                              context,
+                              MaterialPageRoute(
+                                builder: (context) => const RegisterScreen(),
                               ),
+                            ),
                       style: ButtonStyle(
-                        foregroundColor: WidgetStateProperty.all(const Color(0xFFEE1D52)),
+                        foregroundColor: WidgetStateProperty.all(
+                          const Color(0xFFEE1D52),
+                        ),
                         textStyle: WidgetStateProperty.all(
-                          const TextStyle(fontSize: 14, fontWeight: FontWeight.w600),
+                          const TextStyle(
+                            fontSize: 14,
+                            fontWeight: FontWeight.w600,
+                          ),
                         ),
                       ),
                       child: const Text('立即注册'),

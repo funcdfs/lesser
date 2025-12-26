@@ -1,9 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../../../core/utils/snackbar.dart';
+import '../../../../core/validation/validation_rules.dart';
+import '../../../../core/validation/validators.dart';
 import '../../../../shared/theme/theme.dart';
 import '../../../../shared/widgets/avatar.dart';
 import '../../../../shared/widgets/button.dart';
 import '../providers/create_post_provider.dart';
+import '../providers/draft_provider.dart';
+import '../widgets/character_counter.dart';
 
 /// 发布页面
 class NewPostScreen extends ConsumerStatefulWidget {
@@ -24,7 +29,10 @@ class _NewPostScreenState extends ConsumerState<NewPostScreen> {
   final List<String> _selectedImages = [];
   String? _selectedTopic;
   String _replySetting = '所有人';
-  static const int _maxChars = 280;
+  static final int _maxChars = ValidationRules.maxPostContentLength;
+  String? _validationError;
+  String? _draftId; // ID of the draft being edited
+  bool _isSavingDraft = false;
 
   @override
   void initState() {
@@ -43,15 +51,16 @@ class _NewPostScreenState extends ConsumerState<NewPostScreen> {
   }
 
   void _onTextChanged() {
-    final isEnabled =
-        _textController.text.isNotEmpty || _selectedImages.isNotEmpty;
-    if (isEnabled != _isPostButtonEnabled) {
-      setState(() {
-        _isPostButtonEnabled = isEnabled;
-      });
-    } else {
-      setState(() {}); // 触发 UI 更新（例如字符计数器）
-    }
+    final text = _textController.text;
+    final isEnabled = text.isNotEmpty || _selectedImages.isNotEmpty;
+    
+    // Validate content
+    final error = Validators.validatePostContent(text.isEmpty ? null : text);
+    
+    setState(() {
+      _isPostButtonEnabled = isEnabled;
+      _validationError = text.isNotEmpty ? error : null;
+    });
   }
 
   @override
@@ -398,11 +407,86 @@ class _NewPostScreenState extends ConsumerState<NewPostScreen> {
     );
   }
 
+  Future<void> _handleSubmit() async {
+    final content = _textController.text;
+    
+    // Validate content before submission
+    final validationError = Validators.validatePostContent(content);
+    if (validationError != null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        CustomSnackBar.error(message: validationError),
+      );
+      return;
+    }
+    
+    try {
+      await ref.read(createPostProvider.notifier).createPost(
+        content: content,
+        location: null, // 暂时不支持位置信息
+      );
+      
+      // Delete draft if it was being edited
+      if (_draftId != null) {
+        await ref.read(draftsProvider.notifier).deleteDraft(_draftId!);
+      }
+      
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          CustomSnackBar.success(message: '发布成功'),
+        );
+        Navigator.of(context).pop();
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          CustomSnackBar.error(message: '发布失败，请重试'),
+        );
+      }
+    }
+  }
+
+  Future<void> _handleSaveDraft() async {
+    final content = _textController.text;
+    
+    if (content.trim().isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        CustomSnackBar.error(message: '内容不能为空'),
+      );
+      return;
+    }
+    
+    setState(() => _isSavingDraft = true);
+    
+    try {
+      await ref.read(draftsProvider.notifier).saveDraft(
+        id: _draftId,
+        content: content,
+        location: null,
+      );
+      
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          CustomSnackBar.success(message: '草稿已保存'),
+        );
+        Navigator.of(context).pop();
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          CustomSnackBar.error(message: '保存草稿失败'),
+        );
+      }
+    } finally {
+      if (mounted) {
+        setState(() => _isSavingDraft = false);
+      }
+    }
+  }
+
   Widget _buildBottomBar(BuildContext context) {
     final theme = Theme.of(context);
     final charCount = _textController.text.length;
     final isOverLimit = charCount > _maxChars;
-    final progress = charCount / _maxChars;
 
     return Container(
       padding: EdgeInsets.only(
@@ -454,48 +538,31 @@ class _NewPostScreenState extends ConsumerState<NewPostScreen> {
           Row(
             children: [
               if (charCount > 0) ...[
-                SizedBox(
-                  width: 28,
-                  height: 28,
-                  child: Stack(
-                    alignment: Alignment.center,
-                    children: [
-                      CircularProgressIndicator(
-                        value: progress > 1 ? 1 : progress,
-                        strokeWidth: 2,
-                        backgroundColor: AppColors.border,
-                        color: isOverLimit
-                            ? theme.colorScheme.error
-                            : (progress > 0.9
-                                  ? Colors.orange.shade600
-                                  : theme.colorScheme.primary),
-                      ),
-                      Text(
-                        charCount.toString(),
-                        style: TextStyle(
-                          fontSize: 11,
-                          fontWeight: FontWeight.w500,
-                          color: isOverLimit
-                              ? theme.colorScheme.error
-                              : AppColors.mutedForeground,
-                        ),
-                      ),
-                    ],
-                  ),
+                CharacterCounter(
+                  currentLength: charCount,
+                  maxLength: _maxChars,
                 ),
-                const SizedBox(width: 16),
+                const SizedBox(width: 12),
               ],
+              // Save draft button
+              IconButton(
+                icon: _isSavingDraft
+                    ? const SizedBox(
+                        width: 20,
+                        height: 20,
+                        child: CircularProgressIndicator(strokeWidth: 2),
+                      )
+                    : const Icon(Icons.save_outlined),
+                onPressed: _isSavingDraft || _textController.text.trim().isEmpty
+                    ? null
+                    : _handleSaveDraft,
+                tooltip: '保存草稿',
+                color: AppColors.mutedForeground,
+              ),
+              const SizedBox(width: 8),
               AppButton(
-                onPressed: _isPostButtonEnabled && !isOverLimit
-                    ? () async {
-                        await ref
-                            .read(createPostProvider.notifier)
-                            .createPost(
-                              content: _textController.text,
-                              location: null, // 暂时不支持位置信息
-                            );
-                        Navigator.of(context).pop();
-                      }
+                onPressed: _isPostButtonEnabled && !isOverLimit && _validationError == null
+                    ? () => _handleSubmit()
                     : () {}, // 提供空函数以符合非空要求
                 child: const Text('发布'),
               ),

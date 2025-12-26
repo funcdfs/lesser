@@ -119,10 +119,7 @@ return $default(_that);case _:
 final _that = this;
 switch (_that) {
 case _User():
-return $default(_that);case _:
-  throw StateError('Unexpected subclass');
-
-}
+return $default(_that);}
 }
 /// A variant of `map` that fallback to returning `null`.
 ///
@@ -181,10 +178,7 @@ return $default(_that.id,_that.username,_that.email,_that.firstName,_that.lastNa
 @optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( int id,  String username,  String email, @JsonKey(name: 'first_name')  String? firstName, @JsonKey(name: 'last_name')  String? lastName)  $default,) {final _that = this;
 switch (_that) {
 case _User():
-return $default(_that.id,_that.username,_that.email,_that.firstName,_that.lastName);case _:
-  throw StateError('Unexpected subclass');
-
-}
+return $default(_that.id,_that.username,_that.email,_that.firstName,_that.lastName);}
 }
 /// A variant of `when` that fallback to returning `null`
 ///

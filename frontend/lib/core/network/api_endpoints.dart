@@ -21,4 +21,17 @@ class ApiEndpoints {
   static const String login = '/users/login/';
   static const String logout = '/users/logout/';
   static const String profile = '/users/profile/';
+
+  // Comments endpoints
+  static const String comments = '/comments/';
+  static String postComments(String postId) => '/feeds/$postId/comments/';
+
+  // Post interactions endpoints
+  static String postLike(String postId) => '/feeds/$postId/like/';
+  static String postBookmark(String postId) => '/feeds/$postId/bookmark/';
+
+  // Search endpoints
+  static const String search = '/search/';
+  static const String hotList = '/search/hot-list/';
+  static const String hotTags = '/search/hot-tags/';
 }

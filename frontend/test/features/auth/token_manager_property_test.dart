@@ -2,7 +2,6 @@ import 'package:flutter_test/flutter_test.dart' hide group, setUp, test, expect;
 import 'package:glados/glados.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:lesser/core/network/token_manager.dart';
-import 'package:test/test.dart';
 
 /// Property-based tests for TokenManager
 /// Feature: user-authentication, Property 8: Token Round-Trip

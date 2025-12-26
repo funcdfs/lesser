@@ -130,18 +130,6 @@ class _NetworkNeighborsWidgetState extends State<NetworkNeighborsWidget> {
       }
     }
 
-    // 根据当前选中的标签获取标题
-    String getCurrentTitle() {
-      switch (_currentTab) {
-        case NetworkTab.friends:
-          return '我的好友';
-        case NetworkTab.followers:
-          return '我的粉丝';
-        case NetworkTab.following:
-          return '我的关注';
-      }
-    }
-
     // 根据当前选中的标签获取"查看全部"按钮文字
     String getMoreButtonText() {
       switch (_currentTab) {

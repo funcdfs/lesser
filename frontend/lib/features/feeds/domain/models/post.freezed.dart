@@ -126,10 +126,7 @@ return $default(_that);case _:
 final _that = this;
 switch (_that) {
 case _Post():
-return $default(_that);case _:
-  throw StateError('Unexpected subclass');
-
-}
+return $default(_that);}
 }
 /// A variant of `map` that fallback to returning `null`.
 ///
@@ -188,10 +185,7 @@ return $default(_that.id,_that.username,_that.content,_that.createdAt,_that.like
 @optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String id,  String username,  String content, @JsonKey(name: 'created_at')  String createdAt,  int likes,  String? location, @JsonKey(name: 'image_urls')  List<String> imageUrls, @JsonKey(name: 'comments_count')  int commentsCount, @JsonKey(name: 'reposts_count')  int repostsCount, @JsonKey(name: 'bookmarks_count')  int bookmarksCount, @JsonKey(name: 'shares_count')  int sharesCount, @JsonKey(name: 'is_liked')  bool isLiked)  $default,) {final _that = this;
 switch (_that) {
 case _Post():
-return $default(_that.id,_that.username,_that.content,_that.createdAt,_that.likes,_that.location,_that.imageUrls,_that.commentsCount,_that.repostsCount,_that.bookmarksCount,_that.sharesCount,_that.isLiked);case _:
-  throw StateError('Unexpected subclass');
-
-}
+return $default(_that.id,_that.username,_that.content,_that.createdAt,_that.likes,_that.location,_that.imageUrls,_that.commentsCount,_that.repostsCount,_that.bookmarksCount,_that.sharesCount,_that.isLiked);}
 }
 /// A variant of `when` that fallback to returning `null`
 ///

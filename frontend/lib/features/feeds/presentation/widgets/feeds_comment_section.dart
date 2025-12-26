@@ -22,48 +22,35 @@ class _FeedsCommentSectionState extends State<FeedsCommentSection> {
   final List<Comment> _mockComments = [
     Comment(
       id: '1',
-      author: CommentAuthor(
-        userId: 'u1',
-        username: 'DesignLover',
-        avatarUrl:
-            'https://tiebapic.baidu.com/forum/pic/item/962bd40735fae6cd7d3d75004ab30f2442a7d97e.jpg',
-        isVerified: true,
-      ),
+      postId: 'post_1',
+      userId: 'u1',
+      username: 'DesignLover',
+      avatarUrl:
+          'https://tiebapic.baidu.com/forum/pic/item/962bd40735fae6cd7d3d75004ab30f2442a7d97e.jpg',
+      isVerified: true,
       content:
           'This UI is absolutely stunning! Love the TikTok style implementation. 😍',
       createdAt: DateTime.now().subtract(const Duration(hours: 2)),
-      likeCount: 1250,
+      likesCount: 1250,
       replyCount: 3,
-      replies: [
-        Comment(
-          id: '1_1',
-          author: CommentAuthor(
-            userId: 'u2',
-            username: 'FlutterDev',
-            avatarUrl:
-                'https://tiebapic.baidu.com/forum/pic/item/7ea6a61ea8d3fd1f26f28689714e251f95ca5f33.jpg',
-            isVerified: false,
-          ),
-          content: 'Agreed! The transitions are so smooth.',
-          createdAt: DateTime.now().subtract(const Duration(hours: 1)),
-          likeCount: 45,
-        ),
-      ],
+      isLiked: false,
+      isFromAuthor: false,
     ),
     Comment(
       id: '2',
-      author: CommentAuthor(
-        userId: 'u3',
-        username: 'TechEnthusiast',
-        avatarUrl:
-            'https://tiebapic.baidu.com/forum/pic/item/2cf5e0fe9925bc3146d2cb7c1edf8db1cb137021.jpg',
-        isVerified: false,
-      ),
+      postId: 'post_1',
+      userId: 'u3',
+      username: 'TechEnthusiast',
+      avatarUrl:
+          'https://tiebapic.baidu.com/forum/pic/item/2cf5e0fe9925bc3146d2cb7c1edf8db1cb137021.jpg',
+      isVerified: false,
       content:
           'Can you share the source code for this specific feature? It looks like it uses DraggableScrollableSheet.',
       createdAt: DateTime.now().subtract(const Duration(minutes: 45)),
-      likeCount: 89,
+      likesCount: 89,
       replyCount: 0,
+      isLiked: false,
+      isFromAuthor: false,
     ),
   ];
 
@@ -237,8 +224,8 @@ class _CommentItemState extends State<_CommentItem> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Avatar(
-                avatarUrl: widget.comment.author.avatarUrl,
-                fallbackInitials: widget.comment.author.username,
+                avatarUrl: widget.comment.avatarUrl,
+                fallbackInitials: widget.comment.username,
                 size: widget.isReply ? 24 : 32,
               ),
               const SizedBox(width: AppSpacing.md),
@@ -249,14 +236,14 @@ class _CommentItemState extends State<_CommentItem> {
                     Row(
                       children: [
                         Text(
-                          widget.comment.author.username,
+                          widget.comment.username,
                           style: Theme.of(context).textTheme.labelSmall
                               ?.copyWith(
                                 fontWeight: FontWeight.bold,
                                 color: AppColors.mutedForeground,
                               ),
                         ),
-                        if (widget.comment.author.isVerified) ...[
+                        if (widget.comment.isVerified) ...[
                           const SizedBox(width: 4),
                           const Icon(
                             Icons.verified,
@@ -340,20 +327,8 @@ class _CommentItemState extends State<_CommentItem> {
                           ],
                         ),
                       ),
-                      if (_showReplies && widget.comment.replies != null)
-                        Padding(
-                          padding: const EdgeInsets.only(top: AppSpacing.md),
-                          child: Column(
-                            children: widget.comment.replies!
-                                .map(
-                                  (reply) => _CommentItem(
-                                    comment: reply,
-                                    isReply: true,
-                                  ),
-                                )
-                                .toList(),
-                          ),
-                        ),
+                      // Note: Replies are not currently supported in the flat Comment model
+                      // This would require a separate API call to fetch replies
                     ],
                   ],
                 ),
@@ -362,17 +337,17 @@ class _CommentItemState extends State<_CommentItem> {
               Column(
                 children: [
                   Icon(
-                    widget.comment.isLikedByCurrentUser
+                    widget.comment.isLiked
                         ? Icons.favorite
                         : Icons.favorite_border,
                     size: 16,
-                    color: widget.comment.isLikedByCurrentUser
+                    color: widget.comment.isLiked
                         ? AppColors.destructive
                         : AppColors.mutedForeground,
                   ),
                   const SizedBox(height: 2),
                   Text(
-                    formatCount(widget.comment.likeCount),
+                    formatCount(widget.comment.likesCount),
                     style: Theme.of(context).textTheme.labelSmall?.copyWith(
                       fontSize: 10,
                       color: AppColors.zinc400,

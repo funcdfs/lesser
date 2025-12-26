@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:lesser/features/auth/presentation/screens/login_screen.dart';
-import 'package:lesser/features/auth/domain/models/user.dart';
 import 'package:lesser/features/feeds/presentation/screens/post_detail_screen.dart';
 import 'package:lesser/features/feeds/domain/models/post.dart';
+import 'package:lesser/features/settings/presentation/screens/settings_screen.dart';
 import 'package:lesser/app/app.dart';
 
 /// 应用路由名称常量类
@@ -12,6 +12,7 @@ class AppRoutes {
   static const String main = '/main';
   static const String apiTest = '/api-test';
   static const String postDetail = '/post-detail';
+  static const String settings = '/settings';
 }
 
 /// 应用路由生成器
@@ -30,6 +31,8 @@ class AppRouteGenerator {
           builder: (_) => PostDetailScreen(post: post),
           fullscreenDialog: true,
         );
+      case AppRoutes.settings:
+        return MaterialPageRoute(builder: (_) => const SettingsScreen());
       default:
         return _errorRoute(settings.name);
     }

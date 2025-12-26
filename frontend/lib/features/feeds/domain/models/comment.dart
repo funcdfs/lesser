@@ -1,84 +1,42 @@
-/// Comment 业务模型
-///
-/// 定义：评论的业务结构和字段
-class Comment {
-  /// 评论 ID
-  final String id;
+// ignore_for_file: invalid_annotation_target
+import 'package:freezed_annotation/freezed_annotation.dart';
 
-  /// 发布者信息
-  final CommentAuthor author;
+part 'comment.freezed.dart';
+part 'comment.g.dart';
 
-  /// 评论内容
-  final String content;
+/// Comment model for post comments
+@freezed
+sealed class Comment with _$Comment {
+  const factory Comment({
+    required String id,
+    @JsonKey(name: 'post_id') required String postId,
+    @JsonKey(name: 'user_id') required String userId,
+    required String username,
+    required String content,
+    @JsonKey(name: 'created_at') required DateTime createdAt,
+    @Default(0) @JsonKey(name: 'likes_count') int likesCount,
+    @Default('') @JsonKey(name: 'avatar_url') String avatarUrl,
+    @Default(false) @JsonKey(name: 'is_liked') bool isLiked,
+    @Default(0) @JsonKey(name: 'reply_count') int replyCount,
+    @Default(false) @JsonKey(name: 'is_from_author') bool isFromAuthor,
+    @Default(false) @JsonKey(name: 'is_verified') bool isVerified,
+  }) = _Comment;
 
-  /// 发布时间
-  final DateTime createdAt;
-
-  /// 点赞数
-  final int likeCount;
-
-  /// 是否被当前用户点赞
-  final bool isLikedByCurrentUser;
-
-  /// 回复数量
-  final int replyCount;
-
-  /// 子回复列表（可选，用于嵌套显示）
-  final List<Comment>? replies;
-
-  /// 是否是作者本人评论
-  final bool isFromAuthor;
-
-  Comment({
-    required this.id,
-    required this.author,
-    required this.content,
-    required this.createdAt,
-    this.likeCount = 0,
-    this.isLikedByCurrentUser = false,
-    this.replyCount = 0,
-    this.replies,
-    this.isFromAuthor = false,
-  });
-
-  /// 创建副本，用于状态更新
-  Comment copyWith({
-    String? id,
-    CommentAuthor? author,
-    String? content,
-    DateTime? createdAt,
-    int? likeCount,
-    bool? isLikedByCurrentUser,
-    int? replyCount,
-    List<Comment>? replies,
-    bool? isFromAuthor,
-  }) {
-    return Comment(
-      id: id ?? this.id,
-      author: author ?? this.author,
-      content: content ?? this.content,
-      createdAt: createdAt ?? this.createdAt,
-      likeCount: likeCount ?? this.likeCount,
-      isLikedByCurrentUser: isLikedByCurrentUser ?? this.isLikedByCurrentUser,
-      replyCount: replyCount ?? this.replyCount,
-      replies: replies ?? this.replies,
-      isFromAuthor: isFromAuthor ?? this.isFromAuthor,
-    );
-  }
+  factory Comment.fromJson(Map<String, dynamic> json) => _$CommentFromJson(json);
 }
 
-/// Comment 发布者信息
+/// Comment author information (for backward compatibility)
 class CommentAuthor {
-  /// 用户 ID
+  /// User ID
   final String userId;
 
-  /// 用户名
+  /// Username
   final String username;
 
-  /// 用户头像 URL
+  /// User avatar URL
   final String avatarUrl;
 
-  /// 是否是认证用户
+  /// Whether the user is verified
   final bool isVerified;
 
   CommentAuthor({
@@ -87,4 +45,22 @@ class CommentAuthor {
     required this.avatarUrl,
     required this.isVerified,
   });
+
+  factory CommentAuthor.fromJson(Map<String, dynamic> json) {
+    return CommentAuthor(
+      userId: json['user_id']?.toString() ?? json['id']?.toString() ?? '',
+      username: json['username'] ?? '',
+      avatarUrl: json['avatar_url'] ?? '',
+      isVerified: json['is_verified'] ?? false,
+    );
+  }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'user_id': userId,
+      'username': username,
+      'avatar_url': avatarUrl,
+      'is_verified': isVerified,
+    };
+  }
 }

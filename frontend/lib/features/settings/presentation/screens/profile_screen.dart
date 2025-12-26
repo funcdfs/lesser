@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lesser/shared/theme/theme.dart';
 import 'package:lesser/features/auth/presentation/providers/user_provider.dart';
+import 'package:lesser/features/auth/presentation/providers/auth_provider.dart';
 
 /// 个人资料和设置页面
 class ProfileScreen extends ConsumerWidget {
@@ -504,16 +505,23 @@ class _TextManagementSection extends StatelessWidget {
 }
 
 /// Part 4: 设置
-class _SettingsSection extends StatelessWidget {
+class _SettingsSection extends ConsumerWidget {
   const _SettingsSection();
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     return Container(
       color: AppColors.background,
       child: Column(
         children: [
-          _buildSettingItem(context, '通用设置', Icons.settings_outlined),
+          _buildSettingItem(
+            context,
+            '通用设置',
+            Icons.settings_outlined,
+            onTap: () {
+              Navigator.pushNamed(context, '/settings');
+            },
+          ),
           _buildDivider(),
           _buildSettingItem(context, '切换账号', Icons.switch_account_outlined),
           _buildDivider(),
@@ -522,6 +530,41 @@ class _SettingsSection extends StatelessWidget {
             '退出登录',
             Icons.logout_outlined,
             isDestructive: true,
+            onTap: () async {
+              // 显示确认对话框
+              final shouldLogout = await showDialog<bool>(
+                context: context,
+                builder: (BuildContext context) => AlertDialog(
+                  title: const Text('确认退出登录'),
+                  content: const Text('确定要退出登录吗？'),
+                  actions: [
+                    TextButton(
+                      onPressed: () => Navigator.of(context).pop(false),
+                      child: const Text('取消'),
+                    ),
+                    TextButton(
+                      onPressed: () => Navigator.of(context).pop(true),
+                      child: const Text(
+                        '确认',
+                        style: TextStyle(color: Colors.red),
+                      ),
+                    ),
+                  ],
+                ),
+              );
+
+              if (shouldLogout == true && context.mounted) {
+                // 调用登出
+                await ref.read(authProvider.notifier).logout();
+                if (context.mounted) {
+                  Navigator.pushNamedAndRemoveUntil(
+                    context,
+                    '/',
+                    (route) => false,
+                  );
+                }
+              }
+            },
           ),
         ],
       ),
@@ -533,6 +576,7 @@ class _SettingsSection extends StatelessWidget {
     String title,
     IconData icon, {
     bool isDestructive = false,
+    VoidCallback? onTap,
   }) {
     return ListTile(
       leading: Icon(
@@ -551,11 +595,7 @@ class _SettingsSection extends StatelessWidget {
         Icons.chevron_right,
         color: AppColors.mutedForeground,
       ),
-      onTap: () {
-        if (title == '退出登录') {
-          // 实现退出登录逻辑
-        }
-      },
+      onTap: onTap,
     );
   }
 

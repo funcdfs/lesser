@@ -48,7 +48,7 @@ final class ApiClientProvider
   }
 }
 
-String _$apiClientHash() => r'8883a92aa0365c63196894792e12892a5f4e1f5d';
+String _$apiClientHash() => r'05eacc6dc3fa586c44e47dd0c1e5cf2b1ed1f36a';
 
 @ProviderFor(chopperApiService)
 const chopperApiServiceProvider = ChopperApiServiceProvider._();
@@ -95,4 +95,4 @@ final class ChopperApiServiceProvider
   }
 }
 
-String _$chopperApiServiceHash() => r'24761e706ee1aa4f1e711693e8fd3fa739310bbe';
+String _$chopperApiServiceHash() => r'83bbaeb0968f57f18a7cee144e3812552d9af026';

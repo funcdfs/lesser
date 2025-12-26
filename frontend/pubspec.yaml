@@ -60,6 +60,9 @@ dev_dependencies:
 
   # Property-based testing
   glados: ^1.1.1
+  
+  # Mocking library for unit tests
+  mocktail: ^1.0.4
 
   build_runner: ^2.10.4
   riverpod_generator: ^3.0.3
