@@ -39,8 +39,8 @@ dependencies:
   flutter_svg: ^2.2.3
   cached_network_image: ^3.4.1
   flutter_staggered_grid_view: ^0.7.0
-  # Forui Minimalistic UI Library
-  forui: ^0.17.0
+  # TDesign Flutter UI Library
+  tdesign_flutter: ^0.1.8
 
   # Networking & State Management
   http: ^1.2.0
@@ -89,10 +89,9 @@ flutter:
   # the material Icons class.
   uses-material-design: true
 
-  # To add assets to your application, add an assets section, like this:
-  # assets:
-  #   - images/a_dot_burr.jpeg
-  #   - images/a_dot_ham.jpeg
+  # Assets
+  assets:
+    - .env.dev
 
   # An image asset can refer to one or more resolution-specific "variants", see
   # https://flutter.dev/to/resolution-aware-images

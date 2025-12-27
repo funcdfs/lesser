@@ -1,28 +1,30 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:tdesign_flutter/tdesign_flutter.dart';
 import '../features/features.dart';
-import '../shared/theme/theme.dart' as shared_theme;
+import '../shared/theme/colors.dart';
+import '../shared/widgets/app_bottom_nav_bar.dart';
 import 'app_theme.dart';
 import 'app_router.dart';
 import '../features/create/presentation/widgets/create_post_floating_sheet.dart';
-import '../features/settings/presentation/providers/theme_provider.dart';
 
 class LesserApp extends ConsumerWidget {
   const LesserApp({super.key});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final themeMode = ref.watch(themeProvider);
-    
-    return MaterialApp(
-      title: 'Lesser',
-      theme: AppTheme.lightTheme(),
-      darkTheme: AppTheme.darkTheme(),
-      themeMode: themeMode,
-      initialRoute: '/',
-      onGenerateRoute: AppRouter.routeGenerator,
-      navigatorKey: AppRouter.navigatorKey,
-      debugShowCheckedModeBanner: false,
+    return TDTheme(
+      data: AppTheme.tdDarkTheme,
+      child: MaterialApp(
+        title: 'Lesser',
+        theme: AppTheme.darkTheme(),
+        darkTheme: AppTheme.darkTheme(),
+        themeMode: ThemeMode.dark,
+        initialRoute: '/',
+        onGenerateRoute: AppRouter.routeGenerator,
+        navigatorKey: AppRouter.navigatorKey,
+        debugShowCheckedModeBanner: false,
+      ),
     );
   }
 }
@@ -41,8 +43,11 @@ class MainScreen extends StatefulWidget {
 }
 
 class _MainScreenState extends State<MainScreen> {
-  /// 当前选中的导航索引
+  /// 当前选中的导航索引（用于 IndexedStack）
   int _selectedIndex = 0;
+
+  /// 底部导航栏当前选中的索引（不包含中心按钮）
+  int _bottomNavIndex = 0;
 
   /// 导航对应的子屏幕列表
   late final List<Widget> _screens;
@@ -59,9 +64,27 @@ class _MainScreenState extends State<MainScreen> {
     ];
   }
 
+  /// 将底部导航栏索引映射到屏幕索引
+  int _mapBottomNavToScreen(int bottomNavIndex) {
+    // 底部导航栏: [Home(0), Search(1), Chat(2), Profile(3)]
+    // 屏幕索引:   [Home(0), Search(1), Create(2), Chat(3), Profile(4)]
+    if (bottomNavIndex >= 2) {
+      return bottomNavIndex + 1; // Chat(2->3), Profile(3->4)
+    }
+    return bottomNavIndex; // Home(0->0), Search(1->1)
+  }
+
+  /// 将屏幕索引映射到底部导航栏索引
+  int _mapScreenToBottomNav(int screenIndex) {
+    if (screenIndex >= 3) {
+      return screenIndex - 1; // Chat(3->2), Profile(4->3)
+    }
+    return screenIndex; // Home(0->0), Search(1->1)
+  }
+
   /// 处理导航项点击
   void _onItemTapped(int index) {
-    // 如果点击的是添加按钮，显示悬浮框而不是导航
+    // 如果点击的是添加按钮（中心按钮），显示悬浮框而不是导航
     if (index == 2) {
       showModalBottomSheet(
         context: context,
@@ -73,8 +96,18 @@ class _MainScreenState extends State<MainScreen> {
     } else {
       setState(() {
         _selectedIndex = index;
+        _bottomNavIndex = _mapScreenToBottomNav(index);
       });
     }
+  }
+
+  /// 处理底部导航栏点击（移动端）
+  void _onBottomNavTapped(int bottomNavIndex) {
+    final screenIndex = _mapBottomNavToScreen(bottomNavIndex);
+    setState(() {
+      _selectedIndex = screenIndex;
+      _bottomNavIndex = bottomNavIndex;
+    });
   }
 
   @override
@@ -84,7 +117,7 @@ class _MainScreenState extends State<MainScreen> {
         // 当宽度大于等于 640 时，使用桌面/平板布局
         if (constraints.maxWidth >= 640) {
           return Scaffold(
-            backgroundColor: shared_theme.AppColors.background,
+            backgroundColor: AppColors.background,
             body: Row(
               mainAxisAlignment: MainAxisAlignment.center,
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -97,14 +130,12 @@ class _MainScreenState extends State<MainScreen> {
                     selectedIndex: _selectedIndex,
                     onDestinationSelected: _onItemTapped,
                     backgroundColor: Colors.transparent,
-                    indicatorColor: shared_theme.AppColors.primary.withValues(
-                      alpha: 0.1,
-                    ),
+                    indicatorColor: AppColors.surfaceVariant,
                     selectedIconTheme: const IconThemeData(
-                      color: shared_theme.AppColors.primary,
+                      color: AppColors.foreground,
                     ),
                     unselectedIconTheme: const IconThemeData(
-                      color: shared_theme.AppColors.mutedForeground,
+                      color: AppColors.mutedForeground,
                     ),
                     leading: Padding(
                       padding: const EdgeInsets.symmetric(
@@ -116,7 +147,7 @@ class _MainScreenState extends State<MainScreen> {
                         style: TextStyle(
                           fontSize: 26,
                           fontWeight: FontWeight.bold,
-                          color: shared_theme.AppColors.primary,
+                          color: AppColors.foreground,
                         ),
                       ),
                     ),
@@ -149,7 +180,11 @@ class _MainScreenState extends State<MainScreen> {
                   ),
                 ),
 
-                const VerticalDivider(width: 1, thickness: 1),
+                VerticalDivider(
+                  width: 1,
+                  thickness: 1,
+                  color: AppColors.divider,
+                ),
 
                 // 中间/主要内容区域 - 使用 Expanded 包裹以解决垂直溢出问题并限制最大宽度
                 const SizedBox(width: 40),
@@ -173,28 +208,30 @@ class _MainScreenState extends State<MainScreen> {
 
         // 移动端布局 (带有底部导航栏)
         return Scaffold(
+          backgroundColor: AppColors.background,
           body: IndexedStack(index: _selectedIndex, children: _screens),
-          bottomNavigationBar: BottomNavigationBar(
-            currentIndex: _selectedIndex,
-            onTap: _onItemTapped,
-            type: BottomNavigationBarType.fixed,
+          bottomNavigationBar: AppBottomNavBar.withCenterButton(
+            currentIndex: _bottomNavIndex,
+            onTap: _onBottomNavTapped,
+            onCenterTap: () => _onItemTapped(2),
+            showLabels: false,
             items: const [
-              BottomNavigationBarItem(icon: Icon(Icons.home), label: 'Home'),
-              BottomNavigationBarItem(
-                icon: Icon(Icons.search),
-                label: 'Search',
+              AppBottomNavBarItem(
+                icon: Icons.home_outlined,
+                selectedIcon: Icons.home,
               ),
-              BottomNavigationBarItem(
-                icon: Icon(Icons.add_circle_outline),
-                label: 'Post',
+              AppBottomNavBarItem(
+                icon: Icons.search_outlined,
+                selectedIcon: Icons.search,
               ),
-              BottomNavigationBarItem(
-                icon: Icon(Icons.message),
-                label: 'Messages',
+              // 中心按钮后的项目
+              AppBottomNavBarItem(
+                icon: Icons.chat_bubble_outline,
+                selectedIcon: Icons.chat_bubble,
               ),
-              BottomNavigationBarItem(
-                icon: Icon(Icons.person),
-                label: 'Profile',
+              AppBottomNavBarItem(
+                icon: Icons.person_outline,
+                selectedIcon: Icons.person,
               ),
             ],
           ),

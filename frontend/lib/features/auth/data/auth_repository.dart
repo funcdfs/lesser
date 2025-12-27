@@ -41,7 +41,7 @@ class AuthResponse {
   factory AuthResponse.fromJson(Map<String, dynamic> json) {
     return AuthResponse(
       token: json['token'] as String,
-      userId: json['user_id'] as int,
+      userId: (json['userId'] ?? json['user_id']) as int,
       username: json['username'] as String,
     );
   }

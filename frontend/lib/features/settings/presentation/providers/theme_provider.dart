@@ -13,45 +13,15 @@ Future<SettingsRepository> settingsRepository(Ref ref) async {
 }
 
 /// Provider for managing theme mode
-/// Uses keepAlive to persist across the app lifecycle
 @Riverpod(keepAlive: true)
 class ThemeNotifier extends _$ThemeNotifier {
   @override
   ThemeMode build() {
-    // Initialize with system theme, will be updated when repository loads
-    _loadThemeMode();
-    return ThemeMode.system;
+    return ThemeMode.dark;
   }
 
-  Future<void> _loadThemeMode() async {
-    try {
-      final repository = await ref.read(settingsRepositoryProvider.future);
-      final mode = repository.getThemeMode();
-      state = mode;
-    } catch (_) {
-      // Keep default on error
-    }
-  }
-
-  /// Set the theme mode and persist it
-  Future<void> setThemeMode(ThemeMode mode) async {
+  /// Set the theme mode
+  void setThemeMode(ThemeMode mode) {
     state = mode;
-    try {
-      final repository = await ref.read(settingsRepositoryProvider.future);
-      await repository.setThemeMode(mode);
-    } catch (_) {
-      // State is already updated, persistence failure is non-critical
-    }
-  }
-
-  /// Toggle between light and dark mode
-  /// If currently system, switches to light
-  void toggleTheme() {
-    final newMode = switch (state) {
-      ThemeMode.light => ThemeMode.dark,
-      ThemeMode.dark => ThemeMode.light,
-      ThemeMode.system => ThemeMode.light,
-    };
-    setThemeMode(newMode);
   }
 }

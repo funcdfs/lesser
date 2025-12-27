@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../../../shared/theme/theme.dart';
+import '../../../../shared/widgets/app_cell.dart';
 
 // 模拟用户数据类
 class UserItem {
@@ -183,85 +184,35 @@ class _NetworkNeighborsWidgetState extends State<NetworkNeighborsWidget> {
 
         // 其他功能项保持不变
         const SizedBox(height: AppSpacing.lg),
-        ListTile(
-          leading: const CircleAvatar(
-            backgroundColor: AppColors.secondary,
-            child: Icon(Icons.group_add_outlined, color: AppColors.foreground),
-          ),
-          title: const Text('创建群聊'),
-          subtitle: Text(
-            '创建新的群组聊天',
-            style: Theme.of(
-              context,
-            ).textTheme.bodySmall?.copyWith(color: AppColors.mutedForeground),
-          ),
-          trailing: const Icon(
-            Icons.chevron_right,
-            color: AppColors.mutedForeground,
-          ),
+        AppCell(
+          title: '创建群聊',
+          description: '创建新的群组聊天',
+          leftIcon: Icons.group_add_outlined,
+          showArrow: true,
           onTap: () {},
         ),
 
-        ListTile(
-          leading: const CircleAvatar(
-            backgroundColor: AppColors.secondary,
-            child: Icon(Icons.campaign_outlined, color: AppColors.foreground),
-          ),
-          title: const Text('创建频道'),
-          subtitle: Text(
-            '创建新的频道',
-            style: Theme.of(
-              context,
-            ).textTheme.bodySmall?.copyWith(color: AppColors.mutedForeground),
-          ),
-          trailing: const Icon(
-            Icons.chevron_right,
-            color: AppColors.mutedForeground,
-          ),
+        AppCell(
+          title: '创建频道',
+          description: '创建新的频道',
+          leftIcon: Icons.campaign_outlined,
+          showArrow: true,
           onTap: () {},
         ),
 
-        ListTile(
-          leading: const CircleAvatar(
-            backgroundColor: AppColors.secondary,
-            child: Icon(
-              Icons.person_add_alt_outlined,
-              color: AppColors.foreground,
-            ),
-          ),
-          title: const Text('添加好友'),
-          subtitle: Text(
-            '通过ID或二维码添加',
-            style: Theme.of(
-              context,
-            ).textTheme.bodySmall?.copyWith(color: AppColors.mutedForeground),
-          ),
-          trailing: const Icon(
-            Icons.chevron_right,
-            color: AppColors.mutedForeground,
-          ),
+        AppCell(
+          title: '添加好友',
+          description: '通过ID或二维码添加',
+          leftIcon: Icons.person_add_alt_outlined,
+          showArrow: true,
           onTap: () {},
         ),
 
-        ListTile(
-          leading: const CircleAvatar(
-            backgroundColor: AppColors.secondary,
-            child: Icon(
-              Icons.location_on_outlined,
-              color: AppColors.foreground,
-            ),
-          ),
-          title: const Text('附近的人'),
-          subtitle: Text(
-            '发现周围的朋友',
-            style: Theme.of(
-              context,
-            ).textTheme.bodySmall?.copyWith(color: AppColors.mutedForeground),
-          ),
-          trailing: const Icon(
-            Icons.chevron_right,
-            color: AppColors.mutedForeground,
-          ),
+        AppCell(
+          title: '附近的人',
+          description: '发现周围的朋友',
+          leftIcon: Icons.location_on_outlined,
+          showArrow: true,
           onTap: () {},
         ),
       ],
@@ -290,7 +241,7 @@ class _NetworkNeighborsWidgetState extends State<NetworkNeighborsWidget> {
                     width: 16,
                     height: 16,
                     decoration: BoxDecoration(
-                      color: Colors.green,
+                      color: AppColors.success,
                       shape: BoxShape.circle,
                       border: Border.all(color: AppColors.background, width: 2),
                     ),
@@ -319,7 +270,7 @@ class _NetworkNeighborsWidgetState extends State<NetworkNeighborsWidget> {
                 textAlign: TextAlign.center,
                 style: Theme.of(context).textTheme.labelSmall?.copyWith(
                   color: user.isOnline
-                      ? Colors.green
+                      ? AppColors.success
                       : AppColors.mutedForeground,
                 ),
               ),

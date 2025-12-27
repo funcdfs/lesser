@@ -74,9 +74,13 @@ class SearchResults extends _$SearchResults {
     try {
       final result = await _performSearch(query, _currentPage);
       _hasMore = result.hasMore;
-      state = AsyncData(result);
+      if (ref.mounted) {
+        state = AsyncData(result);
+      }
     } catch (e, st) {
-      state = AsyncError(e, st);
+      if (ref.mounted) {
+        state = AsyncError(e, st);
+      }
     }
   }
 
@@ -92,6 +96,7 @@ class SearchResults extends _$SearchResults {
       final newResult = await _performSearch(query, _currentPage);
       _hasMore = newResult.hasMore;
 
+      if (!ref.mounted) return;
       // Merge results
       state = AsyncData(SearchResult(
         users: [...currentResult.users, ...newResult.users],
@@ -100,6 +105,7 @@ class SearchResults extends _$SearchResults {
         hasMore: newResult.hasMore,
       ));
     } catch (e, st) {
+      if (!ref.mounted) return;
       state = AsyncError(e, st);
     }
   }

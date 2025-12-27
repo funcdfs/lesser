@@ -4,6 +4,7 @@ import 'package:lesser/features/chat/presentation/widgets/notify.dart';
 import 'package:lesser/features/chat/presentation/widgets/network_neighbors.dart';
 import 'package:lesser/features/chat/presentation/widgets/chat_item.dart';
 import 'package:lesser/features/chat/presentation/widgets/section_header.dart';
+import 'package:lesser/shared/widgets/app_button.dart';
 import '../../../../shared/theme/theme.dart';
 import '../providers/chat_provider.dart';
 import '../providers/connection_provider.dart';
@@ -256,11 +257,11 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
               ),
             ),
             const SizedBox(height: 8),
-            TextButton(
+            AppButton.text(
+              text: '重试',
               onPressed: () {
                 ref.read(conversationsProvider.notifier).refresh();
               },
-              child: const Text('重试'),
             ),
           ],
         ),

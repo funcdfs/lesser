@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lesser/shared/theme/theme.dart';
+import 'package:lesser/shared/widgets/app_button.dart';
 import 'package:lesser/features/auth/presentation/providers/user_provider.dart';
 import 'package:lesser/features/auth/presentation/providers/auth_provider.dart';
 
@@ -302,14 +303,19 @@ class _RecordsSection extends StatelessWidget {
                         showDialog(
                           context: context,
                           builder: (context) => AlertDialog(
-                            title: const Text('2023-12-25'),
-                            content: const Text(
+                            backgroundColor: AppColors.surface,
+                            title: Text(
+                              '2023-12-25',
+                              style: TextStyle(color: AppColors.foreground),
+                            ),
+                            content: Text(
                               '今天发布了3条内容：\n1. 新年快乐！\n2. 学习Flutter\n3. 完成项目',
+                              style: TextStyle(color: AppColors.onSurfaceVariant),
                             ),
                             actions: [
-                              TextButton(
+                              AppButton.text(
+                                text: '关闭',
                                 onPressed: () => Navigator.pop(context),
-                                child: const Text('关闭'),
                               ),
                             ],
                           ),
@@ -535,19 +541,24 @@ class _SettingsSection extends ConsumerWidget {
               final shouldLogout = await showDialog<bool>(
                 context: context,
                 builder: (BuildContext context) => AlertDialog(
-                  title: const Text('确认退出登录'),
-                  content: const Text('确定要退出登录吗？'),
+                  backgroundColor: AppColors.surface,
+                  title: Text(
+                    '确认退出登录',
+                    style: TextStyle(color: AppColors.foreground),
+                  ),
+                  content: Text(
+                    '确定要退出登录吗？',
+                    style: TextStyle(color: AppColors.onSurfaceVariant),
+                  ),
                   actions: [
-                    TextButton(
+                    AppButton.text(
+                      text: '取消',
                       onPressed: () => Navigator.of(context).pop(false),
-                      child: const Text('取消'),
                     ),
-                    TextButton(
+                    AppButton.danger(
+                      text: '确认',
                       onPressed: () => Navigator.of(context).pop(true),
-                      child: const Text(
-                        '确认',
-                        style: TextStyle(color: Colors.red),
-                      ),
+                      size: AppButtonSize.small,
                     ),
                   ],
                 ),

@@ -38,6 +38,7 @@ class _FeedListState extends ConsumerState<FeedList> {
   Future<void> _fetchPage() async {
     if (_isLoading || !_hasNextPage) return;
 
+    if (!mounted) return;
     setState(() {
       _isLoading = true;
       _error = null;
@@ -48,6 +49,7 @@ class _FeedListState extends ConsumerState<FeedList> {
           .read(pagedFeedsProvider.notifier)
           .fetchPage(_currentPage + 1);
 
+      if (!mounted) return;
       setState(() {
         _posts.addAll(newPosts);
         _isLoading = false;
@@ -57,6 +59,7 @@ class _FeedListState extends ConsumerState<FeedList> {
         }
       });
     } catch (error) {
+      if (!mounted) return;
       setState(() {
         _isLoading = false;
         _error = error;

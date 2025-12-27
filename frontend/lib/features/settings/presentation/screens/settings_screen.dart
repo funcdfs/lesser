@@ -1,9 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lesser/shared/theme/theme.dart';
-import 'package:lesser/features/settings/presentation/providers/theme_provider.dart';
 import 'package:lesser/features/settings/presentation/providers/settings_provider.dart';
-import 'package:lesser/features/settings/presentation/widgets/theme_selector.dart';
 
 /// 设置页面
 class SettingsScreen extends ConsumerWidget {
@@ -25,10 +23,6 @@ class SettingsScreen extends ConsumerWidget {
             children: [
               // 账户设置
               _buildAccountSection(context),
-              const SizedBox(height: AppSpacing.lg),
-
-              // 外观设置
-              _buildAppearanceSection(context, ref),
               const SizedBox(height: AppSpacing.lg),
 
               // 通知设置
@@ -94,44 +88,6 @@ class SettingsScreen extends ConsumerWidget {
                 icon: Icons.privacy_tip_outlined,
                 onTap: () {
                   // TODO: Navigate to privacy settings
-                },
-              ),
-            ],
-          ),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildAppearanceSection(BuildContext context, WidgetRef ref) {
-    final themeMode = ref.watch(themeProvider);
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        _buildSectionHeader(context, '外观'),
-        Container(
-          color: AppColors.card,
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Padding(
-                padding: const EdgeInsets.only(
-                  left: AppSpacing.lg,
-                  top: AppSpacing.md,
-                  bottom: AppSpacing.sm,
-                ),
-                child: Text(
-                  '主题模式',
-                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                    fontWeight: FontWeight.w500,
-                  ),
-                ),
-              ),
-              ThemeSelector(
-                currentMode: themeMode,
-                onChanged: (mode) {
-                  ref.read(themeProvider.notifier).setThemeMode(mode);
                 },
               ),
             ],

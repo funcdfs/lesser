@@ -31,19 +31,19 @@ void main() {
   });
 
   group('ThemeNotifier Provider', () {
-    test('starts with system theme mode', () {
+    test('starts with dark theme mode', () {
       // Act
       final themeMode = container.read(themeProvider);
 
       // Assert
-      expect(themeMode, equals(ThemeMode.system));
+      expect(themeMode, equals(ThemeMode.dark));
     });
 
     test('can override with specific value', () {
       // Arrange - create container with overridden value
       final testContainer = ProviderContainer(
         overrides: [
-          themeProvider.overrideWithValue(ThemeMode.dark),
+          themeProvider.overrideWithValue(ThemeMode.light),
         ],
       );
 
@@ -51,41 +51,14 @@ void main() {
       final themeMode = testContainer.read(themeProvider);
 
       // Assert
-      expect(themeMode, equals(ThemeMode.dark));
+      expect(themeMode, equals(ThemeMode.light));
 
       testContainer.dispose();
     });
 
-    test('toggleTheme changes state', () {
+    test('setThemeMode changes state', () {
       // Act
-      container.read(themeProvider.notifier).toggleTheme();
-
-      // Assert - from system, should go to light
-      final themeMode = container.read(themeProvider);
-      expect(themeMode, equals(ThemeMode.light));
-    });
-
-    test('toggleTheme from light goes to dark', () {
-      // Arrange - toggle once to get to light
-      container.read(themeProvider.notifier).toggleTheme();
-      expect(container.read(themeProvider), equals(ThemeMode.light));
-
-      // Act - toggle again
-      container.read(themeProvider.notifier).toggleTheme();
-
-      // Assert
-      final themeMode = container.read(themeProvider);
-      expect(themeMode, equals(ThemeMode.dark));
-    });
-
-    test('toggleTheme from dark goes to light', () {
-      // Arrange - toggle twice to get to dark
-      container.read(themeProvider.notifier).toggleTheme(); // system -> light
-      container.read(themeProvider.notifier).toggleTheme(); // light -> dark
-      expect(container.read(themeProvider), equals(ThemeMode.dark));
-
-      // Act - toggle again
-      container.read(themeProvider.notifier).toggleTheme();
+      container.read(themeProvider.notifier).setThemeMode(ThemeMode.light);
 
       // Assert
       final themeMode = container.read(themeProvider);

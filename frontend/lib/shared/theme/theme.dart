@@ -1,24 +1,27 @@
 import 'package:flutter/material.dart';
+import 'colors.dart';
+import 'spacing.dart';
+
+// 导出新的颜色和间距系统
+export 'colors.dart';
+export 'spacing.dart';
 
 /// 融合 Note.com 和 Shadcn 设计系统的主题配置
 ///
-/// Note.com 风格特点：
-/// - 更柔和的颜色和优雅的排版
-/// - 精致的间距和圆角
-/// - 优雅的字体层次
+/// 注意：此文件保留用于向后兼容。
+/// 新代码应直接使用 colors.dart 中的 AppColors 和 spacing.dart 中的 AppSpacing/AppRadius。
 ///
-/// Shadcn 风格特点：
-/// - 清晰的层次结构
-/// - 系统化的设计令牌
-/// - Zinc 色板作为基础
+/// 颜色系统已迁移到 colors.dart - 黑色基调的深色主题
+/// 间距系统已迁移到 spacing.dart - 基于 4px 网格
 
 // ============================================================================
-// 颜色系统 - 融合 Note.com 的柔和与 Shadcn 的系统化
+// 向后兼容 - 旧版颜色定义（已废弃，请使用 colors.dart）
 // ============================================================================
 
-/// 基础色板 - 基于 Zinc，但更柔和（Note.com 风格）
-class AppColors {
-  // Zinc 色板（Shadcn 基础）
+/// @deprecated 请使用 colors.dart 中的 AppColors
+/// 此类保留用于向后兼容，将在未来版本中移除
+class LegacyAppColors {
+  // Zinc 色板（Shadcn 基础）- 已废弃
   static const Color zinc50 = Color(0xFFFAFAFA);
   static const Color zinc100 = Color(0xFFF4F4F5);
   static const Color zinc200 = Color(0xFFE4E4E7);
@@ -79,10 +82,11 @@ class AppColors {
 }
 
 // ============================================================================
-// 间距系统 - 基于 4px 网格，融合 Note.com 的精致
+// 向后兼容 - 旧版间距定义（已废弃，请使用 spacing.dart）
 // ============================================================================
 
-class AppSpacing {
+/// @deprecated 请使用 spacing.dart 中的 AppSpacing
+class LegacyAppSpacing {
   static const double xxs = 2.0; // 极小
   static const double xs = 4.0; // 很小
   static const double sm = 8.0; // 小
@@ -97,10 +101,11 @@ class AppSpacing {
 }
 
 // ============================================================================
-// 圆角系统 - Note.com 的精致圆角
+// 向后兼容 - 旧版圆角定义（已废弃，请使用 spacing.dart）
 // ============================================================================
 
-class AppRadius {
+/// @deprecated 请使用 spacing.dart 中的 AppRadius
+class LegacyAppRadius {
   static const double xs = 2.0;
   static const double sm = 4.0;
   static const double md = 6.0; // Note.com 风格，比 Shadcn 更精致
@@ -163,23 +168,24 @@ class AppShadows {
 }
 
 // ============================================================================
-// 主题数据 - 统一的主题配置
+// 主题数据 - 统一的主题配置（已废弃，请使用 app_theme.dart）
 // ============================================================================
 
-class AppTheme {
+/// @deprecated 请使用 app_theme.dart 中的 AppTheme
+class LegacyAppTheme {
   static ThemeData get lightTheme {
     return ThemeData(
       useMaterial3: true,
       scaffoldBackgroundColor: AppColors.background,
-      colorScheme: const ColorScheme.light(
+      colorScheme: ColorScheme.light(
         primary: AppColors.primary,
         onPrimary: AppColors.primaryForeground,
         secondary: AppColors.secondary,
         onSecondary: AppColors.secondaryForeground,
         surface: AppColors.card,
         onSurface: AppColors.cardForeground,
-        error: AppColors.destructive,
-        onError: AppColors.destructiveForeground,
+        error: AppColors.error,
+        onError: AppColors.errorForeground,
         outline: AppColors.border,
       ),
       // 导航栏主题 - Note.com 风格的简洁
@@ -200,7 +206,7 @@ class AppTheme {
       // 底部导航栏主题
       bottomNavigationBarTheme: const BottomNavigationBarThemeData(
         backgroundColor: AppColors.background,
-        selectedItemColor: AppColors.primary,
+        selectedItemColor: AppColors.foreground,
         unselectedItemColor: AppColors.mutedForeground,
         showSelectedLabels: false,
         showUnselectedLabels: false,
@@ -335,29 +341,29 @@ class AppTheme {
 }
 
 // ============================================================================
-// 向后兼容的别名（为了平滑迁移）
+// 向后兼容的别名（为了平滑迁移）- 已废弃
 // ============================================================================
 
-/// @deprecated 使用 AppColors 代替
-@Deprecated('使用 AppColors 代替')
-typedef ShadcnColors = AppColors;
+/// @deprecated 使用 colors.dart 中的 AppColors 代替
+@Deprecated('使用 colors.dart 中的 AppColors 代替')
+typedef ShadcnColors = LegacyAppColors;
 
-/// @deprecated 使用 AppSpacing 代替
-@Deprecated('使用 AppSpacing 代替')
-typedef ShadcnSpacing = AppSpacing;
+/// @deprecated 使用 spacing.dart 中的 AppSpacing 代替
+@Deprecated('使用 spacing.dart 中的 AppSpacing 代替')
+typedef ShadcnSpacing = LegacyAppSpacing;
 
-/// @deprecated 使用 AppRadius 代替
-@Deprecated('使用 AppRadius 代替')
-typedef ShadcnRadius = AppRadius;
+/// @deprecated 使用 spacing.dart 中的 AppRadius 代替
+@Deprecated('使用 spacing.dart 中的 AppRadius 代替')
+typedef ShadcnRadius = LegacyAppRadius;
 
-/// @deprecated 使用 AppShadows 代替
-@Deprecated('使用 AppShadows 代替')
+/// @deprecated 使用 spacing.dart 中的 AppShadows 代替
+@Deprecated('使用 spacing.dart 中的 AppShadows 代替')
 typedef ShadcnShadows = AppShadows;
 
-/// @deprecated 使用 AppTheme 代替
-@Deprecated('使用 AppTheme 代替')
+/// @deprecated 使用 app_theme.dart 中的 AppTheme 代替
+@Deprecated('使用 app_theme.dart 中的 AppTheme 代替')
 class ShadcnThemeData {
-  static ThemeData get lightTheme => AppTheme.lightTheme;
+  static ThemeData get lightTheme => LegacyAppTheme.lightTheme;
 }
 
 // ============================================================================
@@ -515,7 +521,7 @@ class PostThemeConstants {
   static const Color postTextColor = AppColors.foreground;
   static const Color postMutedTextColor = AppColors.mutedForeground;
   static const Color postBorderColor = AppColors.border;
-  static const Color postHandleColor = AppColors.zinc200;
+  static const Color postHandleColor = AppColors.gray200;
 
   // 文本样式
   static const TextStyle postAuthorNameStyle = TextStyle(

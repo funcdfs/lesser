@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:lesser/shared/theme/theme.dart';
-import 'package:lesser/shared/widgets/button.dart';
+import 'package:lesser/shared/widgets/app_button.dart';
 
 /// 创建内容的悬浮框组件
 class CreatePostFloatingSheet extends StatefulWidget {
@@ -357,9 +357,11 @@ class _CreatePostFloatingSheetState extends State<CreatePostFloatingSheet> {
               border: Border(top: BorderSide(color: AppColors.border)),
               color: AppColors.background,
             ),
-            child: AppButton(
+            child: AppButton.primary(
+              text: '发布',
               onPressed: () => Navigator.pop(context),
-              child: const Text('发布'),
+              isBlock: true,
+              size: AppButtonSize.large,
             ),
           ),
         ],

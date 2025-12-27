@@ -5,7 +5,7 @@ import '../../../../core/validation/validation_rules.dart';
 import '../../../../core/validation/validators.dart';
 import '../../../../shared/theme/theme.dart';
 import '../../../../shared/widgets/avatar.dart';
-import '../../../../shared/widgets/button.dart';
+import '../../../../shared/widgets/app_button.dart';
 import '../providers/create_post_provider.dart';
 import '../providers/draft_provider.dart';
 import '../widgets/character_counter.dart';
@@ -109,13 +109,10 @@ class _NewPostScreenState extends ConsumerState<NewPostScreen> {
       appBar: AppBar(
         leadingWidth: 80,
         leading: Center(
-          child: TextButton(
+          child: AppButton.text(
+            text: '取消',
             onPressed: () => Navigator.of(context).pop(),
-            style: TextButton.styleFrom(
-              foregroundColor: theme.colorScheme.onSurface,
-              textStyle: const TextStyle(fontSize: 16),
-            ),
-            child: const Text('取消'),
+            size: AppButtonSize.medium,
           ),
         ),
         title: Text(
@@ -560,11 +557,12 @@ class _NewPostScreenState extends ConsumerState<NewPostScreen> {
                 color: AppColors.mutedForeground,
               ),
               const SizedBox(width: 8),
-              AppButton(
+              AppButton.primary(
+                text: '发布',
                 onPressed: _isPostButtonEnabled && !isOverLimit && _validationError == null
                     ? () => _handleSubmit()
-                    : () {}, // 提供空函数以符合非空要求
-                child: const Text('发布'),
+                    : null,
+                size: AppButtonSize.medium,
               ),
             ],
           ),

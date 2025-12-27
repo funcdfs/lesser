@@ -9,8 +9,9 @@ enum ButtonVariant {
   outline, // 边框按钮
 }
 
-/// 通用按钮组件
-class AppButton extends StatelessWidget {
+/// @deprecated 请使用 app_button.dart 中的 AppButton
+/// 通用按钮组件 - 旧版实现，保留用于向后兼容
+class LegacyAppButton extends StatelessWidget {
   /// 按钮子组件（通常为 Text 或 Icon）
   final Widget child;
 
@@ -26,7 +27,7 @@ class AppButton extends StatelessWidget {
   /// 按钮尺寸尺寸
   final double? size;
 
-  const AppButton({
+  const LegacyAppButton({
     super.key,
     required this.child,
     required this.onPressed,
@@ -36,13 +37,13 @@ class AppButton extends StatelessWidget {
   });
 
   /// 工厂方法：创建一个幽灵图标按钮
-  factory AppButton.ghost({
+  factory LegacyAppButton.ghost({
     required VoidCallback onPressed,
     required IconData icon,
     Color? color,
     double? size,
   }) {
-    return AppButton(
+    return LegacyAppButton(
       onPressed: onPressed,
       variant: ButtonVariant.ghost,
       size: size,
@@ -55,13 +56,13 @@ class AppButton extends StatelessWidget {
   }
 
   /// 工厂方法：创建一个带有文本和图标的幽灵按钮
-  factory AppButton.ghostText({
+  factory LegacyAppButton.ghostText({
     required VoidCallback onPressed,
     required IconData icon,
     required String label,
     Color? color,
   }) {
-    return AppButton(
+    return LegacyAppButton(
       onPressed: onPressed,
       variant: ButtonVariant.ghost,
       child: Row(

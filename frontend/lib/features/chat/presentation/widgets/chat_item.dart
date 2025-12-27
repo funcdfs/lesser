@@ -110,18 +110,18 @@ class ChatItem extends StatelessWidget {
     switch (type) {
       case ChatType.group:
         text = 'Group';
-        color1 = Colors.blue;
-        color2 = Colors.purple;
+        color1 = AppColors.info;
+        color2 = AppColors.accentPurple;
         break;
       case ChatType.channel:
         text = 'Channel';
-        color1 = Colors.orange;
-        color2 = Colors.red;
+        color1 = AppColors.warning;
+        color2 = AppColors.error;
         break;
       case ChatType.private:
         text = 'Private';
-        color1 = Colors.green;
-        color2 = Colors.teal;
+        color1 = AppColors.success;
+        color2 = AppColors.teal;
         break;
     }
 

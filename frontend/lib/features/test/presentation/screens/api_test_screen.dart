@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lesser/core/network/api_client.dart';
 import 'package:lesser/core/network/api_endpoints.dart';
 import 'package:lesser/shared/theme/theme.dart';
+import 'package:lesser/shared/widgets/app_button.dart';
 import 'package:logger/logger.dart';
 
 final logger = Logger();
@@ -152,30 +153,20 @@ class _ApiTestScreenState extends ConsumerState<ApiTestScreen> {
                 ),
               ),
               const SizedBox(height: AppSpacing.xl),
-              ElevatedButton(
+              AppButton.primary(
+                text: '测试用户注册',
                 onPressed: _loading ? null : _testApi,
-                style: ElevatedButton.styleFrom(
-                  padding: const EdgeInsets.all(AppSpacing.lg),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(AppRadius.md),
-                  ),
-                ),
-                child: _loading
-                    ? const CircularProgressIndicator()
-                    : const Text('测试用户注册'),
+                isLoading: _loading,
+                isBlock: true,
+                size: AppButtonSize.large,
               ),
               const SizedBox(height: AppSpacing.md),
-              ElevatedButton(
+              AppButton.primary(
+                text: '测试用户登录',
                 onPressed: _loading ? null : _testLogin,
-                style: ElevatedButton.styleFrom(
-                  padding: const EdgeInsets.all(AppSpacing.lg),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(AppRadius.md),
-                  ),
-                ),
-                child: _loading
-                    ? const CircularProgressIndicator()
-                    : const Text('测试用户登录'),
+                isLoading: _loading,
+                isBlock: true,
+                size: AppButtonSize.large,
               ),
             ],
           ),

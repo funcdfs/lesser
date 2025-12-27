@@ -1,11 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:forui/forui.dart';
 import 'package:lesser/core/utils/snackbar.dart';
 import 'package:lesser/core/validation/validators.dart';
 import 'package:lesser/features/auth/presentation/providers/auth_provider.dart';
 import 'package:lesser/features/auth/presentation/screens/register_screen.dart';
 import 'package:lesser/features/auth/domain/models/auth_state.dart';
+import 'package:lesser/shared/widgets/app_button.dart';
+import 'package:lesser/shared/widgets/app_input.dart';
+import 'package:lesser/shared/theme/colors.dart';
+import 'package:lesser/shared/theme/spacing.dart';
 
 class LoginScreen extends ConsumerStatefulWidget {
   const LoginScreen({super.key});
@@ -15,8 +18,10 @@ class LoginScreen extends ConsumerStatefulWidget {
 }
 
 class _LoginScreenState extends ConsumerState<LoginScreen> {
-  final TextEditingController _usernameController = TextEditingController();
-  final TextEditingController _passwordController = TextEditingController();
+  final TextEditingController _usernameController =
+      TextEditingController(text: 'funcdfs');
+  final TextEditingController _passwordController =
+      TextEditingController(text: 'fw142857');
   String? _localError;
 
   @override
@@ -92,6 +97,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
     final displayError = _localError ?? authError;
 
     return Scaffold(
+      backgroundColor: AppColors.background,
       body: SafeArea(
         child: Center(
           child: SingleChildScrollView(
@@ -100,36 +106,37 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
                 const SizedBox(height: 40),
-                const Text(
+                Text(
                   'Lesser',
                   style: TextStyle(
                     fontSize: 48,
                     fontWeight: FontWeight.bold,
-                    color: Colors.black,
+                    color: AppColors.foreground,
                   ),
                 ),
                 const SizedBox(height: 8),
-                const Text(
+                Text(
                   '记录生活的每一个瞬间',
-                  style: TextStyle(fontSize: 16, color: Colors.grey),
+                  style: TextStyle(
+                    fontSize: 16,
+                    color: AppColors.mutedForeground,
+                  ),
                 ),
                 const SizedBox(height: 48),
-                FTextField(
-                  control: FTextFieldControl.managed(
-                    controller: _usernameController,
-                  ),
-                  label: const Text('用户名'),
-                  hint: '请输入用户名',
-                  enabled: !isLoading,
+                // 用户名输入框
+                AppInput(
+                  controller: _usernameController,
+                  labelText: '用户名',
+                  hintText: '请输入用户名',
+                  isReadOnly: isLoading,
                 ),
                 const SizedBox(height: 20),
-                FTextField.password(
-                  control: FTextFieldControl.managed(
-                    controller: _passwordController,
-                  ),
-                  label: const Text('密码'),
-                  hint: '请输入密码',
-                  enabled: !isLoading,
+                // 密码输入框
+                AppInput.password(
+                  controller: _passwordController,
+                  labelText: '密码',
+                  hintText: '请输入密码',
+                  isReadOnly: isLoading,
                 ),
                 const SizedBox(height: 24),
                 if (displayError != null)
@@ -137,55 +144,52 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                     margin: const EdgeInsets.only(bottom: 16),
                     padding: const EdgeInsets.all(12),
                     decoration: BoxDecoration(
-                      color: const Color(0xFFFFF5F5),
-                      borderRadius: BorderRadius.circular(8),
-                      border: Border.all(color: const Color(0xFFFF5252)),
+                      color: AppColors.error.withValues(alpha: 0.1),
+                      borderRadius: BorderRadius.circular(AppRadius.md),
+                      border: Border.all(color: AppColors.error),
                     ),
                     child: Row(
                       children: [
-                        const Icon(
+                        Icon(
                           Icons.error_outline,
-                          color: Color(0xFFFF5252),
+                          color: AppColors.error,
                           size: 20,
                         ),
                         const SizedBox(width: 8),
                         Expanded(
                           child: Text(
                             displayError,
-                            style: const TextStyle(
+                            style: TextStyle(
                               fontSize: 14,
-                              color: Color(0xFFFF5252),
+                              color: AppColors.error,
                             ),
                           ),
                         ),
                       ],
                     ),
                   ),
-                SizedBox(
-                  width: double.infinity,
-                  child: FButton(
-                    onPress: isLoading ? null : _handleLogin,
-                    child: isLoading
-                        ? const SizedBox(
-                            width: 20,
-                            height: 20,
-                            child: CircularProgressIndicator(
-                              color: Colors.white,
-                              strokeWidth: 2,
-                            ),
-                          )
-                        : const Text('登录'),
-                  ),
+                // 登录按钮 - 使用 AppButton
+                AppButton.primary(
+                  text: '登录',
+                  onPressed: isLoading ? null : _handleLogin,
+                  isLoading: isLoading,
+                  isBlock: true,
+                  size: AppButtonSize.large,
                 ),
                 const SizedBox(height: 24),
                 Row(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    const Text(
+                    Text(
                       '还没有账号？',
-                      style: TextStyle(fontSize: 14, color: Colors.grey),
+                      style: TextStyle(
+                        fontSize: 14,
+                        color: AppColors.mutedForeground,
+                      ),
                     ),
-                    TextButton(
+                    // 注册按钮 - 使用 AppButton.text
+                    AppButton.text(
+                      text: '立即注册',
                       onPressed: isLoading
                           ? null
                           : () => Navigator.push(
@@ -194,18 +198,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                                   builder: (context) => const RegisterScreen(),
                                 ),
                               ),
-                      style: ButtonStyle(
-                        foregroundColor: WidgetStateProperty.all(
-                          const Color(0xFFEE1D52),
-                        ),
-                        textStyle: WidgetStateProperty.all(
-                          const TextStyle(
-                            fontSize: 14,
-                            fontWeight: FontWeight.w600,
-                          ),
-                        ),
-                      ),
-                      child: const Text('立即注册'),
+                      size: AppButtonSize.medium,
                     ),
                   ],
                 ),
