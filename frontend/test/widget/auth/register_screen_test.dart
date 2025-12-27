@@ -3,7 +3,6 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:lesser/core/validation/validators.dart';
 
 /// Tests for register screen validation logic and UI patterns.
-/// Note: Full widget tests for RegisterScreen are pending forui API migration.
 void main() {
   group('Register Validation Logic', () {
     test('validates empty username', () {

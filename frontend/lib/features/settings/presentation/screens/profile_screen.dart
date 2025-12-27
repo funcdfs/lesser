@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lesser/shared/theme/theme.dart';
-import 'package:lesser/shared/widgets/app_button.dart';
+import 'package:lesser/shared/widgets/app_dialog.dart';
 import 'package:lesser/features/auth/presentation/providers/user_provider.dart';
 import 'package:lesser/features/auth/presentation/providers/auth_provider.dart';
 
@@ -300,25 +300,11 @@ class _RecordsSection extends StatelessWidget {
                     return GestureDetector(
                       onTap: () {
                         // 显示当天的碎碎念
-                        showDialog(
+                        AppDialog.alert(
                           context: context,
-                          builder: (context) => AlertDialog(
-                            backgroundColor: AppColors.surface,
-                            title: Text(
-                              '2023-12-25',
-                              style: TextStyle(color: AppColors.foreground),
-                            ),
-                            content: Text(
-                              '今天发布了3条内容：\n1. 新年快乐！\n2. 学习Flutter\n3. 完成项目',
-                              style: TextStyle(color: AppColors.onSurfaceVariant),
-                            ),
-                            actions: [
-                              AppButton.text(
-                                text: '关闭',
-                                onPressed: () => Navigator.pop(context),
-                              ),
-                            ],
-                          ),
+                          title: '2023-12-25',
+                          content: '今天发布了3条内容：\n1. 新年快乐！\n2. 学习Flutter\n3. 完成项目',
+                          confirmText: '关闭',
                         );
                       },
                       child: Container(
@@ -538,30 +524,12 @@ class _SettingsSection extends ConsumerWidget {
             isDestructive: true,
             onTap: () async {
               // 显示确认对话框
-              final shouldLogout = await showDialog<bool>(
+              final shouldLogout = await AppDialog.danger(
                 context: context,
-                builder: (BuildContext context) => AlertDialog(
-                  backgroundColor: AppColors.surface,
-                  title: Text(
-                    '确认退出登录',
-                    style: TextStyle(color: AppColors.foreground),
-                  ),
-                  content: Text(
-                    '确定要退出登录吗？',
-                    style: TextStyle(color: AppColors.onSurfaceVariant),
-                  ),
-                  actions: [
-                    AppButton.text(
-                      text: '取消',
-                      onPressed: () => Navigator.of(context).pop(false),
-                    ),
-                    AppButton.danger(
-                      text: '确认',
-                      onPressed: () => Navigator.of(context).pop(true),
-                      size: AppButtonSize.small,
-                    ),
-                  ],
-                ),
+                title: '确认退出登录',
+                content: '确定要退出登录吗？',
+                confirmText: '确认',
+                cancelText: '取消',
               );
 
               if (shouldLogout == true && context.mounted) {

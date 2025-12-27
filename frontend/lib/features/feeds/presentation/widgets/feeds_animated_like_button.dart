@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:lesser/shared/theme/colors.dart';
 
 /// Feed 动画点赞按钮
 ///
@@ -51,7 +52,7 @@ class _FeedsAnimatedLikeButtonState extends State<FeedsAnimatedLikeButton>
         ),
         child: Icon(
           widget.isLiked ? Icons.favorite : Icons.favorite_outline,
-          color: widget.isLiked ? Colors.red : null,
+          color: widget.isLiked ? AppColors.error : null,
         ),
       ),
       onPressed: () {

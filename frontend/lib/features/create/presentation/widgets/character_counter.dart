@@ -25,7 +25,7 @@ class CharacterCounter extends StatelessWidget {
     if (isOverLimit) {
       progressColor = theme.colorScheme.error;
     } else if (isNearLimit) {
-      progressColor = Colors.orange.shade600;
+      progressColor = AppColors.warning;
     } else {
       progressColor = theme.colorScheme.primary;
     }
@@ -79,7 +79,7 @@ class TextCharacterCounter extends StatelessWidget {
         fontSize: 12,
         color: isOverLimit 
             ? theme.colorScheme.error 
-            : (remaining < 50 ? Colors.orange.shade600 : AppColors.mutedForeground),
+            : (remaining < 50 ? AppColors.warning : AppColors.mutedForeground),
       ),
     );
   }

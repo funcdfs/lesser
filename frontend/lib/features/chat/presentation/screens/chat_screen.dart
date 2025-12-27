@@ -86,16 +86,16 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
     
     switch (state) {
       case ChatConnectionState.connected:
-        color = Colors.green;
+        color = AppColors.success;
         tooltip = '已连接';
       case ChatConnectionState.connecting:
-        color = Colors.orange;
+        color = AppColors.warning;
         tooltip = '连接中...';
       case ChatConnectionState.reconnecting:
-        color = Colors.orange;
+        color = AppColors.warning;
         tooltip = '重新连接中...';
       case ChatConnectionState.disconnected:
-        color = Colors.red;
+        color = AppColors.error;
         tooltip = '未连接';
     }
     
@@ -180,7 +180,7 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
     return ChatItem(
       chatType: ChatType.private,
       icon: Icons.person_outline,
-      iconColor: Colors.green,
+      iconColor: AppColors.success,
       title: participant?.username ?? '未知用户',
       subtitle: conversation.lastMessage ?? '暂无消息',
       time: timeString,

@@ -339,8 +339,7 @@ class _PostDetailScreenState extends State<PostDetailScreen>
                                                     '<svg viewBox="0 0 400 24" preserveAspectRatio="none" xmlns="http://www.w3.org/2000/svg"><path d="M0 0 L200 14 L400 0 V24 H0 Z" fill="currentColor" fill-opacity="0.2"/><path d="M0 0 L200 14 L400 0" fill="none" stroke="currentColor" stroke-width="2.5" stroke-opacity="0.35" stroke-linecap="round" stroke-linejoin="round"/></svg>',
                                                     colorFilter:
                                                         ColorFilter.mode(
-                                                          PostThemeConstants
-                                                              .postHandleColor,
+                                                          AppColors.gray200,
                                                           BlendMode.srcIn,
                                                         ),
                                                     fit: BoxFit.fill,
@@ -590,8 +589,7 @@ class _PostDetailScreenState extends State<PostDetailScreen>
                                           child: SvgPicture.string(
                                             '<svg viewBox="0 0 400 24" preserveAspectRatio="none" xmlns="http://www.w3.org/2000/svg"><path d="M0 0 L200 14 L400 0 V24 H0 Z" fill="currentColor" fill-opacity="0.2"/><path d="M0 0 L200 14 L400 0" fill="none" stroke="currentColor" stroke-width="2.5" stroke-opacity="0.35" stroke-linecap="round" stroke-linejoin="round"/></svg>',
                                             colorFilter: ColorFilter.mode(
-                                              PostThemeConstants
-                                                  .postHandleColor,
+                                              AppColors.gray200,
                                               BlendMode.srcIn,
                                             ),
                                             fit: BoxFit.fill,

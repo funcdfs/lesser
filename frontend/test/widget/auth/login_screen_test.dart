@@ -3,7 +3,6 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:lesser/core/validation/validators.dart';
 
 /// Tests for login screen validation logic and UI patterns.
-/// Note: Full widget tests for LoginScreen are pending forui API migration.
 void main() {
   group('Login Validation Logic', () {
     test('validates empty username', () {

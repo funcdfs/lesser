@@ -122,14 +122,14 @@ class _StoryItem extends StatelessWidget {
             gradient: hasUnseenStory
                 ? const LinearGradient(
                     colors: [
-                      Color(0xFFFFD600), // 黄色
-                      Color(0xFFFF0169), // 品红
-                      Color(0xFFD300C5), // 紫色
+                      AppColors.storyGradientYellow,
+                      AppColors.storyGradientPink,
+                      AppColors.storyGradientPurple,
                     ],
                     begin: Alignment.bottomLeft,
                     end: Alignment.topRight,
                   )
-                : const LinearGradient(colors: [Colors.grey, Colors.grey]),
+                : LinearGradient(colors: [AppColors.gray600, AppColors.gray600]),
           ),
           child: Container(
             padding: const EdgeInsets.all(2), // 渐变环内部的白色隔离圈

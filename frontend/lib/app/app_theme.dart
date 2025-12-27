@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:tdesign_flutter/tdesign_flutter.dart';
 import '../shared/theme/theme.dart';
 
 /// 应用主题配置
@@ -6,9 +7,16 @@ import '../shared/theme/theme.dart';
 /// 负责：
 /// - MaterialApp / CupertinoApp 的主题
 /// - 全局 ThemeData 和 ColorScheme
+/// - TDesign 主题配置
 /// - 任何 UI 不应直接定义颜色，都应使用这里的主题
 class AppTheme {
   AppTheme._();
+
+  /// TDesign 深色主题数据
+  /// 使用 TDesign 默认主题数据
+  static TDThemeData get tdDarkTheme {
+    return TDThemeData.defaultData();
+  }
 
   /// Light theme
   static ThemeData lightTheme() {
@@ -114,13 +122,50 @@ class AppTheme {
     );
   }
 
-  /// Dark theme (预留)
+  /// Dark theme - 深色主题
   static ThemeData darkTheme() {
     return ThemeData(
       useMaterial3: true,
       brightness: Brightness.dark,
-      colorScheme: const ColorScheme.dark(),
-      scaffoldBackgroundColor: AppColors.zinc950,
+      colorScheme: ColorScheme.dark(
+        surface: AppColors.surface,
+        onSurface: AppColors.onSurface,
+        primary: AppColors.primary,
+        onPrimary: AppColors.primaryForeground,
+        secondary: AppColors.secondary,
+        onSecondary: AppColors.secondaryForeground,
+        tertiary: AppColors.accent,
+        onTertiary: AppColors.accentForeground,
+        error: AppColors.error,
+        onError: AppColors.errorForeground,
+        outline: AppColors.border,
+        surfaceContainerHighest: AppColors.surfaceVariant,
+      ),
+      scaffoldBackgroundColor: AppColors.background,
+      cardColor: AppColors.card,
+      dividerColor: AppColors.divider,
+      appBarTheme: const AppBarTheme(
+        backgroundColor: AppColors.background,
+        foregroundColor: AppColors.foreground,
+        elevation: 0,
+        centerTitle: true,
+      ),
+      cardTheme: CardThemeData(
+        color: AppColors.card,
+        elevation: 0,
+        shape: RoundedRectangleBorder(
+          borderRadius: AppRadius.card,
+        ),
+      ),
+      bottomNavigationBarTheme: const BottomNavigationBarThemeData(
+        backgroundColor: AppColors.background,
+        selectedItemColor: AppColors.foreground,
+        unselectedItemColor: AppColors.mutedForeground,
+        showSelectedLabels: false,
+        showUnselectedLabels: false,
+        elevation: 0,
+        type: BottomNavigationBarType.fixed,
+      ),
     );
   }
 
@@ -252,17 +297,4 @@ class AppFontSize {
   static const double medium = 14;
   static const double small = 12;
   static const double xs = 11;
-}
-
-/// 间距常量
-class AppSpacing {
-  AppSpacing._();
-
-  static const double xs = 4;
-  static const double sm = 8;
-  static const double md = 12;
-  static const double lg = 16;
-  static const double xl = 24;
-  static const double xxl = 32;
-  static const double xxxl = 48;
 }

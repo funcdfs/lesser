@@ -309,7 +309,7 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
                 '${index + 1}',
                 style: textTheme.titleLarge?.copyWith(
                   color: index < 3
-                      ? const Color(0xFFFFD700)
+                      ? AppColors.rankingGold
                       : AppColors.mutedForeground,
                   fontWeight: FontWeight.bold,
                 ),
@@ -368,7 +368,7 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
           Text(
             '# 热门标签',
             style: textTheme.headlineSmall?.copyWith(
-              color: const Color(0xFF4CAF50),
+              color: AppColors.tagGreen,
             ),
           ),
           const SizedBox(height: AppSpacing.md),

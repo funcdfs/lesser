@@ -183,6 +183,25 @@ class AppColors {
   static const Color brandForeground = white;
 
   // ============================================================================
+  // 特殊功能色 - 用于特定 UI 元素
+  // ============================================================================
+
+  /// 故事渐变色 - 黄色
+  static const Color storyGradientYellow = Color(0xFFFFD600);
+
+  /// 故事渐变色 - 品红
+  static const Color storyGradientPink = Color(0xFFFF0169);
+
+  /// 故事渐变色 - 紫色
+  static const Color storyGradientPurple = Color(0xFFD300C5);
+
+  /// 排名金色 - 用于前三名
+  static const Color rankingGold = Color(0xFFFFD700);
+
+  /// 标签绿色 - 用于热门标签
+  static const Color tagGreen = Color(0xFF4CAF50);
+
+  // ============================================================================
   // 强调色 - 紫色系列
   // ============================================================================
 

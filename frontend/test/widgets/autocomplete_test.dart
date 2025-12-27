@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:forui/forui.dart';
 import 'package:lesser/shared/widgets/autocomplete.dart';
 
 void main() {
@@ -19,8 +18,8 @@ void main() {
       // 验证组件是否存在
       expect(find.byType(AppAutocomplete), findsOneWidget);
 
-      // 验证 forui 的 FAutocomplete 组件是否被正确渲染
-      expect(find.byType(FAutocomplete), findsOneWidget);
+      // 验证 Flutter 的 Autocomplete 组件是否被正确渲染
+      expect(find.byType(Autocomplete<String>), findsOneWidget);
     });
 
     testWidgets('renders with hint text', (WidgetTester tester) async {
@@ -66,16 +65,14 @@ void main() {
       );
 
       // 验证组件是否处于禁用状态
-      final autocomplete = tester.widget<FAutocomplete>(
-        find.byType(FAutocomplete),
-      );
-      expect(autocomplete.enabled, isFalse);
+      final textField = tester.widget<TextField>(find.byType(TextField));
+      expect(textField.enabled, isFalse);
     });
 
     testWidgets('calls onChanged when text changes', (
       WidgetTester tester,
     ) async {
-      TextEditingValue? capturedValue;
+      String? capturedValue;
 
       await tester.pumpWidget(
         MaterialApp(
@@ -95,7 +92,56 @@ void main() {
 
       // 验证 onChanged 回调是否被调用
       expect(capturedValue, isNotNull);
-      expect(capturedValue!.text, 'Ap');
+      expect(capturedValue, 'Ap');
+    });
+
+    testWidgets('shows filtered options when typing', (
+      WidgetTester tester,
+    ) async {
+      await tester.pumpWidget(
+        MaterialApp(
+          home: Scaffold(
+            body: AppAutocomplete(items: testItems),
+          ),
+        ),
+      );
+
+      // 输入文本以触发选项显示
+      final textFieldFinder = find.byType(TextField);
+      await tester.enterText(textFieldFinder, 'A');
+      await tester.pumpAndSettle();
+
+      // 验证过滤后的选项是否显示
+      expect(find.text('Apple'), findsOneWidget);
+    });
+
+    testWidgets('calls onSelected when option is selected', (
+      WidgetTester tester,
+    ) async {
+      String? selectedValue;
+
+      await tester.pumpWidget(
+        MaterialApp(
+          home: Scaffold(
+            body: AppAutocomplete(
+              items: testItems,
+              onSelected: (value) => selectedValue = value,
+            ),
+          ),
+        ),
+      );
+
+      // 输入文本以触发选项显示
+      final textFieldFinder = find.byType(TextField);
+      await tester.enterText(textFieldFinder, 'App');
+      await tester.pumpAndSettle();
+
+      // 点击选项
+      await tester.tap(find.text('Apple'));
+      await tester.pumpAndSettle();
+
+      // 验证 onSelected 回调是否被调用
+      expect(selectedValue, 'Apple');
     });
   });
 }

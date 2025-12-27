@@ -245,7 +245,7 @@ class _CommentItemState extends State<_CommentItem> {
                           const Icon(
                             Icons.verified,
                             size: 10,
-                            color: Colors.blue,
+                            color: AppColors.info,
                           ),
                         ],
                       ],

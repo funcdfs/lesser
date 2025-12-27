@@ -40,7 +40,7 @@ dependencies:
   cached_network_image: ^3.4.1
   flutter_staggered_grid_view: ^0.7.0
   # TDesign Flutter UI Library
-  tdesign_flutter: ^0.1.8
+  tdesign_flutter: ^0.2.6
 
   # Networking & State Management
   http: ^1.2.0

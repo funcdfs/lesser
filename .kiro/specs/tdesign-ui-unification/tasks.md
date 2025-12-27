@@ -134,94 +134,94 @@
     - 应用深色主题样式
     - _Requirements: 7.2_
   
-  - [ ] 8.3 更新现有对话框使用
+  - [x] 8.3 更新现有对话框使用
     - 更新 `frontend/lib/features/settings/presentation/screens/profile_screen.dart` 中的对话框
     - 使用 AppDialog 替换 AlertDialog
     - _Requirements: 7.1_
 
-- [ ] 9. 头像和图片组件迁移
-  - [ ] 9.1 创建 AppAvatar 组件封装 TDAvatar
+- [x] 9. 头像和图片组件迁移
+  - [x] 9.1 创建 AppAvatar 组件封装 TDAvatar
     - 在 `frontend/lib/shared/widgets/` 创建 `app_avatar.dart`
     - 支持 small, medium, large 尺寸
     - 支持图片和文字头像
     - _Requirements: 8.1, 8.3_
   
-  - [ ] 9.2 更新现有头像使用
+  - [x] 9.2 更新现有头像使用
     - 更新 `frontend/lib/shared/widgets/avatar.dart`
     - 使用 TDAvatar 替换自定义实现
     - _Requirements: 8.1_
   
-  - [ ] 9.3 创建 AppImage 组件封装 TDImage
+  - [x] 9.3 创建 AppImage 组件封装 TDImage
     - 在 `frontend/lib/shared/widgets/` 创建 `app_image.dart`
     - 支持 placeholder 和 error 状态
     - _Requirements: 8.2, 8.4_
 
-- [ ] 10. 加载和状态组件迁移
-  - [ ] 10.1 创建 AppLoading 组件封装 TDLoading
+- [x] 10. 加载和状态组件迁移
+  - [x] 10.1 创建 AppLoading 组件封装 TDLoading
     - 在 `frontend/lib/shared/widgets/` 创建 `app_loading.dart`
     - 支持不同尺寸
     - 应用深色主题样式
     - _Requirements: 9.1, 9.4_
   
-  - [ ] 10.2 更新 shimmer 组件使用 TDSkeleton
+  - [x] 10.2 更新 shimmer 组件使用 TDSkeleton
     - 更新 `frontend/lib/shared/widgets/shimmer.dart`
     - 使用 TDSkeleton 替换自定义实现
     - _Requirements: 9.2_
   
-  - [ ] 10.3 创建 AppEmpty 组件封装 TDEmpty
+  - [x] 10.3 创建 AppEmpty 组件封装 TDEmpty
     - 在 `frontend/lib/shared/widgets/` 创建 `app_empty.dart`
     - 支持自定义图标和文字
     - _Requirements: 9.3_
 
-- [ ] 11. Checkpoint - 验证所有组件迁移
+- [x] 11. Checkpoint - 验证所有组件迁移
   - 确保所有测试通过
   - 验证所有页面正常渲染
   - 如有问题请询问用户
 
-- [ ] 12. 清理遗留代码
-  - [ ] 12.1 移除 forui 相关代码
+- [x] 12. 清理遗留代码
+  - [x] 12.1 移除 forui 相关代码
     - 删除所有 forui 导入
     - 删除 `frontend/lib/shared/widgets/autocomplete.dart` 中的 forui 依赖
     - _Requirements: 10.1_
   
-  - [ ] 12.2 清理重复的自定义组件
+  - [x] 12.2 清理重复的自定义组件
     - 审查 `frontend/lib/shared/widgets/` 目录
     - 移除与 TDesign 功能重复的组件
     - _Requirements: 10.2_
   
-  - [ ] 12.3 清理硬编码颜色值
+  - [x] 12.3 清理硬编码颜色值
     - 扫描所有 UI 组件文件
     - 将硬编码颜色替换为设计令牌
     - _Requirements: 10.3_
   
-  - [ ] 12.4 更新 shared widgets index
+  - [x] 12.4 更新 shared widgets index
     - 更新 `frontend/lib/shared/widgets/index.dart`
     - 导出所有新的 TDesign 封装组件
     - _Requirements: 10.4_
 
-- [ ] 13. 删除旧主题文件
-  - [ ] 13.1 清理旧的主题定义
+- [x] 13. 删除旧主题文件
+  - [x] 13.1 清理旧的主题定义
     - 移除 `frontend/lib/shared/theme/theme.dart` 中的废弃代码
     - 保留必要的设计令牌
     - _Requirements: 10.2_
 
-- [ ] 14. 属性测试
-  - [ ] 14.1 编写 Property 1 测试：无遗留 UI 导入
+- [x] 14. 属性测试
+  - [x] 14.1 编写 Property 1 测试：无遗留 UI 导入
     - **Property 1: No Legacy UI Imports**
     - **Validates: Requirements 1.2, 4.3, 10.1**
     - 扫描所有 Dart 文件验证无 forui 导入
   
-  - [ ] 14.2 编写 Property 2 测试：无硬编码颜色
+  - [x] 14.2 编写 Property 2 测试：无硬编码颜色
     - **Property 2: No Hardcoded Colors in UI Components**
     - **Validates: Requirements 2.7, 10.3**
     - 扫描 UI 组件文件验证无硬编码颜色值
   
-  - [ ] 14.3 编写 Property 4 测试：头像尺寸一致性
+  - [x] 14.3 编写 Property 4 测试：头像尺寸一致性
     - **Property 4: Avatar Size Consistency**
     - **Validates: Requirements 8.3**
     - 验证所有有效尺寸渲染正确
 
-- [ ] 15. Widget 测试
+- [-] 15. Widget 测试
   - [ ] 15.1 编写按钮组件测试
     - 测试各种按钮类型渲染
     - 测试 loading 和 disabled 状态
