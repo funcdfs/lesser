@@ -70,7 +70,7 @@ class _PostDetailScreenState extends State<PostDetailScreen>
               child: Container(
                 width: double.infinity,
                 height: double.infinity,
-                color: Colors.black.withOpacity(0.3),
+                color: Colors.black.withValues(alpha: 0.3),
               ),
             ),
             LayoutBuilder(
@@ -93,13 +93,13 @@ class _PostDetailScreenState extends State<PostDetailScreen>
                             borderRadius: BorderRadius.circular(AppRadius.xl2),
                             boxShadow: [
                               BoxShadow(
-                                color: Colors.black.withOpacity(0.15),
+                                color: Colors.black.withValues(alpha: 0.15),
                                 blurRadius: 30,
                                 spreadRadius: 0,
                                 offset: const Offset(0, 10),
                               ),
                               BoxShadow(
-                                color: Colors.black.withOpacity(0.1),
+                                color: Colors.black.withValues(alpha: 0.1),
                                 blurRadius: 10,
                                 spreadRadius: 0,
                                 offset: const Offset(0, 5),

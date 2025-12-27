@@ -6,8 +6,6 @@ import 'package:lesser/core/validation/validators.dart';
 import 'package:lesser/features/auth/presentation/providers/auth_provider.dart';
 import 'package:lesser/features/auth/domain/models/auth_state.dart';
 
-/// 注册界面 - 使用 AuthProvider 进行状态管理
-/// Requirements: 1.1, 1.2, 1.3, 1.4, 1.5, 1.6, 7.1, 7.2
 class RegisterScreen extends ConsumerStatefulWidget {
   const RegisterScreen({super.key});
 
@@ -21,8 +19,6 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
   final TextEditingController _passwordController = TextEditingController();
   final TextEditingController _confirmPasswordController =
       TextEditingController();
-  bool _obscurePassword = true;
-  bool _obscureConfirmPassword = true;
   String? _localError;
 
   @override
@@ -34,35 +30,30 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
     super.dispose();
   }
 
-  /// 验证输入字段 (Requirements: 1.2, 1.4)
   bool _validateInputs() {
     final username = _usernameController.text.trim();
     final email = _emailController.text.trim();
     final password = _passwordController.text.trim();
     final confirmPassword = _confirmPasswordController.text.trim();
 
-    // Validate username
     final usernameError = Validators.validateUsername(username);
     if (usernameError != null) {
       setState(() => _localError = usernameError);
       return false;
     }
 
-    // Validate email
     final emailError = Validators.validateEmail(email);
     if (emailError != null) {
       setState(() => _localError = emailError);
       return false;
     }
 
-    // Validate password
     final passwordError = Validators.validatePassword(password);
     if (passwordError != null) {
       setState(() => _localError = passwordError);
       return false;
     }
 
-    // Validate confirm password
     final confirmError = Validators.validatePasswordConfirm(
       password,
       confirmPassword,
@@ -76,13 +67,10 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
     return true;
   }
 
-  /// 处理注册 (Requirements: 1.1, 1.5, 1.6)
   Future<void> _handleRegister() async {
     if (!_validateInputs()) return;
 
-    await ref
-        .read(authProvider.notifier)
-        .register(
+    await ref.read(authProvider.notifier).register(
           username: _usernameController.text.trim(),
           email: _emailController.text.trim(),
           password: _passwordController.text.trim(),
@@ -94,25 +82,22 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
   Widget build(BuildContext context) {
     final authState = ref.watch(authProvider);
 
-    // 监听认证状态变化 (Requirements: 1.6, 7.1, 7.2)
     ref.listen<AuthState>(authProvider, (previous, next) {
       next.when(
         initial: () {},
         loading: () {},
         authenticated: (user) {
           if (mounted) {
-            ScaffoldMessenger.of(
-              context,
-            ).showSnackBar(CustomSnackBar.success(message: '注册成功'));
+            ScaffoldMessenger.of(context)
+                .showSnackBar(CustomSnackBar.success(message: '注册成功'));
             Navigator.pushReplacementNamed(context, '/main');
           }
         },
         unauthenticated: () {},
         error: (message) {
           if (mounted) {
-            ScaffoldMessenger.of(
-              context,
-            ).showSnackBar(CustomSnackBar.error(message: message));
+            ScaffoldMessenger.of(context)
+                .showSnackBar(CustomSnackBar.error(message: message));
           }
         },
       );
@@ -145,63 +130,43 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                   style: TextStyle(fontSize: 16, color: Colors.grey),
                 ),
                 const SizedBox(height: 40),
-                // 用户名
                 FTextField(
-                  controller: _usernameController,
+                  control: FTextFieldControl.managed(
+                    controller: _usernameController,
+                  ),
                   label: const Text('用户名'),
                   hint: '请输入用户名',
                   enabled: !isLoading,
                 ),
                 const SizedBox(height: 16),
-                // 邮箱
                 FTextField(
-                  controller: _emailController,
+                  control: FTextFieldControl.managed(
+                    controller: _emailController,
+                  ),
                   label: const Text('邮箱'),
                   hint: '请输入邮箱',
                   enabled: !isLoading,
                   keyboardType: TextInputType.emailAddress,
                 ),
                 const SizedBox(height: 16),
-                // 密码
-                FTextField(
-                  controller: _passwordController,
+                FTextField.password(
+                  control: FTextFieldControl.managed(
+                    controller: _passwordController,
+                  ),
                   label: const Text('密码'),
                   hint: '请输入密码',
-                  obscureText: _obscurePassword,
                   enabled: !isLoading,
-                  suffix: IconButton(
-                    icon: Icon(
-                      _obscurePassword
-                          ? Icons.visibility_off
-                          : Icons.visibility,
-                      color: Colors.grey,
-                    ),
-                    onPressed: () =>
-                        setState(() => _obscurePassword = !_obscurePassword),
-                  ),
                 ),
                 const SizedBox(height: 16),
-                // 确认密码
-                FTextField(
-                  controller: _confirmPasswordController,
+                FTextField.password(
+                  control: FTextFieldControl.managed(
+                    controller: _confirmPasswordController,
+                  ),
                   label: const Text('确认密码'),
                   hint: '请再次输入密码',
-                  obscureText: _obscureConfirmPassword,
                   enabled: !isLoading,
-                  suffix: IconButton(
-                    icon: Icon(
-                      _obscureConfirmPassword
-                          ? Icons.visibility_off
-                          : Icons.visibility,
-                      color: Colors.grey,
-                    ),
-                    onPressed: () => setState(
-                      () => _obscureConfirmPassword = !_obscureConfirmPassword,
-                    ),
-                  ),
                 ),
                 const SizedBox(height: 24),
-                // 错误信息显示 (Requirements 7.1, 7.2)
                 if (displayError != null)
                   Container(
                     margin: const EdgeInsets.only(bottom: 16),
@@ -231,12 +196,11 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                       ],
                     ),
                   ),
-                // 注册按钮
                 SizedBox(
                   width: double.infinity,
                   child: FButton(
                     onPress: isLoading ? null : _handleRegister,
-                    label: isLoading
+                    child: isLoading
                         ? const SizedBox(
                             width: 20,
                             height: 20,
@@ -249,7 +213,6 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                   ),
                 ),
                 const SizedBox(height: 24),
-                // 登录链接
                 Row(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
@@ -261,9 +224,9 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                       onPressed: isLoading
                           ? null
                           : () => Navigator.pushReplacementNamed(
-                              context,
-                              '/login',
-                            ),
+                                context,
+                                '/login',
+                              ),
                       style: ButtonStyle(
                         foregroundColor: WidgetStateProperty.all(
                           const Color(0xFFEE1D52),

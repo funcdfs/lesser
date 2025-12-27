@@ -41,35 +41,35 @@ class _NetworkNeighborsWidgetState extends State<NetworkNeighborsWidget> {
 
   // 模拟好友数据
   final List<UserItem> _friends = const [
-    const UserItem(
+    UserItem(
       id: '1',
       name: '小明',
       avatarUrl: 'https://picsum.photos/seed/user1/200',
       isOnline: true,
       status: '在线',
     ),
-    const UserItem(
+    UserItem(
       id: '2',
       name: '小红',
       avatarUrl: 'https://picsum.photos/seed/user2/200',
       isOnline: false,
       status: '离线',
     ),
-    const UserItem(
+    UserItem(
       id: '3',
       name: '小李',
       avatarUrl: 'https://picsum.photos/seed/user3/200',
       isOnline: true,
       status: '在线',
     ),
-    const UserItem(
+    UserItem(
       id: '4',
       name: '小王',
       avatarUrl: 'https://picsum.photos/seed/user4/200',
       isOnline: false,
       status: '离线',
     ),
-    const UserItem(
+    UserItem(
       id: '5',
       name: '小张',
       avatarUrl: 'https://picsum.photos/seed/user5/200',
@@ -80,19 +80,19 @@ class _NetworkNeighborsWidgetState extends State<NetworkNeighborsWidget> {
 
   // 模拟粉丝数据
   final List<UserItem> _followers = const [
-    const UserItem(
+    UserItem(
       id: '6',
       name: '粉丝1',
       avatarUrl: 'https://picsum.photos/seed/follower1/200',
       isOnline: false,
     ),
-    const UserItem(
+    UserItem(
       id: '7',
       name: '粉丝2',
       avatarUrl: 'https://picsum.photos/seed/follower2/200',
       isOnline: true,
     ),
-    const UserItem(
+    UserItem(
       id: '8',
       name: '粉丝3',
       avatarUrl: 'https://picsum.photos/seed/follower3/200',
@@ -102,13 +102,13 @@ class _NetworkNeighborsWidgetState extends State<NetworkNeighborsWidget> {
 
   // 模拟关注数据
   final List<UserItem> _following = const [
-    const UserItem(
+    UserItem(
       id: '9',
       name: '关注1',
       avatarUrl: 'https://picsum.photos/seed/following1/200',
       isOnline: true,
     ),
-    const UserItem(
+    UserItem(
       id: '10',
       name: '关注2',
       avatarUrl: 'https://picsum.photos/seed/following2/200',

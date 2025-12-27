@@ -63,7 +63,7 @@ void main() {
       (letters) {
         // Ensure username meets minimum length
         final username = letters.length < ValidationRules.minUsernameLength
-            ? 'usr${letters}'
+            ? 'usr$letters'
             : letters.length > ValidationRules.maxUsernameLength
                 ? letters.substring(0, ValidationRules.maxUsernameLength)
                 : letters;

@@ -146,6 +146,12 @@ frontend/windows/flutter/ephemeral/
 frontend/windows/CMakeSettings.json
 frontend/windows/out/
 
+# ==========================================
+# Flutter/Dart Generated Files
+# ==========================================
+*.g.dart
+*.freezed.dart
+*.chopper.dart
 
 # ==========================================
 # Database related 

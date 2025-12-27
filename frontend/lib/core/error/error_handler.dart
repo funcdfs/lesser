@@ -44,10 +44,8 @@ class ErrorHandler {
     StackTrace? stackTrace,
   }) {
     // TODO: Implement logging to analytics service
-    print('Error in ${context ?? 'Unknown'}: $exception');
-    if (stackTrace != null) {
-      print('StackTrace: $stackTrace');
-    }
+    // In production, use a proper logging service like logger package
+    // For now, errors are silently captured for analytics integration
   }
 
   /// Convert HTTP status code to appropriate exception

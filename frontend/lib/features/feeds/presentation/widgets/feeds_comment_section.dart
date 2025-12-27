@@ -200,9 +200,8 @@ class _FeedsCommentSectionState extends State<FeedsCommentSection> {
 
 class _CommentItem extends StatefulWidget {
   final Comment comment;
-  final bool isReply;
 
-  const _CommentItem({required this.comment, this.isReply = false});
+  const _CommentItem({required this.comment});
 
   @override
   State<_CommentItem> createState() => _CommentItemState();
@@ -214,9 +213,7 @@ class _CommentItemState extends State<_CommentItem> {
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: EdgeInsets.only(
-        bottom: widget.isReply ? AppSpacing.md : AppSpacing.lg,
-      ),
+      padding: const EdgeInsets.only(bottom: AppSpacing.lg),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -226,7 +223,7 @@ class _CommentItemState extends State<_CommentItem> {
               Avatar(
                 avatarUrl: widget.comment.avatarUrl,
                 fallbackInitials: widget.comment.username,
-                size: widget.isReply ? 24 : 32,
+                size: 32,
               ),
               const SizedBox(width: AppSpacing.md),
               Expanded(

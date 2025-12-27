@@ -17,7 +17,6 @@ class LoginScreen extends ConsumerStatefulWidget {
 class _LoginScreenState extends ConsumerState<LoginScreen> {
   final TextEditingController _usernameController = TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
-  bool _obscurePassword = true;
   String? _localError;
 
   @override
@@ -31,7 +30,6 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
     final username = _usernameController.text.trim();
     final password = _passwordController.text.trim();
 
-    // Check for empty fields
     if (username.isEmpty) {
       setState(() => _localError = '请输入用户名或邮箱');
       return false;
@@ -42,7 +40,6 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
       return false;
     }
 
-    // Validate email format if input looks like email
     if (username.contains('@')) {
       final emailError = Validators.validateEmail(username);
       if (emailError != null) {
@@ -51,7 +48,6 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
       }
     }
 
-    // Validate password length
     if (password.length < 8) {
       setState(() => _localError = '密码长度至少为8个字符');
       return false;
@@ -64,9 +60,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
   Future<void> _handleLogin() async {
     if (!_validateInputs()) return;
 
-    await ref
-        .read(authProvider.notifier)
-        .login(
+    await ref.read(authProvider.notifier).login(
           username: _usernameController.text.trim(),
           password: _passwordController.text.trim(),
         );
@@ -86,9 +80,8 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
         unauthenticated: () {},
         error: (message) {
           if (mounted) {
-            ScaffoldMessenger.of(
-              context,
-            ).showSnackBar(CustomSnackBar.error(message: message));
+            ScaffoldMessenger.of(context)
+                .showSnackBar(CustomSnackBar.error(message: message));
           }
         },
       );
@@ -122,28 +115,21 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                 ),
                 const SizedBox(height: 48),
                 FTextField(
-                  controller: _usernameController,
+                  control: FTextFieldControl.managed(
+                    controller: _usernameController,
+                  ),
                   label: const Text('用户名'),
                   hint: '请输入用户名',
                   enabled: !isLoading,
                 ),
                 const SizedBox(height: 20),
-                FTextField(
-                  controller: _passwordController,
+                FTextField.password(
+                  control: FTextFieldControl.managed(
+                    controller: _passwordController,
+                  ),
                   label: const Text('密码'),
                   hint: '请输入密码',
-                  obscureText: _obscurePassword,
                   enabled: !isLoading,
-                  suffix: IconButton(
-                    icon: Icon(
-                      _obscurePassword
-                          ? Icons.visibility_off
-                          : Icons.visibility,
-                      color: Colors.grey,
-                    ),
-                    onPressed: () =>
-                        setState(() => _obscurePassword = !_obscurePassword),
-                  ),
                 ),
                 const SizedBox(height: 24),
                 if (displayError != null)
@@ -179,7 +165,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                   width: double.infinity,
                   child: FButton(
                     onPress: isLoading ? null : _handleLogin,
-                    label: isLoading
+                    child: isLoading
                         ? const SizedBox(
                             width: 20,
                             height: 20,
@@ -203,11 +189,11 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                       onPressed: isLoading
                           ? null
                           : () => Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                builder: (context) => const RegisterScreen(),
+                                context,
+                                MaterialPageRoute(
+                                  builder: (context) => const RegisterScreen(),
+                                ),
                               ),
-                            ),
                       style: ButtonStyle(
                         foregroundColor: WidgetStateProperty.all(
                           const Color(0xFFEE1D52),
