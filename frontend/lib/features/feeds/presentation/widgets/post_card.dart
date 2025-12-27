@@ -105,7 +105,7 @@ class _PostCardState extends State<PostCard> {
                     /// 帖子文本内容
                     ExpandableText(
                       text: widget.post.content,
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontSize: 15,
                         height: 1.4,
                         color: AppColors.foreground,
@@ -152,7 +152,7 @@ class _PostCardState extends State<PostCard> {
               children: [
                 Text(
                   widget.post.username,
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontWeight: FontWeight.w600,
                     fontSize: 15,
                     color: AppColors.foreground,
@@ -162,7 +162,7 @@ class _PostCardState extends State<PostCard> {
                 Flexible(
                   child: Text(
                     '@${widget.post.username.toLowerCase().replaceAll(' ', '_')}',
-                    style: const TextStyle(
+                    style: TextStyle(
                       color: AppColors.mutedForeground,
                       fontSize: 14,
                     ),
@@ -180,7 +180,7 @@ class _PostCardState extends State<PostCard> {
                   TimeFormatter.formatRelativeTime(
                     DateTime.parse(widget.post.createdAt),
                   ),
-                  style: const TextStyle(
+                  style: TextStyle(
                     color: AppColors.mutedForeground,
                     fontSize: 11,
                     fontWeight: FontWeight.w400,
@@ -201,7 +201,7 @@ class _PostCardState extends State<PostCard> {
                     TimeFormatter.formatAbsoluteTime(
                       DateTime.parse(widget.post.createdAt),
                     ),
-                    style: const TextStyle(
+                    style: TextStyle(
                       color: AppColors.mutedForeground,
                       fontSize: 11,
                       fontWeight: FontWeight.w400,
@@ -221,8 +221,8 @@ class _PostCardState extends State<PostCard> {
           top: 0,
           child: GestureDetector(
             onTap: _handleMoreTapped,
-            child: const Padding(
-              padding: EdgeInsets.all(4.0),
+            child: Padding(
+              padding: const EdgeInsets.all(4.0),
               child: Icon(
                 Icons.more_horiz,
                 size: 20,
@@ -274,7 +274,7 @@ class _PostCardState extends State<PostCard> {
               Icons.do_not_disturb_on_outlined,
               isDestructive: true,
             ),
-            const Divider(height: 1, color: AppColors.border),
+            Divider(height: 1, color: AppColors.border),
             _buildActionMenuItem(
               context,
               '举报帖子',

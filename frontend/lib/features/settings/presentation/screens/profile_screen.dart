@@ -4,6 +4,7 @@ import 'package:lesser/shared/theme/theme.dart';
 import 'package:lesser/shared/widgets/app_dialog.dart';
 import 'package:lesser/features/auth/presentation/providers/user_provider.dart';
 import 'package:lesser/features/auth/presentation/providers/auth_provider.dart';
+import 'package:lesser/features/settings/presentation/providers/theme_provider.dart';
 
 /// 个人资料和设置页面
 class ProfileScreen extends ConsumerWidget {
@@ -59,7 +60,7 @@ class _UserCard extends ConsumerWidget {
               children: [
                 Stack(
                   children: [
-                    const CircleAvatar(
+                    CircleAvatar(
                       radius: 40,
                       backgroundColor: AppColors.secondary,
                       backgroundImage: NetworkImage(
@@ -79,7 +80,7 @@ class _UserCard extends ConsumerWidget {
                             width: 2,
                           ),
                         ),
-                        child: const Icon(
+                        child: Icon(
                           Icons.star,
                           color: AppColors.background,
                           size: 12,
@@ -135,7 +136,7 @@ class _UserCard extends ConsumerWidget {
                 ),
                 IconButton(
                   onPressed: () {},
-                  icon: const Icon(
+                  icon: Icon(
                     Icons.edit_outlined,
                     color: AppColors.mutedForeground,
                   ),
@@ -502,10 +503,34 @@ class _SettingsSection extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final themeMode = ref.watch(themeProvider);
+    final isDark = themeMode == ThemeMode.dark;
+
     return Container(
       color: AppColors.background,
       child: Column(
         children: [
+          // 主题切换
+          ListTile(
+            leading: Icon(
+              isDark ? Icons.dark_mode_outlined : Icons.light_mode_outlined,
+              color: AppColors.mutedForeground,
+            ),
+            title: Text(
+              '深色模式',
+              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                color: AppColors.foreground,
+              ),
+            ),
+            trailing: Switch(
+              value: isDark,
+              onChanged: (value) {
+                ref.read(themeProvider.notifier).toggleTheme();
+              },
+              activeTrackColor: AppColors.primary,
+            ),
+          ),
+          _buildDivider(),
           _buildSettingItem(
             context,
             '通用设置',
@@ -570,7 +595,7 @@ class _SettingsSection extends ConsumerWidget {
           color: isDestructive ? AppColors.destructive : AppColors.foreground,
         ),
       ),
-      trailing: const Icon(
+      trailing: Icon(
         Icons.chevron_right,
         color: AppColors.mutedForeground,
       ),
@@ -579,7 +604,7 @@ class _SettingsSection extends ConsumerWidget {
   }
 
   Widget _buildDivider() {
-    return const Divider(
+    return Divider(
       height: 1,
       indent: 72,
       endIndent: 16,

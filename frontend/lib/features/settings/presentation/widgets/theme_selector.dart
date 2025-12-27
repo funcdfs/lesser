@@ -72,7 +72,7 @@ class ThemeSelector extends StatelessWidget {
               ),
             ),
             if (isSelected)
-              const Icon(
+              Icon(
                 Icons.check,
                 color: AppColors.primary,
               ),

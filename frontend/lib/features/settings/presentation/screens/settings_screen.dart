@@ -219,7 +219,7 @@ class SettingsScreen extends ConsumerWidget {
       ),
       trailing: trailing ??
           (onTap != null
-              ? const Icon(
+              ? Icon(
                   Icons.chevron_right,
                   color: AppColors.mutedForeground,
                 )
@@ -229,7 +229,7 @@ class SettingsScreen extends ConsumerWidget {
   }
 
   Widget _buildDivider() {
-    return const Divider(
+    return Divider(
       height: 1,
       indent: 72,
       endIndent: 16,

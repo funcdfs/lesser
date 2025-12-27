@@ -63,7 +63,7 @@ class _FeedsCommentSectionState extends State<FeedsCommentSection> {
   @override
   Widget build(BuildContext context) {
     return Container(
-      decoration: const BoxDecoration(
+      decoration: BoxDecoration(
         color: AppColors.background,
         borderRadius: BorderRadius.vertical(
           top: Radius.circular(AppRadius.xl2),

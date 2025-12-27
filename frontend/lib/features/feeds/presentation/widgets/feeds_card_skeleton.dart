@@ -23,7 +23,7 @@ class FeedsCardSkeleton extends StatelessWidget {
             Container(
               width: 40,
               height: 40,
-              decoration: const BoxDecoration(
+              decoration: BoxDecoration(
                 shape: BoxShape.circle,
                 color: AppColors.secondary,
               ),
@@ -107,7 +107,7 @@ class FeedsCardSkeleton extends StatelessWidget {
                       (_) => Container(
                         height: 20,
                         width: 20,
-                        decoration: const BoxDecoration(
+                        decoration: BoxDecoration(
                           shape: BoxShape.circle,
                           color: AppColors.secondary,
                         ),

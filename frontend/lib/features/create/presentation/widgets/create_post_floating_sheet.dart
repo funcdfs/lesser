@@ -116,8 +116,8 @@ class _CreatePostFloatingSheetState extends State<CreatePostFloatingSheet> {
             (option) => ListTile(
               title: Text(option),
               trailing: option == currentValue
-                  ? const Icon(Icons.check_circle, color: AppColors.primary)
-                  : const Icon(
+                  ? Icon(Icons.check_circle, color: AppColors.primary)
+                  : Icon(
                       Icons.circle_outlined,
                       color: AppColors.mutedForeground,
                     ),
@@ -137,7 +137,7 @@ class _CreatePostFloatingSheetState extends State<CreatePostFloatingSheet> {
   Widget build(BuildContext context) {
     return Container(
       height: MediaQuery.of(context).size.height * 0.9,
-      decoration: const BoxDecoration(
+      decoration: BoxDecoration(
         color: AppColors.background,
         borderRadius: BorderRadius.vertical(
           top: Radius.circular(AppRadius.xl3),
@@ -182,7 +182,7 @@ class _CreatePostFloatingSheetState extends State<CreatePostFloatingSheet> {
                   // 标题输入
                   TextField(
                     controller: _titleController,
-                    decoration: const InputDecoration(
+                    decoration: InputDecoration(
                       hintText: '文字标题',
                       hintStyle: TextStyle(
                         color: AppColors.mutedForeground,
@@ -199,7 +199,7 @@ class _CreatePostFloatingSheetState extends State<CreatePostFloatingSheet> {
                   // 内容输入
                   TextField(
                     controller: _contentController,
-                    decoration: const InputDecoration(
+                    decoration: InputDecoration(
                       hintText: '内容...',
                       hintStyle: TextStyle(
                         color: AppColors.mutedForeground,
@@ -251,7 +251,7 @@ class _CreatePostFloatingSheetState extends State<CreatePostFloatingSheet> {
                                       ),
                                     ],
                                   ),
-                                  child: const Icon(
+                                  child: Icon(
                                     Icons.close,
                                     size: 16,
                                     color: AppColors.foreground,
@@ -277,7 +277,7 @@ class _CreatePostFloatingSheetState extends State<CreatePostFloatingSheet> {
                         color: AppColors.secondary,
                         borderRadius: BorderRadius.circular(AppRadius.lg),
                       ),
-                      child: const Column(
+                  child: Column(
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
                           Icon(
@@ -378,7 +378,7 @@ class _CreatePostFloatingSheetState extends State<CreatePostFloatingSheet> {
       onTap: onTap,
       child: Container(
         padding: const EdgeInsets.symmetric(vertical: AppSpacing.md),
-        decoration: const BoxDecoration(
+        decoration: BoxDecoration(
           border: Border(bottom: BorderSide(color: AppColors.border)),
         ),
         child: Row(
@@ -389,10 +389,10 @@ class _CreatePostFloatingSheetState extends State<CreatePostFloatingSheet> {
               children: [
                 Text(
                   value,
-                  style: const TextStyle(color: AppColors.mutedForeground),
+                  style: TextStyle(color: AppColors.mutedForeground),
                 ),
                 const SizedBox(width: AppSpacing.xs),
-                const Icon(
+                Icon(
                   Icons.chevron_right,
                   size: 20,
                   color: AppColors.mutedForeground,

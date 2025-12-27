@@ -52,7 +52,28 @@ class AuthRepository {
   final ApiClient _apiClient;
   final Logger _logger = Logger();
 
+  /// 本地测试账号列表（用户名, 密码）
+  static const _localTestAccounts = {
+    'admin': 'fw142857',
+    'funcdfs': 'fw142857',
+  };
+
   AuthRepository(this._apiClient);
+
+  /// 检查是否为本地测试账号
+  bool _isLocalTestAccount(String username, String password) {
+    final expectedPassword = _localTestAccounts[username];
+    return expectedPassword != null && expectedPassword == password;
+  }
+
+  /// 创建本地测试用户的认证响应
+  AuthResponse _createLocalAuthResponse(String username) {
+    return AuthResponse(
+      token: 'local_test_token_${username}_${DateTime.now().millisecondsSinceEpoch}',
+      userId: username == 'admin' ? 1 : 2,
+      username: username,
+    );
+  }
 
   /// Register a new user
   Future<AuthResponse> register({
@@ -92,6 +113,15 @@ class AuthRepository {
     required String username,
     required String password,
   }) async {
+    // 检查是否为本地测试账号
+    if (_isLocalTestAccount(username, password)) {
+      _logger.i('Local test account login: $username');
+      final response = _createLocalAuthResponse(username);
+      // 保存 token
+      await TokenManager.saveToken(response.token);
+      return response;
+    }
+
     try {
       final response = await _apiClient.apiService.login({
         'username': username,

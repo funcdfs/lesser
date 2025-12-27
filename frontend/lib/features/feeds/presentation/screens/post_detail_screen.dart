@@ -153,7 +153,7 @@ class _PostDetailScreenState extends State<PostDetailScreen>
                                                     ),
                                                     Text(
                                                       '@${widget.post.username.toLowerCase().replaceAll(' ', '_')}',
-                                                      style: const TextStyle(
+                                                      style: TextStyle(
                                                         color: AppColors
                                                             .mutedForeground,
                                                         fontSize: 14,
@@ -171,11 +171,11 @@ class _PostDetailScreenState extends State<PostDetailScreen>
                                                           AppRadius.full,
                                                         ),
                                                   ),
-                                                  side: const BorderSide(
+                                                  side: BorderSide(
                                                     color: AppColors.border,
                                                   ),
                                                 ),
-                                                child: const Text(
+                                                child: Text(
                                                   '关注',
                                                   style: TextStyle(
                                                     color: AppColors.foreground,
@@ -191,7 +191,7 @@ class _PostDetailScreenState extends State<PostDetailScreen>
                                           ),
                                           child: Text(
                                             widget.post.content,
-                                            style: const TextStyle(
+                                            style: TextStyle(
                                               fontSize: 17,
                                               height: 1.5,
                                               color: AppColors.foreground,
@@ -218,13 +218,13 @@ class _PostDetailScreenState extends State<PostDetailScreen>
                                           ),
                                           child: Text(
                                             '${TimeFormatter.formatAbsoluteTime(postTime)} · ${TimeFormatter.formatRelativeTime(postTime)}',
-                                            style: const TextStyle(
+                                            style: TextStyle(
                                               color: AppColors.mutedForeground,
                                               fontSize: 13,
                                             ),
                                           ),
                                         ),
-                                        const Divider(
+                                        Divider(
                                           height: 1,
                                           color: AppColors.border,
                                         ),
@@ -248,7 +248,7 @@ class _PostDetailScreenState extends State<PostDetailScreen>
                                             responsive: false,
                                           ),
                                         ),
-                                        const Divider(
+                                        Divider(
                                           height: 1,
                                           color: AppColors.border,
                                         ),
@@ -275,7 +275,7 @@ class _PostDetailScreenState extends State<PostDetailScreen>
                                     right: 0,
                                     child: Container(
                                       height: 64,
-                                      decoration: const BoxDecoration(
+                                      decoration: BoxDecoration(
                                         gradient: LinearGradient(
                                           begin: Alignment.topCenter,
                                           end: Alignment.bottomCenter,
@@ -423,7 +423,7 @@ class _PostDetailScreenState extends State<PostDetailScreen>
                                                 ),
                                                 Text(
                                                   '@${widget.post.username.toLowerCase().replaceAll(' ', '_')}',
-                                                  style: const TextStyle(
+                                                  style: TextStyle(
                                                     color: AppColors
                                                         .mutedForeground,
                                                     fontSize: 14,
@@ -441,11 +441,11 @@ class _PostDetailScreenState extends State<PostDetailScreen>
                                                       AppRadius.full,
                                                     ),
                                               ),
-                                              side: const BorderSide(
+                                              side: BorderSide(
                                                 color: AppColors.border,
                                               ),
                                             ),
-                                            child: const Text(
+                                            child: Text(
                                               '关注',
                                               style: TextStyle(
                                                 color: AppColors.foreground,
@@ -461,7 +461,7 @@ class _PostDetailScreenState extends State<PostDetailScreen>
                                       ),
                                       child: Text(
                                         widget.post.content,
-                                        style: const TextStyle(
+                                        style: TextStyle(
                                           fontSize: 17,
                                           height: 1.5,
                                           color: AppColors.foreground,
@@ -485,13 +485,13 @@ class _PostDetailScreenState extends State<PostDetailScreen>
                                       ),
                                       child: Text(
                                         '${TimeFormatter.formatAbsoluteTime(postTime)} · ${TimeFormatter.formatRelativeTime(postTime)}',
-                                        style: const TextStyle(
+                                        style: TextStyle(
                                           color: AppColors.mutedForeground,
                                           fontSize: 13,
                                         ),
                                       ),
                                     ),
-                                    const Divider(
+                                    Divider(
                                       height: 1,
                                       color: AppColors.border,
                                     ),
@@ -513,7 +513,7 @@ class _PostDetailScreenState extends State<PostDetailScreen>
                                         responsive: false,
                                       ),
                                     ),
-                                    const Divider(
+                                    Divider(
                                       height: 1,
                                       color: AppColors.border,
                                     ),
@@ -538,7 +538,7 @@ class _PostDetailScreenState extends State<PostDetailScreen>
                                 right: 0,
                                 child: Container(
                                   height: 64,
-                                  decoration: const BoxDecoration(
+                                  decoration: BoxDecoration(
                                     gradient: LinearGradient(
                                       begin: Alignment.topCenter,
                                       end: Alignment.bottomCenter,

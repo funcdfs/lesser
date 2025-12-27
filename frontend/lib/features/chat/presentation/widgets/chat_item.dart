@@ -67,7 +67,7 @@ class ChatItem extends StatelessWidget {
           if (time.isNotEmpty)
             Text(
               time,
-              style: const TextStyle(
+              style: TextStyle(
                 fontSize: 12,
                 color: AppColors.mutedForeground,
               ),
@@ -82,13 +82,13 @@ class ChatItem extends StatelessWidget {
             ),
           ] else if (isMuted) ...[
             const SizedBox(height: 4),
-            const Icon(
+            Icon(
               Icons.notifications_off_outlined,
               color: AppColors.mutedForeground,
               size: 16,
             ),
           ] else if (showArrow)
-            const Icon(
+            Icon(
               Icons.chevron_right,
               color: AppColors.mutedForeground,
               size: 18,
@@ -137,7 +137,7 @@ class ChatItem extends StatelessWidget {
       ),
       child: Text(
         text,
-        style: const TextStyle(
+        style: TextStyle(
           fontSize: 8,
           fontWeight: FontWeight.bold,
           color: AppColors.background,

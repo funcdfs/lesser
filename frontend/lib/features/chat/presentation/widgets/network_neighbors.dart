@@ -325,7 +325,7 @@ class _NetworkNeighborsWidgetState extends State<NetworkNeighborsWidget> {
           CircleAvatar(
             radius: 36,
             backgroundColor: AppColors.secondary,
-            child: const Icon(Icons.chevron_right, color: AppColors.foreground),
+            child: Icon(Icons.chevron_right, color: AppColors.foreground),
           ),
           const SizedBox(height: AppSpacing.xs),
           SizedBox(

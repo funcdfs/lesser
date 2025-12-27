@@ -84,14 +84,14 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
                   },
                   decoration: InputDecoration(
                     hintText: '搜索文章、话题、用户...',
-                    prefixIcon: const Icon(
+                    prefixIcon: Icon(
                       Icons.search,
                       color: AppColors.mutedForeground,
                       size: 20,
                     ),
                     suffixIcon: _searchController.text.isNotEmpty
                         ? IconButton(
-                            icon: const Icon(
+                            icon: Icon(
                               Icons.clear,
                               color: AppColors.mutedForeground,
                               size: 18,
@@ -108,7 +108,7 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
               ),
             ),
             const SizedBox(width: AppSpacing.md),
-            const Icon(Icons.tune_outlined, color: AppColors.foreground),
+            Icon(Icons.tune_outlined, color: AppColors.foreground),
           ],
         ),
       ),
@@ -147,7 +147,7 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
                 children: [
                   Row(
                     children: [
-                      const Icon(Icons.history, color: AppColors.foreground),
+                      Icon(Icons.history, color: AppColors.foreground),
                       const SizedBox(width: AppSpacing.sm),
                       Text('搜索历史', style: textTheme.headlineSmall),
                     ],
@@ -156,7 +156,7 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
                     onPressed: () {
                       ref.read(searchHistoryProvider.notifier).clearHistory();
                     },
-                    child: const Text(
+                    child: Text(
                       '清空',
                       style: TextStyle(color: AppColors.mutedForeground),
                     ),
@@ -184,7 +184,7 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
                         children: [
                           Text(
                             query,
-                            style: const TextStyle(
+                            style: TextStyle(
                               color: AppColors.secondaryForeground,
                               fontSize: 14,
                             ),
@@ -196,7 +196,7 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
                                   .read(searchHistoryProvider.notifier)
                                   .removeFromHistory(query);
                             },
-                            child: const Icon(
+                            child: Icon(
                               Icons.close,
                               size: 14,
                               color: AppColors.mutedForeground,
@@ -228,7 +228,7 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
         children: [
           Row(
             children: [
-              const Icon(Icons.show_chart, color: AppColors.foreground),
+              Icon(Icons.show_chart, color: AppColors.foreground),
               const SizedBox(width: AppSpacing.sm),
               Text('热门榜单', style: textTheme.headlineSmall),
             ],
@@ -393,7 +393,7 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
                     ),
                     child: Text(
                       tag,
-                      style: const TextStyle(
+                      style: TextStyle(
                         color: AppColors.secondaryForeground,
                         fontSize: 14,
                       ),
@@ -427,7 +427,7 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                const Icon(
+                Icon(
                   Icons.search_off,
                   size: 64,
                   color: AppColors.mutedForeground,
@@ -510,7 +510,7 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            const Icon(
+            Icon(
               Icons.error_outline,
               size: 64,
               color: AppColors.mutedForeground,

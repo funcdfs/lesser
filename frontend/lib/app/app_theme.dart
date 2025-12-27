@@ -13,8 +13,12 @@ class AppTheme {
   AppTheme._();
 
   /// TDesign 深色主题数据
-  /// 使用 TDesign 默认主题数据
   static TDThemeData get tdDarkTheme {
+    return TDThemeData.defaultData();
+  }
+
+  /// TDesign 浅色主题数据
+  static TDThemeData get tdLightTheme {
     return TDThemeData.defaultData();
   }
 
@@ -52,15 +56,15 @@ class AppTheme {
         fillColor: AppColors.input,
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(AppSpacing.md),
-          borderSide: const BorderSide(color: AppColors.border),
+          borderSide: BorderSide(color: AppColors.border),
         ),
         enabledBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(AppSpacing.md),
-          borderSide: const BorderSide(color: AppColors.border),
+          borderSide: BorderSide(color: AppColors.border),
         ),
         focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(AppSpacing.md),
-          borderSide: const BorderSide(color: AppColors.primary, width: 2),
+          borderSide: BorderSide(color: AppColors.primary, width: 2),
         ),
         contentPadding: const EdgeInsets.symmetric(
           horizontal: AppSpacing.md,
@@ -100,7 +104,7 @@ class AppTheme {
       outlinedButtonTheme: OutlinedButtonThemeData(
         style: OutlinedButton.styleFrom(
           foregroundColor: AppColors.primary,
-          side: const BorderSide(color: AppColors.border),
+          side: BorderSide(color: AppColors.border),
           padding: const EdgeInsets.symmetric(
             horizontal: AppSpacing.lg,
             vertical: AppSpacing.md,
@@ -144,7 +148,7 @@ class AppTheme {
       scaffoldBackgroundColor: AppColors.background,
       cardColor: AppColors.card,
       dividerColor: AppColors.divider,
-      appBarTheme: const AppBarTheme(
+      appBarTheme: AppBarTheme(
         backgroundColor: AppColors.background,
         foregroundColor: AppColors.foreground,
         elevation: 0,
@@ -157,7 +161,7 @@ class AppTheme {
           borderRadius: AppRadius.card,
         ),
       ),
-      bottomNavigationBarTheme: const BottomNavigationBarThemeData(
+      bottomNavigationBarTheme: BottomNavigationBarThemeData(
         backgroundColor: AppColors.background,
         selectedItemColor: AppColors.foreground,
         unselectedItemColor: AppColors.mutedForeground,

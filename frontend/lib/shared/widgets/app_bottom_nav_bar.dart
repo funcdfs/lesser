@@ -152,7 +152,7 @@ class AppBottomNavBar extends StatelessWidget {
       decoration: BoxDecoration(
         color: backgroundColor,
         border: showBorder
-            ? const Border(
+            ? Border(
                 top: BorderSide(
                   color: AppColors.border,
                   width: 0.5,
@@ -195,7 +195,7 @@ class AppBottomNavBar extends StatelessWidget {
       decoration: BoxDecoration(
         color: backgroundColor,
         border: showBorder
-            ? const Border(
+            ? Border(
                 top: BorderSide(
                   color: AppColors.border,
                   width: 0.5,
@@ -348,7 +348,7 @@ class AppBottomNavBar extends StatelessWidget {
           color: AppColors.foreground,
           borderRadius: BorderRadius.circular(AppRadius.lg),
         ),
-        child: const Icon(
+        child: Icon(
           Icons.add,
           color: AppColors.background,
           size: 24,

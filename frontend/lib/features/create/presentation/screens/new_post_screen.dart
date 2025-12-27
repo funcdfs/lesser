@@ -240,14 +240,14 @@ class _NewPostScreenState extends ConsumerState<NewPostScreen> {
                   color: theme.colorScheme.onSurface,
                 ),
                 maxLines: null,
-                decoration: const InputDecoration(
+                decoration: InputDecoration(
                   hintText: '有什么新鲜事吗?',
                   border: InputBorder.none,
                   hintStyle: TextStyle(
                     color: AppColors.mutedForeground,
                     fontSize: 16,
                   ),
-                  contentPadding: EdgeInsets.only(top: 8, bottom: 8),
+                  contentPadding: const EdgeInsets.only(top: 8, bottom: 8),
                 ),
               ),
               if (_selectedImages.isNotEmpty) _buildImagePreviews(),
@@ -364,26 +364,26 @@ class _NewPostScreenState extends ConsumerState<NewPostScreen> {
   }
 
   Widget _buildActionIcons() {
-    const iconColor = AppColors.mutedForeground;
+    final iconColor = AppColors.mutedForeground;
     return Row(
       children: [
         IconButton(
-          icon: const Icon(Icons.photo_outlined, color: iconColor, size: 24),
+          icon: Icon(Icons.photo_outlined, color: iconColor, size: 24),
           onPressed: _addMockImage,
           splashRadius: 24,
         ),
         IconButton(
-          icon: const Icon(Icons.alternate_email, color: iconColor, size: 24),
+          icon: Icon(Icons.alternate_email, color: iconColor, size: 24),
           onPressed: () {},
           splashRadius: 24,
         ),
         IconButton(
-          icon: const Icon(Icons.tag_outlined, color: iconColor, size: 24),
+          icon: Icon(Icons.tag_outlined, color: iconColor, size: 24),
           onPressed: () => setState(() => _selectedTopic = '探索'),
           splashRadius: 24,
         ),
         IconButton(
-          icon: const Icon(
+          icon: Icon(
             Icons.emoji_emotions_outlined,
             color: iconColor,
             size: 24,
@@ -392,7 +392,7 @@ class _NewPostScreenState extends ConsumerState<NewPostScreen> {
           splashRadius: 24,
         ),
         IconButton(
-          icon: const Icon(
+          icon: Icon(
             Icons.location_on_outlined,
             color: iconColor,
             size: 24,
@@ -514,7 +514,7 @@ class _NewPostScreenState extends ConsumerState<NewPostScreen> {
               padding: const EdgeInsets.all(4),
               child: Row(
                 children: [
-                  const Icon(
+                  Icon(
                     Icons.public,
                     size: 16,
                     color: AppColors.mutedForeground,
@@ -628,7 +628,7 @@ class _ReplySettingsSheet extends StatelessWidget {
                       color: theme.colorScheme.primary,
                       size: 24,
                     )
-                  : const Icon(
+                  : Icon(
                       Icons.circle_outlined,
                       size: 24,
                       color: AppColors.mutedForeground,

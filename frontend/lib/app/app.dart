@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:tdesign_flutter/tdesign_flutter.dart';
 import '../features/features.dart';
+import '../features/settings/presentation/providers/theme_provider.dart';
 import '../shared/theme/colors.dart';
 import '../shared/widgets/app_bottom_nav_bar.dart';
 import 'app_theme.dart';
@@ -13,13 +14,16 @@ class LesserApp extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final themeMode = ref.watch(themeProvider);
+    final isDark = themeMode == ThemeMode.dark;
+
     return TDTheme(
-      data: AppTheme.tdDarkTheme,
+      data: isDark ? AppTheme.tdDarkTheme : AppTheme.tdLightTheme,
       child: MaterialApp(
         title: 'Lesser',
-        theme: AppTheme.darkTheme(),
+        theme: AppTheme.lightTheme(),
         darkTheme: AppTheme.darkTheme(),
-        themeMode: ThemeMode.dark,
+        themeMode: themeMode,
         initialRoute: '/',
         onGenerateRoute: AppRouter.routeGenerator,
         navigatorKey: AppRouter.navigatorKey,
@@ -131,10 +135,10 @@ class _MainScreenState extends State<MainScreen> {
                     onDestinationSelected: _onItemTapped,
                     backgroundColor: Colors.transparent,
                     indicatorColor: AppColors.surfaceVariant,
-                    selectedIconTheme: const IconThemeData(
+                    selectedIconTheme: IconThemeData(
                       color: AppColors.foreground,
                     ),
-                    unselectedIconTheme: const IconThemeData(
+                    unselectedIconTheme: IconThemeData(
                       color: AppColors.mutedForeground,
                     ),
                     leading: Padding(

@@ -15,7 +15,7 @@ class StoriesBar extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       height: 120, // 增加高度以提供更好的间距防止溢出
-      decoration: const BoxDecoration(
+      decoration: BoxDecoration(
         color: AppColors.background,
         border: Border(bottom: BorderSide(color: AppColors.border, width: 0.5)),
       ),
@@ -78,15 +78,15 @@ class _MyStoryItem extends StatelessWidget {
             ),
           ),
           child: Container(
-            decoration: const BoxDecoration(
+            decoration: BoxDecoration(
               color: AppColors.secondary,
               shape: BoxShape.circle,
             ),
-            child: const Icon(Icons.add, size: 28, color: AppColors.foreground),
+            child: Icon(Icons.add, size: 28, color: AppColors.foreground),
           ),
         ),
         const SizedBox(height: 6),
-        const Text(
+        Text(
           '发状态',
           style: TextStyle(fontSize: 12, color: AppColors.mutedForeground),
         ),
@@ -133,7 +133,7 @@ class _StoryItem extends StatelessWidget {
           ),
           child: Container(
             padding: const EdgeInsets.all(2), // 渐变环内部的白色隔离圈
-            decoration: const BoxDecoration(
+            decoration: BoxDecoration(
               shape: BoxShape.circle,
               color: AppColors.background,
             ),

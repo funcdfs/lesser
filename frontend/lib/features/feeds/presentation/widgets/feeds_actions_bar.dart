@@ -261,7 +261,7 @@ class _FeedsActionButtonState extends State<FeedsActionButton>
                 const SizedBox(width: 6),
                 Text(
                   formatCount(widget.count!),
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: 13,
                     color: AppColors.mutedForeground,
                   ),
