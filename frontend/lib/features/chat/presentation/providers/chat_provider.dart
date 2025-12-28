@@ -109,6 +109,17 @@ class Conversations extends _$Conversations {
     }
   }
   
+  /// 清除所有未读消息
+  void clearAllUnreadCount() {
+    final currentState = state;
+    if (currentState is AsyncData<List<Conversation>>) {
+      final conversations = currentState.value.map((c) {
+        return c.copyWith(unreadCount: 0);
+      }).toList();
+      state = AsyncData(conversations);
+    }
+  }
+  
   /// 获取 mock 会话数据
   List<Conversation> _getMockConversations() {
     return [
@@ -190,5 +201,31 @@ int totalUnreadCount(Ref ref) {
     },
     loading: () => 0,
     error: (_, _) => 0,
+  );
+}
+
+/// 未读会话ID列表提供者（按时间从早到晚排序）
+@riverpod
+List<String> unreadConversationIds(Ref ref) {
+  final conversationsAsync = ref.watch(conversationsProvider);
+  
+  return conversationsAsync.when(
+    data: (conversations) {
+      // 筛选有未读消息的会话
+      final unreadConversations = conversations
+          .where((c) => c.unreadCount > 0)
+          .toList();
+      
+      // 按最后消息时间升序排序（从早到晚）
+      unreadConversations.sort((a, b) {
+        final aTime = a.lastMessageTime ?? a.createdAt;
+        final bTime = b.lastMessageTime ?? b.createdAt;
+        return aTime.compareTo(bTime); // 升序排序
+      });
+      
+      return unreadConversations.map((c) => c.id).toList();
+    },
+    loading: () => [],
+    error: (_, _) => [],
   );
 }

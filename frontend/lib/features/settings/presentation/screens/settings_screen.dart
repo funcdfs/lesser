@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lesser/shared/theme/theme.dart';
 import 'package:lesser/features/settings/presentation/providers/settings_provider.dart';
+import 'package:lesser/shared/widgets/app_dialog.dart';
 
 /// 设置页面
 class SettingsScreen extends ConsumerWidget {
@@ -206,25 +207,32 @@ class SettingsScreen extends ConsumerWidget {
     VoidCallback? onTap,
     bool isDestructive = false,
   }) {
-    return ListTile(
-      leading: Icon(
-        icon,
-        color: isDestructive ? AppColors.destructive : AppColors.mutedForeground,
-      ),
-      title: Text(
-        title,
-        style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-          color: isDestructive ? AppColors.destructive : AppColors.foreground,
+    return Material(
+      color: AppColors.card,
+      child: InkWell(
+        onTap: onTap,
+        child: ListTile(
+          leading: Icon(
+            icon,
+            color: isDestructive
+                ? AppColors.destructive
+                : AppColors.mutedForeground,
+          ),
+          title: Text(
+            title,
+            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+              color: isDestructive
+                  ? AppColors.destructive
+                  : AppColors.foreground,
+            ),
+          ),
+          trailing:
+              trailing ??
+              (onTap != null
+                  ? Icon(Icons.chevron_right, color: AppColors.mutedForeground)
+                  : null),
         ),
       ),
-      trailing: trailing ??
-          (onTap != null
-              ? Icon(
-                  Icons.chevron_right,
-                  color: AppColors.mutedForeground,
-                )
-              : null),
-      onTap: onTap,
     );
   }
 
@@ -237,28 +245,19 @@ class SettingsScreen extends ConsumerWidget {
     );
   }
 
-  void _showClearCacheDialog(BuildContext context) {
-    showDialog(
+  void _showClearCacheDialog(BuildContext context) async {
+    final shouldClear = await AppDialog.confirm(
       context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('清除缓存'),
-        content: const Text('确定要清除所有缓存数据吗？'),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('取消'),
-          ),
-          TextButton(
-            onPressed: () {
-              Navigator.pop(context);
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text('缓存已清除')),
-              );
-            },
-            child: const Text('确认'),
-          ),
-        ],
-      ),
+      title: '清除缓存',
+      content: '确定要清除所有缓存数据吗？',
+      confirmText: '确认',
+      cancelText: '取消',
     );
+
+    if (shouldClear == true && context.mounted) {
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('缓存已清除')));
+    }
   }
 }

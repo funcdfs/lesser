@@ -1,10 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lesser/features/chat/presentation/widgets/notify.dart';
-import 'package:lesser/features/chat/presentation/widgets/network_neighbors.dart';
 import 'package:lesser/features/chat/presentation/widgets/chat_item.dart';
 import 'package:lesser/features/chat/presentation/widgets/section_header.dart';
+import 'package:lesser/features/chat/presentation/widgets/user_tab_section.dart';
+import 'package:lesser/features/chat/presentation/widgets/user_avatar_row.dart';
+import 'package:lesser/features/chat/presentation/widgets/unread_dot.dart';
+import 'package:lesser/features/chat/presentation/widgets/clear_zone_overlay.dart';
 import 'package:lesser/shared/widgets/app_button.dart';
+import 'package:lesser/shared/widgets/app_cell.dart';
 import '../../../../shared/theme/theme.dart';
 import '../providers/chat_provider.dart';
 import '../providers/connection_provider.dart';
@@ -13,6 +17,9 @@ import '../../domain/models/conversation.dart';
 import '../../../../shared/utils/time_formatter.dart';
 
 /// 会话组件的大框架
+/// 
+/// 页面结构：NotificationBar → SectionHeader → ChatList → UserTabSection → QuickActionCells
+/// 使用 CustomScrollView 实现整体滚动
 class ChatScreen extends ConsumerStatefulWidget {
   const ChatScreen({super.key});
 
@@ -22,6 +29,84 @@ class ChatScreen extends ConsumerStatefulWidget {
 
 class _ChatScreenState extends ConsumerState<ChatScreen> {
   final ScrollController _scrollController = ScrollController();
+  
+  /// 清除区域覆盖层入口
+  OverlayEntry? _clearZoneOverlay;
+  
+  /// 是否在清除区域
+  bool _isInClearZone = false;
+
+  // 模拟好友数据
+  final List<UserItem> _friends = const [
+    UserItem(
+      id: '1',
+      name: '小明',
+      avatarUrl: 'https://picsum.photos/seed/user1/200',
+      isOnline: true,
+    ),
+    UserItem(
+      id: '2',
+      name: '小红',
+      avatarUrl: 'https://picsum.photos/seed/user2/200',
+      isOnline: false,
+    ),
+    UserItem(
+      id: '3',
+      name: '小李',
+      avatarUrl: 'https://picsum.photos/seed/user3/200',
+      isOnline: true,
+    ),
+    UserItem(
+      id: '4',
+      name: '小王',
+      avatarUrl: 'https://picsum.photos/seed/user4/200',
+      isOnline: false,
+    ),
+    UserItem(
+      id: '5',
+      name: '小张',
+      avatarUrl: 'https://picsum.photos/seed/user5/200',
+      isOnline: true,
+    ),
+  ];
+
+  // 模拟粉丝数据
+  final List<UserItem> _followers = const [
+    UserItem(
+      id: '6',
+      name: '粉丝1',
+      avatarUrl: 'https://picsum.photos/seed/follower1/200',
+      isOnline: false,
+    ),
+    UserItem(
+      id: '7',
+      name: '粉丝2',
+      avatarUrl: 'https://picsum.photos/seed/follower2/200',
+      isOnline: true,
+    ),
+    UserItem(
+      id: '8',
+      name: '粉丝3',
+      avatarUrl: 'https://picsum.photos/seed/follower3/200',
+      isOnline: false,
+    ),
+  ];
+
+  // 模拟关注数据
+  final List<UserItem> _following = const [
+    UserItem(
+      id: '9',
+      name: '关注1',
+      avatarUrl: 'https://picsum.photos/seed/following1/200',
+      isOnline: true,
+    ),
+    UserItem(
+      id: '10',
+      name: '关注2',
+      avatarUrl: 'https://picsum.photos/seed/following2/200',
+      isOnline: false,
+    ),
+  ];
 
   @override
   void initState() {
@@ -35,7 +120,31 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
   @override
   void dispose() {
     _scrollController.dispose();
+    _removeClearZoneOverlay();
     super.dispose();
+  }
+  
+  /// 显示清除区域覆盖层
+  void _showClearZoneOverlay() {
+    _removeClearZoneOverlay();
+    _clearZoneOverlay = OverlayEntry(
+      builder: (context) => ClearZoneOverlay(isActive: _isInClearZone),
+    );
+    Overlay.of(context).insert(_clearZoneOverlay!);
+  }
+  
+  /// 移除清除区域覆盖层
+  void _removeClearZoneOverlay() {
+    _clearZoneOverlay?.remove();
+    _clearZoneOverlay = null;
+  }
+  
+  /// 更新清除区域状态
+  void _updateClearZoneState(bool isInClearZone) {
+    if (_isInClearZone != isInClearZone) {
+      _isInClearZone = isInClearZone;
+      _clearZoneOverlay?.markNeedsBuild();
+    }
   }
 
   @override
@@ -45,13 +154,9 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
     return Scaffold(
       backgroundColor: AppColors.background,
       appBar: AppBar(
+        // 简化顶部设计：移除标题，只保留连接状态指示器
         title: Row(
           children: [
-            Text(
-              'Message',
-              style: Theme.of(context).textTheme.headlineSmall,
-            ),
-            const SizedBox(width: 8),
             _buildConnectionIndicator(connectionState),
           ],
         ),
@@ -60,20 +165,43 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
           _buildUnreadBadge(),
         ],
       ),
-      body: NestedScrollView(
-        headerSliverBuilder: (BuildContext context, bool innerBoxIsScrolled) {
-          return <Widget>[const SliverToBoxAdapter(child: NotifyWidget())];
+      body: RefreshIndicator(
+        onRefresh: () async {
+          await ref.read(conversationsProvider.notifier).refresh();
         },
-        body: RefreshIndicator(
-          onRefresh: () async {
-            await ref.read(conversationsProvider.notifier).refresh();
-          },
-          child: CustomScrollView(
-            slivers: <Widget>[
-              SliverToBoxAdapter(child: _buildChatList()),
-              const SliverToBoxAdapter(child: NetworkNeighborsWidget()),
-            ],
-          ),
+        child: CustomScrollView(
+          controller: _scrollController,
+          slivers: <Widget>[
+            // 1. NotificationBar - 通知分类栏
+            const SliverToBoxAdapter(
+              child: NotificationBar(),
+            ),
+            
+            // 2. SectionHeader - "最近聊天"
+            const SliverToBoxAdapter(
+              child: SectionHeader(title: '最近聊天'),
+            ),
+            
+            // 3. ChatList - 聊天列表
+            SliverToBoxAdapter(
+              child: _buildChatList(),
+            ),
+            
+            // 4. UserTabSection - 好友/粉丝/关注切换
+            SliverToBoxAdapter(
+              child: _buildUserTabSection(),
+            ),
+            
+            // 5. QuickActionCells - 快捷操作
+            SliverToBoxAdapter(
+              child: _buildQuickActionCells(),
+            ),
+            
+            // 底部间距
+            const SliverToBoxAdapter(
+              child: SizedBox(height: AppSpacing.xl),
+            ),
+          ],
         ),
       ),
     );
@@ -112,58 +240,64 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
     );
   }
 
-  /// 构建未读消息徽章
+  /// 构建未读消息圆点
   Widget _buildUnreadBadge() {
     final unreadCount = ref.watch(totalUnreadCountProvider);
+    final unreadConversationIds = ref.watch(unreadConversationIdsProvider);
     
     if (unreadCount == 0) {
       return const SizedBox.shrink();
     }
     
-    return Padding(
-      padding: const EdgeInsets.only(right: 16),
-      child: Center(
-        child: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-          decoration: BoxDecoration(
-            color: AppColors.destructive,
-            borderRadius: BorderRadius.circular(12),
-          ),
-          child: Text(
-            unreadCount > 99 ? '99+' : unreadCount.toString(),
-            style: const TextStyle(
-              color: Colors.white,
-              fontSize: 12,
-              fontWeight: FontWeight.bold,
-            ),
-          ),
-        ),
-      ),
+    return UnreadDot(
+      unreadCount: unreadCount,
+      unreadConversationIds: unreadConversationIds,
+      onJumpToConversation: _handleJumpToConversation,
+      onClearAllUnread: _handleClearAllUnread,
+      onDragStart: _showClearZoneOverlay,
+      onDragUpdate: _updateClearZoneState,
+      onDragEnd: _removeClearZoneOverlay,
     );
   }
+  
+  /// 处理跳转到会话
+  void _handleJumpToConversation(String conversationId) {
+    // TODO: 实现跳转到具体会话的逻辑
+    // 可以通过 ScrollController 滚动到对应位置，或者打开会话详情
+    debugPrint('跳转到会话: $conversationId');
+  }
+  
+  /// 处理清除所有未读
+  void _handleClearAllUnread() {
+    ref.read(conversationsProvider.notifier).clearAllUnreadCount();
+  }
 
+  /// 构建聊天列表
   Widget _buildChatList() {
     final conversationsAsync = ref.watch(conversationsProvider);
     
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        const SectionHeader(title: '聊天'),
-        conversationsAsync.when(
-          data: (conversations) {
-            if (conversations.isEmpty) {
-              return _buildEmptyState();
-            }
-            return Column(
-              children: conversations.map((conversation) {
-                return _buildConversationItem(conversation);
-              }).toList(),
-            );
-          },
-          loading: () => _buildLoadingState(),
-          error: (error, _) => _buildErrorState(error),
-        ),
-      ],
+    return conversationsAsync.when(
+      data: (conversations) {
+        if (conversations.isEmpty) {
+          return _buildEmptyState();
+        }
+        
+        // 按 lastMessageTime 降序排序（最新的在前）
+        final sortedConversations = List<Conversation>.from(conversations)
+          ..sort((a, b) {
+            final aTime = a.lastMessageTime ?? a.createdAt;
+            final bTime = b.lastMessageTime ?? b.createdAt;
+            return bTime.compareTo(aTime); // 降序排序
+          });
+        
+        return Column(
+          children: sortedConversations.map((conversation) {
+            return _buildConversationItem(conversation);
+          }).toList(),
+        );
+      },
+      loading: () => _buildLoadingState(),
+      error: (error, _) => _buildErrorState(error),
     );
   }
 
@@ -187,6 +321,77 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
       unreadCount: conversation.unreadCount,
       hasAvatar: participant?.avatarUrl != null,
       avatarUrl: participant?.avatarUrl,
+    );
+  }
+
+  /// 构建 UserTabSection 组件
+  Widget _buildUserTabSection() {
+    return UserTabSection(
+      contentBuilder: (tabType) {
+        final users = _getUsersForTab(tabType);
+        return UserAvatarRow(
+          users: users,
+          onUserTap: (user) {
+            // TODO: 跳转到用户聊天或个人页面
+          },
+          onViewAll: () {
+            // TODO: 跳转到对应的全部列表页面
+          },
+        );
+      },
+      onTabChanged: (tabType) {
+        // Tab 切换回调，可用于数据加载等
+      },
+    );
+  }
+
+  /// 根据 Tab 类型获取用户列表
+  List<UserItem> _getUsersForTab(UserTabType tabType) {
+    switch (tabType) {
+      case UserTabType.friends:
+        return _friends;
+      case UserTabType.followers:
+        return _followers;
+      case UserTabType.following:
+        return _following;
+    }
+  }
+
+  /// 构建快捷操作单元格
+  /// 
+  /// 包含三个快捷操作：创建群聊、创建频道、添加好友
+  Widget _buildQuickActionCells() {
+    return Column(
+      children: [
+        const SizedBox(height: AppSpacing.lg),
+        AppCell(
+          title: '创建群聊',
+          description: '创建新的群组聊天',
+          leftIcon: Icons.people_outline,
+          showArrow: true,
+          onTap: () {
+            // TODO: 跳转到创建群聊页面
+          },
+        ),
+        AppCell(
+          title: '创建频道',
+          description: '创建新的频道',
+          leftIcon: Icons.tag,
+          showArrow: true,
+          onTap: () {
+            // TODO: 跳转到创建频道页面
+          },
+        ),
+        AppCell(
+          title: '添加好友',
+          description: '通过ID或二维码添加',
+          leftIcon: Icons.person_add_alt_outlined,
+          showArrow: true,
+          onTap: () {
+            // TODO: 跳转到添加好友页面
+          },
+        ),
+      ],
     );
   }
 

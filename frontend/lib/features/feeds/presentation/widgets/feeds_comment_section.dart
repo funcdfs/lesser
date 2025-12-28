@@ -268,7 +268,7 @@ class _CommentItemState extends State<_CommentItem> {
                           style: Theme.of(context).textTheme.labelSmall
                               ?.copyWith(
                                 fontSize: 11,
-                                color: AppColors.zinc400,
+                                color: AppColors.gray400,
                               ),
                         ),
                         const SizedBox(width: AppSpacing.md),
@@ -282,7 +282,7 @@ class _CommentItemState extends State<_CommentItem> {
                                 ?.copyWith(
                                   fontWeight: FontWeight.bold,
                                   fontSize: 11,
-                                  color: AppColors.zinc500,
+                                  color: AppColors.gray500,
                                 ),
                           ),
                         ),
@@ -300,7 +300,7 @@ class _CommentItemState extends State<_CommentItem> {
                             Container(
                               width: 20,
                               height: 1,
-                              color: AppColors.zinc200,
+                              color: AppColors.gray200,
                             ),
                             const SizedBox(width: 8),
                             Text(
@@ -311,7 +311,7 @@ class _CommentItemState extends State<_CommentItem> {
                                   ?.copyWith(
                                     fontWeight: FontWeight.bold,
                                     fontSize: 12,
-                                    color: AppColors.zinc500,
+                                    color: AppColors.gray500,
                                   ),
                             ),
                             Icon(
@@ -319,7 +319,7 @@ class _CommentItemState extends State<_CommentItem> {
                                   ? Icons.keyboard_arrow_up
                                   : Icons.keyboard_arrow_down,
                               size: 14,
-                              color: AppColors.zinc500,
+                              color: AppColors.gray500,
                             ),
                           ],
                         ),
@@ -347,7 +347,7 @@ class _CommentItemState extends State<_CommentItem> {
                     formatCount(widget.comment.likesCount),
                     style: Theme.of(context).textTheme.labelSmall?.copyWith(
                       fontSize: 10,
-                      color: AppColors.zinc400,
+                      color: AppColors.gray400,
                     ),
                   ),
                 ],

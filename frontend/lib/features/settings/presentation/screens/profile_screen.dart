@@ -57,100 +57,154 @@ class _UserCard extends ConsumerWidget {
         child: Column(
           children: [
             Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Stack(
-                  children: [
-                    CircleAvatar(
-                      radius: 40,
-                      backgroundColor: AppColors.secondary,
-                      backgroundImage: NetworkImage(
-                        'https://picsum.photos/id/1005/200/200',
-                      ),
-                    ),
-                    Positioned(
-                      bottom: 0,
-                      right: 0,
-                      child: Container(
-                        padding: const EdgeInsets.all(4),
-                        decoration: BoxDecoration(
-                          color: AppColors.accentPurple,
-                          borderRadius: BorderRadius.circular(12),
-                          border: Border.all(
-                            color: AppColors.background,
-                            width: 2,
-                          ),
-                        ),
-                        child: Icon(
-                          Icons.star,
-                          color: AppColors.background,
-                          size: 12,
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(width: AppSpacing.md),
                 Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
+                  child: Row(
                     children: [
-                      Row(
-                        children: [
-                          Text(user.username, style: textTheme.headlineSmall),
-                          const SizedBox(width: AppSpacing.xs),
-                          Container(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 8,
-                              vertical: 2,
-                            ),
-                            decoration: BoxDecoration(
-                              color: AppColors.accentPurpleLight,
-                              borderRadius: BorderRadius.circular(12),
-                            ),
-                            child: Text(
-                              'Plus会员',
-                              style: textTheme.labelSmall?.copyWith(
-                                color: AppColors.accentPurple,
-                                fontWeight: FontWeight.w600,
+                      Container(
+                        width: 88,
+                        height: 88,
+                        decoration: BoxDecoration(
+                          borderRadius: BorderRadius.circular(24),
+                          gradient: LinearGradient(
+                            begin: Alignment.topLeft,
+                            end: Alignment.bottomRight,
+                            colors: [
+                              AppColors.accentPurpleLight,
+                              AppColors.primary,
+                            ],
+                          ),
+                          boxShadow: AppShadows.md,
+                        ),
+                        child: Stack(
+                          alignment: Alignment.center,
+                          children: [
+                            CircleAvatar(
+                              radius: 42,
+                              backgroundImage: NetworkImage(
+                                'https://picsum.photos/id/1005/200/200',
                               ),
                             ),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: AppSpacing.xs),
-                      Text(
-                        'ID: ${user.id}',
-                        style: textTheme.bodyMedium?.copyWith(
-                          color: AppColors.mutedForeground,
+                            Positioned(
+                              bottom: 6,
+                              right: 6,
+                              child: Container(
+                                width: 24,
+                                height: 24,
+                                decoration: BoxDecoration(
+                                  color: AppColors.accentPurple,
+                                  shape: BoxShape.circle,
+                                  border: Border.all(
+                                    color: AppColors.background,
+                                    width: 2,
+                                  ),
+                                  boxShadow: [
+                                    BoxShadow(
+                                      color: Colors.black.withAlpha(25),
+                                      blurRadius: 4,
+                                      offset: Offset(0, 2),
+                                    ),
+                                  ],
+                                ),
+                                child: Icon(
+                                  Icons.star,
+                                  size: 14,
+                                  color: AppColors.primaryForeground,
+                                ),
+                              ),
+                            ),
+                          ],
                         ),
                       ),
-                      const SizedBox(height: AppSpacing.xs),
-                      Text(
-                        '这个人很懒，什么都没写',
-                        style: textTheme.bodyMedium,
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
+                      const SizedBox(width: AppSpacing.lg),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Row(
+                              children: [
+                                Text(
+                                  user.username,
+                                  style: textTheme.headlineMedium!.copyWith(
+                                    fontWeight: FontWeight.bold,
+                                    fontSize: 20,
+                                  ),
+                                ),
+                                const SizedBox(width: AppSpacing.sm),
+                                Container(
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: AppSpacing.xs,
+                                    vertical: 2,
+                                  ),
+                                  decoration: BoxDecoration(
+                                    color: AppColors.accentPurpleLight,
+                                    borderRadius: BorderRadius.circular(
+                                      AppRadius.sm,
+                                    ),
+                                  ),
+                                  child: Text(
+                                    'Plus会员',
+                                    style: textTheme.labelSmall?.copyWith(
+                                      color: AppColors.accentPurple,
+                                      fontWeight: FontWeight.w600,
+                                      fontSize: 10,
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
+                            Text(
+                              'ID: ${user.id}',
+                              style: textTheme.bodySmall!.copyWith(
+                                color: AppColors.mutedForeground,
+                                fontSize: 12,
+                              ),
+                            ),
+                            const SizedBox(height: AppSpacing.xs),
+                            Text(
+                              '这个人很懒，什么都没写',
+                              style: textTheme.bodyMedium?.copyWith(
+                                color: AppColors.mutedForeground,
+                                fontWeight: FontWeight.w500,
+                              ),
+                              maxLines: 2,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ],
+                        ),
+                      ),
+                      IconButton(
+                        onPressed: () {},
+                        icon: const Icon(Icons.edit_outlined),
+                        color: AppColors.mutedForeground,
+                        iconSize: 22,
                       ),
                     ],
-                  ),
-                ),
-                IconButton(
-                  onPressed: () {},
-                  icon: Icon(
-                    Icons.edit_outlined,
-                    color: AppColors.mutedForeground,
                   ),
                 ),
               ],
             ),
             const SizedBox(height: AppSpacing.xl),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceAround,
-              children: [
-                _buildStatColumn(context, '328', '关注'),
-                _buildStatColumn(context, '127', '好友'),
-                _buildStatColumn(context, '1.2K', '粉丝'),
-              ],
+            Container(
+              decoration: BoxDecoration(
+                color: AppColors.card,
+                borderRadius: BorderRadius.circular(AppRadius.md),
+                border: Border.all(color: AppColors.border, width: 1),
+              ),
+              child: Padding(
+                padding: const EdgeInsets.all(AppSpacing.lg),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceAround,
+                  children: [
+                    _buildStatColumn(context, '328', '关注'),
+                    Container(width: 1, height: 40, color: AppColors.border),
+                    _buildStatColumn(context, '127', '好友'),
+                    Container(width: 1, height: 40, color: AppColors.border),
+                    _buildStatColumn(context, '1.2K', '粉丝'),
+                  ],
+                ),
+              ),
             ),
           ],
         ),
@@ -172,13 +226,17 @@ class _UserCard extends ConsumerWidget {
       children: [
         Text(
           count,
-          style: textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
+          style: textTheme.headlineSmall?.copyWith(
+            fontWeight: FontWeight.bold,
+            fontSize: 18,
+          ),
         ),
         const SizedBox(height: AppSpacing.xs),
         Text(
           label,
-          style: textTheme.bodyMedium?.copyWith(
+          style: textTheme.bodySmall?.copyWith(
             color: AppColors.mutedForeground,
+            fontWeight: FontWeight.w500,
           ),
         ),
       ],
@@ -206,118 +264,106 @@ class _RecordsSection extends StatelessWidget {
           ),
           const SizedBox(height: AppSpacing.md),
 
-          // 记录切换
-          SingleChildScrollView(
-            scrollDirection: Axis.horizontal,
-            child: Row(
-              children: [
-                _buildRecordTab(
-                  context,
-                  'Reels记录',
-                  Icons.video_collection_outlined,
-                  true,
-                ),
-                const SizedBox(width: AppSpacing.md),
-                _buildRecordTab(
-                  context,
-                  '文章发布记录',
-                  Icons.article_outlined,
-                  false,
-                ),
-              ],
-            ),
+          // 记录切换标签栏
+          Row(
+            mainAxisAlignment: MainAxisAlignment.start,
+            children: [
+              _buildRecordTab(
+                context,
+                'Reels记录',
+                Icons.video_collection_outlined,
+                true,
+              ),
+              const SizedBox(width: AppSpacing.sm),
+              _buildRecordTab(context, '文章发布记录', Icons.article_outlined, false),
+            ],
           ),
           const SizedBox(height: AppSpacing.lg),
 
-          // GitHub风格热力图
+          // GitHub风格的热力图
           Container(
-            padding: const EdgeInsets.all(AppSpacing.md),
             decoration: BoxDecoration(
-              color: AppColors.secondary,
+              color: AppColors.card,
               borderRadius: BorderRadius.circular(AppRadius.md),
+              border: Border.all(color: AppColors.border, width: 1),
             ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Text(
-                      '发布热力图',
-                      style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                    DropdownButton<String>(
-                      value: '2023',
-                      items: ['2023', '2022', '2021']
-                          .map(
-                            (year) => DropdownMenuItem(
-                              value: year,
-                              child: Text(year),
-                            ),
-                          )
-                          .toList(),
-                      onChanged: (value) {},
-                      underline: Container(),
-                      style: Theme.of(context).textTheme.bodyMedium,
-                    ),
-                  ],
-                ),
-                const SizedBox(height: AppSpacing.md),
-
-                // 简化版热力图
-                GridView.builder(
-                  shrinkWrap: true,
-                  physics: const NeverScrollableScrollPhysics(),
-                  gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                    crossAxisCount: 53,
-                    mainAxisSpacing: 2,
-                    crossAxisSpacing: 2,
-                  ),
-                  itemCount: 365,
-                  itemBuilder: (context, index) {
-                    // 随机生成热力图颜色
-                    final intensity = (index % 5) + 1;
-                    Color color;
-                    switch (intensity) {
-                      case 1:
-                        return const SizedBox.shrink();
-                      case 2:
-                        color = AppColors.primary.withValues(alpha: 0.2 * 255);
-                        break;
-                      case 3:
-                        color = AppColors.primary.withValues(alpha: 0.4 * 255);
-                        break;
-                      case 4:
-                        color = AppColors.primary.withValues(alpha: 0.6 * 255);
-                        break;
-                      case 5:
-                        color = AppColors.primary.withValues(alpha: 0.8 * 255);
-                        break;
-                      default:
-                        color = AppColors.primary.withValues(alpha: 0.2 * 255);
-                    }
-                    return GestureDetector(
-                      onTap: () {
-                        // 显示当天的碎碎念
-                        AppDialog.alert(
-                          context: context,
-                          title: '2023-12-25',
-                          content: '今天发布了3条内容：\n1. 新年快乐！\n2. 学习Flutter\n3. 完成项目',
-                          confirmText: '关闭',
-                        );
-                      },
-                      child: Container(
-                        decoration: BoxDecoration(
-                          color: color,
-                          borderRadius: BorderRadius.circular(2),
+            child: Padding(
+              padding: const EdgeInsets.all(AppSpacing.md),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text(
+                        '发布热力图',
+                        style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                          fontWeight: FontWeight.w600,
                         ),
                       ),
-                    );
-                  },
-                ),
-              ],
+                      DropdownButton(
+                        value: '2023',
+                        items: ['2023', '2022', '2021']
+                            .map(
+                              (year) => DropdownMenuItem(
+                                value: year,
+                                child: Text(year),
+                              ),
+                            )
+                            .toList(),
+                        onChanged: (value) {},
+                        style: Theme.of(context).textTheme.bodySmall,
+                        iconSize: 16,
+                        underline: const SizedBox(),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: AppSpacing.md),
+
+                  // 热力图网格
+                  SizedBox(
+                    height: 120,
+                    child: GridView.builder(
+                      physics: const NeverScrollableScrollPhysics(),
+                      gridDelegate:
+                          const SliverGridDelegateWithFixedCrossAxisCount(
+                            crossAxisCount: 53, // 53周
+                            mainAxisSpacing: 2,
+                            crossAxisSpacing: 2,
+                          ),
+                      itemCount: 365, // 365天
+                      itemBuilder: (context, index) {
+                        // 随机生成强度值
+                        final intensity = (index % 5) + 1;
+
+                        return AnimatedContainer(
+                          duration: const Duration(milliseconds: 300),
+                          decoration: BoxDecoration(
+                            color: intensity == 1
+                                ? AppColors.muted
+                                : intensity == 2
+                                ? AppColors.primary.withAlpha(80)
+                                : intensity == 3
+                                ? AppColors.primary.withAlpha(160)
+                                : intensity == 4
+                                ? AppColors.primary.withAlpha(220)
+                                : AppColors.primary,
+                            borderRadius: BorderRadius.circular(2),
+                            boxShadow: intensity > 1 ? AppShadows.subtle : [],
+                          ),
+                          child: Material(
+                            color: Colors.transparent,
+                            child: InkWell(
+                              onTap: () {},
+                              borderRadius: BorderRadius.circular(2),
+                            ),
+                          ),
+                        );
+                      },
+                    ),
+                  ),
+                ],
+              ),
             ),
           ),
         ],
@@ -333,30 +379,33 @@ class _RecordsSection extends StatelessWidget {
   ) {
     return Container(
       padding: const EdgeInsets.symmetric(
-        horizontal: AppSpacing.lg,
+        horizontal: AppSpacing.xl,
         vertical: AppSpacing.sm,
       ),
       decoration: BoxDecoration(
-        color: isActive ? AppColors.primary : AppColors.secondary,
+        color: isActive ? AppColors.primary : AppColors.card,
         borderRadius: BorderRadius.circular(AppRadius.full),
+        border: isActive ? null : Border.all(color: AppColors.border, width: 1),
+        boxShadow: isActive ? AppShadows.md : null,
       ),
       child: Row(
         children: [
           Icon(
             icon,
-            size: 16,
+            size: 18,
             color: isActive
                 ? AppColors.primaryForeground
                 : AppColors.foreground,
           ),
-          const SizedBox(width: AppSpacing.xs),
+          const SizedBox(width: AppSpacing.sm),
           Text(
             title,
             style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+              fontWeight: FontWeight.w700,
+              fontSize: 15,
               color: isActive
                   ? AppColors.primaryForeground
                   : AppColors.foreground,
-              fontWeight: isActive ? FontWeight.w600 : FontWeight.normal,
             ),
           ),
         ],
@@ -385,77 +434,83 @@ class _TextManagementSection extends StatelessWidget {
           ),
           const SizedBox(height: AppSpacing.md),
 
-          // 第一行：文字格式管理
-          GridView.count(
-            shrinkWrap: true,
-            physics: const NeverScrollableScrollPhysics(),
-            crossAxisCount: 4,
-            mainAxisSpacing: AppSpacing.md,
-            crossAxisSpacing: AppSpacing.md,
-            childAspectRatio: 1.2,
-            children: [
-              _buildTextManagementItem(
-                context,
-                '草稿箱',
-                Icons.drafts_outlined,
-                '12',
-              ),
-              _buildTextManagementItem(
-                context,
-                '状态管理',
-                Icons.update_outlined,
-                '8',
-              ),
-              _buildTextManagementItem(
-                context,
-                '帖子管理',
-                Icons.feed_outlined,
-                '24',
-              ),
-              _buildTextManagementItem(
-                context,
-                '专栏管理',
-                Icons.book_outlined,
-                '5',
-              ),
-            ],
+          // 第一行：内容管理
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: AppSpacing.xs),
+            child: GridView.count(
+              shrinkWrap: true,
+              physics: const NeverScrollableScrollPhysics(),
+              crossAxisCount: 4,
+              mainAxisSpacing: AppSpacing.sm,
+              crossAxisSpacing: AppSpacing.sm,
+              childAspectRatio: 1.0,
+              children: [
+                _buildTextManagementItem(
+                  context,
+                  '草稿箱',
+                  Icons.drafts_outlined,
+                  '12',
+                ),
+                _buildTextManagementItem(
+                  context,
+                  '状态管理',
+                  Icons.update_outlined,
+                  '8',
+                ),
+                _buildTextManagementItem(
+                  context,
+                  '帖子管理',
+                  Icons.feed_outlined,
+                  '24',
+                ),
+                _buildTextManagementItem(
+                  context,
+                  '专栏管理',
+                  Icons.book_outlined,
+                  '5',
+                ),
+              ],
+            ),
           ),
           const SizedBox(height: AppSpacing.lg),
 
           // 第二行：互动记录
-          GridView.count(
-            shrinkWrap: true,
-            physics: const NeverScrollableScrollPhysics(),
-            crossAxisCount: 4,
-            mainAxisSpacing: AppSpacing.md,
-            crossAxisSpacing: AppSpacing.md,
-            childAspectRatio: 1.2,
-            children: [
-              _buildTextManagementItem(
-                context,
-                '点赞记录',
-                Icons.favorite_outline,
-                '128',
-              ),
-              _buildTextManagementItem(
-                context,
-                '收藏夹',
-                Icons.bookmark_outline,
-                '36',
-              ),
-              _buildTextManagementItem(
-                context,
-                '最近浏览',
-                Icons.history_outlined,
-                '42',
-              ),
-              _buildTextManagementItem(
-                context,
-                '数据统计',
-                Icons.bar_chart_outlined,
-                '',
-              ),
-            ],
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: AppSpacing.xs),
+            child: GridView.count(
+              shrinkWrap: true,
+              physics: const NeverScrollableScrollPhysics(),
+              crossAxisCount: 4,
+              mainAxisSpacing: AppSpacing.sm,
+              crossAxisSpacing: AppSpacing.sm,
+              childAspectRatio: 1.3,
+              children: [
+                _buildTextManagementItem(
+                  context,
+                  '点赞记录',
+                  Icons.favorite_border_outlined,
+                  '128',
+                ),
+                _buildTextManagementItem(
+                  context,
+                  '收藏记录',
+                  Icons.bookmark_border_outlined,
+                  '36',
+                ),
+                _buildTextManagementItem(
+                  context,
+                  '浏览历史',
+                  Icons.history_outlined,
+                  '42',
+                ),
+                _buildTextManagementItem(
+                  context,
+                  '数据统计',
+                  Icons.bar_chart_outlined,
+                  '',
+                ),
+              ],
+            ),
           ),
         ],
       ),
@@ -468,31 +523,49 @@ class _TextManagementSection extends StatelessWidget {
     IconData icon,
     String count,
   ) {
-    return Column(
-      children: [
-        Container(
-          width: 64,
-          height: 64,
-          decoration: BoxDecoration(
-            color: AppColors.secondary,
-            borderRadius: BorderRadius.circular(AppRadius.lg),
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: () {},
+        borderRadius: BorderRadius.circular(AppRadius.lg),
+        child: Container(
+          padding: const EdgeInsets.all(AppSpacing.sm),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Container(
+                width: 56,
+                height: 56,
+                decoration: BoxDecoration(
+                  color: AppColors.primary.withAlpha(25),
+                  borderRadius: BorderRadius.circular(AppRadius.lg),
+                  boxShadow: AppShadows.subtle,
+                ),
+                child: Icon(icon, color: AppColors.primary, size: 24),
+              ),
+              const SizedBox(height: AppSpacing.sm),
+              Text(
+                title,
+                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                  fontWeight: FontWeight.w500,
+                  fontSize: 13,
+                ),
+                textAlign: TextAlign.center,
+                overflow: TextOverflow.ellipsis,
+                maxLines: 1,
+              ),
+              if (count.isNotEmpty)
+                Text(
+                  count,
+                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                    color: AppColors.mutedForeground,
+                    fontSize: 11,
+                  ),
+                ),
+            ],
           ),
-          child: Icon(icon, color: AppColors.foreground),
         ),
-        const SizedBox(height: AppSpacing.sm),
-        Text(
-          title,
-          style: Theme.of(context).textTheme.bodyMedium,
-          textAlign: TextAlign.center,
-        ),
-        if (count.isNotEmpty)
-          Text(
-            count,
-            style: Theme.of(
-              context,
-            ).textTheme.bodySmall?.copyWith(color: AppColors.mutedForeground),
-          ),
-      ],
+      ),
     );
   }
 }
@@ -500,6 +573,47 @@ class _TextManagementSection extends StatelessWidget {
 /// Part 4: 设置
 class _SettingsSection extends ConsumerWidget {
   const _SettingsSection();
+
+  Widget _buildSettingItem(
+    BuildContext context,
+    String title,
+    IconData icon, {
+    bool isDestructive = false,
+    VoidCallback? onTap,
+  }) {
+    return Material(
+      color: AppColors.background,
+      child: InkWell(
+        onTap: onTap,
+        child: ListTile(
+          leading: Icon(
+            icon,
+            color: isDestructive
+                ? AppColors.destructive
+                : AppColors.mutedForeground,
+          ),
+          title: Text(
+            title,
+            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+              color: isDestructive
+                  ? AppColors.destructive
+                  : AppColors.foreground,
+            ),
+          ),
+          trailing: Icon(Icons.chevron_right, color: AppColors.mutedForeground),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildDivider() {
+    return Divider(
+      height: 1,
+      indent: 72,
+      endIndent: 16,
+      color: AppColors.border,
+    );
+  }
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -518,9 +632,9 @@ class _SettingsSection extends ConsumerWidget {
             ),
             title: Text(
               '深色模式',
-              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                color: AppColors.foreground,
-              ),
+              style: Theme.of(
+                context,
+              ).textTheme.bodyMedium?.copyWith(color: AppColors.foreground),
             ),
             trailing: Switch(
               value: isDark,
@@ -572,43 +686,6 @@ class _SettingsSection extends ConsumerWidget {
           ),
         ],
       ),
-    );
-  }
-
-  Widget _buildSettingItem(
-    BuildContext context,
-    String title,
-    IconData icon, {
-    bool isDestructive = false,
-    VoidCallback? onTap,
-  }) {
-    return ListTile(
-      leading: Icon(
-        icon,
-        color: isDestructive
-            ? AppColors.destructive
-            : AppColors.mutedForeground,
-      ),
-      title: Text(
-        title,
-        style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-          color: isDestructive ? AppColors.destructive : AppColors.foreground,
-        ),
-      ),
-      trailing: Icon(
-        Icons.chevron_right,
-        color: AppColors.mutedForeground,
-      ),
-      onTap: onTap,
-    );
-  }
-
-  Widget _buildDivider() {
-    return Divider(
-      height: 1,
-      indent: 72,
-      endIndent: 16,
-      color: AppColors.border,
     );
   }
 }

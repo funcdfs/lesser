@@ -1,8 +1,7 @@
-import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../shared/theme/theme.dart';
-import '../../domain/models/hot_item.dart';
+import '../../../../shared/widgets/autocomplete.dart';
 import '../providers/hot_content_provider.dart';
 import '../providers/search_history_provider.dart';
 import '../providers/search_provider.dart';
@@ -14,6 +13,7 @@ import '../providers/search_provider.dart';
 /// - 显示热门榜单和热门标签
 /// - 显示搜索历史
 /// - 执行搜索功能
+
 class SearchScreen extends ConsumerStatefulWidget {
   const SearchScreen({super.key});
 
@@ -24,6 +24,7 @@ class SearchScreen extends ConsumerStatefulWidget {
 class _SearchScreenState extends ConsumerState<SearchScreen> {
   final TextEditingController _searchController = TextEditingController();
   bool _isSearching = false;
+  bool _isCategoryExpanded = true;
 
   @override
   void dispose() {
@@ -43,21 +44,9 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
     ref.read(searchResultsProvider.notifier).search(query);
   }
 
-  void _onHistoryTap(String query) {
-    _searchController.text = query;
-    _onSearch(query);
-  }
-
-  void _clearSearch() {
-    _searchController.clear();
-    setState(() => _isSearching = false);
-    ref.read(searchResultsProvider.notifier).clear();
-  }
-
   @override
   Widget build(BuildContext context) {
     final textTheme = Theme.of(context).textTheme;
-    final selectedCategory = ref.watch(selectedCategoryProvider);
 
     return Scaffold(
       backgroundColor: AppColors.background,
@@ -67,64 +56,141 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
         title: Row(
           children: [
             Expanded(
-              child: Container(
-                height: 40,
-                decoration: BoxDecoration(
-                  color: AppColors.zinc100,
-                  borderRadius: BorderRadius.circular(AppRadius.lg),
-                ),
-                child: TextField(
-                  controller: _searchController,
-                  autofocus: false,
-                  onSubmitted: _onSearch,
-                  onChanged: (value) {
-                    if (value.isEmpty && _isSearching) {
-                      setState(() => _isSearching = false);
-                    }
-                  },
-                  decoration: InputDecoration(
-                    hintText: '搜索文章、话题、用户...',
-                    prefixIcon: Icon(
-                      Icons.search,
-                      color: AppColors.mutedForeground,
-                      size: 20,
+              child: ref
+                  .watch(searchHistoryProvider)
+                  .when(
+                    data: (history) => AppAutocomplete(
+                      controller: _searchController,
+                      items: history,
+                      hint: '搜索文章、话题、用户...',
+                      onChanged: (value) {
+                        if (value.isEmpty && _isSearching) {
+                          setState(() => _isSearching = false);
+                        }
+                      },
+                      onSelected: _onSearch,
                     ),
-                    suffixIcon: _searchController.text.isNotEmpty
-                        ? IconButton(
-                            icon: Icon(
-                              Icons.clear,
-                              color: AppColors.mutedForeground,
-                              size: 18,
-                            ),
-                            onPressed: _clearSearch,
-                          )
-                        : null,
-                    border: InputBorder.none,
-                    focusedBorder: InputBorder.none,
-                    enabledBorder: InputBorder.none,
-                    contentPadding: const EdgeInsets.only(bottom: 10, top: 12),
+                    loading: () =>
+                        const Center(child: CircularProgressIndicator()),
+                    error: (error, stackTrace) => AppAutocomplete(
+                      controller: _searchController,
+                      items: [],
+                      hint: '搜索文章、话题、用户...',
+                      onChanged: (value) {
+                        if (value.isEmpty && _isSearching) {
+                          setState(() => _isSearching = false);
+                        }
+                      },
+                      onSelected: _onSearch,
+                    ),
                   ),
-                ),
-              ),
             ),
             const SizedBox(width: AppSpacing.md),
             Icon(Icons.tune_outlined, color: AppColors.foreground),
           ],
         ),
       ),
-      body: _isSearching
-          ? _buildSearchResults(textTheme)
-          : _buildDefaultContent(textTheme, selectedCategory),
+      body: Row(
+        children: [
+          // Left Category Tab Bar
+          _buildCategoryTabBar(_isCategoryExpanded),
+
+          // Right Main Content
+          Expanded(
+            child: _isSearching
+                ? _buildSearchResults(textTheme)
+                : _buildDefaultContent(textTheme),
+          ),
+        ],
+      ),
     );
   }
 
-  Widget _buildDefaultContent(TextTheme textTheme, String selectedCategory) {
+  Widget _buildCategoryTabBar(bool isExpanded) {
+    final categories = [
+      '分类',
+      '日常生活',
+      '家庭',
+      '食物',
+      '生活方式',
+      '购物',
+      '儿童保育',
+      '健康',
+      '旅行和郊游',
+      '宠物',
+      '专栏和文章',
+      '美容',
+      '时尚',
+      'DIY',
+      '造型',
+      '手艺',
+      '户外的',
+      '学习',
+      '教育',
+    ];
+
+    return AnimatedContainer(
+      duration: const Duration(milliseconds: 300),
+      width: isExpanded ? 180 : 50,
+      decoration: BoxDecoration(
+        color: AppColors.background,
+        border: Border(right: BorderSide(color: AppColors.border)),
+      ),
+      child: Column(
+        children: [
+          // Toggle button
+          Container(
+            height: 50,
+            alignment: Alignment.center,
+            child: IconButton(
+              icon: Icon(isExpanded ? Icons.chevron_left : Icons.chevron_right),
+              onPressed: () {
+                setState(() {
+                  _isCategoryExpanded = !_isCategoryExpanded;
+                });
+              },
+              color: AppColors.foreground,
+            ),
+          ),
+
+          // Category list
+          Expanded(
+            child: ListView.builder(
+              itemCount: categories.length,
+              itemBuilder: (context, index) {
+                final category = categories[index];
+                final isTitle = index == 0;
+
+                return ListTile(
+                  leading: isTitle ? const Icon(Icons.category) : null,
+                  title: isExpanded ? Text(category) : null,
+                  dense: true,
+                  onTap: () {
+                    // Handle category selection
+                  },
+                  selected:
+                      index ==
+                      0, // Just for demo, you can add a provider to track selected category
+                  selectedColor: AppColors.primary,
+                  selectedTileColor: AppColors.primary.withValues(alpha: 0.1),
+                );
+              },
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildDefaultContent(TextTheme textTheme) {
     return ListView(
-      padding: const EdgeInsets.symmetric(vertical: AppSpacing.sm),
+      padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
       children: [
+        const SizedBox(height: AppSpacing.lg),
         _buildSearchHistorySection(textTheme),
-        _buildHotListSection(textTheme, selectedCategory),
-        const SizedBox(height: AppSpacing.xl3),
+        const SizedBox(height: AppSpacing.xl),
+        _buildHotSearchSection(textTheme),
+        const SizedBox(height: AppSpacing.xl),
         _buildHotTagsSection(textTheme),
       ],
     );
@@ -147,19 +213,26 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
                 children: [
                   Row(
                     children: [
-                      Icon(Icons.history, color: AppColors.foreground),
-                      const SizedBox(width: AppSpacing.sm),
+                      Icon(
+                        Icons.history_rounded,
+                        color: AppColors.mutedForeground,
+                        size: 18,
+                      ),
+                      const SizedBox(width: AppSpacing.xs),
                       Text('搜索历史', style: textTheme.headlineSmall),
                     ],
                   ),
-                  TextButton(
+                  IconButton(
+                    icon: Icon(
+                      Icons.delete_outline_rounded,
+                      color: AppColors.mutedForeground,
+                      size: 18,
+                    ),
                     onPressed: () {
                       ref.read(searchHistoryProvider.notifier).clearHistory();
                     },
-                    child: Text(
-                      '清空',
-                      style: TextStyle(color: AppColors.mutedForeground),
-                    ),
+                    splashRadius: 20,
+                    padding: EdgeInsets.zero,
                   ),
                 ],
               ),
@@ -167,43 +240,43 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
               Wrap(
                 spacing: AppSpacing.sm,
                 runSpacing: AppSpacing.sm,
-                children: history.take(10).map((query) {
-                  return GestureDetector(
-                    onTap: () => _onHistoryTap(query),
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: AppSpacing.md,
-                        vertical: AppSpacing.sm - 2,
-                      ),
-                      decoration: BoxDecoration(
-                        color: AppColors.secondary,
-                        borderRadius: BorderRadius.circular(AppRadius.full),
-                      ),
-                      child: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Text(
+                children: history.map((query) {
+                  return Container(
+                    height: 32,
+                    decoration: BoxDecoration(
+                      color: AppColors.secondary,
+                      borderRadius: BorderRadius.circular(AppRadius.full),
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Padding(
+                          padding: const EdgeInsets.only(left: 12, right: 6),
+                          child: Text(
                             query,
                             style: TextStyle(
                               color: AppColors.secondaryForeground,
                               fontSize: 14,
+                              height: 1.2,
                             ),
                           ),
-                          const SizedBox(width: AppSpacing.xs),
-                          GestureDetector(
-                            onTap: () {
-                              ref
-                                  .read(searchHistoryProvider.notifier)
-                                  .removeFromHistory(query);
-                            },
-                            child: Icon(
-                              Icons.close,
-                              size: 14,
-                              color: AppColors.mutedForeground,
-                            ),
+                        ),
+                        IconButton(
+                          icon: Icon(
+                            Icons.close_rounded,
+                            color: AppColors.mutedForeground,
+                            size: 16,
                           ),
-                        ],
-                      ),
+                          onPressed: () {
+                            ref
+                                .read(searchHistoryProvider.notifier)
+                                .removeFromHistory(query);
+                          },
+                          splashRadius: 16,
+                          padding: EdgeInsets.zero,
+                          constraints: const BoxConstraints(minWidth: 32),
+                        ),
+                      ],
                     ),
                   );
                 }).toList(),
@@ -218,200 +291,203 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
     );
   }
 
-  Widget _buildHotListSection(TextTheme textTheme, String selectedCategory) {
+  Widget _buildHotSearchSection(TextTheme textTheme) {
     final hotListAsync = ref.watch(hotListProvider);
 
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              Icon(Icons.show_chart, color: AppColors.foreground),
-              const SizedBox(width: AppSpacing.sm),
-              Text('热门榜单', style: textTheme.headlineSmall),
-            ],
-          ),
-          const SizedBox(height: AppSpacing.md),
-          SingleChildScrollView(
-            scrollDirection: Axis.horizontal,
-            child: Row(
-              children: categoryFilters.map((category) {
-                final isSelected = category == selectedCategory;
-                return GestureDetector(
-                  onTap: () => ref
-                      .read(selectedCategoryProvider.notifier)
-                      .setCategory(category),
-                  child: Container(
-                    margin: const EdgeInsets.only(right: AppSpacing.sm),
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: AppSpacing.md,
-                      vertical: AppSpacing.sm - 2,
-                    ),
-                    decoration: BoxDecoration(
-                      color:
-                          isSelected ? AppColors.primary : AppColors.secondary,
-                      borderRadius: BorderRadius.circular(AppRadius.full),
-                    ),
-                    child: Text(
-                      category,
-                      style: TextStyle(
-                        color: isSelected
-                            ? AppColors.primaryForeground
-                            : AppColors.secondaryForeground,
-                        fontSize: 14,
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          children: [
+            Icon(Icons.local_fire_department, color: AppColors.primary),
+            const SizedBox(width: AppSpacing.sm),
+            Text('Top 10热门文章', style: textTheme.headlineSmall),
+          ],
+        ),
+        const SizedBox(height: AppSpacing.md),
+        hotListAsync.when(
+          data: (hotListItems) => SizedBox(
+            height: 180, // Approximately 3 rows height
+            child: ListView.builder(
+              scrollDirection: Axis.horizontal,
+              itemCount: hotListItems.length,
+              itemBuilder: (context, index) {
+                final item = hotListItems[index];
+
+                Color rankingColor;
+                if (index == 0) {
+                  rankingColor = const Color(0xFFFFD700); // Gold
+                } else if (index == 1) {
+                  rankingColor = const Color(0xFFC0C0C0); // Silver
+                } else if (index == 2) {
+                  rankingColor = const Color(0xFFCD7F32); // Bronze
+                } else {
+                  rankingColor = AppColors.mutedForeground;
+                }
+
+                return Container(
+                  width: 280,
+                  margin: const EdgeInsets.only(right: AppSpacing.md),
+                  decoration: BoxDecoration(
+                    color: AppColors.card,
+                    borderRadius: BorderRadius.circular(AppRadius.md),
+                    border: Border.all(color: AppColors.border),
+                  ),
+                  padding: const EdgeInsets.all(AppSpacing.md),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      // Ranking and title
+                      Row(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          if (index < 3)
+                            Container(
+                              width: 24,
+                              height: 24,
+                              decoration: BoxDecoration(
+                                color: rankingColor,
+                                borderRadius: BorderRadius.circular(6),
+                              ),
+                              alignment: Alignment.center,
+                              child: Text(
+                                '${index + 1}',
+                                style: textTheme.bodyMedium?.copyWith(
+                                  color: Colors.black,
+                                  fontWeight: FontWeight.bold,
+                                  fontSize: 14,
+                                ),
+                              ),
+                            )
+                          else
+                            Text(
+                              '${index + 1}',
+                              style: textTheme.titleMedium?.copyWith(
+                                color: rankingColor,
+                                fontWeight: FontWeight.bold,
+                                fontSize: 18,
+                              ),
+                            ),
+                          const SizedBox(width: AppSpacing.sm),
+                          Expanded(
+                            child: Text(
+                              item.title,
+                              style: textTheme.bodyMedium?.copyWith(
+                                fontWeight: FontWeight.w600,
+                                height: 1.4,
+                              ),
+                              maxLines: 2,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ),
+                        ],
                       ),
-                    ),
+                      const SizedBox(height: AppSpacing.sm),
+
+                      // Author
+                      Text(
+                        item.author,
+                        style: textTheme.bodySmall?.copyWith(
+                          color: AppColors.mutedForeground,
+                          height: 1.2,
+                        ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                      const SizedBox(height: AppSpacing.sm),
+
+                      // Image if available
+                      if (item.imageUrl != null)
+                        Expanded(
+                          child: Container(
+                            width: double.infinity,
+                            decoration: BoxDecoration(
+                              borderRadius: BorderRadius.circular(AppRadius.sm),
+                              image: DecorationImage(
+                                image: NetworkImage(item.imageUrl!),
+                                fit: BoxFit.cover,
+                              ),
+                            ),
+                          ),
+                        ),
+                    ],
                   ),
                 );
-              }).toList(),
+              },
             ),
           ),
-          const SizedBox(height: AppSpacing.lg),
-          hotListAsync.when(
-            data: (hotListItems) => _buildHotListItems(textTheme, hotListItems),
-            loading: () => const Center(
-              child: Padding(
-                padding: EdgeInsets.all(AppSpacing.xl),
-                child: CircularProgressIndicator(),
-              ),
+          loading: () => const Center(
+            child: Padding(
+              padding: EdgeInsets.all(AppSpacing.xl),
+              child: CircularProgressIndicator(),
             ),
-            error: (error, _) => Center(
-              child: Padding(
-                padding: const EdgeInsets.all(AppSpacing.xl),
-                child: Text(
-                  '加载失败，请重试',
-                  style: textTheme.bodyMedium?.copyWith(
-                    color: AppColors.mutedForeground,
-                  ),
+          ),
+          error: (error, _) => Center(
+            child: Padding(
+              padding: const EdgeInsets.all(AppSpacing.xl),
+              child: Text(
+                '加载失败，请重试',
+                style: textTheme.bodyMedium?.copyWith(
+                  color: AppColors.mutedForeground,
                 ),
               ),
             ),
           ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildHotListItems(TextTheme textTheme, List<HotItem> hotListItems) {
-    return Column(
-      children: hotListItems.asMap().entries.map((entry) {
-        final index = entry.key;
-        final item = entry.value;
-        return Padding(
-          padding: EdgeInsets.only(
-            bottom: index == hotListItems.length - 1 ? 0 : AppSpacing.lg,
-          ),
-          child: Row(
-            children: [
-              Text(
-                '${index + 1}',
-                style: textTheme.titleLarge?.copyWith(
-                  color: index < 3
-                      ? AppColors.rankingGold
-                      : AppColors.mutedForeground,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-              const SizedBox(width: AppSpacing.lg),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      item.title,
-                      style: textTheme.bodyLarge?.copyWith(
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                    const SizedBox(height: AppSpacing.xs),
-                    Text(
-                      '${item.author} · ${item.heat}',
-                      style: textTheme.bodySmall?.copyWith(
-                        color: AppColors.mutedForeground,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              const SizedBox(width: AppSpacing.md),
-              if (item.imageUrl != null)
-                ClipRRect(
-                  borderRadius: BorderRadius.circular(AppRadius.md),
-                  child: CachedNetworkImage(
-                    imageUrl: item.imageUrl!,
-                    width: 56,
-                    height: 56,
-                    fit: BoxFit.cover,
-                    placeholder: (context, url) =>
-                        Container(color: AppColors.muted),
-                    errorWidget: (context, url, error) =>
-                        const Icon(Icons.error),
-                  ),
-                ),
-            ],
-          ),
-        );
-      }).toList(),
+        ),
+      ],
     );
   }
 
   Widget _buildHotTagsSection(TextTheme textTheme) {
     final hotTagsAsync = ref.watch(hotTagsProvider);
 
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            '# 热门标签',
-            style: textTheme.headlineSmall?.copyWith(
-              color: AppColors.tagGreen,
-            ),
-          ),
-          const SizedBox(height: AppSpacing.md),
-          hotTagsAsync.when(
-            data: (hotTags) => Wrap(
-              spacing: AppSpacing.sm,
-              runSpacing: AppSpacing.md,
-              children: hotTags.map((tag) {
-                return GestureDetector(
-                  onTap: () {
-                    _searchController.text = tag;
-                    _onSearch(tag);
-                  },
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: AppSpacing.md,
-                      vertical: AppSpacing.sm,
-                    ),
-                    decoration: BoxDecoration(
-                      color: AppColors.secondary,
-                      borderRadius: BorderRadius.circular(AppRadius.md),
-                    ),
-                    child: Text(
-                      tag,
-                      style: TextStyle(
-                        color: AppColors.secondaryForeground,
-                        fontSize: 14,
-                      ),
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          '# 热门标签',
+          style: textTheme.headlineSmall?.copyWith(color: AppColors.primary),
+        ),
+        const SizedBox(height: AppSpacing.md),
+        hotTagsAsync.when(
+          data: (hotTags) => Wrap(
+            spacing: AppSpacing.sm,
+            runSpacing: AppSpacing.md,
+            children: hotTags.map((tag) {
+              return GestureDetector(
+                onTap: () {
+                  _searchController.text = tag;
+                  _onSearch(tag);
+                },
+                child: Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: AppSpacing.md,
+                    vertical: AppSpacing.sm,
+                  ),
+                  decoration: BoxDecoration(
+                    color: AppColors.secondary,
+                    borderRadius: BorderRadius.circular(AppRadius.md),
+                  ),
+                  child: Text(
+                    tag,
+                    style: TextStyle(
+                      color: AppColors.secondaryForeground,
+                      fontSize: 14,
                     ),
                   ),
-                );
-              }).toList(),
-            ),
-            loading: () => const Center(
-              child: Padding(
-                padding: EdgeInsets.all(AppSpacing.md),
-                child: CircularProgressIndicator(),
-              ),
-            ),
-            error: (_, _) => const Text('加载失败'),
+                ),
+              );
+            }).toList(),
           ),
-        ],
-      ),
+          loading: () => const Center(
+            child: Padding(
+              padding: EdgeInsets.all(AppSpacing.md),
+              child: CircularProgressIndicator(),
+            ),
+          ),
+          error: (_, _) => const Text('加载失败'),
+        ),
+      ],
     );
   }
 
@@ -457,35 +533,39 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
             if (result.users.isNotEmpty) ...[
               Text('用户', style: textTheme.headlineSmall),
               const SizedBox(height: AppSpacing.md),
-              ...result.users.map((user) => ListTile(
-                    leading: CircleAvatar(
-                      child: Text(user.username[0].toUpperCase()),
-                    ),
-                    title: Text(user.username),
-                    subtitle: Text(user.email),
-                    onTap: () {
-                      // Navigate to user profile
-                    },
-                  )),
+              ...result.users.map(
+                (user) => ListTile(
+                  leading: CircleAvatar(
+                    child: Text(user.username[0].toUpperCase()),
+                  ),
+                  title: Text(user.username),
+                  subtitle: Text(user.email),
+                  onTap: () {
+                    // Navigate to user profile
+                  },
+                ),
+              ),
               const SizedBox(height: AppSpacing.xl),
             ],
             if (result.posts.isNotEmpty) ...[
               Text('帖子', style: textTheme.headlineSmall),
               const SizedBox(height: AppSpacing.md),
-              ...result.posts.map((post) => Card(
-                    margin: const EdgeInsets.only(bottom: AppSpacing.md),
-                    child: ListTile(
-                      title: Text(
-                        post.content,
-                        maxLines: 2,
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                      subtitle: Text('by ${post.username}'),
-                      onTap: () {
-                        // Navigate to post detail
-                      },
+              ...result.posts.map(
+                (post) => Card(
+                  margin: const EdgeInsets.only(bottom: AppSpacing.md),
+                  child: ListTile(
+                    title: Text(
+                      post.content,
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
                     ),
-                  )),
+                    subtitle: Text('by ${post.username}'),
+                    onTap: () {
+                      // Navigate to post detail
+                    },
+                  ),
+                ),
+              ),
               const SizedBox(height: AppSpacing.xl),
             ],
             if (result.tags.isNotEmpty) ...[
@@ -495,10 +575,7 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
                 spacing: AppSpacing.sm,
                 runSpacing: AppSpacing.sm,
                 children: result.tags
-                    .map((tag) => Chip(
-                          label: Text(tag),
-                          onDeleted: null,
-                        ))
+                    .map((tag) => Chip(label: Text(tag), onDeleted: null))
                     .toList(),
               ),
             ],
