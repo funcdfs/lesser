@@ -1,0 +1,92 @@
+syntax = "proto3";
+package post;
+
+option go_package = "generated/protos/post";
+
+import "common/common.proto";
+import "auth/auth.proto";
+
+// PostService handles post creation and management
+service PostService {
+  // Create a new post
+  rpc CreatePost(CreatePostRequest) returns (Post);
+  // Get a post by ID
+  rpc GetPost(GetPostRequest) returns (Post);
+  // Update a post
+  rpc UpdatePost(UpdatePostRequest) returns (Post);
+  // Delete a post
+  rpc DeletePost(DeletePostRequest) returns (common.Empty);
+  // Get posts by user
+  rpc GetUserPosts(GetUserPostsRequest) returns (PostsResponse);
+  // Get posts by type
+  rpc GetPostsByType(GetPostsByTypeRequest) returns (PostsResponse);
+}
+
+// PostType enum for different post types
+enum PostType {
+  SHORT = 0;   // Short text post
+  STORY = 1;   // Story (24h auto-delete)
+  COLUMN = 2;  // Long-form column article
+}
+
+// Post represents a user post
+message Post {
+  string id = 1;
+  auth.User author = 2;
+  PostType post_type = 3;
+  string content = 4;
+  repeated string media_urls = 5;
+  common.Timestamp expires_at = 6;  // For story posts
+  int32 like_count = 7;
+  int32 comment_count = 8;
+  int32 repost_count = 9;
+  int32 bookmark_count = 10;
+  common.Timestamp created_at = 11;
+  common.Timestamp updated_at = 12;
+}
+
+// CreatePostRequest for creating a new post
+message CreatePostRequest {
+  string author_id = 1;
+  PostType post_type = 2;
+  string content = 3;
+  repeated string media_urls = 4;
+}
+
+// GetPostRequest for fetching a single post
+message GetPostRequest {
+  string post_id = 1;
+}
+
+// UpdatePostRequest for updating a post
+message UpdatePostRequest {
+  string post_id = 1;
+  string author_id = 2;  // For authorization
+  string content = 3;
+  repeated string media_urls = 4;
+}
+
+// DeletePostRequest for deleting a post
+message DeletePostRequest {
+  string post_id = 1;
+  string author_id = 2;  // For authorization
+}
+
+// GetUserPostsRequest for fetching posts by user
+message GetUserPostsRequest {
+  string user_id = 1;
+  PostType post_type = 2;  // Optional filter
+  common.Pagination pagination = 3;
+}
+
+// GetPostsByTypeRequest for fetching posts by type
+message GetPostsByTypeRequest {
+  PostType post_type = 1;
+  common.Pagination pagination = 2;
+}
+
+// PostsResponse with list of posts
+message PostsResponse {
+  repeated Post posts = 1;
+  common.Pagination pagination = 2;
+}

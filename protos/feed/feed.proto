@@ -1,0 +1,139 @@
+syntax = "proto3";
+package feed;
+
+option go_package = "generated/protos/feed";
+
+import "common/common.proto";
+import "auth/auth.proto";
+import "post/post.proto";
+
+// FeedService handles feed operations and interactions
+service FeedService {
+  // Get paginated feed items for a user
+  rpc GetFeed(GetFeedRequest) returns (FeedResponse);
+  // Get feed items from followed users
+  rpc GetFollowingFeed(GetFeedRequest) returns (FeedResponse);
+  // Like a post
+  rpc LikePost(LikeRequest) returns (LikeResponse);
+  // Unlike a post
+  rpc UnlikePost(LikeRequest) returns (common.Empty);
+  // Repost a post
+  rpc Repost(RepostRequest) returns (RepostResponse);
+  // Remove a repost
+  rpc RemoveRepost(RepostRequest) returns (common.Empty);
+  // Add a comment to a post
+  rpc AddComment(AddCommentRequest) returns (Comment);
+  // Delete a comment
+  rpc DeleteComment(DeleteCommentRequest) returns (common.Empty);
+  // Get comments for a post
+  rpc GetComments(GetCommentsRequest) returns (CommentsResponse);
+  // Bookmark a post
+  rpc BookmarkPost(BookmarkRequest) returns (common.Empty);
+  // Remove bookmark from a post
+  rpc RemoveBookmark(BookmarkRequest) returns (common.Empty);
+  // Get user's bookmarks
+  rpc GetBookmarks(GetBookmarksRequest) returns (FeedResponse);
+}
+
+// FeedItem represents a single item in the feed
+message FeedItem {
+  string id = 1;
+  auth.User author = 2;
+  post.PostType post_type = 3;
+  string content = 4;
+  repeated string media_urls = 5;
+  int32 like_count = 6;
+  int32 comment_count = 7;
+  int32 repost_count = 8;
+  int32 bookmark_count = 9;
+  bool is_liked = 10;
+  bool is_bookmarked = 11;
+  bool is_reposted = 12;
+  common.Timestamp created_at = 13;
+}
+
+// Comment represents a comment on a post
+message Comment {
+  string id = 1;
+  auth.User author = 2;
+  string post_id = 3;
+  string parent_id = 4;  // For nested replies
+  string content = 5;
+  int32 reply_count = 6;
+  common.Timestamp created_at = 7;
+}
+
+// GetFeedRequest for fetching feed items
+message GetFeedRequest {
+  string user_id = 1;
+  common.Pagination pagination = 2;
+}
+
+// FeedResponse with list of feed items
+message FeedResponse {
+  repeated FeedItem items = 1;
+  common.Pagination pagination = 2;
+}
+
+// LikeRequest for liking/unliking a post
+message LikeRequest {
+  string user_id = 1;
+  string post_id = 2;
+}
+
+// LikeResponse after liking a post
+message LikeResponse {
+  int32 like_count = 1;
+}
+
+// RepostRequest for reposting/removing repost
+message RepostRequest {
+  string user_id = 1;
+  string post_id = 2;
+  string quote = 3;  // Optional quote text
+}
+
+// RepostResponse after reposting
+message RepostResponse {
+  string repost_id = 1;
+  int32 repost_count = 2;
+}
+
+// AddCommentRequest for adding a comment
+message AddCommentRequest {
+  string user_id = 1;
+  string post_id = 2;
+  string parent_id = 3;  // Optional, for replies
+  string content = 4;
+}
+
+// DeleteCommentRequest for deleting a comment
+message DeleteCommentRequest {
+  string comment_id = 1;
+  string user_id = 2;
+}
+
+// GetCommentsRequest for fetching comments
+message GetCommentsRequest {
+  string post_id = 1;
+  string parent_id = 2;  // Optional, for fetching replies
+  common.Pagination pagination = 3;
+}
+
+// CommentsResponse with list of comments
+message CommentsResponse {
+  repeated Comment comments = 1;
+  common.Pagination pagination = 2;
+}
+
+// BookmarkRequest for bookmarking/removing bookmark
+message BookmarkRequest {
+  string user_id = 1;
+  string post_id = 2;
+}
+
+// GetBookmarksRequest for fetching user's bookmarks
+message GetBookmarksRequest {
+  string user_id = 1;
+  common.Pagination pagination = 2;
+}

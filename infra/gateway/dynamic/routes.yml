@@ -1,0 +1,203 @@
+# ============================================================================
+# Traefik Dynamic Routes Configuration
+# ============================================================================
+
+http:
+  # ============================================================================
+  # Routers - HTTP/REST API
+  # ============================================================================
+  routers:
+    # Django REST API Routes
+    django-auth-api:
+      rule: "PathPrefix(`/api/v1/auth`)"
+      service: django
+      entryPoints:
+        - web
+      middlewares:
+        - cors-headers
+
+    django-feeds-api:
+      rule: "PathPrefix(`/api/v1/feeds`)"
+      service: django
+      entryPoints:
+        - web
+      middlewares:
+        - cors-headers
+
+    django-posts-api:
+      rule: "PathPrefix(`/api/v1/posts`)"
+      service: django
+      entryPoints:
+        - web
+      middlewares:
+        - cors-headers
+
+    django-search-api:
+      rule: "PathPrefix(`/api/v1/search`)"
+      service: django
+      entryPoints:
+        - web
+      middlewares:
+        - cors-headers
+
+    django-notifications-api:
+      rule: "PathPrefix(`/api/v1/notifications`)"
+      service: django
+      entryPoints:
+        - web
+      middlewares:
+        - cors-headers
+
+    django-users-api:
+      rule: "PathPrefix(`/api/v1/users`)"
+      service: django
+      entryPoints:
+        - web
+      middlewares:
+        - cors-headers
+
+    # Chat Service REST API Routes
+    chat-api:
+      rule: "PathPrefix(`/api/v1/chat`)"
+      service: chat-go
+      entryPoints:
+        - web
+      middlewares:
+        - cors-headers
+
+    # WebSocket Routes
+    chat-websocket:
+      rule: "PathPrefix(`/ws/chat`)"
+      service: chat-go
+      entryPoints:
+        - web
+
+    notifications-websocket:
+      rule: "PathPrefix(`/ws/notifications`)"
+      service: django
+      entryPoints:
+        - web
+
+    # gRPC-Web Routes (for browser clients)
+    grpc-web:
+      rule: "PathPrefix(`/grpc`)"
+      service: django-grpc
+      entryPoints:
+        - web
+      middlewares:
+        - grpc-web-headers
+
+  # ============================================================================
+  # gRPC Routers (Internal Service Communication)
+  # ============================================================================
+    grpc-auth:
+      rule: "PathPrefix(`/auth.`)"
+      service: django-grpc
+      entryPoints:
+        - grpc
+
+    grpc-feed:
+      rule: "PathPrefix(`/feed.`)"
+      service: django-grpc
+      entryPoints:
+        - grpc
+
+    grpc-post:
+      rule: "PathPrefix(`/post.`)"
+      service: django-grpc
+      entryPoints:
+        - grpc
+
+    grpc-notification:
+      rule: "PathPrefix(`/notification.`)"
+      service: django-grpc
+      entryPoints:
+        - grpc
+
+    grpc-chat:
+      rule: "PathPrefix(`/chat.`)"
+      service: chat-grpc
+      entryPoints:
+        - grpc
+
+  # ============================================================================
+  # Services
+  # ============================================================================
+  services:
+    django:
+      loadBalancer:
+        servers:
+          - url: "http://django:8000"
+        healthCheck:
+          path: /api/v1/health/
+          interval: "10s"
+          timeout: "3s"
+
+    django-grpc:
+      loadBalancer:
+        servers:
+          - url: "h2c://django:50051"
+
+    chat-go:
+      loadBalancer:
+        servers:
+          - url: "http://chat:8080"
+        healthCheck:
+          path: /health
+          interval: "10s"
+          timeout: "3s"
+
+    chat-grpc:
+      loadBalancer:
+        servers:
+          - url: "h2c://chat:50052"
+
+  # ============================================================================
+  # Middlewares
+  # ============================================================================
+  middlewares:
+    cors-headers:
+      headers:
+        accessControlAllowMethods:
+          - GET
+          - POST
+          - PUT
+          - PATCH
+          - DELETE
+          - OPTIONS
+        accessControlAllowHeaders:
+          - Content-Type
+          - Authorization
+          - X-Requested-With
+          - Accept
+          - Origin
+        accessControlAllowOriginList:
+          - "http://localhost:3000"
+          - "http://localhost:3001"
+          - "http://127.0.0.1:3000"
+          - "http://127.0.0.1:3001"
+        accessControlMaxAge: 86400
+        addVaryHeader: true
+
+    grpc-web-headers:
+      headers:
+        customRequestHeaders:
+          X-Grpc-Web: "true"
+        accessControlAllowMethods:
+          - POST
+          - OPTIONS
+        accessControlAllowHeaders:
+          - Content-Type
+          - X-Grpc-Web
+          - X-User-Agent
+        accessControlAllowOriginList:
+          - "*"
+        accessControlExposeHeaders:
+          - Grpc-Status
+          - Grpc-Message
+
+    rate-limit:
+      rateLimit:
+        average: 100
+        burst: 50
+        period: 1s
