@@ -9,25 +9,25 @@ import (
 	"gorm.io/gorm"
 )
 
-// MessageRepository handles message data operations
+// MessageRepository 消息数据仓库
 type MessageRepository struct {
 	db *gorm.DB
 }
 
-// NewMessageRepository creates a new MessageRepository
+// NewMessageRepository 创建消息仓库实例
 func NewMessageRepository(db *gorm.DB) *MessageRepository {
 	return &MessageRepository{db: db}
 }
 
-// Create creates a new message
+// Create 创建新消息
 func (r *MessageRepository) Create(ctx context.Context, msg *model.Message) error {
 	if err := r.db.WithContext(ctx).Create(msg).Error; err != nil {
-		return fmt.Errorf("failed to create message: %w", err)
+		return fmt.Errorf("创建消息失败: %w", err)
 	}
 	return nil
 }
 
-// GetByID retrieves a message by ID
+// GetByID 根据ID获取消息
 func (r *MessageRepository) GetByID(ctx context.Context, id uuid.UUID) (*model.Message, error) {
 	var msg model.Message
 	err := r.db.WithContext(ctx).First(&msg, "id = ?", id).Error
@@ -35,25 +35,25 @@ func (r *MessageRepository) GetByID(ctx context.Context, id uuid.UUID) (*model.M
 		if err == gorm.ErrRecordNotFound {
 			return nil, ErrNotFound
 		}
-		return nil, fmt.Errorf("failed to get message: %w", err)
+		return nil, fmt.Errorf("获取消息失败: %w", err)
 	}
 	return &msg, nil
 }
 
-// GetByConversationID retrieves messages for a conversation with pagination
+// GetByConversationID 获取会话的消息列表（分页，最新消息在前）
 func (r *MessageRepository) GetByConversationID(ctx context.Context, conversationID uuid.UUID, page, pageSize int) ([]model.Message, int64, error) {
 	var messages []model.Message
 	var total int64
 
-	// Count total messages
+	// 统计消息总数
 	if err := r.db.WithContext(ctx).
 		Model(&model.Message{}).
 		Where("conversation_id = ?", conversationID).
 		Count(&total).Error; err != nil {
-		return nil, 0, fmt.Errorf("failed to count messages: %w", err)
+		return nil, 0, fmt.Errorf("统计消息数量失败: %w", err)
 	}
 
-	// Get messages with pagination (newest first)
+	// 分页获取消息（最新消息在前）
 	offset := (page - 1) * pageSize
 	err := r.db.WithContext(ctx).
 		Where("conversation_id = ?", conversationID).
@@ -62,13 +62,13 @@ func (r *MessageRepository) GetByConversationID(ctx context.Context, conversatio
 		Limit(pageSize).
 		Find(&messages).Error
 	if err != nil {
-		return nil, 0, fmt.Errorf("failed to get messages: %w", err)
+		return nil, 0, fmt.Errorf("获取消息列表失败: %w", err)
 	}
 
 	return messages, total, nil
 }
 
-// GetLatestByConversationID retrieves the latest message for a conversation
+// GetLatestByConversationID 获取会话的最新一条消息
 func (r *MessageRepository) GetLatestByConversationID(ctx context.Context, conversationID uuid.UUID) (*model.Message, error) {
 	var msg model.Message
 	err := r.db.WithContext(ctx).
@@ -77,21 +77,21 @@ func (r *MessageRepository) GetLatestByConversationID(ctx context.Context, conve
 		First(&msg).Error
 	if err != nil {
 		if err == gorm.ErrRecordNotFound {
-			return nil, nil // No messages yet
+			return nil, nil // 暂无消息
 		}
-		return nil, fmt.Errorf("failed to get latest message: %w", err)
+		return nil, fmt.Errorf("获取最新消息失败: %w", err)
 	}
 	return &msg, nil
 }
 
-// GetByFilter retrieves messages matching the filter
+// GetByFilter 根据过滤条件获取消息
 func (r *MessageRepository) GetByFilter(ctx context.Context, filter model.MessageFilter, page, pageSize int) ([]model.Message, int64, error) {
 	var messages []model.Message
 	var total int64
 
 	query := r.db.WithContext(ctx).Model(&model.Message{})
 
-	// Apply filters
+	// 应用过滤条件
 	if filter.ConversationID != uuid.Nil {
 		query = query.Where("conversation_id = ?", filter.ConversationID)
 	}
@@ -108,12 +108,12 @@ func (r *MessageRepository) GetByFilter(ctx context.Context, filter model.Messag
 		query = query.Where("created_at > ?", *filter.After)
 	}
 
-	// Count total
+	// 统计总数
 	if err := query.Count(&total).Error; err != nil {
-		return nil, 0, fmt.Errorf("failed to count messages: %w", err)
+		return nil, 0, fmt.Errorf("统计消息数量失败: %w", err)
 	}
 
-	// Get messages with pagination
+	// 分页获取消息
 	offset := (page - 1) * pageSize
 	err := query.
 		Order("created_at DESC").
@@ -121,17 +121,17 @@ func (r *MessageRepository) GetByFilter(ctx context.Context, filter model.Messag
 		Limit(pageSize).
 		Find(&messages).Error
 	if err != nil {
-		return nil, 0, fmt.Errorf("failed to get messages: %w", err)
+		return nil, 0, fmt.Errorf("获取消息列表失败: %w", err)
 	}
 
 	return messages, total, nil
 }
 
-// Delete deletes a message
+// Delete 删除消息
 func (r *MessageRepository) Delete(ctx context.Context, id uuid.UUID) error {
 	result := r.db.WithContext(ctx).Delete(&model.Message{}, "id = ?", id)
 	if result.Error != nil {
-		return fmt.Errorf("failed to delete message: %w", result.Error)
+		return fmt.Errorf("删除消息失败: %w", result.Error)
 	}
 	if result.RowsAffected == 0 {
 		return ErrNotFound
@@ -139,12 +139,37 @@ func (r *MessageRepository) Delete(ctx context.Context, id uuid.UUID) error {
 	return nil
 }
 
-// DeleteByConversationID deletes all messages in a conversation
+// DeleteByConversationID 删除会话的所有消息
 func (r *MessageRepository) DeleteByConversationID(ctx context.Context, conversationID uuid.UUID) error {
 	if err := r.db.WithContext(ctx).
 		Where("conversation_id = ?", conversationID).
 		Delete(&model.Message{}).Error; err != nil {
-		return fmt.Errorf("failed to delete messages: %w", err)
+		return fmt.Errorf("删除消息失败: %w", err)
+	}
+	return nil
+}
+
+// MarkAsRead 标记消息为已读
+func (r *MessageRepository) MarkAsRead(ctx context.Context, messageID uuid.UUID) error {
+	result := r.db.WithContext(ctx).
+		Model(&model.Message{}).
+		Where("id = ?", messageID).
+		Update("is_read", true)
+	if result.Error != nil {
+		return fmt.Errorf("标记已读失败: %w", result.Error)
+	}
+	return nil
+}
+
+// MarkConversationAsRead 标记会话中某用户之前的所有消息为已读
+func (r *MessageRepository) MarkConversationAsRead(ctx context.Context, conversationID, userID uuid.UUID) error {
+	// 标记该会话中不是自己发送的消息为已读
+	result := r.db.WithContext(ctx).
+		Model(&model.Message{}).
+		Where("conversation_id = ? AND sender_id != ? AND is_read = ?", conversationID, userID, false).
+		Update("is_read", true)
+	if result.Error != nil {
+		return fmt.Errorf("标记会话已读失败: %w", result.Error)
 	}
 	return nil
 }

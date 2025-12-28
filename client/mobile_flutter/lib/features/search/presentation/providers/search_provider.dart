@@ -102,10 +102,32 @@ class SearchNotifier extends StateNotifier<SearchState> {
     }
   }
 
+  /// Search users only (for new conversation)
+  Future<void> searchUsers(String query) async {
+    if (query.isEmpty) return;
+
+    state = state.copyWith(status: SearchStatus.loading, query: query);
+
+    final result = await _repository.searchUsers(query: query);
+    result.fold(
+      (failure) => state = state.copyWith(
+        status: SearchStatus.error,
+        errorMessage: failure.message,
+      ),
+      (users) => state = state.copyWith(
+        status: SearchStatus.loaded,
+        users: users,
+      ),
+    );
+  }
+
   /// Clear search
   void clear() {
     state = const SearchState();
   }
+
+  /// Check if loading
+  bool get isLoading => state.status == SearchStatus.loading;
 }
 
 /// Search provider

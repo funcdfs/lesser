@@ -34,9 +34,7 @@ class _ConversationsPageState extends ConsumerState<ConversationsPage> {
         actions: [
           IconButton(
             icon: const Icon(Icons.edit_square),
-            onPressed: () {
-              // Create new conversation
-            },
+            onPressed: () => context.push(RouteConstants.newConversation),
           ),
         ],
       ),
@@ -54,13 +52,14 @@ class _ConversationsPageState extends ConsumerState<ConversationsPage> {
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              Icon(Icons.error_outline, size: 64, color: AppColors.error),
+              const Icon(Icons.error_outline, size: 64, color: AppColors.error),
               const SizedBox(height: 16),
               Text(conversationsState.errorMessage ?? 'An error occurred'),
               const SizedBox(height: 16),
               ElevatedButton(
-                onPressed: () =>
-                    ref.read(conversationsProvider.notifier).loadConversations(),
+                onPressed: () => ref
+                    .read(conversationsProvider.notifier)
+                    .loadConversations(),
                 child: const Text('Retry'),
               ),
             ],
@@ -72,7 +71,7 @@ class _ConversationsPageState extends ConsumerState<ConversationsPage> {
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                Icon(
+                const Icon(
                   Icons.chat_bubble_outline,
                   size: 64,
                   color: AppColors.textSecondaryLight,
@@ -81,9 +80,7 @@ class _ConversationsPageState extends ConsumerState<ConversationsPage> {
                 const Text('No conversations yet'),
                 const SizedBox(height: 16),
                 ElevatedButton(
-                  onPressed: () {
-                    // Start new conversation
-                  },
+                  onPressed: () => context.push(RouteConstants.newConversation),
                   child: const Text('Start a conversation'),
                 ),
               ],
@@ -102,7 +99,10 @@ class _ConversationsPageState extends ConsumerState<ConversationsPage> {
                 conversation: conversation,
                 onTap: () {
                   context.push(
-                    RouteConstants.chatRoom.replaceFirst(':id', conversation.id),
+                    RouteConstants.chatRoom.replaceFirst(
+                      ':id',
+                      conversation.id,
+                    ),
                   );
                 },
               );
@@ -114,10 +114,7 @@ class _ConversationsPageState extends ConsumerState<ConversationsPage> {
 }
 
 class _ConversationItem extends StatelessWidget {
-  const _ConversationItem({
-    required this.conversation,
-    this.onTap,
-  });
+  const _ConversationItem({required this.conversation, this.onTap});
 
   final Conversation conversation;
   final VoidCallback? onTap;
@@ -169,7 +166,7 @@ class _ConversationItem extends StatelessWidget {
                       if (conversation.lastMessage != null)
                         Text(
                           conversation.lastMessage!.createdAt.timeAgo,
-                          style: TextStyle(
+                          style: const TextStyle(
                             color: AppColors.textSecondaryLight,
                             fontSize: 12,
                           ),
@@ -181,7 +178,8 @@ class _ConversationItem extends StatelessWidget {
                     children: [
                       Expanded(
                         child: Text(
-                          conversation.lastMessage?.content ?? 'No messages yet',
+                          conversation.lastMessage?.content ??
+                              'No messages yet',
                           style: TextStyle(
                             color: AppColors.textSecondaryLight,
                             fontWeight: conversation.unreadCount > 0

@@ -1,4 +1,3 @@
-import 'package:dartz/dartz.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mobile_flutter/core/errors/exceptions.dart';
 import 'package:mobile_flutter/core/errors/failures.dart';
@@ -14,7 +13,7 @@ class MockAuthRemoteDataSource implements AuthRemoteDataSource {
   ({UserModel user, TokenModel tokens})? registerResult;
   UserModel? getCurrentUserResult;
   String? refreshTokenResult;
-  
+
   Exception? loginException;
   Exception? registerException;
   Exception? logoutException;
@@ -69,7 +68,7 @@ class MockAuthLocalDataSource implements AuthLocalDataSource {
   UserModel? cachedUser;
   String? accessToken;
   String? refreshToken;
-  
+
   Exception? cacheUserException;
   Exception? cacheTokensException;
   Exception? clearTokensException;
@@ -161,32 +160,37 @@ void main() {
   );
 
   group('login', () {
-    test('should return User and cache data when login is successful', () async {
-      // Arrange
-      mockRemoteDataSource.loginResult = (user: testUserModel, tokens: testTokenModel);
+    test(
+      'should return User and cache data when login is successful',
+      () async {
+        // Arrange
+        mockRemoteDataSource.loginResult = (
+          user: testUserModel,
+          tokens: testTokenModel,
+        );
 
-      // Act
-      final result = await repository.login(
-        email: 'test@example.com',
-        password: 'password123',
-      );
+        // Act
+        final result = await repository.login(
+          email: 'test@example.com',
+          password: 'password123',
+        );
 
-      // Assert
-      expect(result.isRight(), true);
-      result.fold(
-        (_) => fail('Should return user'),
-        (user) {
+        // Assert
+        expect(result.isRight(), true);
+        result.fold((_) => fail('Should return user'), (user) {
           expect(user.id, '1');
           expect(user.email, 'test@example.com');
-        },
-      );
-      expect(mockLocalDataSource.cacheUserCalled, true);
-      expect(mockLocalDataSource.cacheTokensCalled, true);
-    });
+        });
+        expect(mockLocalDataSource.cacheUserCalled, true);
+        expect(mockLocalDataSource.cacheTokensCalled, true);
+      },
+    );
 
     test('should return ServerFailure when server throws exception', () async {
       // Arrange
-      mockRemoteDataSource.loginException = const ServerException(message: 'Server error');
+      mockRemoteDataSource.loginException = const ServerException(
+        message: 'Server error',
+      );
 
       // Act
       final result = await repository.login(
@@ -204,7 +208,9 @@ void main() {
 
     test('should return AuthFailure when credentials are invalid', () async {
       // Arrange
-      mockRemoteDataSource.loginException = const UnauthorizedException(message: 'Invalid credentials');
+      mockRemoteDataSource.loginException = const UnauthorizedException(
+        message: 'Invalid credentials',
+      );
 
       // Act
       final result = await repository.login(
@@ -240,34 +246,39 @@ void main() {
   });
 
   group('register', () {
-    test('should return User and cache data when registration is successful', () async {
-      // Arrange
-      mockRemoteDataSource.registerResult = (user: testUserModel, tokens: testTokenModel);
+    test(
+      'should return User and cache data when registration is successful',
+      () async {
+        // Arrange
+        mockRemoteDataSource.registerResult = (
+          user: testUserModel,
+          tokens: testTokenModel,
+        );
 
-      // Act
-      final result = await repository.register(
-        username: 'testuser',
-        email: 'test@example.com',
-        password: 'password123',
-        displayName: 'Test User',
-      );
+        // Act
+        final result = await repository.register(
+          username: 'testuser',
+          email: 'test@example.com',
+          password: 'password123',
+          displayName: 'Test User',
+        );
 
-      // Assert
-      expect(result.isRight(), true);
-      result.fold(
-        (_) => fail('Should return user'),
-        (user) {
+        // Assert
+        expect(result.isRight(), true);
+        result.fold((_) => fail('Should return user'), (user) {
           expect(user.id, '1');
           expect(user.username, 'testuser');
-        },
-      );
-      expect(mockLocalDataSource.cacheUserCalled, true);
-      expect(mockLocalDataSource.cacheTokensCalled, true);
-    });
+        });
+        expect(mockLocalDataSource.cacheUserCalled, true);
+        expect(mockLocalDataSource.cacheTokensCalled, true);
+      },
+    );
 
     test('should return ServerFailure when registration fails', () async {
       // Arrange
-      mockRemoteDataSource.registerException = const ServerException(message: 'Email already exists');
+      mockRemoteDataSource.registerException = const ServerException(
+        message: 'Email already exists',
+      );
 
       // Act
       final result = await repository.register(

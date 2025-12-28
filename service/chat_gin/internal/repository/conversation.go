@@ -9,25 +9,25 @@ import (
 	"gorm.io/gorm"
 )
 
-// ConversationRepository handles conversation data operations
+// ConversationRepository 会话数据仓库
 type ConversationRepository struct {
 	db *gorm.DB
 }
 
-// NewConversationRepository creates a new ConversationRepository
+// NewConversationRepository 创建会话仓库实例
 func NewConversationRepository(db *gorm.DB) *ConversationRepository {
 	return &ConversationRepository{db: db}
 }
 
-// Create creates a new conversation with members
+// Create 创建新会话及其成员
 func (r *ConversationRepository) Create(ctx context.Context, conv *model.Conversation, memberIDs []uuid.UUID) error {
 	return r.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
-		// Create conversation
+		// 创建会话
 		if err := tx.Create(conv).Error; err != nil {
-			return fmt.Errorf("failed to create conversation: %w", err)
+			return fmt.Errorf("创建会话失败: %w", err)
 		}
 
-		// Add members
+		// 添加成员
 		members := make([]model.ConversationMember, len(memberIDs))
 		for i, userID := range memberIDs {
 			role := model.MemberRoleMember
@@ -42,14 +42,14 @@ func (r *ConversationRepository) Create(ctx context.Context, conv *model.Convers
 		}
 
 		if err := tx.Create(&members).Error; err != nil {
-			return fmt.Errorf("failed to add members: %w", err)
+			return fmt.Errorf("添加成员失败: %w", err)
 		}
 
 		return nil
 	})
 }
 
-// GetByID retrieves a conversation by ID with members
+// GetByID 根据ID获取会话（包含成员信息）
 func (r *ConversationRepository) GetByID(ctx context.Context, id uuid.UUID) (*model.Conversation, error) {
 	var conv model.Conversation
 	err := r.db.WithContext(ctx).
@@ -59,30 +59,30 @@ func (r *ConversationRepository) GetByID(ctx context.Context, id uuid.UUID) (*mo
 		if err == gorm.ErrRecordNotFound {
 			return nil, ErrNotFound
 		}
-		return nil, fmt.Errorf("failed to get conversation: %w", err)
+		return nil, fmt.Errorf("获取会话失败: %w", err)
 	}
 	return &conv, nil
 }
 
-// GetByUserID retrieves all conversations for a user
+// GetByUserID 获取用户的所有会话（分页）
 func (r *ConversationRepository) GetByUserID(ctx context.Context, userID uuid.UUID, page, pageSize int) ([]model.Conversation, int64, error) {
 	var conversations []model.Conversation
 	var total int64
 
-	// Get conversation IDs for user
+	// 获取用户参与的会话ID
 	subQuery := r.db.Model(&model.ConversationMember{}).
 		Select("conversation_id").
 		Where("user_id = ?", userID)
 
-	// Count total
+	// 统计总数
 	if err := r.db.WithContext(ctx).
 		Model(&model.Conversation{}).
 		Where("id IN (?)", subQuery).
 		Count(&total).Error; err != nil {
-		return nil, 0, fmt.Errorf("failed to count conversations: %w", err)
+		return nil, 0, fmt.Errorf("统计会话数量失败: %w", err)
 	}
 
-	// Get conversations with pagination
+	// 分页获取会话
 	offset := (page - 1) * pageSize
 	err := r.db.WithContext(ctx).
 		Preload("Members").
@@ -92,17 +92,17 @@ func (r *ConversationRepository) GetByUserID(ctx context.Context, userID uuid.UU
 		Limit(pageSize).
 		Find(&conversations).Error
 	if err != nil {
-		return nil, 0, fmt.Errorf("failed to get conversations: %w", err)
+		return nil, 0, fmt.Errorf("获取会话列表失败: %w", err)
 	}
 
 	return conversations, total, nil
 }
 
-// GetPrivateConversation finds an existing private conversation between two users
+// GetPrivateConversation 查找两个用户之间的私聊会话
 func (r *ConversationRepository) GetPrivateConversation(ctx context.Context, userID1, userID2 uuid.UUID) (*model.Conversation, error) {
 	var conv model.Conversation
 
-	// Find private conversation where both users are members
+	// 查找两个用户都是成员的私聊会话
 	subQuery1 := r.db.Model(&model.ConversationMember{}).
 		Select("conversation_id").
 		Where("user_id = ?", userID1)
@@ -122,13 +122,13 @@ func (r *ConversationRepository) GetPrivateConversation(ctx context.Context, use
 		if err == gorm.ErrRecordNotFound {
 			return nil, ErrNotFound
 		}
-		return nil, fmt.Errorf("failed to get private conversation: %w", err)
+		return nil, fmt.Errorf("获取私聊会话失败: %w", err)
 	}
 
 	return &conv, nil
 }
 
-// AddMember adds a member to a conversation
+// AddMember 向会话添加成员
 func (r *ConversationRepository) AddMember(ctx context.Context, conversationID, userID uuid.UUID, role string) error {
 	member := model.ConversationMember{
 		ConversationID: conversationID,
@@ -136,18 +136,18 @@ func (r *ConversationRepository) AddMember(ctx context.Context, conversationID, 
 		Role:           role,
 	}
 	if err := r.db.WithContext(ctx).Create(&member).Error; err != nil {
-		return fmt.Errorf("failed to add member: %w", err)
+		return fmt.Errorf("添加成员失败: %w", err)
 	}
 	return nil
 }
 
-// RemoveMember removes a member from a conversation
+// RemoveMember 从会话移除成员
 func (r *ConversationRepository) RemoveMember(ctx context.Context, conversationID, userID uuid.UUID) error {
 	result := r.db.WithContext(ctx).
 		Where("conversation_id = ? AND user_id = ?", conversationID, userID).
 		Delete(&model.ConversationMember{})
 	if result.Error != nil {
-		return fmt.Errorf("failed to remove member: %w", result.Error)
+		return fmt.Errorf("移除成员失败: %w", result.Error)
 	}
 	if result.RowsAffected == 0 {
 		return ErrNotFound
@@ -155,7 +155,7 @@ func (r *ConversationRepository) RemoveMember(ctx context.Context, conversationI
 	return nil
 }
 
-// IsMember checks if a user is a member of a conversation
+// IsMember 检查用户是否是会话成员
 func (r *ConversationRepository) IsMember(ctx context.Context, conversationID, userID uuid.UUID) (bool, error) {
 	var count int64
 	err := r.db.WithContext(ctx).
@@ -163,12 +163,12 @@ func (r *ConversationRepository) IsMember(ctx context.Context, conversationID, u
 		Where("conversation_id = ? AND user_id = ?", conversationID, userID).
 		Count(&count).Error
 	if err != nil {
-		return false, fmt.Errorf("failed to check membership: %w", err)
+		return false, fmt.Errorf("检查成员身份失败: %w", err)
 	}
 	return count > 0, nil
 }
 
-// UpdateTimestamp updates the conversation's updated_at timestamp
+// UpdateTimestamp 更新会话的最后活动时间
 func (r *ConversationRepository) UpdateTimestamp(ctx context.Context, conversationID uuid.UUID) error {
 	return r.db.WithContext(ctx).
 		Model(&model.Conversation{}).
@@ -176,18 +176,18 @@ func (r *ConversationRepository) UpdateTimestamp(ctx context.Context, conversati
 		Update("updated_at", gorm.Expr("NOW()")).Error
 }
 
-// Delete deletes a conversation and all its members
+// Delete 删除会话及其所有成员
 func (r *ConversationRepository) Delete(ctx context.Context, id uuid.UUID) error {
 	return r.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
-		// Delete members first
+		// 先删除成员
 		if err := tx.Where("conversation_id = ?", id).Delete(&model.ConversationMember{}).Error; err != nil {
-			return fmt.Errorf("failed to delete members: %w", err)
+			return fmt.Errorf("删除成员失败: %w", err)
 		}
 
-		// Delete conversation
+		// 删除会话
 		result := tx.Delete(&model.Conversation{}, "id = ?", id)
 		if result.Error != nil {
-			return fmt.Errorf("failed to delete conversation: %w", result.Error)
+			return fmt.Errorf("删除会话失败: %w", result.Error)
 		}
 		if result.RowsAffected == 0 {
 			return ErrNotFound

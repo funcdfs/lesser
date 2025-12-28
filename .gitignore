@@ -9,9 +9,14 @@ __pycache__/
 .venv/
 venv/
 ENV/
+env/
 *.egg-info/
 dist/
 build/
+*.egg
+.eggs/
+pip-log.txt
+pip-delete-this-directory.txt
 
 # ============================================================================
 # Django
@@ -19,10 +24,13 @@ build/
 *.log
 local_settings.py
 db.sqlite3
+db.sqlite3-journal
 media/
 staticfiles/
 celerybeat-schedule
 celerybeat.pid
+*.pot
+*.mo
 
 # ============================================================================
 # Go
@@ -34,7 +42,14 @@ celerybeat.pid
 *.test
 *.out
 vendor/
+go.work
+go.work.sum
+
+# Go 服务临时文件和二进制
 service/chat_gin/tmp/
+service/chat_gin/main
+service/*/main
+**/air.toml
 
 # ============================================================================
 # Flutter / Dart
@@ -48,6 +63,21 @@ build/
 .pub-cache/
 .pub/
 pubspec.lock
+.metadata
+*.g.dart
+*.freezed.dart
+*.mocks.dart
+
+# Flutter 平台特定构建产物
+**/ios/Pods/
+**/ios/.symlinks/
+**/ios/Flutter/Flutter.framework
+**/ios/Flutter/Flutter.podspec
+**/android/.gradle/
+**/android/local.properties
+**/android/**/GeneratedPluginRegistrant.*
+**/web/favicon.png
+**/*.dSYM/
 
 # ============================================================================
 # Node.js / React
@@ -61,6 +91,11 @@ npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
 .pnpm-debug.log*
+package-lock.json
+yarn.lock
+pnpm-lock.yaml
+.eslintcache
+.parcel-cache/
 
 # ============================================================================
 # IDE / Editor
@@ -69,17 +104,22 @@ yarn-error.log*
 .vscode/
 *.swp
 *.swo
+*~
 *.sublime-workspace
 *.sublime-project
 .project
 .classpath
 .settings/
+*.code-workspace
+.history/
 
 # ============================================================================
 # Docker
 # ============================================================================
 docker/postgres/data/
 docker/redis/data/
+infra/database/data/
+infra/cache/data/
 
 # ============================================================================
 # Environment Variables (统一放在 infra/env/ 目录下)
@@ -129,17 +169,22 @@ client/web_react/src/generated/
 ehthumbs.db
 Thumbs.db
 Desktop.ini
+*.lnk
 
 # ============================================================================
 # Testing & Coverage
 # ============================================================================
 .coverage
+.coverage.*
 htmlcov/
 .pytest_cache/
 .hypothesis/
 coverage/
 *.lcov
 .nyc_output/
+test-results/
+junit.xml
+coverage.xml
 
 # ============================================================================
 # Logs
@@ -149,6 +194,7 @@ logs/
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
+lerna-debug.log*
 
 # ============================================================================
 # Temporary Files
@@ -159,6 +205,9 @@ temp/
 *.temp
 *.bak
 *.backup
+*.orig
+*.rej
+*.patch
 
 # ============================================================================
 # Secrets & Credentials (永远不要提交)
@@ -168,5 +217,36 @@ temp/
 *.crt
 *.p12
 *.pfx
+*.jks
 secrets/
 credentials/
+.secrets/
+*.keystore
+google-services.json
+GoogleService-Info.plist
+
+# ============================================================================
+# Database
+# ============================================================================
+*.sql
+*.sqlite
+*.sqlite3
+*.db
+dump.rdb
+
+# ============================================================================
+# Cache
+# ============================================================================
+.cache/
+*.cache
+.sass-cache/
+.stylelintcache
+
+# ============================================================================
+# Build Artifacts
+# ============================================================================
+*.o
+*.a
+*.lib
+*.so.*
+*.dylib.*

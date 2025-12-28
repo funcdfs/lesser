@@ -7,10 +7,7 @@ import '../widgets/message_bubble.dart';
 import '../widgets/chat_input.dart';
 
 class ChatRoomPage extends ConsumerStatefulWidget {
-  const ChatRoomPage({
-    super.key,
-    required this.conversationId,
-  });
+  const ChatRoomPage({super.key, required this.conversationId});
 
   final String conversationId;
 
@@ -29,12 +26,21 @@ class _ChatRoomPageState extends ConsumerState<ChatRoomPage> {
           .read(chatRoomProvider.notifier)
           .loadConversation(widget.conversationId);
     });
+    _scrollController.addListener(_onScroll);
   }
 
   @override
   void dispose() {
+    _scrollController.removeListener(_onScroll);
     _scrollController.dispose();
     super.dispose();
+  }
+
+  void _onScroll() {
+    if (_scrollController.position.pixels >=
+        _scrollController.position.maxScrollExtent - 200) {
+      ref.read(chatRoomProvider.notifier).loadMoreMessages();
+    }
   }
 
   void _handleSend(String content) {
@@ -83,7 +89,7 @@ class _ChatRoomPageState extends ConsumerState<ChatRoomPage> {
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              Icon(Icons.error_outline, size: 64, color: AppColors.error),
+              const Icon(Icons.error_outline, size: 64, color: AppColors.error),
               const SizedBox(height: 16),
               Text(chatRoomState.errorMessage ?? 'An error occurred'),
               const SizedBox(height: 16),
@@ -99,7 +105,7 @@ class _ChatRoomPageState extends ConsumerState<ChatRoomPage> {
       case ChatRoomStatus.loaded:
       case ChatRoomStatus.sending:
         if (chatRoomState.messages.isEmpty) {
-          return Center(
+          return const Center(
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
@@ -108,9 +114,9 @@ class _ChatRoomPageState extends ConsumerState<ChatRoomPage> {
                   size: 64,
                   color: AppColors.textSecondaryLight,
                 ),
-                const SizedBox(height: 16),
-                const Text('No messages yet'),
-                const SizedBox(height: 8),
+                SizedBox(height: 16),
+                Text('No messages yet'),
+                SizedBox(height: 8),
                 Text(
                   'Start the conversation!',
                   style: TextStyle(color: AppColors.textSecondaryLight),
@@ -126,11 +132,8 @@ class _ChatRoomPageState extends ConsumerState<ChatRoomPage> {
           itemCount: chatRoomState.messages.length,
           itemBuilder: (context, index) {
             final message = chatRoomState.messages[index];
-            final isMe = message.senderId == 'current_user_id'; // TODO: Get from auth
-            return MessageBubble(
-              message: message,
-              isMe: isMe,
-            );
+            final isMe = message.senderId == chatRoomState.currentUserId;
+            return MessageBubble(message: message, isMe: isMe);
           },
         );
     }

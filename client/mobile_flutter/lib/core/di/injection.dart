@@ -1,8 +1,10 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:get_it/get_it.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../api/api_client.dart';
+import '../storage/web_session_storage.dart';
 
 // Auth
 import '../../features/auth/data/datasources/auth_local_datasource.dart';
@@ -37,6 +39,7 @@ import '../../features/post/domain/repositories/post_repository.dart';
 
 // Chat
 import '../../features/chat/data/datasources/chat_remote_datasource.dart';
+import '../../features/chat/data/datasources/chat_websocket_service.dart';
 import '../../features/chat/data/repositories/chat_repository_impl.dart';
 import '../../features/chat/domain/repositories/chat_repository.dart';
 
@@ -48,10 +51,17 @@ Future<void> initializeDependencies() async {
   final sharedPreferences = await SharedPreferences.getInstance();
   getIt.registerSingleton<SharedPreferences>(sharedPreferences);
 
-  const secureStorage = FlutterSecureStorage(
-    aOptions: AndroidOptions(encryptedSharedPreferences: true),
-    iOptions: IOSOptions(accessibility: KeychainAccessibility.first_unlock),
-  );
+  // Use session-based storage for web (each tab gets its own session)
+  // Use secure storage for mobile
+  late final FlutterSecureStorage secureStorage;
+  if (kIsWeb) {
+    secureStorage = const WebSessionStorage();
+  } else {
+    secureStorage = const FlutterSecureStorage(
+      aOptions: AndroidOptions(encryptedSharedPreferences: true),
+      iOptions: IOSOptions(accessibility: KeychainAccessibility.first_unlock),
+    );
+  }
   getIt.registerSingleton<FlutterSecureStorage>(secureStorage);
 
   // API Client
@@ -105,7 +115,15 @@ void _registerDataSources() {
 
   // Chat data source
   getIt.registerLazySingleton<ChatRemoteDataSource>(
-    () => ChatRemoteDataSourceImpl(getIt<ApiClient>()),
+    () => ChatRemoteDataSourceImpl(
+      getIt<ApiClient>(),
+      getIt<SharedPreferences>(),
+    ),
+  );
+
+  // Chat WebSocket service (singleton for real-time messaging)
+  getIt.registerLazySingleton<ChatWebSocketService>(
+    () => ChatWebSocketService(),
   );
 }
 

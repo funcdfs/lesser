@@ -72,11 +72,7 @@ class _FeedsPageState extends ConsumerState<FeedsPage> {
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              Icon(
-                Icons.error_outline,
-                size: 64,
-                color: AppColors.error,
-              ),
+              const Icon(Icons.error_outline, size: 64, color: AppColors.error),
               const SizedBox(height: 16),
               Text(
                 feedState.errorMessage ?? 'An error occurred',
@@ -93,7 +89,7 @@ class _FeedsPageState extends ConsumerState<FeedsPage> {
       case FeedStatus.loaded:
       case FeedStatus.loadingMore:
         if (feedState.feeds.isEmpty) {
-          return Center(
+          return const Center(
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
@@ -102,8 +98,8 @@ class _FeedsPageState extends ConsumerState<FeedsPage> {
                   size: 64,
                   color: AppColors.textSecondaryLight,
                 ),
-                const SizedBox(height: 16),
-                const Text('No posts yet'),
+                SizedBox(height: 16),
+                Text('No posts yet'),
               ],
             ),
           );
@@ -113,7 +109,8 @@ class _FeedsPageState extends ConsumerState<FeedsPage> {
           child: ListView.separated(
             controller: _scrollController,
             padding: const EdgeInsets.symmetric(vertical: 8),
-            itemCount: feedState.feeds.length +
+            itemCount:
+                feedState.feeds.length +
                 (feedState.status == FeedStatus.loadingMore ? 1 : 0),
             separatorBuilder: (context, index) => const Divider(height: 1),
             itemBuilder: (context, index) {

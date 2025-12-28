@@ -13,6 +13,7 @@ urlpatterns = [
     path('api/v1/hello/', hello, name='hello'),
     # API v1
     path('api/v1/auth/', include('apps.users.urls')),
+    path('api/v1/users/', include('apps.users.users_urls')),
     path('api/v1/posts/', include('apps.posts.urls')),
     path('api/v1/feeds/', include('apps.feeds.urls')),
     path('api/v1/search/', include('apps.search.urls')),

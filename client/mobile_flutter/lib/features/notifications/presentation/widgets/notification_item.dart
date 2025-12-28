@@ -5,11 +5,7 @@ import '../../../../core/utils/extensions.dart';
 import '../../domain/entities/notification.dart';
 
 class NotificationItem extends StatelessWidget {
-  const NotificationItem({
-    super.key,
-    required this.notification,
-    this.onTap,
-  });
+  const NotificationItem({super.key, required this.notification, this.onTap});
 
   final AppNotification notification;
   final VoidCallback? onTap;
@@ -34,7 +30,7 @@ class NotificationItem extends StatelessWidget {
                   const SizedBox(height: 4),
                   Text(
                     notification.createdAt.timeAgo,
-                    style: TextStyle(
+                    style: const TextStyle(
                       color: AppColors.textSecondaryLight,
                       fontSize: 12,
                     ),
@@ -141,7 +137,7 @@ class NotificationItem extends StatelessWidget {
             const TextSpan(text: ': '),
             TextSpan(
               text: notification.message,
-              style: TextStyle(color: AppColors.textSecondaryLight),
+              style: const TextStyle(color: AppColors.textSecondaryLight),
             ),
           ],
         ],

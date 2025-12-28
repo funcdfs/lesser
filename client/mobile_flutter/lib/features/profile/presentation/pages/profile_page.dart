@@ -30,6 +30,33 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
     });
   }
 
+  Future<void> _handleLogout() async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Logout'),
+        content: const Text('Are you sure you want to logout?'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(false),
+            child: const Text('Cancel'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(true),
+            child: const Text('Logout'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed == true && mounted) {
+      await ref.read(authProvider.notifier).logout();
+      if (mounted) {
+        context.go(RouteConstants.login);
+      }
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final profileState = ref.watch(profileProvider);
@@ -41,11 +68,17 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
       appBar: AppBar(
         title: Text(profileState.profile?.user.username ?? 'Profile'),
         actions: [
-          if (isOwnProfile)
+          if (isOwnProfile) ...[
+            IconButton(
+              icon: const Icon(Icons.logout),
+              onPressed: _handleLogout,
+              tooltip: 'Logout',
+            ),
             IconButton(
               icon: const Icon(Icons.settings_outlined),
               onPressed: () => context.push(RouteConstants.settings),
             ),
+          ],
         ],
       ),
       body: _buildBody(profileState, isOwnProfile),
@@ -62,7 +95,7 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              Icon(Icons.error_outline, size: 64, color: AppColors.error),
+              const Icon(Icons.error_outline, size: 64, color: AppColors.error),
               const SizedBox(height: 16),
               Text(profileState.errorMessage ?? 'An error occurred'),
               const SizedBox(height: 16),
@@ -116,7 +149,7 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
                     ),
                     Text(
                       '@${profile.user.username}',
-                      style: TextStyle(
+                      style: const TextStyle(
                         color: AppColors.textSecondaryLight,
                         fontSize: 16,
                       ),
@@ -135,10 +168,7 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
                     Row(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        _StatItem(
-                          count: profile.postsCount,
-                          label: 'Posts',
-                        ),
+                        _StatItem(count: profile.postsCount, label: 'Posts'),
                         const SizedBox(width: 32),
                         _StatItem(
                           count: profile.followersCount,
@@ -166,7 +196,9 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
                         style: profile.isFollowing
                             ? OutlinedButton.styleFrom(
                                 backgroundColor: Colors.transparent,
-                                side: BorderSide(color: AppColors.primary),
+                                side: const BorderSide(
+                                  color: AppColors.primary,
+                                ),
                               )
                             : null,
                         child: Text(
@@ -178,8 +210,8 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
               ),
               const Divider(),
               // Posts section placeholder
-              Padding(
-                padding: const EdgeInsets.all(32),
+              const Padding(
+                padding: EdgeInsets.all(32),
                 child: Column(
                   children: [
                     Icon(
@@ -187,7 +219,7 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
                       size: 48,
                       color: AppColors.textSecondaryLight,
                     ),
-                    const SizedBox(height: 8),
+                    SizedBox(height: 8),
                     Text(
                       'Posts will appear here',
                       style: TextStyle(color: AppColors.textSecondaryLight),
@@ -203,10 +235,7 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
 }
 
 class _StatItem extends StatelessWidget {
-  const _StatItem({
-    required this.count,
-    required this.label,
-  });
+  const _StatItem({required this.count, required this.label});
 
   final int count;
   final String label;
@@ -217,14 +246,11 @@ class _StatItem extends StatelessWidget {
       children: [
         Text(
           count.compact,
-          style: const TextStyle(
-            fontSize: 18,
-            fontWeight: FontWeight.bold,
-          ),
+          style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
         ),
         Text(
           label,
-          style: TextStyle(
+          style: const TextStyle(
             color: AppColors.textSecondaryLight,
             fontSize: 13,
           ),

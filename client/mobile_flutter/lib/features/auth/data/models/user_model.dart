@@ -2,6 +2,18 @@ import '../../domain/entities/user.dart';
 
 /// User data model
 class UserModel extends User {
+  /// Create from entity
+  factory UserModel.fromEntity(User user) {
+    return UserModel(
+      id: user.id,
+      username: user.username,
+      email: user.email,
+      displayName: user.displayName,
+      avatarUrl: user.avatarUrl,
+      bio: user.bio,
+      createdAt: user.createdAt,
+    );
+  }
   const UserModel({
     required super.id,
     required super.username,
@@ -38,18 +50,5 @@ class UserModel extends User {
       'bio': bio,
       'created_at': createdAt?.toIso8601String(),
     };
-  }
-
-  /// Create from entity
-  factory UserModel.fromEntity(User user) {
-    return UserModel(
-      id: user.id,
-      username: user.username,
-      email: user.email,
-      displayName: user.displayName,
-      avatarUrl: user.avatarUrl,
-      bio: user.bio,
-      createdAt: user.createdAt,
-    );
   }
 }
