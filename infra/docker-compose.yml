@@ -1,362 +1,242 @@
-# docker-compose.yml - Lesser 项目本地开发环境
-#
-# 说明:
-#   - PostgreSQL: 数据库
-#   - Redis: 缓存和消息队列
-#   - Django: 后端 API 服务
-#   - etcd: 配置中心（APISIX 配置存储）
-#   - APISIX: 高性能 API 网关（替代 Traefik）
-#   - APISIX Dashboard: 可视化管理界面
-#
-# 配置管理:
-#   - 所有配置统一来自 infra/.env.dev 或 infra/.env.prod
-#   - 开发环境自动加载 .env.dev（通过 dev.sh）
-#   - 生产环境使用 .env.prod
-#
-# 使用方法:
-#   启动所有服务:     ./dev.sh start
-#   查看服务状态:     docker-compose ps
-#   查看服务日志:     ./dev.sh logs
-#   停止所有服务:     ./dev.sh stop
-#
-# 访问地址:
-#   - Django API (直接):       http://localhost:${DJANGO_EXTERNAL_PORT:-8001}/
-#   - APISIX 网关:             http://localhost:${APISIX_HTTP_PORT:-9080}/
-#   - APISIX Dashboard:        http://localhost:${APISIX_DASHBOARD_PORT:-9000}/
-#   - etcd API:                http://localhost:${ETCD_PORT:-2379}/
-#
-# 注意事项:
-#   - 所有配置参数都从 .env.dev 文件读取
-#   - PostgreSQL 数据持久化在 ../docker/postgres/data/
-#   - Redis 数据持久化在 ../docker/redis/data/
-#   - etcd 数据持久化在 etcd_data 卷
-#   - .env.dev 文件包含敏感信息，不应提交到公共仓库
-
-# version: '3.8'  # 已弃用的字段，Docker Compose 会自动检测
+# ============================================================================
+# Docker Compose - Development Environment (Hot Reload)
+# ============================================================================
+# Usage: docker compose -f infra/docker-compose.yml --env-file infra/.env.dev up -d
+# ============================================================================
 
 services:
-  # ============================================================================
-  # 数据库服务 - PostgreSQL (latest)
-  # ============================================================================
-  # 用途: 存储所有业务数据（用户、内容、聊天记录等）
-  # 访问: postgres:5432 (内部网络)
+  # ==========================================================================
+  # API Gateway - Traefik
+  # ==========================================================================
+  traefik:
+    image: traefik:latest
+    container_name: traefik
+    restart: unless-stopped
+    command:
+      - "--configFile=/etc/traefik/traefik.yml"
+    ports:
+      - "${TRAEFIK_HTTP_PORT:-80}:80"
+      - "${TRAEFIK_DASHBOARD_PORT:-8088}:8080"
+      - "${TRAEFIK_GRPC_PORT:-50050}:50050"
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - ./gateway/traefik.yml:/etc/traefik/traefik.yml:ro
+      - ./gateway/dynamic:/etc/traefik/dynamic:ro
+    networks:
+      - app-network
+    healthcheck:
+      test: ["CMD", "traefik", "healthcheck", "--ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+
+  # ==========================================================================
+  # Database - PostgreSQL (Isolated)
+  # ==========================================================================
   postgres:
     image: postgres:latest
     container_name: postgres
     restart: unless-stopped
-    
-    # 环境文件 - 从 .env.dev 读取所有数据库配置
-    env_file:
-      - .env.dev
-    
-    # 环境变量 - 覆盖或补充 env_file 中的配置（用于内部通讯）
     environment:
-      POSTGRES_USER: ${POSTGRES_USER:-funcdfs}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-secret}
+      POSTGRES_USER: ${POSTGRES_USER:-lesser}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-lesser_dev_password}
       POSTGRES_DB: ${POSTGRES_DB:-lesser_db}
-    
-    # 数据持久化 - PostgreSQL 18+ 需要挂载到 /var/lib/postgresql
     volumes:
       - postgres_data:/var/lib/postgresql
-    
-    # 端口映射 - 本地开发用
+      - ./database/init.sql:/docker-entrypoint-initdb.d/init.sql:ro
     ports:
-      - "${POSTGRES_PORT:-5432}:5432"
-    
-    # 网络 - 只加入 backend 网络（不暴露到外网）
+      - "${EXTERNAL_POSTGRES_PORT:-5432}:5432"
     networks:
-      - backend
-    
-    # 健康检查
+      - app-network
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-funcdfs}"]
-      interval: 10s
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-lesser} -d ${POSTGRES_DB:-lesser_db}"]
+      interval: 5s
       timeout: 5s
       retries: 5
 
-  # ============================================================================
-  # 缓存和消息队列 - Redis (latest)
-  # ============================================================================
-  # 用途: 会话存储、消息队列、缓存（如果需要）
-  # 访问: redis:6379 (内部网络)
+  # ==========================================================================
+  # Cache - Redis
+  # ==========================================================================
   redis:
     image: redis:latest
     container_name: redis
     restart: unless-stopped
-    
-    # 环境文件 - 从 .env.dev 读取配置
-    env_file:
-      - .env.dev
-    
-    # 命令行参数 - 启用持久化
-    command: redis-server --appendonly yes
-    
-    # 数据持久化 - 使用 Docker 命名卷
+    command: redis-server /usr/local/etc/redis/redis.conf
     volumes:
       - redis_data:/data
-    
-    # 端口映射 - 本地开发用
+      - ./cache/redis.conf:/usr/local/etc/redis/redis.conf:ro
     ports:
-      - "${REDIS_PORT:-6379}:6379"
-    
-    # 网络 - 只加入 backend 网络（不暴露到外网）
+      - "${EXTERNAL_REDIS_PORT:-6379}:6379"
     networks:
-      - backend
-    
-    # 健康检查
+      - app-network
     healthcheck:
       test: ["CMD", "redis-cli", "ping"]
-      interval: 10s
+      interval: 5s
       timeout: 5s
       retries: 5
 
-  # ============================================================================
-  # 配置中心 - etcd (latest)
-  # ============================================================================
-  # 用途: 分布式键值存储，管理 APISIX 的动态路由配置、插件配置等
-  # 优点:
-  #   - 支持实时更新，无需重启 APISIX
-  #   - 支持集群部署
-  #   - 支持版本控制和数据持久化
-  # 配置: 从 .env.dev 读取相关参数
-  etcd:
-    image: quay.io/coreos/etcd:v3.5.9
-    container_name: etcd
-    restart: unless-stopped
-    
-    # 环境文件 - 从 .env.dev 读取配置
-    env_file:
-      - .env.dev
-    
-    # etcd 配置
-    environment:
-      - ETCD_NAME=etcd
-      - ETCD_LISTEN_CLIENT_URLS=http://0.0.0.0:${ETCD_PORT:-2379}
-      - ETCD_ADVERTISE_CLIENT_URLS=http://etcd:${ETCD_PORT:-2379}
-      - ETCD_LISTEN_PEER_URLS=http://0.0.0.0:2380
-      - ETCD_INITIAL_ADVERTISE_PEER_URLS=http://etcd:2380
-      - ETCD_INITIAL_CLUSTER=etcd=http://etcd:2380
-      - ETCD_INITIAL_CLUSTER_STATE=new
-      - ETCD_INITIAL_CLUSTER_TOKEN=etcd-cluster
-    
-    # 数据持久化
-    volumes:
-      - etcd_data:/etcd-data
-    
-    # 端口映射
-    ports:
-      - "${ETCD_PORT:-2379}:${ETCD_PORT:-2379}"  # Client API
-      - "2380:2380"  # Peer API (集群)
-    
-    networks:
-      - backend
-      - web
-
-  # ============================================================================
-  # API 网关 - Apache APISIX (latest)
-  # ============================================================================
-  # 用途: 高性能 API 网关，提供路由、认证、限流、负载均衡等功能
-  # 特点:
-  #   - 动态路由（从 etcd 读取配置，无需重启）
-  #   - 强大的插件系统
-  #   - 支持 gRPC、WebSocket、HTTP 等协议
-  #   - 性能优异（使用 NGINX + Lua）
-  #
-  # 核心端口:
-  #   - 9080: HTTP 流量入口（所有 API 请求从这里进入）
-  #   - 9443: HTTPS 流量入口
-  #   - 9180: 管理 API 端口（创建路由、插件等）
-  #   - 9000: Dashboard 端口
-  # 配置: 从 .env.dev 读取相关参数
-  apisix:
-    image: apache/apisix:latest
-    container_name: apisix
-    restart: unless-stopped
-    
-    # 环境文件 - 从 .env.dev 读取配置
-    env_file:
-      - .env.dev
-    
-    # 配置文件
-    volumes:
-      # APISIX 主配置文件（定义节点配置、插件加载等）
-      - ./apisix/config.yaml:/usr/local/apisix/conf/config.yaml
-    
-    # 依赖关系 - 等待 etcd 启动
-    depends_on:
-      - etcd
-    
-    # 端口映射
-    ports:
-      - "${APISIX_HTTP_PORT:-9080}:9080"   # HTTP 代理端口（API 请求入口）
-      - "${APISIX_HTTPS_PORT:-9443}:9443"   # HTTPS 代理端口
-      - "${APISIX_ADMIN_PORT:-9180}:9180"   # 管理 API 端口（用于添加路由、插件等）
-      - "9090:9090"   # APISIX Control API 端口
-      - "9091:9091"   # Prometheus 指标导出端口（监控用）
-    
-    # 环境变量 - APISIX 内部配置
-    environment:
-      # etcd 连接地址（从 .env.dev 读取）
-      APISIX_ETCD_HOST: ${ETCD_HOST:-etcd}
-      APISIX_ETCD_PORT: ${ETCD_PORT:-2379}
-    
-    # 网络 - 同时加入 backend（与后端通讯）和 web（对外暴露）
-    networks:
-      - backend
-      - web
-
-  # ============================================================================
-  # APISIX Dashboard - 可视化管理界面 (latest)
-  # ============================================================================
-  # 用途: 提供 Web UI 管理 APISIX 路由、插件、认证等配置
-  # 访问: http://localhost:${APISIX_DASHBOARD_PORT:-9000}/
-  # 功能:
-  #   - 路由管理（创建、编辑、删除路由）
-  #   - 上游配置（定义后端服务）
-  #   - 插件管理（启用、配置插件）
-  #   - 认证管理（API Key、JWT 等）
-  #   - 实时监控（请求数、延迟等）
-  # 配置: 从 .env.dev 读取相关参数
-  apisix-dashboard:
-    image: apache/apisix-dashboard:latest
-    container_name: apisix-dashboard
-    restart: unless-stopped
-    
-    # 环境文件 - 从 .env.dev 读取配置
-    env_file:
-      - .env.dev
-    
-    # 配置文件
-    volumes:
-      - ./apisix/dashboard_conf.yaml:/usr/local/apisix-dashboard/conf/conf.yaml:ro
-    
-    # 依赖关系
-    depends_on:
-      - apisix
-      - etcd
-    
-    # 端口映射
-    ports:
-      - "${APISIX_DASHBOARD_PORT:-9000}:9000"  # Dashboard 访问端口
-    
-    # 环境变量 - Dashboard 连接配置（从 .env.dev 读取）
-    environment:
-      # APISIX 连接信息
-      APISIX_ADMIN_API_URL: http://apisix:${APISIX_ADMIN_PORT:-9180}
-      ETCD_ENDPOINTS: http://${ETCD_HOST:-etcd}:${ETCD_PORT:-2379}
-    
-    # 网络
-    networks:
-      - backend
-      - web
-
-  # ============================================================================
-  # Django 后端应用
-  # ============================================================================
-  # 用途: 提供 REST API 服务
-  # 访问: http://localhost:${DJANGO_EXTERNAL_PORT:-8001} (直接) 或 http://localhost:${APISIX_HTTP_PORT:-9080}/api/ (通过网关)
-  # 热重载: 代码修改时自动重启
-  # 配置: 从 .env.dev 读取所有配置参数
+  # ==========================================================================
+  # Django Core Service (Hot Reload with runserver)
+  # ==========================================================================
   django:
     build:
-      context: ../backend/django_code
+      context: ../service/core_django
       dockerfile: Dockerfile
     container_name: django
     restart: unless-stopped
-    
-    # 启动命令 - 以热重载模式运行
-    command: python manage.py runserver 0.0.0.0:8000
-    
-    # 代码映射 - 本地修改直接反映到容器
-    volumes:
-      - ../backend/django_code:/app
-    
-    # 端口映射
-    ports:
-      - "${DJANGO_EXTERNAL_PORT:-8001}:8000"
-    
-    # 环境配置文件 - 统一从 .env.dev 读取
-    env_file:
-      - .env.dev
-    
-    # 环境变量 - 覆盖或补充配置（用于 Docker 内部服务通讯）
     environment:
-      # Docker 内部服务名（覆盖 .env.dev 中的主机名）
-      POSTGRES_HOST: ${POSTGRES_HOST:-postgres}
-      REDIS_HOST: ${REDIS_HOST:-redis}
-      
-      # 开发模式配置（从 .env.dev 读取）
-      DEBUG: ${DJANGO_DEBUG:-True}
-      PYTHONUNBUFFERED: 1  # Python 输出不缓冲，实时显示日志
-    
-    # 依赖关系 - 等待数据库和 Redis 启动
+      - DJANGO_SETTINGS_MODULE=${DJANGO_SETTINGS_MODULE:-config.settings.dev}
+      - DB_HOST=postgres
+      - DB_PORT=5432
+      - DB_NAME=${POSTGRES_DB:-lesser_db}
+      - DB_USER=${POSTGRES_USER:-lesser}
+      - DB_PASSWORD=${POSTGRES_PASSWORD:-lesser_dev_password}
+      - REDIS_URL=redis://redis:6379/0
+      - CELERY_BROKER_URL=redis://redis:6379/3
+      - CELERY_RESULT_BACKEND=redis://redis:6379/4
+      - DJANGO_SECRET_KEY=${DJANGO_SECRET_KEY:-django-insecure-dev-key}
+      - DJANGO_DEBUG=${DJANGO_DEBUG:-True}
+      - DJANGO_ALLOWED_HOSTS=${DJANGO_ALLOWED_HOSTS:-*}
+      - JWT_SECRET_KEY=${JWT_SECRET_KEY:-jwt-dev-secret-key}
+      - GRPC_PORT=${DJANGO_GRPC_PORT:-50051}
+    volumes:
+      - ../service/core_django:/app
+    ports:
+      - "${EXTERNAL_DJANGO_PORT:-8000}:8000"
+      - "50051:50051"
     depends_on:
       postgres:
         condition: service_healthy
       redis:
         condition: service_healthy
-    
-    # 网络 - 同时加入 backend（与数据库通讯）和 web（与网关通讯）
+    command: >
+      sh -c "pip install --no-cache-dir -r requirements.txt &&
+             python manage.py makemigrations --noinput &&
+             python manage.py migrate --noinput &&
+             python manage.py runserver 0.0.0.0:8000"
     networks:
-      - backend
-      - web
-    
-    # 健康检查
+      - app-network
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.django.rule=PathPrefix(`/api/v1`)"
+      - "traefik.http.services.django.loadbalancer.server.port=8000"
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8000/health/"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
+      test: ["CMD", "curl", "-f", "http://localhost:8000/api/v1/health/"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
 
-  # ============================================================================
-  # 其他微服务 (当前禁用，示例配置)
-  # ============================================================================
-  # Go 服务示例 (当前禁用)
-  # go-service:
-  #   build:
-  #     context: ../backend/go_service
-  #   container_name: go-service
-  #   ports:
-  #     - "8002:8080"
-  #   networks:
-  #     - backend
-  #     - web
+  # ==========================================================================
+  # Celery Worker (Background Tasks)
+  # ==========================================================================
+  celery-worker:
+    build:
+      context: ../service/core_django
+      dockerfile: Dockerfile
+    container_name: celery-worker
+    restart: unless-stopped
+    environment:
+      - DJANGO_SETTINGS_MODULE=${DJANGO_SETTINGS_MODULE:-config.settings.dev}
+      - DB_HOST=postgres
+      - DB_PORT=5432
+      - DB_NAME=${POSTGRES_DB:-lesser_db}
+      - DB_USER=${POSTGRES_USER:-lesser}
+      - DB_PASSWORD=${POSTGRES_PASSWORD:-lesser_dev_password}
+      - REDIS_URL=redis://redis:6379/0
+      - CELERY_BROKER_URL=redis://redis:6379/3
+      - CELERY_RESULT_BACKEND=redis://redis:6379/4
+    volumes:
+      - ../service/core_django:/app
+    depends_on:
+      - django
+      - redis
+    command: >
+      sh -c "pip install --no-cache-dir -r requirements.txt &&
+             celery -A config worker -l INFO"
+    networks:
+      - app-network
 
-  # Rust 服务示例 (当前禁用)
-  # rust-service:
-  #   build:
-  #     context: ../backend/rust_service
-  #   container_name: rust-service
-  #   ports:
-  #     - "8003:8080"
-  #   networks:
-  #     - backend
-  #     - web
+  # ==========================================================================
+  # Celery Beat (Scheduled Tasks)
+  # ==========================================================================
+  celery-beat:
+    build:
+      context: ../service/core_django
+      dockerfile: Dockerfile
+    container_name: celery-beat
+    restart: unless-stopped
+    environment:
+      - DJANGO_SETTINGS_MODULE=${DJANGO_SETTINGS_MODULE:-config.settings.dev}
+      - DB_HOST=postgres
+      - DB_PORT=5432
+      - DB_NAME=${POSTGRES_DB:-lesser_db}
+      - DB_USER=${POSTGRES_USER:-lesser}
+      - DB_PASSWORD=${POSTGRES_PASSWORD:-lesser_dev_password}
+      - REDIS_URL=redis://redis:6379/0
+      - CELERY_BROKER_URL=redis://redis:6379/3
+      - CELERY_RESULT_BACKEND=redis://redis:6379/4
+    volumes:
+      - ../service/core_django:/app
+    depends_on:
+      - django
+      - redis
+    command: >
+      sh -c "pip install --no-cache-dir -r requirements.txt &&
+             celery -A config beat -l INFO"
+    networks:
+      - app-network
 
+  # ==========================================================================
+  # Go Chat Service (Hot Reload with Air)
+  # ==========================================================================
+  chat:
+    build:
+      context: ../service/chat_gin
+      dockerfile: Dockerfile.dev
+    container_name: chat
+    restart: unless-stopped
+    environment:
+      - DATABASE_URL=${DATABASE_URL:-postgres://lesser:lesser_dev_password@postgres:5432/lesser_db}
+      - REDIS_URL=redis://redis:6379/1
+      - HTTP_PORT=${CHAT_HTTP_PORT:-8080}
+      - GRPC_PORT=${CHAT_GRPC_PORT:-50052}
+      - AUTH_GRPC_ADDR=${AUTH_GRPC_ADDR:-django:50051}
+    volumes:
+      - ../service/chat_gin:/app
+    ports:
+      - "${EXTERNAL_CHAT_PORT:-8081}:8080"
+      - "50052:50052"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      - app-network
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.chat.rule=PathPrefix(`/api/v1/chat`) || PathPrefix(`/ws/chat`)"
+      - "traefik.http.services.chat.loadbalancer.server.port=8080"
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:8080/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
 
 # ============================================================================
-# 网络定义
+# Networks
 # ============================================================================
-# Docker Compose 自动创建这些网络供容器之间通讯
-
 networks:
-  # backend: 后端服务网络（数据库、应用等）
-  # 特点: 服务之间可通过服务名直接通讯，不暴露到主机
-  backend:
-    driver: bridge
-  
-  # web: 面向外部的网络（网关、负载均衡等）
-  # 特点: 可通过主机上的端口访问
-  web:
+  app-network:
     driver: bridge
 
 # ============================================================================
-# 卷定义
+# Volumes (Only for isolated services)
 # ============================================================================
 volumes:
   postgres_data:
     driver: local
   redis_data:
-    driver: local
-  etcd_data:
     driver: local

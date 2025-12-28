@@ -1,0 +1,80 @@
+syntax = "proto3";
+package auth;
+
+option go_package = "generated/protos/auth";
+
+import "common/common.proto";
+
+// AuthService handles user authentication and authorization
+service AuthService {
+  // Register a new user
+  rpc Register(RegisterRequest) returns (AuthResponse);
+  // Login with email and password
+  rpc Login(LoginRequest) returns (AuthResponse);
+  // Logout and invalidate token
+  rpc Logout(LogoutRequest) returns (common.Empty);
+  // Refresh access token using refresh token
+  rpc RefreshToken(RefreshRequest) returns (AuthResponse);
+  // Validate an access token
+  rpc ValidateToken(ValidateRequest) returns (ValidateResponse);
+  // Get user by ID
+  rpc GetUser(GetUserRequest) returns (User);
+}
+
+// User represents a platform user
+message User {
+  string id = 1;
+  string username = 2;
+  string email = 3;
+  string display_name = 4;
+  string avatar_url = 5;
+  string bio = 6;
+  common.Timestamp created_at = 7;
+}
+
+// RegisterRequest for user registration
+message RegisterRequest {
+  string username = 1;
+  string email = 2;
+  string password = 3;
+  string display_name = 4;
+}
+
+// LoginRequest for user login
+message LoginRequest {
+  string email = 1;
+  string password = 2;
+}
+
+// AuthResponse returned after successful auth operations
+message AuthResponse {
+  User user = 1;
+  string access_token = 2;
+  string refresh_token = 3;
+}
+
+// LogoutRequest for user logout
+message LogoutRequest {
+  string access_token = 1;
+}
+
+// RefreshRequest for token refresh
+message RefreshRequest {
+  string refresh_token = 1;
+}
+
+// ValidateRequest for token validation
+message ValidateRequest {
+  string access_token = 1;
+}
+
+// ValidateResponse for token validation result
+message ValidateResponse {
+  bool valid = 1;
+  string user_id = 2;
+}
+
+// GetUserRequest for fetching user by ID
+message GetUserRequest {
+  string user_id = 1;
+}

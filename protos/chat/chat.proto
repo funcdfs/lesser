@@ -1,0 +1,100 @@
+syntax = "proto3";
+package chat;
+
+option go_package = "generated/protos/chat";
+
+import "common/common.proto";
+
+// ChatService handles real-time messaging
+service ChatService {
+  // Get all conversations for a user
+  rpc GetConversations(GetConversationsRequest) returns (ConversationsResponse);
+  // Get a single conversation by ID
+  rpc GetConversation(GetConversationRequest) returns (Conversation);
+  // Create a new conversation
+  rpc CreateConversation(CreateConversationRequest) returns (Conversation);
+  // Get messages in a conversation
+  rpc GetMessages(GetMessagesRequest) returns (MessagesResponse);
+  // Send a message to a conversation
+  rpc SendMessage(SendMessageRequest) returns (Message);
+  // Stream messages in real-time
+  rpc StreamMessages(StreamRequest) returns (stream Message);
+}
+
+// ConversationType enum for different chat types
+enum ConversationType {
+  PRIVATE = 0;  // 1:1 private chat
+  GROUP = 1;    // Group chat with multiple users
+  CHANNEL = 2;  // Broadcast channel
+}
+
+// Conversation represents a chat conversation
+message Conversation {
+  string id = 1;
+  ConversationType type = 2;
+  string name = 3;
+  repeated string member_ids = 4;
+  string creator_id = 5;
+  common.Timestamp created_at = 6;
+  Message last_message = 7;
+}
+
+// Message represents a chat message
+message Message {
+  string id = 1;
+  string conversation_id = 2;
+  string sender_id = 3;
+  string content = 4;
+  string message_type = 5;  // text, image, file
+  common.Timestamp created_at = 6;
+}
+
+// GetConversationsRequest for fetching user conversations
+message GetConversationsRequest {
+  string user_id = 1;
+  common.Pagination pagination = 2;
+}
+
+// ConversationsResponse with list of conversations
+message ConversationsResponse {
+  repeated Conversation conversations = 1;
+  common.Pagination pagination = 2;
+}
+
+// GetConversationRequest for fetching a single conversation
+message GetConversationRequest {
+  string conversation_id = 1;
+}
+
+// CreateConversationRequest for creating a new conversation
+message CreateConversationRequest {
+  ConversationType type = 1;
+  string name = 2;
+  repeated string member_ids = 3;
+  string creator_id = 4;
+}
+
+// GetMessagesRequest for fetching messages in a conversation
+message GetMessagesRequest {
+  string conversation_id = 1;
+  common.Pagination pagination = 2;
+}
+
+// MessagesResponse with list of messages
+message MessagesResponse {
+  repeated Message messages = 1;
+  common.Pagination pagination = 2;
+}
+
+// SendMessageRequest for sending a new message
+message SendMessageRequest {
+  string conversation_id = 1;
+  string sender_id = 2;
+  string content = 3;
+  string message_type = 4;
+}
+
+// StreamRequest for real-time message streaming
+message StreamRequest {
+  string user_id = 1;
+}

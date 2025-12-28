@@ -1,0 +1,87 @@
+syntax = "proto3";
+package notification;
+
+option go_package = "generated/protos/notification";
+
+import "common/common.proto";
+import "auth/auth.proto";
+
+// NotificationService handles user notifications
+service NotificationService {
+  // Get notifications for a user
+  rpc GetNotifications(GetNotificationsRequest) returns (NotificationsResponse);
+  // Get unread notification count
+  rpc GetUnreadCount(GetUnreadCountRequest) returns (UnreadCountResponse);
+  // Mark notification as read
+  rpc MarkAsRead(MarkAsReadRequest) returns (common.Empty);
+  // Mark all notifications as read
+  rpc MarkAllAsRead(MarkAllAsReadRequest) returns (common.Empty);
+  // Stream notifications in real-time
+  rpc StreamNotifications(StreamNotificationsRequest) returns (stream Notification);
+}
+
+// NotificationType enum for different notification types
+enum NotificationType {
+  LIKE = 0;       // Someone liked your post
+  COMMENT = 1;    // Someone commented on your post
+  REPLY = 2;      // Someone replied to your comment
+  BOOKMARK = 3;   // Someone bookmarked your post
+  MENTION = 4;    // Someone mentioned you
+  FOLLOW = 5;     // Someone followed you
+  REPOST = 6;     // Someone reposted your post
+}
+
+// Notification represents a user notification
+message Notification {
+  string id = 1;
+  string user_id = 2;           // Recipient user ID
+  NotificationType type = 3;
+  auth.User actor = 4;          // User who triggered the notification
+  string target_type = 5;       // 'post', 'comment', 'user'
+  string target_id = 6;
+  string preview_text = 7;      // Preview of the content
+  bool is_read = 8;
+  common.Timestamp created_at = 9;
+}
+
+// GetNotificationsRequest for fetching notifications
+message GetNotificationsRequest {
+  string user_id = 1;
+  NotificationType type = 2;    // Optional filter by type
+  bool unread_only = 3;         // Optional filter for unread only
+  common.Pagination pagination = 4;
+}
+
+// NotificationsResponse with list of notifications
+message NotificationsResponse {
+  repeated Notification notifications = 1;
+  common.Pagination pagination = 2;
+}
+
+// GetUnreadCountRequest for getting unread count
+message GetUnreadCountRequest {
+  string user_id = 1;
+}
+
+// UnreadCountResponse with unread notification count
+message UnreadCountResponse {
+  int32 count = 1;
+  map<string, int32> count_by_type = 2;  // Count per notification type
+}
+
+// MarkAsReadRequest for marking a notification as read
+message MarkAsReadRequest {
+  string notification_id = 1;
+  string user_id = 2;
+}
+
+// MarkAllAsReadRequest for marking all notifications as read
+message MarkAllAsReadRequest {
+  string user_id = 1;
+  NotificationType type = 2;  // Optional, mark only specific type
+}
+
+// StreamNotificationsRequest for real-time notification streaming
+message StreamNotificationsRequest {
+  string user_id = 1;
+}

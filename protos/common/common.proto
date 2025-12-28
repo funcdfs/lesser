@@ -1,0 +1,25 @@
+syntax = "proto3";
+package common;
+
+option go_package = "generated/protos/common";
+
+// Pagination message for paginated requests and responses
+message Pagination {
+  int32 page = 1;
+  int32 page_size = 2;
+  int32 total = 3;
+}
+
+// Timestamp message for consistent time representation
+message Timestamp {
+  int64 seconds = 1;
+  int32 nanos = 2;
+}
+
+// UUID message for consistent ID representation
+message UUID {
+  string value = 1;
+}
+
+// Empty message for void responses
+message Empty {}

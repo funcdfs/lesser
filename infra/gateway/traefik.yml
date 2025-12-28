@@ -1,0 +1,43 @@
+# ============================================================================
+# Traefik Static Configuration
+# ============================================================================
+
+# API and Dashboard
+api:
+  dashboard: true
+  insecure: true  # Only for development, disable in production
+
+# Entry Points
+entryPoints:
+  web:
+    address: ":80"
+  grpc:
+    address: ":50050"
+    http2:
+      maxConcurrentStreams: 250
+
+# Providers
+providers:
+  docker:
+    endpoint: "unix:///var/run/docker.sock"
+    exposedByDefault: false
+    network: app-network
+  file:
+    directory: "/etc/traefik/dynamic"
+    watch: true
+
+# Logging
+log:
+  level: INFO
+  format: common
+
+accessLog:
+  format: common
+  filters:
+    statusCodes:
+      - "200-299"
+      - "400-599"
+
+# Health Check
+ping:
+  entryPoint: web
