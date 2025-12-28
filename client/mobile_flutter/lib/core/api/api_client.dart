@@ -1,6 +1,7 @@
 import 'package:dio/dio.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import '../constants/app_constants.dart';
+import '../utils/app_logger.dart';
 
 class ApiClient {
   ApiClient({
@@ -17,11 +18,25 @@ class ApiClient {
         },
       ),
     );
+    // Separate Dio instance for token refresh to avoid interceptor loop
+    _refreshDio = Dio(
+      BaseOptions(
+        baseUrl: AppConstants.apiBaseUrl,
+        connectTimeout: const Duration(seconds: 30),
+        receiveTimeout: const Duration(seconds: 30),
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json',
+        },
+      ),
+    );
     _setupInterceptors();
   }
 
   late final Dio _dio;
+  late final Dio _refreshDio;
   final FlutterSecureStorage _secureStorage;
+  bool _isRefreshing = false;
 
   Dio get dio => _dio;
 
@@ -33,10 +48,27 @@ class ApiClient {
           if (token != null) {
             options.headers['Authorization'] = 'Bearer $token';
           }
+          log.d('${options.method} ${options.uri}', tag: 'API');
           return handler.next(options);
         },
+        onResponse: (response, handler) {
+          log.d(
+            '${response.statusCode} ${response.requestOptions.uri}',
+            tag: 'API',
+          );
+          return handler.next(response);
+        },
         onError: (error, handler) async {
-          if (error.response?.statusCode == 401) {
+          log.w(
+            '${error.response?.statusCode ?? "ERR"} ${error.requestOptions.uri}: ${error.message}',
+            tag: 'API',
+          );
+          if (error.response?.statusCode == 401 &&
+              !error.requestOptions.path.contains('token/refresh')) {
+            // Avoid concurrent refresh attempts
+            if (_isRefreshing) {
+              return handler.next(error);
+            }
             // Try to refresh token
             final refreshed = await _refreshToken();
             if (refreshed) {
@@ -55,11 +87,15 @@ class ApiClient {
   }
 
   Future<bool> _refreshToken() async {
+    if (_isRefreshing) return false;
+    _isRefreshing = true;
+    
     try {
       final refreshToken = await _secureStorage.read(key: 'refresh_token');
       if (refreshToken == null) return false;
 
-      final response = await _dio.post(
+      // Use separate Dio instance to avoid interceptor loop
+      final response = await _refreshDio.post(
         '/api/v1/auth/token/refresh/',
         data: {'refresh': refreshToken},
       );
@@ -71,7 +107,12 @@ class ApiClient {
       }
       return false;
     } catch (e) {
+      // Clear tokens on refresh failure to force re-login
+      await _secureStorage.delete(key: 'access_token');
+      await _secureStorage.delete(key: 'refresh_token');
       return false;
+    } finally {
+      _isRefreshing = false;
     }
   }
 

@@ -3,11 +3,7 @@ import 'package:flutter/material.dart';
 import '../../../../core/theme/app_colors.dart';
 
 class ChatInput extends StatefulWidget {
-  const ChatInput({
-    super.key,
-    required this.onSend,
-    this.isLoading = false,
-  });
+  const ChatInput({super.key, required this.onSend, this.isLoading = false});
 
   final void Function(String) onSend;
   final bool isLoading;
@@ -53,9 +49,7 @@ class _ChatInputState extends State<ChatInput> {
       padding: const EdgeInsets.all(8),
       decoration: BoxDecoration(
         color: Theme.of(context).scaffoldBackgroundColor,
-        border: Border(
-          top: BorderSide(color: AppColors.borderLight),
-        ),
+        border: const Border(top: BorderSide(color: AppColors.borderLight)),
       ),
       child: SafeArea(
         child: Row(
@@ -72,16 +66,28 @@ class _ChatInputState extends State<ChatInput> {
                 controller: _controller,
                 decoration: InputDecoration(
                   hintText: 'Type a message...',
+                  hintStyle: TextStyle(
+                    color: Theme.of(context).brightness == Brightness.dark
+                        ? AppColors.textSecondaryDark
+                        : AppColors.textSecondaryLight,
+                  ),
                   border: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(24),
                     borderSide: BorderSide.none,
                   ),
                   filled: true,
-                  fillColor: AppColors.surfaceLight,
+                  fillColor: Theme.of(context).brightness == Brightness.dark
+                      ? AppColors.surfaceDark
+                      : AppColors.surfaceLight,
                   contentPadding: const EdgeInsets.symmetric(
                     horizontal: 16,
                     vertical: 8,
                   ),
+                ),
+                style: TextStyle(
+                  color: Theme.of(context).brightness == Brightness.dark
+                      ? AppColors.textPrimaryDark
+                      : AppColors.textPrimaryLight,
                 ),
                 maxLines: 4,
                 minLines: 1,

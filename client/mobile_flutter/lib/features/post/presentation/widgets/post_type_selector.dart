@@ -92,7 +92,9 @@ class _PostTypeOption extends StatelessWidget {
           children: [
             Icon(
               icon,
-              color: isSelected ? AppColors.primary : AppColors.textSecondaryLight,
+              color: isSelected
+                  ? AppColors.primary
+                  : AppColors.textSecondaryLight,
               size: 28,
             ),
             const SizedBox(height: 8),
@@ -108,7 +110,7 @@ class _PostTypeOption extends StatelessWidget {
             const SizedBox(height: 2),
             Text(
               description,
-              style: TextStyle(
+              style: const TextStyle(
                 fontSize: 11,
                 color: AppColors.textSecondaryLight,
               ),

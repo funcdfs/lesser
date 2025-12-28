@@ -5,6 +5,7 @@ import '../constants/route_constants.dart';
 import '../../features/auth/presentation/pages/login_page.dart';
 import '../../features/auth/presentation/pages/register_page.dart';
 import '../../features/chat/presentation/pages/chat_room_page.dart';
+import '../../features/chat/presentation/pages/new_conversation_page.dart';
 import '../../features/navigation/presentation/pages/main_navigation_page.dart';
 import '../../features/post/presentation/pages/create_post_page.dart';
 import '../../features/profile/presentation/pages/profile_page.dart';
@@ -39,6 +40,12 @@ class AppRouter {
         path: RouteConstants.createPost,
         name: 'createPost',
         builder: (context, state) => const CreatePostPage(),
+      ),
+      // New conversation
+      GoRoute(
+        path: RouteConstants.newConversation,
+        name: 'newConversation',
+        builder: (context, state) => const NewConversationPage(),
       ),
       // Chat room
       GoRoute(

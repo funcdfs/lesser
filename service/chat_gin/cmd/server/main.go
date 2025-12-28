@@ -23,105 +23,108 @@ import (
 )
 
 func main() {
-	// Load configuration
+	// 加载配置
 	cfg, err := config.Load()
 	if err != nil {
-		log.Fatalf("Failed to load config: %v", err)
+		log.Fatalf("加载配置失败: %v", err)
 	}
 
-	// Initialize database
+	// 初始化数据库连接
 	db, err := database.NewPostgres(cfg.DatabaseURL)
 	if err != nil {
-		log.Fatalf("Failed to connect to database: %v", err)
+		log.Fatalf("连接数据库失败: %v", err)
 	}
-	log.Println("Connected to PostgreSQL")
+	log.Println("已连接到 PostgreSQL")
 
-	// Auto-migrate database schema
+	// 自动迁移数据库表结构
 	if err := database.AutoMigrate(db, &model.Conversation{}, &model.ConversationMember{}, &model.Message{}); err != nil {
-		log.Fatalf("Failed to auto-migrate database: %v", err)
+		log.Fatalf("数据库迁移失败: %v", err)
 	}
-	log.Println("Database schema migrated")
+	log.Println("数据库表结构迁移完成")
 
-	// Initialize Redis
+	// 初始化 Redis 缓存
 	redisClient, err := cache.NewRedis(cfg.RedisURL)
 	if err != nil {
-		log.Printf("Warning: Failed to connect to Redis: %v", err)
-		// Continue without Redis (degraded mode)
+		log.Printf("警告: 连接 Redis 失败: %v", err)
+		// 继续运行，但处于降级模式（无缓存）
 	} else {
-		log.Println("Connected to Redis")
+		log.Println("已连接到 Redis")
 	}
 
-	// Initialize repositories
+	// 初始化数据仓库层
 	conversationRepo := repository.NewConversationRepository(db)
 	messageRepo := repository.NewMessageRepository(db)
 
-	// Initialize services
-	chatService := service.NewChatService(conversationRepo, messageRepo, redisClient)
+	// 初始化用户服务客户端（用于从 Django 获取用户信息）
+	userClient := service.NewUserClient("http://django:8000")
 
-	// Initialize WebSocket hub
+	// 初始化业务服务层
+	chatService := service.NewChatService(conversationRepo, messageRepo, redisClient, userClient)
+
+	// 初始化 WebSocket 连接管理中心
 	hub := ws.NewHub(chatService)
 	go hub.Run()
 
-	// Initialize HTTP server
+	// 初始化 HTTP 服务器
 	httpServer := server.NewHTTPServer(cfg, chatService, hub)
 
-	// Initialize gRPC server
+	// 初始化 gRPC 服务器
 	grpcServer := grpc.NewServer()
 	chatGRPCHandler := grpchandler.NewChatHandler(chatService)
 	chatGRPCHandler.Register(grpcServer)
 
-	// Start gRPC server
+	// 启动 gRPC 服务器
 	grpcListener, err := net.Listen("tcp", ":"+cfg.GRPCPort)
 	if err != nil {
-		log.Fatalf("Failed to listen on gRPC port: %v", err)
+		log.Fatalf("监听 gRPC 端口失败: %v", err)
 	}
 	go func() {
-		log.Printf("gRPC server starting on port %s", cfg.GRPCPort)
+		log.Printf("gRPC 服务器启动于端口 %s", cfg.GRPCPort)
 		if err := grpcServer.Serve(grpcListener); err != nil {
-			log.Fatalf("Failed to serve gRPC: %v", err)
+			log.Fatalf("gRPC 服务启动失败: %v", err)
 		}
 	}()
 
-	// Start HTTP server
+	// 启动 HTTP 服务器
 	go func() {
-		log.Printf("HTTP server starting on port %s", cfg.HTTPPort)
+		log.Printf("HTTP 服务器启动于端口 %s", cfg.HTTPPort)
 		if err := httpServer.Start(); err != nil && err != http.ErrServerClosed {
-			log.Fatalf("Failed to start HTTP server: %v", err)
+			log.Fatalf("HTTP 服务启动失败: %v", err)
 		}
 	}()
 
-	// Wait for interrupt signal
+	// 等待中断信号
 	quit := make(chan os.Signal, 1)
 	signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM)
 	<-quit
-	log.Println("Shutting down servers...")
+	log.Println("正在关闭服务器...")
 
-	// Graceful shutdown
+	// 优雅关闭
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 
-	// Stop gRPC server
+	// 停止 gRPC 服务器
 	grpcServer.GracefulStop()
-	log.Println("gRPC server stopped")
+	log.Println("gRPC 服务器已停止")
 
-	// Stop HTTP server
+	// 停止 HTTP 服务器
 	if err := httpServer.Shutdown(ctx); err != nil {
-		log.Printf("HTTP server forced to shutdown: %v", err)
+		log.Printf("HTTP 服务器强制关闭: %v", err)
 	}
-	log.Println("HTTP server stopped")
+	log.Println("HTTP 服务器已停止")
 
-	// Close database connection
+	// 关闭数据库连接
 	sqlDB, _ := db.DB()
 	if sqlDB != nil {
 		sqlDB.Close()
 	}
-	log.Println("Database connection closed")
+	log.Println("数据库连接已关闭")
 
-	// Close Redis connection
+	// 关闭 Redis 连接
 	if redisClient != nil {
 		redisClient.Close()
 	}
-	log.Println("Redis connection closed")
+	log.Println("Redis 连接已关闭")
 
-	log.Println("Server exited properly")
+	log.Println("服务器已正常退出")
 }

@@ -1,7 +1,7 @@
 # ============================================================================
 # Docker Compose - Development Environment (Hot Reload)
 # ============================================================================
-# Usage: docker compose -f infra/docker-compose.yml --env-file infra/.env.dev up -d
+# Usage: docker compose -f infra/docker-compose.yml --env-file infra/env/dev.env up -d
 # ============================================================================
 
 services:
@@ -76,7 +76,7 @@ services:
       retries: 5
 
   # ==========================================================================
-  # Django Core Service (Hot Reload with runserver)
+  # Django Core Service (Hot Reload with runserver + UV)
   # ==========================================================================
   django:
     build:
@@ -110,7 +110,7 @@ services:
       redis:
         condition: service_healthy
     command: >
-      sh -c "pip install --no-cache-dir -r requirements.txt &&
+      sh -c "uv pip install --system --no-cache -r requirements.txt &&
              python manage.py makemigrations --noinput &&
              python manage.py migrate --noinput &&
              python manage.py runserver 0.0.0.0:8000"
@@ -152,7 +152,7 @@ services:
       - django
       - redis
     command: >
-      sh -c "pip install --no-cache-dir -r requirements.txt &&
+      sh -c "uv pip install --system --no-cache -r requirements.txt &&
              celery -A config worker -l INFO"
     networks:
       - app-network
@@ -182,7 +182,7 @@ services:
       - django
       - redis
     command: >
-      sh -c "pip install --no-cache-dir -r requirements.txt &&
+      sh -c "uv pip install --system --no-cache -r requirements.txt &&
              celery -A config beat -l INFO"
     networks:
       - app-network

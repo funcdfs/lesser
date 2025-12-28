@@ -6,16 +6,16 @@ import (
 	"github.com/google/uuid"
 )
 
-// ConversationType represents the type of conversation
+// ConversationType 会话类型枚举
 type ConversationType string
 
 const (
-	ConversationTypePrivate ConversationType = "private" // 1:1 private chat
-	ConversationTypeGroup   ConversationType = "group"   // Group chat with multiple users
-	ConversationTypeChannel ConversationType = "channel" // Broadcast channel
+	ConversationTypePrivate ConversationType = "private" // 私聊（一对一）
+	ConversationTypeGroup   ConversationType = "group"   // 群聊（多人）
+	ConversationTypeChannel ConversationType = "channel" // 频道（广播模式）
 )
 
-// Conversation represents a chat conversation
+// Conversation 会话实体模型
 type Conversation struct {
 	ID        uuid.UUID        `json:"id" gorm:"type:uuid;primary_key;default:gen_random_uuid()"`
 	Type      ConversationType `json:"type" gorm:"type:varchar(20);not null"`
@@ -24,37 +24,43 @@ type Conversation struct {
 	CreatedAt time.Time        `json:"created_at" gorm:"autoCreateTime"`
 	UpdatedAt time.Time        `json:"updated_at" gorm:"autoUpdateTime"`
 
-	// Relations
+	// 关联关系
 	Members     []ConversationMember `json:"members,omitempty" gorm:"foreignKey:ConversationID"`
-	LastMessage *Message             `json:"last_message,omitempty" gorm:"-"`
+	LastMessage *Message             `json:"last_message,omitempty" gorm:"-"` // 最后一条消息（不存储在数据库）
 }
 
-// TableName returns the table name for Conversation
+// TableName 返回会话表名
 func (Conversation) TableName() string {
 	return "chat_conversations"
 }
 
-// ConversationMember represents a member of a conversation
+// ConversationMember 会话成员实体模型
 type ConversationMember struct {
-	ConversationID uuid.UUID `json:"conversation_id" gorm:"type:uuid;primaryKey"`
-	UserID         uuid.UUID `json:"user_id" gorm:"type:uuid;primaryKey"`
+	ConversationID uuid.UUID `json:"-" gorm:"type:uuid;primaryKey"`
+	UserID         uuid.UUID `json:"id" gorm:"type:uuid;primaryKey"`
 	Role           string    `json:"role" gorm:"type:varchar(20);default:'member'"`
-	JoinedAt       time.Time `json:"joined_at" gorm:"autoCreateTime"`
+	JoinedAt       time.Time `json:"-" gorm:"autoCreateTime"`
+
+	// 用户信息（从认证服务获取，不存储在数据库）
+	Username    string  `json:"username,omitempty" gorm:"-"`
+	Email       string  `json:"email,omitempty" gorm:"-"`
+	DisplayName *string `json:"display_name,omitempty" gorm:"-"`
+	AvatarURL   *string `json:"avatar_url,omitempty" gorm:"-"`
 }
 
-// TableName returns the table name for ConversationMember
+// TableName 返回会话成员表名
 func (ConversationMember) TableName() string {
 	return "chat_conversation_members"
 }
 
-// MemberRole constants
+// 成员角色常量
 const (
-	MemberRoleOwner  = "owner"
-	MemberRoleAdmin  = "admin"
-	MemberRoleMember = "member"
+	MemberRoleOwner  = "owner"  // 群主
+	MemberRoleAdmin  = "admin"  // 管理员
+	MemberRoleMember = "member" // 普通成员
 )
 
-// GetMemberIDs returns a slice of member user IDs
+// GetMemberIDs 获取所有成员的用户ID列表
 func (c *Conversation) GetMemberIDs() []uuid.UUID {
 	ids := make([]uuid.UUID, len(c.Members))
 	for i, m := range c.Members {
@@ -63,7 +69,7 @@ func (c *Conversation) GetMemberIDs() []uuid.UUID {
 	return ids
 }
 
-// HasMember checks if a user is a member of the conversation
+// HasMember 检查用户是否是会话成员
 func (c *Conversation) HasMember(userID uuid.UUID) bool {
 	for _, m := range c.Members {
 		if m.UserID == userID {

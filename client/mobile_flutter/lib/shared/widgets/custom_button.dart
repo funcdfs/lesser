@@ -79,7 +79,7 @@ class SecondaryButton extends StatelessWidget {
       child: OutlinedButton(
         onPressed: isEnabled && !isLoading ? onPressed : null,
         child: isLoading
-            ? SizedBox(
+            ? const SizedBox(
                 width: 20,
                 height: 20,
                 child: CircularProgressIndicator(
@@ -127,10 +127,7 @@ class AppTextButton extends StatelessWidget {
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          if (icon != null) ...[
-            Icon(icon, size: 18),
-            const SizedBox(width: 4),
-          ],
+          if (icon != null) ...[Icon(icon, size: 18), const SizedBox(width: 4)],
           Text(label),
         ],
       ),
@@ -172,10 +169,7 @@ class BadgeIconButton extends StatelessWidget {
                 color: AppColors.error,
                 borderRadius: BorderRadius.circular(10),
               ),
-              constraints: const BoxConstraints(
-                minWidth: 16,
-                minHeight: 16,
-              ),
+              constraints: const BoxConstraints(minWidth: 16, minHeight: 16),
               child: Text(
                 badge! > 99 ? '99+' : badge.toString(),
                 style: const TextStyle(

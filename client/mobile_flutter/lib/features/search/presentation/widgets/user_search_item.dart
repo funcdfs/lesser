@@ -25,8 +25,9 @@ class UserSearchItem extends StatelessWidget {
           children: [
             CircleAvatar(
               radius: 24,
-              backgroundImage:
-                  user.avatarUrl != null ? NetworkImage(user.avatarUrl!) : null,
+              backgroundImage: user.avatarUrl != null
+                  ? NetworkImage(user.avatarUrl!)
+                  : null,
               child: user.avatarUrl == null
                   ? Text(
                       user.username[0].toUpperCase(),
@@ -45,7 +46,7 @@ class UserSearchItem extends StatelessWidget {
                   ),
                   Text(
                     '@${user.username}',
-                    style: TextStyle(color: AppColors.textSecondaryLight),
+                    style: const TextStyle(color: AppColors.textSecondaryLight),
                   ),
                   if (user.bio != null && user.bio!.isNotEmpty) ...[
                     const SizedBox(height: 4),
@@ -53,7 +54,7 @@ class UserSearchItem extends StatelessWidget {
                       user.bio!,
                       maxLines: 2,
                       overflow: TextOverflow.ellipsis,
-                      style: TextStyle(
+                      style: const TextStyle(
                         color: AppColors.textSecondaryLight,
                         fontSize: 13,
                       ),
@@ -63,10 +64,7 @@ class UserSearchItem extends StatelessWidget {
               ),
             ),
             if (onFollow != null)
-              OutlinedButton(
-                onPressed: onFollow,
-                child: const Text('Follow'),
-              ),
+              OutlinedButton(onPressed: onFollow, child: const Text('Follow')),
           ],
         ),
       ),

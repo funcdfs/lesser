@@ -53,7 +53,7 @@ class _NotificationsPageState extends ConsumerState<NotificationsPage> {
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              Icon(Icons.error_outline, size: 64, color: AppColors.error),
+              const Icon(Icons.error_outline, size: 64, color: AppColors.error),
               const SizedBox(height: 16),
               Text(notificationState.errorMessage ?? 'An error occurred'),
               const SizedBox(height: 16),
@@ -67,7 +67,7 @@ class _NotificationsPageState extends ConsumerState<NotificationsPage> {
         );
       case NotificationStatus.loaded:
         if (notificationState.notifications.isEmpty) {
-          return Center(
+          return const Center(
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
@@ -76,8 +76,8 @@ class _NotificationsPageState extends ConsumerState<NotificationsPage> {
                   size: 64,
                   color: AppColors.textSecondaryLight,
                 ),
-                const SizedBox(height: 16),
-                const Text('No notifications yet'),
+                SizedBox(height: 16),
+                Text('No notifications yet'),
               ],
             ),
           );

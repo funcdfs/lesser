@@ -23,11 +23,7 @@ class AppErrorWidget extends StatelessWidget {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(
-              icon,
-              size: 64,
-              color: AppColors.error,
-            ),
+            Icon(icon, size: 64, color: AppColors.error),
             const SizedBox(height: 16),
             Text(
               message,
@@ -72,26 +68,19 @@ class EmptyStateWidget extends StatelessWidget {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(
-              icon,
-              size: 64,
-              color: AppColors.textSecondaryLight,
-            ),
+            Icon(icon, size: 64, color: AppColors.textSecondaryLight),
             const SizedBox(height: 16),
             Text(
               message,
               textAlign: TextAlign.center,
-              style: TextStyle(
+              style: const TextStyle(
                 fontSize: 16,
                 color: AppColors.textSecondaryLight,
               ),
             ),
             if (action != null && actionLabel != null) ...[
               const SizedBox(height: 24),
-              ElevatedButton(
-                onPressed: action,
-                child: Text(actionLabel!),
-              ),
+              ElevatedButton(onPressed: action, child: Text(actionLabel!)),
             ],
           ],
         ),

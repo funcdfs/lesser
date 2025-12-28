@@ -8,6 +8,7 @@ from .views import (
     FollowersListView,
     FollowingListView,
     FollowView,
+    FriendsListView,
     LoginView,
     LogoutView,
     RegisterView,
@@ -25,6 +26,7 @@ urlpatterns = [
     path('password/change/', ChangePasswordView.as_view(), name='change_password'),
     # Profile
     path('me/', UserProfileView.as_view(), name='user_profile'),
+    path('friends/', FriendsListView.as_view(), name='friends'),
     path('users/<str:username>/', UserDetailView.as_view(), name='user_detail'),
     # Follow
     path('users/<str:username>/follow/', FollowView.as_view(), name='follow'),

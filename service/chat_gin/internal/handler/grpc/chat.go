@@ -12,33 +12,33 @@ import (
 	"google.golang.org/grpc/status"
 )
 
-// ChatHandler implements the gRPC ChatService
+// ChatHandler gRPC 聊天服务处理器
 type ChatHandler struct {
 	chatService *service.ChatService
 	UnimplementedChatServiceServer
 }
 
-// NewChatHandler creates a new ChatHandler
+// NewChatHandler 创建新的 gRPC 聊天处理器
 func NewChatHandler(chatService *service.ChatService) *ChatHandler {
 	return &ChatHandler{
 		chatService: chatService,
 	}
 }
 
-// Register registers the handler with a gRPC server
+// Register 将处理器注册到 gRPC 服务器
 func (h *ChatHandler) Register(server *grpc.Server) {
 	RegisterChatServiceServer(server, h)
 }
 
-// GetConversations retrieves all conversations for a user
+// GetConversations 获取用户的所有会话列表
 func (h *ChatHandler) GetConversations(ctx context.Context, req *GetConversationsRequest) (*ConversationsResponse, error) {
 	if req.UserId == "" {
-		return nil, status.Error(codes.InvalidArgument, "user_id is required")
+		return nil, status.Error(codes.InvalidArgument, "用户ID不能为空")
 	}
 
 	userID, err := uuid.Parse(req.UserId)
 	if err != nil {
-		return nil, status.Error(codes.InvalidArgument, "invalid user_id")
+		return nil, status.Error(codes.InvalidArgument, "用户ID格式无效")
 	}
 
 	page := int(req.Pagination.GetPage())
@@ -70,44 +70,44 @@ func (h *ChatHandler) GetConversations(ctx context.Context, req *GetConversation
 	}, nil
 }
 
-// GetConversation retrieves a single conversation by ID
+// GetConversation 根据ID获取单个会话
 func (h *ChatHandler) GetConversation(ctx context.Context, req *GetConversationRequest) (*Conversation, error) {
 	if req.ConversationId == "" {
-		return nil, status.Error(codes.InvalidArgument, "conversation_id is required")
+		return nil, status.Error(codes.InvalidArgument, "会话ID不能为空")
 	}
 
 	convID, err := uuid.Parse(req.ConversationId)
 	if err != nil {
-		return nil, status.Error(codes.InvalidArgument, "invalid conversation_id")
+		return nil, status.Error(codes.InvalidArgument, "会话ID格式无效")
 	}
 
 	conv, err := h.chatService.GetConversation(ctx, convID)
 	if err != nil {
-		return nil, status.Error(codes.NotFound, "conversation not found")
+		return nil, status.Error(codes.NotFound, "会话不存在")
 	}
 
 	return modelToProtoConversation(conv), nil
 }
 
-// CreateConversation creates a new conversation
+// CreateConversation 创建新会话
 func (h *ChatHandler) CreateConversation(ctx context.Context, req *CreateConversationRequest) (*Conversation, error) {
 	if req.CreatorId == "" {
-		return nil, status.Error(codes.InvalidArgument, "creator_id is required")
+		return nil, status.Error(codes.InvalidArgument, "创建者ID不能为空")
 	}
 	if len(req.MemberIds) == 0 {
-		return nil, status.Error(codes.InvalidArgument, "member_ids is required")
+		return nil, status.Error(codes.InvalidArgument, "成员ID列表不能为空")
 	}
 
 	creatorID, err := uuid.Parse(req.CreatorId)
 	if err != nil {
-		return nil, status.Error(codes.InvalidArgument, "invalid creator_id")
+		return nil, status.Error(codes.InvalidArgument, "创建者ID格式无效")
 	}
 
 	memberIDs := make([]uuid.UUID, len(req.MemberIds))
 	for i, idStr := range req.MemberIds {
 		id, err := uuid.Parse(idStr)
 		if err != nil {
-			return nil, status.Errorf(codes.InvalidArgument, "invalid member_id: %s", idStr)
+			return nil, status.Errorf(codes.InvalidArgument, "成员ID格式无效: %s", idStr)
 		}
 		memberIDs[i] = id
 	}
@@ -127,19 +127,19 @@ func (h *ChatHandler) CreateConversation(ctx context.Context, req *CreateConvers
 	return modelToProtoConversation(conv), nil
 }
 
-// GetMessages retrieves messages for a conversation
+// GetMessages 获取会话的消息列表
 func (h *ChatHandler) GetMessages(ctx context.Context, req *GetMessagesRequest) (*MessagesResponse, error) {
 	if req.ConversationId == "" {
-		return nil, status.Error(codes.InvalidArgument, "conversation_id is required")
+		return nil, status.Error(codes.InvalidArgument, "会话ID不能为空")
 	}
 
 	convID, err := uuid.Parse(req.ConversationId)
 	if err != nil {
-		return nil, status.Error(codes.InvalidArgument, "invalid conversation_id")
+		return nil, status.Error(codes.InvalidArgument, "会话ID格式无效")
 	}
 
-	// Note: In production, get user ID from auth context
-	// For now, we'll skip the membership check in gRPC
+	// 注意：生产环境中应从认证上下文获取用户ID
+	// 目前 gRPC 内部调用跳过成员检查
 	page := int(req.Pagination.GetPage())
 	if page < 1 {
 		page = 1
@@ -149,12 +149,12 @@ func (h *ChatHandler) GetMessages(ctx context.Context, req *GetMessagesRequest) 
 		pageSize = 50
 	}
 
-	// Use a placeholder user ID for internal gRPC calls
-	// In production, this should come from the auth context
+	// 使用空用户ID表示内部 gRPC 调用
+	// 生产环境中应从认证上下文获取
 	result, err := h.chatService.GetMessages(ctx, convID, uuid.Nil, page, pageSize)
 	if err != nil {
 		if err == service.ErrNotMember {
-			return nil, status.Error(codes.PermissionDenied, "not a member of this conversation")
+			return nil, status.Error(codes.PermissionDenied, "您不是该会话的成员")
 		}
 		return nil, status.Error(codes.Internal, err.Error())
 	}
@@ -174,26 +174,26 @@ func (h *ChatHandler) GetMessages(ctx context.Context, req *GetMessagesRequest) 
 	}, nil
 }
 
-// SendMessage sends a message to a conversation
+// SendMessage 发送消息到会话
 func (h *ChatHandler) SendMessage(ctx context.Context, req *SendMessageRequest) (*Message, error) {
 	if req.ConversationId == "" {
-		return nil, status.Error(codes.InvalidArgument, "conversation_id is required")
+		return nil, status.Error(codes.InvalidArgument, "会话ID不能为空")
 	}
 	if req.SenderId == "" {
-		return nil, status.Error(codes.InvalidArgument, "sender_id is required")
+		return nil, status.Error(codes.InvalidArgument, "发送者ID不能为空")
 	}
 	if req.Content == "" {
-		return nil, status.Error(codes.InvalidArgument, "content is required")
+		return nil, status.Error(codes.InvalidArgument, "消息内容不能为空")
 	}
 
 	convID, err := uuid.Parse(req.ConversationId)
 	if err != nil {
-		return nil, status.Error(codes.InvalidArgument, "invalid conversation_id")
+		return nil, status.Error(codes.InvalidArgument, "会话ID格式无效")
 	}
 
 	senderID, err := uuid.Parse(req.SenderId)
 	if err != nil {
-		return nil, status.Error(codes.InvalidArgument, "invalid sender_id")
+		return nil, status.Error(codes.InvalidArgument, "发送者ID格式无效")
 	}
 
 	msgType := model.MessageType(req.MessageType)
@@ -209,7 +209,7 @@ func (h *ChatHandler) SendMessage(ctx context.Context, req *SendMessageRequest) 
 	})
 	if err != nil {
 		if err == service.ErrNotMember {
-			return nil, status.Error(codes.PermissionDenied, "not a member of this conversation")
+			return nil, status.Error(codes.PermissionDenied, "您不是该会话的成员")
 		}
 		return nil, status.Error(codes.Internal, err.Error())
 	}
@@ -217,28 +217,29 @@ func (h *ChatHandler) SendMessage(ctx context.Context, req *SendMessageRequest) 
 	return modelToProtoMessage(msg), nil
 }
 
-// StreamMessages streams messages in real-time
+// StreamMessages 实时消息流（服务端流式 RPC）
 func (h *ChatHandler) StreamMessages(req *StreamRequest, stream ChatService_StreamMessagesServer) error {
 	if req.UserId == "" {
-		return status.Error(codes.InvalidArgument, "user_id is required")
+		return status.Error(codes.InvalidArgument, "用户ID不能为空")
 	}
 
 	userID, err := uuid.Parse(req.UserId)
 	if err != nil {
-		return status.Error(codes.InvalidArgument, "invalid user_id")
+		return status.Error(codes.InvalidArgument, "用户ID格式无效")
 	}
 
-	// This is a placeholder implementation
-	// In production, this would subscribe to Redis pub/sub or similar
+	// 这是一个占位实现
+	// 生产环境中应订阅 Redis pub/sub 或类似机制
 	_ = userID
 
-	// Keep the stream open
+	// 保持流连接直到客户端断开
 	<-stream.Context().Done()
 	return nil
 }
 
-// Conversion helpers
+// 类型转换辅助函数
 
+// modelToProtoConversation 将模型会话转换为 Proto 会话
 func modelToProtoConversation(conv *model.Conversation) *Conversation {
 	memberIDs := make([]string, len(conv.Members))
 	for i, m := range conv.Members {
@@ -264,6 +265,7 @@ func modelToProtoConversation(conv *model.Conversation) *Conversation {
 	return protoConv
 }
 
+// modelToProtoMessage 将模型消息转换为 Proto 消息
 func modelToProtoMessage(msg *model.Message) *Message {
 	return &Message{
 		Id:             msg.ID.String(),
@@ -278,6 +280,7 @@ func modelToProtoMessage(msg *model.Message) *Message {
 	}
 }
 
+// modelToProtoConversationType 将模型会话类型转换为 Proto 会话类型
 func modelToProtoConversationType(t model.ConversationType) ConversationType {
 	switch t {
 	case model.ConversationTypePrivate:
@@ -291,6 +294,7 @@ func modelToProtoConversationType(t model.ConversationType) ConversationType {
 	}
 }
 
+// protoToModelConversationType 将 Proto 会话类型转换为模型会话类型
 func protoToModelConversationType(t ConversationType) model.ConversationType {
 	switch t {
 	case ConversationType_PRIVATE:
@@ -304,7 +308,7 @@ func protoToModelConversationType(t ConversationType) model.ConversationType {
 	}
 }
 
-// Timestamp helper
+// protoTimestampToTime 将 Proto 时间戳转换为 Go time.Time
 func protoTimestampToTime(ts *Timestamp) time.Time {
 	if ts == nil {
 		return time.Time{}

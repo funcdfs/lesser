@@ -77,13 +77,13 @@ class FeedItemCard extends StatelessWidget {
                   const SizedBox(width: 4),
                   Text(
                     '@${feedItem.author.username}',
-                    style: TextStyle(color: AppColors.textSecondaryLight),
+                    style: const TextStyle(color: AppColors.textSecondaryLight),
                   ),
                 ],
               ),
               Text(
                 feedItem.createdAt.timeAgo,
-                style: TextStyle(
+                style: const TextStyle(
                   color: AppColors.textSecondaryLight,
                   fontSize: 12,
                 ),
@@ -98,7 +98,7 @@ class FeedItemCard extends StatelessWidget {
               color: AppColors.primary.withOpacity(0.1),
               borderRadius: BorderRadius.circular(12),
             ),
-            child: Text(
+            child: const Text(
               'Story',
               style: TextStyle(
                 color: AppColors.primary,
@@ -124,10 +124,7 @@ class FeedItemCard extends StatelessWidget {
         if (feedItem.title != null) ...[
           Text(
             feedItem.title!,
-            style: const TextStyle(
-              fontSize: 18,
-              fontWeight: FontWeight.bold,
-            ),
+            style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
           ),
           const SizedBox(height: 4),
         ],
@@ -152,9 +149,7 @@ class FeedItemCard extends StatelessWidget {
             return Container(
               height: 200,
               color: AppColors.surfaceLight,
-              child: const Center(
-                child: Icon(Icons.broken_image_outlined),
-              ),
+              child: const Center(child: Icon(Icons.broken_image_outlined)),
             );
           },
         ),
@@ -179,9 +174,7 @@ class FeedItemCard extends StatelessWidget {
             errorBuilder: (context, error, stackTrace) {
               return Container(
                 color: AppColors.surfaceLight,
-                child: const Center(
-                  child: Icon(Icons.broken_image_outlined),
-                ),
+                child: const Center(child: Icon(Icons.broken_image_outlined)),
               );
             },
           ),
@@ -223,10 +216,7 @@ class FeedItemCard extends StatelessWidget {
           activeColor: AppColors.bookmark,
           onTap: onBookmark,
         ),
-        _ActionButton(
-          icon: Icons.share_outlined,
-          onTap: onShare,
-        ),
+        _ActionButton(icon: Icons.share_outlined, onTap: onShare),
       ],
     );
   }
@@ -269,10 +259,7 @@ class _ActionButton extends StatelessWidget {
               const SizedBox(width: 4),
               Text(
                 count!.compact,
-                style: TextStyle(
-                  color: color,
-                  fontSize: 13,
-                ),
+                style: TextStyle(color: color, fontSize: 13),
               ),
             ],
           ],

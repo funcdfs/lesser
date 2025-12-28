@@ -22,6 +22,7 @@ class RouteConstants {
   // Chat routes
   static const String conversations = '/chat';
   static const String chatRoom = '/chat/:id';
+  static const String newConversation = '/chat/new';
 
   // Settings
   static const String settings = '/settings';

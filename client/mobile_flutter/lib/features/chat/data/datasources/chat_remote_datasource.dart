@@ -1,30 +1,45 @@
+import 'dart:convert';
+
 import 'package:dio/dio.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../../../core/api/api_client.dart';
 import '../../../../core/api/api_endpoints.dart';
 import '../../../../core/errors/exceptions.dart';
+import '../../../../core/utils/app_logger.dart';
 import '../../domain/entities/conversation.dart';
 import '../../domain/entities/message.dart';
 import '../models/conversation_model.dart';
 import '../models/message_model.dart';
 
-/// Chat remote data source interface
+const _tag = 'ChatDataSource';
+
+/// 聊天远程数据源接口
 abstract class ChatRemoteDataSource {
+  /// 获取会话列表
   Future<List<ConversationModel>> getConversations({
     int page = 1,
     int pageSize = 20,
   });
+  
+  /// 获取单个会话详情
   Future<ConversationModel> getConversation(String conversationId);
+  
+  /// 创建新会话
   Future<ConversationModel> createConversation({
     required ConversationType type,
     required List<String> memberIds,
     String? name,
   });
+  
+  /// 获取会话消息列表
   Future<List<MessageModel>> getMessages({
     required String conversationId,
     int page = 1,
     int pageSize = 50,
   });
+  
+  /// 发送消息
   Future<MessageModel> sendMessage({
     required String conversationId,
     required String content,
@@ -32,11 +47,28 @@ abstract class ChatRemoteDataSource {
   });
 }
 
-/// Chat remote data source implementation
+/// 聊天远程数据源实现
 class ChatRemoteDataSourceImpl implements ChatRemoteDataSource {
-  const ChatRemoteDataSourceImpl(this._apiClient);
+  ChatRemoteDataSourceImpl(this._apiClient, this._sharedPreferences);
 
   final ApiClient _apiClient;
+  final SharedPreferences _sharedPreferences;
+
+  /// 获取当前用户ID
+  String? _getCurrentUserId() {
+    final userJson = _sharedPreferences.getString('cached_user');
+    if (userJson == null) return null;
+    final userData = jsonDecode(userJson) as Map<String, dynamic>;
+    return userData['id'] as String?;
+  }
+
+  /// 构建带用户ID的请求选项
+  Options _getOptionsWithUserId() {
+    final userId = _getCurrentUserId();
+    return Options(
+      headers: userId != null ? {'X-User-ID': userId} : null,
+    );
+  }
 
   @override
   Future<List<ConversationModel>> getConversations({
@@ -44,20 +76,27 @@ class ChatRemoteDataSourceImpl implements ChatRemoteDataSource {
     int pageSize = 20,
   }) async {
     try {
+      final options = _getOptionsWithUserId();
+
       final response = await _apiClient.get(
         ApiEndpoints.conversations,
         queryParameters: {'page': page, 'page_size': pageSize},
+        options: options,
       );
 
       if (response.statusCode == 200) {
-        final results = response.data['results'] as List<dynamic>;
-        return results
+        final conversations = response.data['conversations'] as List<dynamic>?;
+        if (conversations == null) return [];
+        return conversations
             .map((e) => ConversationModel.fromJson(e as Map<String, dynamic>))
             .toList();
       }
       throw ServerException(statusCode: response.statusCode);
     } on DioException catch (e) {
       throw _handleDioError(e);
+    } catch (e, stackTrace) {
+      log.e('获取会话列表失败: $e', tag: _tag, stackTrace: stackTrace);
+      rethrow;
     }
   }
 
@@ -66,6 +105,7 @@ class ChatRemoteDataSourceImpl implements ChatRemoteDataSource {
     try {
       final response = await _apiClient.get(
         ApiEndpoints.conversationById(conversationId),
+        options: _getOptionsWithUserId(),
       );
 
       if (response.statusCode == 200) {
@@ -92,6 +132,7 @@ class ChatRemoteDataSourceImpl implements ChatRemoteDataSource {
           'member_ids': memberIds,
           if (name != null) 'name': name,
         },
+        options: _getOptionsWithUserId(),
       );
 
       if (response.statusCode == 201) {
@@ -114,11 +155,13 @@ class ChatRemoteDataSourceImpl implements ChatRemoteDataSource {
       final response = await _apiClient.get(
         ApiEndpoints.messages(conversationId),
         queryParameters: {'page': page, 'page_size': pageSize},
+        options: _getOptionsWithUserId(),
       );
 
       if (response.statusCode == 200) {
-        final results = response.data['results'] as List<dynamic>;
-        return results
+        final messages = response.data['messages'] as List<dynamic>?;
+        if (messages == null) return [];
+        return messages
             .map((e) => MessageModel.fromJson(e as Map<String, dynamic>))
             .toList();
       }
@@ -141,6 +184,7 @@ class ChatRemoteDataSourceImpl implements ChatRemoteDataSource {
           'content': content,
           'message_type': _messageTypeToString(messageType),
         },
+        options: _getOptionsWithUserId(),
       );
 
       if (response.statusCode == 201) {
@@ -152,6 +196,7 @@ class ChatRemoteDataSourceImpl implements ChatRemoteDataSource {
     }
   }
 
+  /// 会话类型转字符串
   String _conversationTypeToString(ConversationType type) {
     switch (type) {
       case ConversationType.private:
@@ -163,6 +208,7 @@ class ChatRemoteDataSourceImpl implements ChatRemoteDataSource {
     }
   }
 
+  /// 消息类型转字符串
   String _messageTypeToString(MessageType type) {
     switch (type) {
       case MessageType.text:
@@ -176,7 +222,13 @@ class ChatRemoteDataSourceImpl implements ChatRemoteDataSource {
     }
   }
 
+  /// 处理 Dio 异常
   AppException _handleDioError(DioException e) {
+    log.w(
+      'DioError: ${e.type}, status=${e.response?.statusCode}',
+      tag: _tag,
+    );
+    
     switch (e.type) {
       case DioExceptionType.connectionTimeout:
       case DioExceptionType.sendTimeout:
@@ -184,8 +236,24 @@ class ChatRemoteDataSourceImpl implements ChatRemoteDataSource {
         return const TimeoutException();
       case DioExceptionType.connectionError:
         return const NetworkException();
+      case DioExceptionType.badResponse:
+        final statusCode = e.response?.statusCode;
+        final message = e.response?.data?['error']?.toString() ?? 
+                        e.response?.data?['message']?.toString() ??
+                        '服务器错误: $statusCode';
+        if (statusCode == 401) {
+          return UnauthorizedException(message: message);
+        } else if (statusCode == 403) {
+          return ForbiddenException(message: message);
+        } else if (statusCode == 404) {
+          return NotFoundException(message: message);
+        }
+        return ServerException(statusCode: statusCode, message: message);
       default:
-        return ServerException(statusCode: e.response?.statusCode);
+        return ServerException(
+          statusCode: e.response?.statusCode,
+          message: e.message ?? '未知错误',
+        );
     }
   }
 }

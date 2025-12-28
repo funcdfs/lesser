@@ -1,7 +1,7 @@
 package grpc
 
-// This file contains stub types that would normally be generated from proto files.
-// In production, run `make proto` to generate these from protos/chat/chat.proto
+// 本文件包含 gRPC 类型定义的存根
+// 生产环境中应通过 `make proto` 从 protos/chat/chat.proto 生成这些类型
 
 import (
 	"context"
@@ -9,28 +9,29 @@ import (
 	"google.golang.org/grpc"
 )
 
-// ConversationType enum
+// ConversationType 会话类型枚举
 type ConversationType int32
 
 const (
-	ConversationType_PRIVATE ConversationType = 0
-	ConversationType_GROUP   ConversationType = 1
-	ConversationType_CHANNEL ConversationType = 2
+	ConversationType_PRIVATE ConversationType = 0 // 私聊
+	ConversationType_GROUP   ConversationType = 1 // 群聊
+	ConversationType_CHANNEL ConversationType = 2 // 频道
 )
 
-// Timestamp message
+// Timestamp 时间戳消息
 type Timestamp struct {
-	Seconds int64
-	Nanos   int32
+	Seconds int64 // Unix 秒数
+	Nanos   int32 // 纳秒部分
 }
 
-// Pagination message
+// Pagination 分页参数消息
 type Pagination struct {
-	Page     int32
-	PageSize int32
-	Total    int32
+	Page     int32 // 页码
+	PageSize int32 // 每页数量
+	Total    int32 // 总数
 }
 
+// GetPage 获取页码（带空值保护）
 func (p *Pagination) GetPage() int32 {
 	if p == nil {
 		return 0
@@ -38,6 +39,7 @@ func (p *Pagination) GetPage() int32 {
 	return p.Page
 }
 
+// GetPageSize 获取每页数量（带空值保护）
 func (p *Pagination) GetPageSize() int32 {
 	if p == nil {
 		return 0
@@ -45,72 +47,80 @@ func (p *Pagination) GetPageSize() int32 {
 	return p.PageSize
 }
 
-// Conversation message
+// Conversation 会话消息
 type Conversation struct {
-	Id          string
-	Type        ConversationType
-	Name        string
-	MemberIds   []string
-	CreatorId   string
-	CreatedAt   *Timestamp
-	LastMessage *Message
+	Id          string           // 会话ID
+	Type        ConversationType // 会话类型
+	Name        string           // 会话名称
+	MemberIds   []string         // 成员ID列表
+	CreatorId   string           // 创建者ID
+	CreatedAt   *Timestamp       // 创建时间
+	LastMessage *Message         // 最后一条消息
 }
 
-// Message message
+// Message 消息实体
 type Message struct {
-	Id             string
-	ConversationId string
-	SenderId       string
-	Content        string
-	MessageType    string
-	CreatedAt      *Timestamp
+	Id             string     // 消息ID
+	ConversationId string     // 所属会话ID
+	SenderId       string     // 发送者ID
+	Content        string     // 消息内容
+	MessageType    string     // 消息类型（text/image/file/system）
+	CreatedAt      *Timestamp // 创建时间
 }
 
-// Request/Response messages
+// 请求/响应消息定义
 
+// GetConversationsRequest 获取会话列表请求
 type GetConversationsRequest struct {
-	UserId     string
-	Pagination *Pagination
+	UserId     string      // 用户ID
+	Pagination *Pagination // 分页参数
 }
 
+// ConversationsResponse 会话列表响应
 type ConversationsResponse struct {
-	Conversations []*Conversation
-	Pagination    *Pagination
+	Conversations []*Conversation // 会话列表
+	Pagination    *Pagination     // 分页信息
 }
 
+// GetConversationRequest 获取单个会话请求
 type GetConversationRequest struct {
-	ConversationId string
+	ConversationId string // 会话ID
 }
 
+// CreateConversationRequest 创建会话请求
 type CreateConversationRequest struct {
-	Type      ConversationType
-	Name      string
-	MemberIds []string
-	CreatorId string
+	Type      ConversationType // 会话类型
+	Name      string           // 会话名称
+	MemberIds []string         // 成员ID列表
+	CreatorId string           // 创建者ID
 }
 
+// GetMessagesRequest 获取消息列表请求
 type GetMessagesRequest struct {
-	ConversationId string
-	Pagination     *Pagination
+	ConversationId string      // 会话ID
+	Pagination     *Pagination // 分页参数
 }
 
+// MessagesResponse 消息列表响应
 type MessagesResponse struct {
-	Messages   []*Message
-	Pagination *Pagination
+	Messages   []*Message  // 消息列表
+	Pagination *Pagination // 分页信息
 }
 
+// SendMessageRequest 发送消息请求
 type SendMessageRequest struct {
-	ConversationId string
-	SenderId       string
-	Content        string
-	MessageType    string
+	ConversationId string // 会话ID
+	SenderId       string // 发送者ID
+	Content        string // 消息内容
+	MessageType    string // 消息类型
 }
 
+// StreamRequest 消息流订阅请求
 type StreamRequest struct {
-	UserId string
+	UserId string // 用户ID
 }
 
-// ChatServiceServer interface
+// ChatServiceServer gRPC 聊天服务接口
 type ChatServiceServer interface {
 	GetConversations(context.Context, *GetConversationsRequest) (*ConversationsResponse, error)
 	GetConversation(context.Context, *GetConversationRequest) (*Conversation, error)
@@ -120,13 +130,13 @@ type ChatServiceServer interface {
 	StreamMessages(*StreamRequest, ChatService_StreamMessagesServer) error
 }
 
-// ChatService_StreamMessagesServer interface
+// ChatService_StreamMessagesServer 消息流服务端接口
 type ChatService_StreamMessagesServer interface {
 	Send(*Message) error
 	grpc.ServerStream
 }
 
-// UnimplementedChatServiceServer for forward compatibility
+// UnimplementedChatServiceServer 未实现的服务基类（用于向前兼容）
 type UnimplementedChatServiceServer struct{}
 
 func (UnimplementedChatServiceServer) GetConversations(context.Context, *GetConversationsRequest) (*ConversationsResponse, error) {
@@ -153,14 +163,14 @@ func (UnimplementedChatServiceServer) StreamMessages(*StreamRequest, ChatService
 	return nil
 }
 
-// RegisterChatServiceServer registers the server
+// RegisterChatServiceServer 注册聊天服务到 gRPC 服务器
 func RegisterChatServiceServer(s *grpc.Server, srv ChatServiceServer) {
-	// In production, this would be generated by protoc-gen-go-grpc
-	// For now, we use a manual registration
+	// 生产环境中由 protoc-gen-go-grpc 生成
+	// 这里使用手动注册
 	s.RegisterService(&ChatService_ServiceDesc, srv)
 }
 
-// ChatService_ServiceDesc is the service descriptor
+// ChatService_ServiceDesc gRPC 服务描述符
 var ChatService_ServiceDesc = grpc.ServiceDesc{
 	ServiceName: "chat.ChatService",
 	HandlerType: (*ChatServiceServer)(nil),
@@ -196,7 +206,8 @@ var ChatService_ServiceDesc = grpc.ServiceDesc{
 	Metadata: "chat/chat.proto",
 }
 
-// Handler implementations
+// gRPC 方法处理器实现
+
 func _ChatService_GetConversations_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(GetConversationsRequest)
 	if err := dec(in); err != nil {

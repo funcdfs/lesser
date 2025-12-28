@@ -61,10 +61,8 @@ class _SearchPageState extends ConsumerState<SearchPage> {
         children: [
           // Tab bar
           Container(
-            decoration: BoxDecoration(
-              border: Border(
-                bottom: BorderSide(color: AppColors.borderLight),
-              ),
+            decoration: const BoxDecoration(
+              border: Border(bottom: BorderSide(color: AppColors.borderLight)),
             ),
             child: Row(
               children: [
@@ -98,16 +96,12 @@ class _SearchPageState extends ConsumerState<SearchPage> {
 
   Widget _buildResults(SearchState searchState) {
     if (searchState.query.isEmpty) {
-      return Center(
+      return const Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(
-              Icons.search,
-              size: 64,
-              color: AppColors.textSecondaryLight,
-            ),
-            const SizedBox(height: 16),
+            Icon(Icons.search, size: 64, color: AppColors.textSecondaryLight),
+            SizedBox(height: 16),
             Text(
               'Search for posts or users',
               style: TextStyle(color: AppColors.textSecondaryLight),
@@ -127,7 +121,7 @@ class _SearchPageState extends ConsumerState<SearchPage> {
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              Icon(Icons.error_outline, size: 64, color: AppColors.error),
+              const Icon(Icons.error_outline, size: 64, color: AppColors.error),
               const SizedBox(height: 16),
               Text(searchState.errorMessage ?? 'An error occurred'),
               const SizedBox(height: 16),
@@ -172,7 +166,7 @@ class _SearchPageState extends ConsumerState<SearchPage> {
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Icon(
+          const Icon(
             Icons.inbox_outlined,
             size: 64,
             color: AppColors.textSecondaryLight,
@@ -180,7 +174,7 @@ class _SearchPageState extends ConsumerState<SearchPage> {
           const SizedBox(height: 16),
           Text(
             message,
-            style: TextStyle(color: AppColors.textSecondaryLight),
+            style: const TextStyle(color: AppColors.textSecondaryLight),
           ),
         ],
       ),
