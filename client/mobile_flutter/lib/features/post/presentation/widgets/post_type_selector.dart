@@ -80,7 +80,7 @@ class _PostTypeOption extends StatelessWidget {
         padding: const EdgeInsets.all(12),
         decoration: BoxDecoration(
           color: isSelected
-              ? AppColors.primary.withOpacity(0.1)
+              ? AppColors.primary.withValues(alpha: 0.1)
               : AppColors.surfaceLight,
           borderRadius: BorderRadius.circular(12),
           border: Border.all(

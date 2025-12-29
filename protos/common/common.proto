@@ -1,7 +1,7 @@
 syntax = "proto3";
 package common;
 
-option go_package = "generated/protos/common";
+option go_package = "github.com/lesser/chat/generated/protos/common";
 
 // Pagination message for paginated requests and responses
 message Pagination {
@@ -23,3 +23,34 @@ message UUID {
 
 // Empty message for void responses
 message Empty {}
+
+// Error details for structured error responses
+message ErrorDetail {
+  string code = 1;
+  string message = 2;
+  map<string, string> metadata = 3;
+}
+
+// Health check service for service discovery
+service HealthService {
+  // Check service health
+  rpc Check(HealthCheckRequest) returns (HealthCheckResponse);
+  // Watch service health changes (streaming)
+  rpc Watch(HealthCheckRequest) returns (stream HealthCheckResponse);
+}
+
+// Health check request
+message HealthCheckRequest {
+  string service = 1;  // Service name to check, empty for overall health
+}
+
+// Health check response
+message HealthCheckResponse {
+  enum ServingStatus {
+    UNKNOWN = 0;
+    SERVING = 1;
+    NOT_SERVING = 2;
+    SERVICE_UNKNOWN = 3;
+  }
+  ServingStatus status = 1;
+}

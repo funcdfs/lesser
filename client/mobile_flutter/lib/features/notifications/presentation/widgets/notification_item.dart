@@ -15,7 +15,7 @@ class NotificationItem extends StatelessWidget {
     return InkWell(
       onTap: onTap,
       child: Container(
-        color: notification.isRead ? null : AppColors.primary.withOpacity(0.05),
+        color: notification.isRead ? null : AppColors.primary.withValues(alpha: 0.05),
         padding: const EdgeInsets.all(16),
         child: Row(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -88,7 +88,7 @@ class NotificationItem extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(8),
       decoration: BoxDecoration(
-        color: color.withOpacity(0.1),
+        color: color.withValues(alpha: 0.1),
         shape: BoxShape.circle,
       ),
       child: Icon(icon, color: color, size: 20),

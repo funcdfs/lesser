@@ -63,8 +63,9 @@ ALTER DEFAULT PRIVILEGES IN SCHEMA search GRANT USAGE, SELECT ON SEQUENCES TO le
 
 -- ============================================================================
 -- Chat Service Tables (Go service will use these directly)
+-- 注意: Go 服务使用 GORM，表名使用前缀格式 (chat_xxx) 而非 schema 格式 (chat.xxx)
 -- ============================================================================
-CREATE TABLE IF NOT EXISTS chat.conversations (
+CREATE TABLE IF NOT EXISTS chat_conversations (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     type VARCHAR(20) NOT NULL CHECK (type IN ('private', 'group', 'channel')),
     name VARCHAR(255),
@@ -73,33 +74,36 @@ CREATE TABLE IF NOT EXISTS chat.conversations (
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
 );
 
-CREATE TABLE IF NOT EXISTS chat.conversation_members (
-    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-    conversation_id UUID NOT NULL REFERENCES chat.conversations(id) ON DELETE CASCADE,
+CREATE TABLE IF NOT EXISTS chat_conversation_members (
+    conversation_id UUID NOT NULL REFERENCES chat_conversations(id) ON DELETE CASCADE,
     user_id UUID NOT NULL,
     role VARCHAR(20) DEFAULT 'member' CHECK (role IN ('owner', 'admin', 'member')),
     joined_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
-    UNIQUE(conversation_id, user_id)
+    PRIMARY KEY (conversation_id, user_id)
 );
 
-CREATE TABLE IF NOT EXISTS chat.messages (
+CREATE TABLE IF NOT EXISTS chat_messages (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-    conversation_id UUID NOT NULL REFERENCES chat.conversations(id) ON DELETE CASCADE,
+    conversation_id UUID NOT NULL REFERENCES chat_conversations(id) ON DELETE CASCADE,
     sender_id UUID NOT NULL,
     content TEXT NOT NULL,
     message_type VARCHAR(20) DEFAULT 'text' CHECK (message_type IN ('text', 'image', 'file', 'system')),
+    read_at TIMESTAMP WITH TIME ZONE,  -- 已读时间戳，NULL 表示未读
     created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
     deleted_at TIMESTAMP WITH TIME ZONE
 );
 
 -- Create indexes for chat tables
-CREATE INDEX IF NOT EXISTS idx_conversations_creator ON chat.conversations(creator_id);
-CREATE INDEX IF NOT EXISTS idx_conversation_members_user ON chat.conversation_members(user_id);
-CREATE INDEX IF NOT EXISTS idx_conversation_members_conversation ON chat.conversation_members(conversation_id);
-CREATE INDEX IF NOT EXISTS idx_messages_conversation ON chat.messages(conversation_id);
-CREATE INDEX IF NOT EXISTS idx_messages_sender ON chat.messages(sender_id);
-CREATE INDEX IF NOT EXISTS idx_messages_created_at ON chat.messages(created_at DESC);
+CREATE INDEX IF NOT EXISTS idx_chat_conversations_creator ON chat_conversations(creator_id);
+CREATE INDEX IF NOT EXISTS idx_chat_conversation_members_user ON chat_conversation_members(user_id);
+CREATE INDEX IF NOT EXISTS idx_chat_conversation_members_conversation ON chat_conversation_members(conversation_id);
+CREATE INDEX IF NOT EXISTS idx_chat_messages_conversation ON chat_messages(conversation_id);
+CREATE INDEX IF NOT EXISTS idx_chat_messages_sender ON chat_messages(sender_id);
+CREATE INDEX IF NOT EXISTS idx_chat_messages_created_at ON chat_messages(created_at DESC);
+-- 未读消息查询优化索引
+CREATE INDEX IF NOT EXISTS idx_chat_messages_unread ON chat_messages(conversation_id, sender_id, read_at) WHERE read_at IS NULL;
+CREATE INDEX IF NOT EXISTS idx_chat_messages_read_at ON chat_messages(read_at);
 
 -- ============================================================================
 -- Logging

@@ -1,8 +1,18 @@
 import '../../domain/entities/user.dart';
 
-/// User data model
+/// 用户数据模型
 class UserModel extends User {
-  /// Create from entity
+  const UserModel({
+    required super.id,
+    required super.username,
+    required super.email,
+    super.displayName,
+    super.avatarUrl,
+    super.bio,
+    super.createdAt,
+  });
+
+  /// 从实体创建
   factory UserModel.fromEntity(User user) {
     return UserModel(
       id: user.id,
@@ -14,17 +24,8 @@ class UserModel extends User {
       createdAt: user.createdAt,
     );
   }
-  const UserModel({
-    required super.id,
-    required super.username,
-    required super.email,
-    super.displayName,
-    super.avatarUrl,
-    super.bio,
-    super.createdAt,
-  });
 
-  /// Create from JSON
+  /// 从 JSON 创建
   factory UserModel.fromJson(Map<String, dynamic> json) {
     return UserModel(
       id: json['id'] as String,
@@ -39,7 +40,7 @@ class UserModel extends User {
     );
   }
 
-  /// Convert to JSON
+  /// 转换为 JSON
   Map<String, dynamic> toJson() {
     return {
       'id': id,

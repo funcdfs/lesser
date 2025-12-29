@@ -3,13 +3,17 @@ package server
 import (
 	"context"
 	"fmt"
+	"log"
 	"net/http"
+	"strings"
+	"time"
 
 	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
 	"github.com/lesser/chat/internal/config"
 	"github.com/lesser/chat/internal/handler/ws"
+	"github.com/lesser/chat/internal/middleware"
 	"github.com/lesser/chat/internal/model"
 	"github.com/lesser/chat/internal/service"
 )
@@ -18,13 +22,14 @@ import (
 type HTTPServer struct {
 	config      *config.Config
 	chatService *service.ChatService
+	authClient  *service.AuthClient
 	hub         *ws.Hub
 	server      *http.Server
 	router      *gin.Engine
 }
 
 // NewHTTPServer 创建新的 HTTP 服务器实例
-func NewHTTPServer(cfg *config.Config, chatService *service.ChatService, hub *ws.Hub) *HTTPServer {
+func NewHTTPServer(cfg *config.Config, chatService *service.ChatService, authClient *service.AuthClient, hub *ws.Hub) *HTTPServer {
 	// 根据环境设置 Gin 模式
 	if cfg.IsProduction() {
 		gin.SetMode(gin.ReleaseMode)
@@ -48,6 +53,7 @@ func NewHTTPServer(cfg *config.Config, chatService *service.ChatService, hub *ws
 	s := &HTTPServer{
 		config:      cfg,
 		chatService: chatService,
+		authClient:  authClient,
 		hub:         hub,
 		router:      router,
 	}
@@ -65,11 +71,17 @@ func NewHTTPServer(cfg *config.Config, chatService *service.ChatService, hub *ws
 
 // setupRoutes 配置所有 HTTP 路由
 func (s *HTTPServer) setupRoutes() {
-	// 健康检查端点
+	// 健康检查端点（无需认证）
 	s.router.GET("/health", s.healthCheck)
 
-	// API v1 路由组
+	// API v1 路由组（需要认证）
 	v1 := s.router.Group("/api/v1/chat")
+
+	// 根据是否有 AuthClient 决定使用哪种认证方式
+	if s.authClient != nil {
+		v1.Use(middleware.AuthMiddleware(s.authClient))
+	}
+
 	{
 		// 测试端点
 		v1.GET("/hello", s.helloChat)
@@ -87,6 +99,20 @@ func (s *HTTPServer) setupRoutes() {
 		v1.GET("/conversations/:id/messages/", s.getMessages)
 		v1.POST("/conversations/:id/messages", s.sendMessage)
 		v1.POST("/conversations/:id/messages/", s.sendMessage)
+		v1.POST("/conversations/:id/read", s.markAsRead)
+		v1.POST("/conversations/:id/read/", s.markAsRead)
+
+		// 标记到指定消息已读路由（Requirements: 2.6）
+		v1.POST("/conversations/:id/read-up-to", s.markMessagesUpToAsRead)
+		v1.POST("/conversations/:id/read-up-to/", s.markMessagesUpToAsRead)
+
+		// 单条消息已读路由（Requirements: 2.5）
+		v1.POST("/messages/:id/read", s.markMessageAsRead)
+		v1.POST("/messages/:id/read/", s.markMessageAsRead)
+
+		// 批量获取未读数路由（Requirements: 6.1）
+		v1.GET("/unread-counts", s.getUnreadCounts)
+		v1.GET("/unread-counts/", s.getUnreadCounts)
 
 		// 成员管理路由（支持带/不带尾部斜杠）
 		v1.POST("/conversations/:id/members", s.addMember)
@@ -134,16 +160,10 @@ func (s *HTTPServer) helloChat(c *gin.Context) {
 
 // getConversations 获取用户的会话列表
 func (s *HTTPServer) getConversations(c *gin.Context) {
-	// 从请求头获取用户ID（生产环境应从认证中间件获取）
-	userIDStr := c.GetHeader("X-User-ID")
-	if userIDStr == "" {
+	// 从 context 获取用户ID（由认证中间件设置）
+	userID, exists := middleware.GetUserID(c)
+	if !exists {
 		c.JSON(http.StatusUnauthorized, gin.H{"error": "需要用户ID"})
-		return
-	}
-
-	userID, err := uuid.Parse(userIDStr)
-	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "用户ID格式无效"})
 		return
 	}
 
@@ -180,16 +200,10 @@ func (s *HTTPServer) createConversation(c *gin.Context) {
 		return
 	}
 
-	// 从请求头获取创建者ID
-	creatorIDStr := c.GetHeader("X-User-ID")
-	if creatorIDStr == "" {
+	// 从 context 获取创建者ID
+	creatorID, exists := middleware.GetUserID(c)
+	if !exists {
 		c.JSON(http.StatusUnauthorized, gin.H{"error": "需要用户ID"})
-		return
-	}
-
-	creatorID, err := uuid.Parse(creatorIDStr)
-	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "用户ID格式无效"})
 		return
 	}
 
@@ -249,16 +263,10 @@ func (s *HTTPServer) getMessages(c *gin.Context) {
 		return
 	}
 
-	// 从请求头获取用户ID
-	userIDStr := c.GetHeader("X-User-ID")
-	if userIDStr == "" {
+	// 从 context 获取用户ID
+	userID, exists := middleware.GetUserID(c)
+	if !exists {
 		c.JSON(http.StatusUnauthorized, gin.H{"error": "需要用户ID"})
-		return
-	}
-
-	userID, err := uuid.Parse(userIDStr)
-	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "用户ID格式无效"})
 		return
 	}
 
@@ -305,16 +313,10 @@ func (s *HTTPServer) sendMessage(c *gin.Context) {
 		return
 	}
 
-	// 从请求头获取发送者ID
-	senderIDStr := c.GetHeader("X-User-ID")
-	if senderIDStr == "" {
+	// 从 context 获取发送者ID
+	senderID, exists := middleware.GetUserID(c)
+	if !exists {
 		c.JSON(http.StatusUnauthorized, gin.H{"error": "需要用户ID"})
-		return
-	}
-
-	senderID, err := uuid.Parse(senderIDStr)
-	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "用户ID格式无效"})
 		return
 	}
 
@@ -338,10 +340,311 @@ func (s *HTTPServer) sendMessage(c *gin.Context) {
 		return
 	}
 
-	// 通过 WebSocket 广播消息给会话中的所有客户端
+	// 通过 WebSocket 广播消息给订阅了该会话的客户端（在聊天室内的用户）
 	s.hub.BroadcastToConversation(convID, msg)
 
+	// 异步获取会话成员并发送通知（不阻塞 HTTP 响应）
+	go func() {
+		ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+		defer cancel()
+
+		memberIDs, err := s.chatService.GetConversationMemberIDs(ctx, convID)
+		if err != nil {
+			log.Printf("获取会话 %s 成员失败: %v", convID, err)
+			return
+		}
+
+		// 向除发送者外的所有成员发送会话更新通知
+		for _, memberID := range memberIDs {
+			if memberID != senderID {
+				// 获取该成员的真实未读数
+				unreadCount, err := s.chatService.GetUnreadCount(ctx, convID, memberID)
+				if err != nil {
+					log.Printf("获取用户 %s 在会话 %s 的未读数失败: %v", memberID, convID, err)
+					unreadCount = 1 // 降级为增量 1
+				}
+
+				s.hub.NotifyUser(memberID, "conversation_update", ws.ConversationUpdatePayload{
+					ConversationID: convID.String(),
+					LastMessage:    msg,
+					UnreadCount:    int(unreadCount),
+				})
+			}
+		}
+	}()
+
 	c.JSON(http.StatusCreated, msg)
+}
+
+// markAsRead 标记会话消息为已读
+// POST /api/v1/chat/conversations/:id/read
+// Requirements: 2.1, 3.1
+func (s *HTTPServer) markAsRead(c *gin.Context) {
+	convIDStr := c.Param("id")
+	convID, err := uuid.Parse(convIDStr)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "会话ID格式无效"})
+		return
+	}
+
+	// 从 context 获取用户ID
+	userID, exists := middleware.GetUserID(c)
+	if !exists {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "需要用户ID"})
+		return
+	}
+
+	receipt, err := s.chatService.MarkConversationAsRead(c.Request.Context(), convID, userID)
+	if err != nil {
+		if err == service.ErrNotMember {
+			c.JSON(http.StatusForbidden, gin.H{"error": "您不是该会话的成员"})
+			return
+		}
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	// 通过 WebSocket 推送已读回执给消息发送者
+	// 异步处理，不阻塞 HTTP 响应
+	if receipt != nil && len(receipt.MessageIDs) > 0 {
+		go func() {
+			ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+			defer cancel()
+
+			// 获取被标记消息的发送者ID列表（去重）
+			senderIDs := s.getMessageSenderIDs(ctx, receipt.MessageIDs)
+			for _, senderID := range senderIDs {
+				if senderID != userID && s.hub.IsUserOnline(senderID) {
+					s.hub.NotifyBatchReadReceipt(senderID, receipt)
+				}
+			}
+		}()
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"message":     "已标记为已读",
+		"marked_count": len(receipt.MessageIDs),
+	})
+}
+
+// markMessageAsRead 标记单条消息为已读
+// POST /api/v1/chat/messages/:id/read
+// Requirements: 2.5
+func (s *HTTPServer) markMessageAsRead(c *gin.Context) {
+	msgIDStr := c.Param("id")
+	msgID, err := uuid.Parse(msgIDStr)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "消息ID格式无效"})
+		return
+	}
+
+	// 从 context 获取用户ID
+	userID, exists := middleware.GetUserID(c)
+	if !exists {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "需要用户ID"})
+		return
+	}
+
+	receipt, err := s.chatService.MarkMessageAsRead(c.Request.Context(), msgID, userID)
+	if err != nil {
+		switch err {
+		case service.ErrNotMember:
+			c.JSON(http.StatusForbidden, gin.H{"error": "您不是该会话的成员"})
+		case service.ErrCannotMarkOwnMessage:
+			c.JSON(http.StatusBadRequest, gin.H{"error": "不能标记自己发送的消息为已读"})
+		case service.ErrAlreadyRead:
+			c.JSON(http.StatusOK, gin.H{"message": "消息已被标记为已读"})
+		case service.ErrMessageNotFound:
+			c.JSON(http.StatusNotFound, gin.H{"error": "消息不存在"})
+		default:
+			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		}
+		return
+	}
+
+	// 通过 WebSocket 推送已读回执给消息发送者
+	// 异步处理，不阻塞 HTTP 响应
+	if receipt != nil {
+		go func() {
+			ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+			defer cancel()
+
+			// 获取消息发送者ID
+			senderID := s.getMessageSenderID(ctx, receipt.MessageID)
+			if senderID != uuid.Nil && senderID != userID && s.hub.IsUserOnline(senderID) {
+				s.hub.NotifyReadReceipt(senderID, receipt)
+			}
+		}()
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"message":    "已标记为已读",
+		"read_at":    receipt.ReadAt,
+		"message_id": receipt.MessageID,
+	})
+}
+
+// markMessagesUpToAsRead 标记到指定消息为已读
+// POST /api/v1/chat/conversations/:id/read-up-to
+// Requirements: 2.6
+func (s *HTTPServer) markMessagesUpToAsRead(c *gin.Context) {
+	convIDStr := c.Param("id")
+	convID, err := uuid.Parse(convIDStr)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "会话ID格式无效"})
+		return
+	}
+
+	// 从 context 获取用户ID
+	userID, exists := middleware.GetUserID(c)
+	if !exists {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "需要用户ID"})
+		return
+	}
+
+	// 解析请求体获取目标消息ID
+	var req struct {
+		MessageID string `json:"message_id" binding:"required"`
+	}
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "请求参数无效: " + err.Error()})
+		return
+	}
+
+	upToMsgID, err := uuid.Parse(req.MessageID)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "消息ID格式无效"})
+		return
+	}
+
+	receipt, err := s.chatService.MarkMessagesUpToAsRead(c.Request.Context(), convID, userID, upToMsgID)
+	if err != nil {
+		if err == service.ErrNotMember {
+			c.JSON(http.StatusForbidden, gin.H{"error": "您不是该会话的成员"})
+			return
+		}
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	// 通过 WebSocket 推送已读回执给消息发送者
+	// 异步处理，不阻塞 HTTP 响应
+	if receipt != nil && len(receipt.MessageIDs) > 0 {
+		go func() {
+			ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+			defer cancel()
+
+			// 获取被标记消息的发送者ID列表（去重）
+			senderIDs := s.getMessageSenderIDs(ctx, receipt.MessageIDs)
+			for _, senderID := range senderIDs {
+				if senderID != userID && s.hub.IsUserOnline(senderID) {
+					s.hub.NotifyBatchReadReceipt(senderID, receipt)
+				}
+			}
+		}()
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"message":      "已标记为已读",
+		"marked_count": len(receipt.MessageIDs),
+		"up_to":        upToMsgID,
+	})
+}
+
+// getUnreadCounts 批量获取未读数
+// GET /api/v1/chat/unread-counts?conversation_ids=uuid1,uuid2,uuid3
+// Requirements: 6.1
+func (s *HTTPServer) getUnreadCounts(c *gin.Context) {
+	// 从 context 获取用户ID
+	userID, exists := middleware.GetUserID(c)
+	if !exists {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "需要用户ID"})
+		return
+	}
+
+	// 解析会话ID列表
+	convIDsStr := c.Query("conversation_ids")
+	if convIDsStr == "" {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "需要提供 conversation_ids 参数"})
+		return
+	}
+
+	// 分割并解析会话ID
+	convIDStrs := splitAndTrim(convIDsStr, ",")
+	conversationIDs := make([]uuid.UUID, 0, len(convIDStrs))
+	for _, idStr := range convIDStrs {
+		if idStr == "" {
+			continue
+		}
+		id, err := uuid.Parse(idStr)
+		if err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "会话ID格式无效: " + idStr})
+			return
+		}
+		conversationIDs = append(conversationIDs, id)
+	}
+
+	if len(conversationIDs) == 0 {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "需要至少一个有效的会话ID"})
+		return
+	}
+
+	counts, err := s.chatService.GetUnreadCounts(c.Request.Context(), userID, conversationIDs)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	// 转换为字符串键的 map（JSON 兼容）
+	result := make(map[string]int64, len(counts))
+	for convID, count := range counts {
+		result[convID.String()] = count
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"unread_counts": result,
+	})
+}
+
+// getMessageSenderID 获取单条消息的发送者ID
+func (s *HTTPServer) getMessageSenderID(ctx context.Context, messageID uuid.UUID) uuid.UUID {
+	// 通过 chatService 获取消息信息
+	// 这里简化处理，实际可以通过 repository 直接查询
+	msg, err := s.chatService.GetMessageByID(ctx, messageID)
+	if err != nil {
+		log.Printf("获取消息 %s 发送者失败: %v", messageID, err)
+		return uuid.Nil
+	}
+	return msg.SenderID
+}
+
+// getMessageSenderIDs 获取多条消息的发送者ID列表（去重）
+func (s *HTTPServer) getMessageSenderIDs(ctx context.Context, messageIDs []uuid.UUID) []uuid.UUID {
+	senderMap := make(map[uuid.UUID]bool)
+	for _, msgID := range messageIDs {
+		senderID := s.getMessageSenderID(ctx, msgID)
+		if senderID != uuid.Nil {
+			senderMap[senderID] = true
+		}
+	}
+
+	senders := make([]uuid.UUID, 0, len(senderMap))
+	for senderID := range senderMap {
+		senders = append(senders, senderID)
+	}
+	return senders
+}
+
+// splitAndTrim 分割字符串并去除空白
+func splitAndTrim(s string, sep string) []string {
+	parts := make([]string, 0)
+	for _, part := range strings.Split(s, sep) {
+		trimmed := strings.TrimSpace(part)
+		if trimmed != "" {
+			parts = append(parts, trimmed)
+		}
+	}
+	return parts
 }
 
 // addMember 添加会话成员
@@ -368,16 +671,10 @@ func (s *HTTPServer) addMember(c *gin.Context) {
 		return
 	}
 
-	// 从请求头获取添加者ID
-	adderIDStr := c.GetHeader("X-User-ID")
-	if adderIDStr == "" {
+	// 从 context 获取添加者ID
+	adderID, exists := middleware.GetUserID(c)
+	if !exists {
 		c.JSON(http.StatusUnauthorized, gin.H{"error": "需要用户ID"})
-		return
-	}
-
-	adderID, err := uuid.Parse(adderIDStr)
-	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "用户ID格式无效"})
 		return
 	}
 
@@ -413,16 +710,10 @@ func (s *HTTPServer) removeMember(c *gin.Context) {
 		return
 	}
 
-	// 从请求头获取移除者ID
-	removerIDStr := c.GetHeader("X-User-ID")
-	if removerIDStr == "" {
+	// 从 context 获取移除者ID
+	removerID, exists := middleware.GetUserID(c)
+	if !exists {
 		c.JSON(http.StatusUnauthorized, gin.H{"error": "需要用户ID"})
-		return
-	}
-
-	removerID, err := uuid.Parse(removerIDStr)
-	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "用户ID格式无效"})
 		return
 	}
 

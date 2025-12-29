@@ -18,7 +18,7 @@ class ApiClient {
         },
       ),
     );
-    // Separate Dio instance for token refresh to avoid interceptor loop
+    // 单独的 Dio 实例用于 token 刷新，避免拦截器循环
     _refreshDio = Dio(
       BaseOptions(
         baseUrl: AppConstants.apiBaseUrl,
@@ -65,11 +65,11 @@ class ApiClient {
           );
           if (error.response?.statusCode == 401 &&
               !error.requestOptions.path.contains('token/refresh')) {
-            // Avoid concurrent refresh attempts
+            // 避免并发刷新尝试
             if (_isRefreshing) {
               return handler.next(error);
             }
-            // Try to refresh token
+            // 尝试刷新 token
             final refreshed = await _refreshToken();
             if (refreshed) {
               // Retry the request
@@ -94,20 +94,20 @@ class ApiClient {
       final refreshToken = await _secureStorage.read(key: 'refresh_token');
       if (refreshToken == null) return false;
 
-      // Use separate Dio instance to avoid interceptor loop
+      // 使用单独的 Dio 实例避免拦截器循环
       final response = await _refreshDio.post(
         '/api/v1/auth/token/refresh/',
         data: {'refresh': refreshToken},
       );
 
       if (response.statusCode == 200) {
-        final newAccessToken = response.data['access'] as String;
+        final newAccessToken = (response.data as Map<String, dynamic>)['access'] as String;
         await _secureStorage.write(key: 'access_token', value: newAccessToken);
         return true;
       }
       return false;
     } catch (e) {
-      // Clear tokens on refresh failure to force re-login
+      // 刷新失败时清除 token，强制重新登录
       await _secureStorage.delete(key: 'access_token');
       await _secureStorage.delete(key: 'refresh_token');
       return false;

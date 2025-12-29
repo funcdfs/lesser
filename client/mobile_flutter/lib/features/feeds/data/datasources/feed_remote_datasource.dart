@@ -50,7 +50,8 @@ class FeedRemoteDataSourceImpl implements FeedRemoteDataSource {
       );
 
       if (response.statusCode == 200) {
-        final results = response.data['results'] as List<dynamic>;
+        final data = response.data as Map<String, dynamic>;
+        final results = data['results'] as List<dynamic>;
         return results
             .map((e) => FeedItemModel.fromJson(e as Map<String, dynamic>))
             .toList();
@@ -142,7 +143,8 @@ class FeedRemoteDataSourceImpl implements FeedRemoteDataSource {
       );
 
       if (response.statusCode == 200) {
-        final results = response.data['results'] as List<dynamic>;
+        final data = response.data as Map<String, dynamic>;
+        final results = data['results'] as List<dynamic>;
         return results
             .map((e) => CommentModel.fromJson(e as Map<String, dynamic>))
             .toList();

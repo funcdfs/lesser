@@ -1,46 +1,59 @@
 package middleware
 
 import (
+	"context"
 	"net/http"
+	"strings"
+	"time"
 
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
+	"github.com/lesser/chat/internal/service"
 )
 
-// AuthMiddleware validates the user authentication
-func AuthMiddleware() gin.HandlerFunc {
+// AuthMiddleware 使用 gRPC 调用 Django auth 服务验证 JWT token
+func AuthMiddleware(authClient *service.AuthClient) gin.HandlerFunc {
 	return func(c *gin.Context) {
-		// Get user ID from header
-		// In production, this would validate a JWT token
-		userIDStr := c.GetHeader("X-User-ID")
-		if userIDStr == "" {
-			// Also check Authorization header for Bearer token
-			authHeader := c.GetHeader("Authorization")
-			if authHeader == "" {
+		// 优先从 Authorization header 获取 Bearer token
+		authHeader := c.GetHeader("Authorization")
+		if authHeader != "" && strings.HasPrefix(authHeader, "Bearer ") {
+			token := strings.TrimPrefix(authHeader, "Bearer ")
+
+			// 通过 gRPC 调用 Django 验证 token
+			ctx, cancel := context.WithTimeout(c.Request.Context(), 5*time.Second)
+			defer cancel()
+
+			userID, err := authClient.ValidateToken(ctx, token)
+			if err != nil {
 				c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{
-					"error": "authentication required",
+					"error": "token 验证失败",
 				})
 				return
 			}
 
-			// In production, validate the JWT token here
-			// For now, we'll just continue without a user ID
+			c.Set("userID", userID)
 			c.Next()
 			return
 		}
 
-		// Validate user ID format
-		userID, err := uuid.Parse(userIDStr)
-		if err != nil {
-			c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{
-				"error": "invalid user ID format",
-			})
+		// 兼容旧的 X-User-ID header（仅用于开发/测试）
+		userIDStr := c.GetHeader("X-User-ID")
+		if userIDStr != "" {
+			userID, err := uuid.Parse(userIDStr)
+			if err != nil {
+				c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{
+					"error": "用户 ID 格式无效",
+				})
+				return
+			}
+			c.Set("userID", userID)
+			c.Next()
 			return
 		}
 
-		// Store user ID in context
-		c.Set("userID", userID)
-		c.Next()
+		c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{
+			"error": "需要认证",
+		})
 	}
 }
 
@@ -53,13 +66,27 @@ func GetUserID(c *gin.Context) (uuid.UUID, bool) {
 	return userID.(uuid.UUID), true
 }
 
-// OptionalAuthMiddleware allows requests without authentication
-func OptionalAuthMiddleware() gin.HandlerFunc {
+// OptionalAuthMiddleware 可选认证，支持 JWT 和 X-User-ID
+func OptionalAuthMiddleware(authClient *service.AuthClient) gin.HandlerFunc {
 	return func(c *gin.Context) {
-		userIDStr := c.GetHeader("X-User-ID")
-		if userIDStr != "" {
-			if userID, err := uuid.Parse(userIDStr); err == nil {
+		// 优先从 Authorization header 获取 Bearer token
+		authHeader := c.GetHeader("Authorization")
+		if authHeader != "" && strings.HasPrefix(authHeader, "Bearer ") {
+			token := strings.TrimPrefix(authHeader, "Bearer ")
+
+			ctx, cancel := context.WithTimeout(c.Request.Context(), 5*time.Second)
+			defer cancel()
+
+			if userID, err := authClient.ValidateToken(ctx, token); err == nil {
 				c.Set("userID", userID)
+			}
+		} else {
+			// 兼容旧的 X-User-ID header
+			userIDStr := c.GetHeader("X-User-ID")
+			if userIDStr != "" {
+				if userID, err := uuid.Parse(userIDStr); err == nil {
+					c.Set("userID", userID)
+				}
 			}
 		}
 		c.Next()

@@ -15,6 +15,7 @@ celery>=5.4
 # gRPC
 grpcio>=1.68
 grpcio-tools>=1.68
+grpcio-health-checking>=1.68
 protobuf>=5.28
 
 # Utils

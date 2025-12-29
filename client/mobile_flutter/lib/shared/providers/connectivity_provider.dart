@@ -7,19 +7,23 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 enum ConnectivityStatus { connected, disconnected, unknown }
 
 /// Connectivity notifier
-class ConnectivityNotifier extends StateNotifier<ConnectivityStatus> {
-  ConnectivityNotifier() : super(ConnectivityStatus.unknown) {
-    _init();
-  }
-
+class ConnectivityNotifier extends Notifier<ConnectivityStatus> {
   StreamSubscription<List<ConnectivityResult>>? _subscription;
 
-  void _init() {
+  @override
+  ConnectivityStatus build() {
     // Check initial connectivity
     Connectivity().checkConnectivity().then(_updateStatus);
 
     // Listen for changes
     _subscription = Connectivity().onConnectivityChanged.listen(_updateStatus);
+
+    // Cleanup on dispose
+    ref.onDispose(() {
+      _subscription?.cancel();
+    });
+
+    return ConnectivityStatus.unknown;
   }
 
   void _updateStatus(List<ConnectivityResult> results) {
@@ -29,19 +33,12 @@ class ConnectivityNotifier extends StateNotifier<ConnectivityStatus> {
       state = ConnectivityStatus.connected;
     }
   }
-
-  @override
-  void dispose() {
-    _subscription?.cancel();
-    super.dispose();
-  }
 }
 
 /// Connectivity provider
-final connectivityProvider =
-    StateNotifierProvider<ConnectivityNotifier, ConnectivityStatus>((ref) {
-  return ConnectivityNotifier();
-});
+final connectivityProvider = NotifierProvider<ConnectivityNotifier, ConnectivityStatus>(
+  ConnectivityNotifier.new,
+);
 
 /// Helper to check if connected
 extension ConnectivityStatusX on ConnectivityStatus {

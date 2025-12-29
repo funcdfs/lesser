@@ -1,5 +1,5 @@
 """
-User views.
+用户视图模块。
 """
 from django.shortcuts import get_object_or_404
 from rest_framework import generics, status
@@ -21,7 +21,7 @@ from .serializers import (
 
 
 class RegisterView(generics.CreateAPIView):
-    """User registration endpoint."""
+    """用户注册端点。"""
 
     queryset = User.objects.all()
     serializer_class = RegisterSerializer
@@ -36,7 +36,7 @@ class RegisterView(generics.CreateAPIView):
 
 
 class LoginView(APIView):
-    """User login endpoint."""
+    """用户登录端点。"""
 
     permission_classes = [AllowAny]
 
@@ -49,7 +49,7 @@ class LoginView(APIView):
 
 
 class LogoutView(APIView):
-    """User logout endpoint."""
+    """用户登出端点。"""
 
     permission_classes = [IsAuthenticated]
 
@@ -65,7 +65,7 @@ class LogoutView(APIView):
 
 
 class TokenRefreshAPIView(TokenRefreshView):
-    """Token refresh endpoint with better error handling."""
+    """Token 刷新端点，包含更好的错误处理。"""
 
     def post(self, request, *args, **kwargs):
         try:
@@ -78,7 +78,7 @@ class TokenRefreshAPIView(TokenRefreshView):
 
 
 class UserProfileView(generics.RetrieveUpdateAPIView):
-    """Current user profile endpoint."""
+    """当前用户个人资料端点。"""
 
     serializer_class = UserSerializer
     permission_classes = [IsAuthenticated]
@@ -87,11 +87,11 @@ class UserProfileView(generics.RetrieveUpdateAPIView):
         return self.request.user
 
     def retrieve(self, request, *args, **kwargs):
-        """Return profile format with user nested and stats."""
+        """返回包含用户信息和统计数据的个人资料格式。"""
         user = self.get_object()
         user_data = self.get_serializer(user).data
         
-        # Get follower/following counts
+        # 获取粉丝/关注数量
         followers_count = Follow.objects.filter(following=user).count()
         following_count = Follow.objects.filter(follower=user).count()
         
@@ -99,14 +99,14 @@ class UserProfileView(generics.RetrieveUpdateAPIView):
             'user': user_data,
             'followers_count': followers_count,
             'following_count': following_count,
-            'posts_count': 0,  # TODO: implement when posts are ready
+            'posts_count': 0,  # TODO: 帖子功能完成后实现
             'is_following': False,
             'is_followed_by': False,
         })
 
 
 class UserDetailView(generics.RetrieveAPIView):
-    """User detail by username."""
+    """根据用户名获取用户详情。"""
 
     queryset = User.objects.all()
     serializer_class = UserSerializer
@@ -115,16 +115,16 @@ class UserDetailView(generics.RetrieveAPIView):
 
 
 class UserDetailByIdView(generics.RetrieveAPIView):
-    """User detail by ID (for internal service communication)."""
+    """根据 ID 获取用户详情（用于内部服务通信）。"""
 
     queryset = User.objects.all()
     serializer_class = UserSerializer
-    permission_classes = [AllowAny]  # Internal service calls don't have auth
+    permission_classes = [AllowAny]  # 内部服务调用不需要认证
     lookup_field = 'id'
 
 
 class ChangePasswordView(APIView):
-    """Change password endpoint."""
+    """修改密码端点。"""
 
     permission_classes = [IsAuthenticated]
 
@@ -137,12 +137,12 @@ class ChangePasswordView(APIView):
 
 
 class FollowView(APIView):
-    """Follow/unfollow user endpoint."""
+    """关注/取消关注用户端点。"""
 
     permission_classes = [IsAuthenticated]
 
     def post(self, request, username):
-        """Follow a user."""
+        """关注用户。"""
         user_to_follow = get_object_or_404(User, username=username)
         if user_to_follow == request.user:
             return Response(
@@ -162,7 +162,7 @@ class FollowView(APIView):
         return Response({'detail': 'Successfully followed.'}, status=status.HTTP_201_CREATED)
 
     def delete(self, request, username):
-        """Unfollow a user."""
+        """取消关注用户。"""
         user_to_unfollow = get_object_or_404(User, username=username)
         deleted, _ = Follow.objects.filter(
             follower=request.user,
@@ -177,7 +177,7 @@ class FollowView(APIView):
 
 
 class FollowersListView(generics.ListAPIView):
-    """List user's followers."""
+    """获取用户的粉丝列表。"""
 
     serializer_class = FollowSerializer
     permission_classes = [IsAuthenticated]
@@ -189,7 +189,7 @@ class FollowersListView(generics.ListAPIView):
 
 
 class FollowingListView(generics.ListAPIView):
-    """List users that user is following."""
+    """获取用户的关注列表。"""
 
     serializer_class = FollowSerializer
     permission_classes = [IsAuthenticated]
@@ -201,10 +201,10 @@ class FollowingListView(generics.ListAPIView):
 
 
 class FriendsListView(generics.ListAPIView):
-    """List mutual followers (friends) of the current user.
+    """获取当前用户的互相关注好友列表。
     
-    Friends are defined as users who have a mutual follow relationship:
-    - Current user follows them AND they follow current user.
+    好友定义为互相关注的用户：
+    - 当前用户关注了对方，且对方也关注了当前用户。
     """
 
     serializer_class = UserSerializer
@@ -212,16 +212,16 @@ class FriendsListView(generics.ListAPIView):
 
     def get_queryset(self):
         user = self.request.user
-        # Get users that current user is following
+        # 获取当前用户关注的用户
         following_ids = Follow.objects.filter(
             follower=user
         ).values_list('following_id', flat=True)
         
-        # Get users that are following current user
+        # 获取关注当前用户的用户
         followers_ids = Follow.objects.filter(
             following=user
         ).values_list('follower_id', flat=True)
         
-        # Intersection = mutual follows = friends
+        # 交集 = 互相关注 = 好友
         friend_ids = set(following_ids) & set(followers_ids)
         return User.objects.filter(id__in=friend_ids).order_by('username')

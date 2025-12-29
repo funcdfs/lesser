@@ -45,6 +45,9 @@ abstract class ChatRemoteDataSource {
     required String content,
     MessageType messageType = MessageType.text,
   });
+
+  /// 标记会话消息为已读
+  Future<void> markAsRead(String conversationId);
 }
 
 /// 聊天远程数据源实现
@@ -85,7 +88,8 @@ class ChatRemoteDataSourceImpl implements ChatRemoteDataSource {
       );
 
       if (response.statusCode == 200) {
-        final conversations = response.data['conversations'] as List<dynamic>?;
+        final data = response.data as Map<String, dynamic>;
+        final conversations = data['conversations'] as List<dynamic>?;
         if (conversations == null) return [];
         return conversations
             .map((e) => ConversationModel.fromJson(e as Map<String, dynamic>))
@@ -159,7 +163,8 @@ class ChatRemoteDataSourceImpl implements ChatRemoteDataSource {
       );
 
       if (response.statusCode == 200) {
-        final messages = response.data['messages'] as List<dynamic>?;
+        final data = response.data as Map<String, dynamic>;
+        final messages = data['messages'] as List<dynamic>?;
         if (messages == null) return [];
         return messages
             .map((e) => MessageModel.fromJson(e as Map<String, dynamic>))
@@ -191,6 +196,22 @@ class ChatRemoteDataSourceImpl implements ChatRemoteDataSource {
         return MessageModel.fromJson(response.data as Map<String, dynamic>);
       }
       throw ServerException(statusCode: response.statusCode);
+    } on DioException catch (e) {
+      throw _handleDioError(e);
+    }
+  }
+
+  @override
+  Future<void> markAsRead(String conversationId) async {
+    try {
+      final response = await _apiClient.post(
+        ApiEndpoints.markAsRead(conversationId),
+        options: _getOptionsWithUserId(),
+      );
+
+      if (response.statusCode != 200) {
+        throw ServerException(statusCode: response.statusCode);
+      }
     } on DioException catch (e) {
       throw _handleDioError(e);
     }
@@ -238,8 +259,9 @@ class ChatRemoteDataSourceImpl implements ChatRemoteDataSource {
         return const NetworkException();
       case DioExceptionType.badResponse:
         final statusCode = e.response?.statusCode;
-        final message = e.response?.data?['error']?.toString() ?? 
-                        e.response?.data?['message']?.toString() ??
+        final responseData = e.response?.data as Map<String, dynamic>?;
+        final message = responseData?['error']?.toString() ?? 
+                        responseData?['message']?.toString() ??
                         '服务器错误: $statusCode';
         if (statusCode == 401) {
           return UnauthorizedException(message: message);

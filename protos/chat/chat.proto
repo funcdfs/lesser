@@ -1,34 +1,40 @@
 syntax = "proto3";
 package chat;
 
-option go_package = "generated/protos/chat";
+option go_package = "github.com/lesser/chat/generated/protos/chat";
 
 import "common/common.proto";
 
-// ChatService handles real-time messaging
+// 聊天服务 - 处理实时消息
 service ChatService {
-  // Get all conversations for a user
+  // 获取用户的所有会话
   rpc GetConversations(GetConversationsRequest) returns (ConversationsResponse);
-  // Get a single conversation by ID
+  // 根据ID获取单个会话
   rpc GetConversation(GetConversationRequest) returns (Conversation);
-  // Create a new conversation
+  // 创建新会话
   rpc CreateConversation(CreateConversationRequest) returns (Conversation);
-  // Get messages in a conversation
+  // 获取会话中的消息
   rpc GetMessages(GetMessagesRequest) returns (MessagesResponse);
-  // Send a message to a conversation
+  // 发送消息到会话
   rpc SendMessage(SendMessageRequest) returns (Message);
-  // Stream messages in real-time
+  // 实时消息流
   rpc StreamMessages(StreamRequest) returns (stream Message);
+  // 标记单条消息为已读
+  rpc MarkAsRead(MarkAsReadRequest) returns (ReadReceipt);
+  // 标记会话中所有消息为已读
+  rpc MarkConversationAsRead(MarkConversationAsReadRequest) returns (BatchReadReceipt);
+  // 批量获取多个会话的未读数
+  rpc GetUnreadCounts(GetUnreadCountsRequest) returns (GetUnreadCountsResponse);
 }
 
-// ConversationType enum for different chat types
+// 会话类型枚举
 enum ConversationType {
-  PRIVATE = 0;  // 1:1 private chat
-  GROUP = 1;    // Group chat with multiple users
-  CHANNEL = 2;  // Broadcast channel
+  PRIVATE = 0;  // 一对一私聊
+  GROUP = 1;    // 多人群聊
+  CHANNEL = 2;  // 广播频道
 }
 
-// Conversation represents a chat conversation
+// 会话实体
 message Conversation {
   string id = 1;
   ConversationType type = 2;
@@ -39,7 +45,7 @@ message Conversation {
   Message last_message = 7;
 }
 
-// Message represents a chat message
+// 消息实体
 message Message {
   string id = 1;
   string conversation_id = 2;
@@ -47,26 +53,43 @@ message Message {
   string content = 4;
   string message_type = 5;  // text, image, file
   common.Timestamp created_at = 6;
+  common.Timestamp read_at = 7;  // 已读时间戳，null 表示未读
 }
 
-// GetConversationsRequest for fetching user conversations
+// 单条消息已读回执
+message ReadReceipt {
+  string message_id = 1;
+  string conversation_id = 2;
+  string reader_id = 3;
+  common.Timestamp read_at = 4;
+}
+
+// 批量已读回执
+message BatchReadReceipt {
+  string conversation_id = 1;
+  string reader_id = 2;
+  repeated string message_ids = 3;
+  common.Timestamp read_at = 4;
+}
+
+// 获取用户会话请求
 message GetConversationsRequest {
   string user_id = 1;
   common.Pagination pagination = 2;
 }
 
-// ConversationsResponse with list of conversations
+// 会话列表响应
 message ConversationsResponse {
   repeated Conversation conversations = 1;
   common.Pagination pagination = 2;
 }
 
-// GetConversationRequest for fetching a single conversation
+// 获取单个会话请求
 message GetConversationRequest {
   string conversation_id = 1;
 }
 
-// CreateConversationRequest for creating a new conversation
+// 创建会话请求
 message CreateConversationRequest {
   ConversationType type = 1;
   string name = 2;
@@ -74,19 +97,19 @@ message CreateConversationRequest {
   string creator_id = 4;
 }
 
-// GetMessagesRequest for fetching messages in a conversation
+// 获取消息请求
 message GetMessagesRequest {
   string conversation_id = 1;
   common.Pagination pagination = 2;
 }
 
-// MessagesResponse with list of messages
+// 消息列表响应
 message MessagesResponse {
   repeated Message messages = 1;
   common.Pagination pagination = 2;
 }
 
-// SendMessageRequest for sending a new message
+// 发送消息请求
 message SendMessageRequest {
   string conversation_id = 1;
   string sender_id = 2;
@@ -94,7 +117,46 @@ message SendMessageRequest {
   string message_type = 4;
 }
 
-// StreamRequest for real-time message streaming
+// 实时消息流请求
 message StreamRequest {
   string user_id = 1;
+}
+
+// 标记单条消息已读请求
+message MarkAsReadRequest {
+  string message_id = 1;
+  string user_id = 2;
+}
+
+// 标记会话所有消息已读请求
+message MarkConversationAsReadRequest {
+  string conversation_id = 1;
+  string user_id = 2;
+}
+
+// 批量获取未读数请求
+message GetUnreadCountsRequest {
+  string user_id = 1;
+  repeated string conversation_ids = 2;
+}
+
+// 单个会话的未读数
+message UnreadCount {
+  string conversation_id = 1;
+  int64 count = 2;
+}
+
+// 批量获取未读数响应
+message GetUnreadCountsResponse {
+  repeated UnreadCount unread_counts = 1;
+}
+
+// WebSocket 已读回执推送通知
+message ReadReceiptNotification {
+  string type = 1;  // "read_receipt" 单条, "read_receipt_batch" 批量
+  string message_id = 2;  // 单条已读时使用
+  string conversation_id = 3;
+  string reader_id = 4;
+  common.Timestamp read_at = 5;
+  repeated string message_ids = 6;  // 批量已读时使用
 }

@@ -34,6 +34,8 @@ class AuthInterceptor(grpc.ServerInterceptor):
     PUBLIC_METHODS = [
         '/auth.AuthService/Login',
         '/auth.AuthService/Register',
+        '/auth.AuthService/ValidateToken',  # 内部服务调用，用于验证 token
+        '/auth.AuthService/RefreshToken',   # 刷新 token 不需要认证
         '/grpc.health.v1.Health/Check',
     ]
 

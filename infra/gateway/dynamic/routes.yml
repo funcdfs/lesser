@@ -79,9 +79,41 @@ http:
         - web
 
     # gRPC-Web Routes (for browser clients)
-    grpc-web:
-      rule: "PathPrefix(`/grpc`)"
+    grpc-web-auth:
+      rule: "PathPrefix(`/grpc/auth.`)"
       service: django-grpc
+      entryPoints:
+        - web
+      middlewares:
+        - grpc-web-headers
+
+    grpc-web-feed:
+      rule: "PathPrefix(`/grpc/feed.`)"
+      service: django-grpc
+      entryPoints:
+        - web
+      middlewares:
+        - grpc-web-headers
+
+    grpc-web-post:
+      rule: "PathPrefix(`/grpc/post.`)"
+      service: django-grpc
+      entryPoints:
+        - web
+      middlewares:
+        - grpc-web-headers
+
+    grpc-web-notification:
+      rule: "PathPrefix(`/grpc/notification.`)"
+      service: django-grpc
+      entryPoints:
+        - web
+      middlewares:
+        - grpc-web-headers
+
+    grpc-web-chat:
+      rule: "PathPrefix(`/grpc/chat.`)"
+      service: chat-grpc
       entryPoints:
         - web
       middlewares:
@@ -130,8 +162,8 @@ http:
           - url: "http://django:8000"
         healthCheck:
           path: /api/v1/health/
-          interval: "10s"
-          timeout: "3s"
+          interval: "30s"
+          timeout: "5s"
 
     django-grpc:
       loadBalancer:
@@ -144,8 +176,8 @@ http:
           - url: "http://chat:8080"
         healthCheck:
           path: /health
-          interval: "10s"
-          timeout: "3s"
+          interval: "30s"
+          timeout: "5s"
 
     chat-grpc:
       loadBalancer:

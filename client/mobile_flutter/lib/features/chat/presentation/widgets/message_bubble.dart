@@ -60,7 +60,7 @@ class MessageBubble extends StatelessWidget {
                       style: TextStyle(
                         fontSize: 11,
                         color: isMe
-                            ? Colors.white.withOpacity(0.7)
+                            ? Colors.white.withValues(alpha: 0.7)
                             : (isDark ? AppColors.textSecondaryDark : AppColors.textSecondaryLight),
                       ),
                     ),
@@ -69,7 +69,7 @@ class MessageBubble extends StatelessWidget {
                       Icon(
                         message.isRead ? Icons.done_all : Icons.done,
                         size: 14,
-                        color: Colors.white.withOpacity(0.7),
+                        color: Colors.white.withValues(alpha: 0.7),
                       ),
                     ],
                   ],

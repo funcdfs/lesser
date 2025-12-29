@@ -1,13 +1,12 @@
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
-// ignore: avoid_web_libraries_in_flutter
-import 'dart:html' as html;
+import 'package:web/web.dart' as web;
 
-/// Web session storage wrapper that uses sessionStorage
-/// instead of localStorage, allowing each browser tab to have
-/// independent authentication sessions.
+/// Web 会话存储包装器
+/// 使用 sessionStorage 代替 localStorage，
+/// 允许每个浏览器标签页拥有独立的认证会话。
 /// 
-/// This extends FlutterSecureStorage and overrides its methods
-/// to use sessionStorage on web platform.
+/// 此类继承 FlutterSecureStorage 并重写其方法，
+/// 在 Web 平台上使用 sessionStorage。
 class WebSessionStorage extends FlutterSecureStorage {
   const WebSessionStorage() : super();
 
@@ -15,73 +14,76 @@ class WebSessionStorage extends FlutterSecureStorage {
   Future<void> write({
     required String key,
     required String? value,
-    IOSOptions? iOptions,
+    AppleOptions? iOptions,
     AndroidOptions? aOptions,
     LinuxOptions? lOptions,
     WebOptions? webOptions,
-    MacOsOptions? mOptions,
+    AppleOptions? mOptions,
     WindowsOptions? wOptions,
   }) async {
     if (value == null) {
-      html.window.sessionStorage.remove(key);
+      web.window.sessionStorage.removeItem(key);
     } else {
-      html.window.sessionStorage[key] = value;
+      web.window.sessionStorage.setItem(key, value);
     }
   }
 
   @override
   Future<String?> read({
     required String key,
-    IOSOptions? iOptions,
+    AppleOptions? iOptions,
     AndroidOptions? aOptions,
     LinuxOptions? lOptions,
     WebOptions? webOptions,
-    MacOsOptions? mOptions,
+    AppleOptions? mOptions,
     WindowsOptions? wOptions,
   }) async {
-    return html.window.sessionStorage[key];
+    return web.window.sessionStorage.getItem(key);
   }
 
   @override
   Future<void> delete({
     required String key,
-    IOSOptions? iOptions,
+    AppleOptions? iOptions,
     AndroidOptions? aOptions,
     LinuxOptions? lOptions,
     WebOptions? webOptions,
-    MacOsOptions? mOptions,
+    AppleOptions? mOptions,
     WindowsOptions? wOptions,
   }) async {
-    html.window.sessionStorage.remove(key);
+    web.window.sessionStorage.removeItem(key);
   }
 
   @override
   Future<void> deleteAll({
-    IOSOptions? iOptions,
+    AppleOptions? iOptions,
     AndroidOptions? aOptions,
     LinuxOptions? lOptions,
     WebOptions? webOptions,
-    MacOsOptions? mOptions,
+    AppleOptions? mOptions,
     WindowsOptions? wOptions,
   }) async {
-    html.window.sessionStorage.clear();
+    web.window.sessionStorage.clear();
   }
 
   @override
   Future<Map<String, String>> readAll({
-    IOSOptions? iOptions,
+    AppleOptions? iOptions,
     AndroidOptions? aOptions,
     LinuxOptions? lOptions,
     WebOptions? webOptions,
-    MacOsOptions? mOptions,
+    AppleOptions? mOptions,
     WindowsOptions? wOptions,
   }) async {
     final result = <String, String>{};
-    for (var i = 0; i < html.window.sessionStorage.length; i++) {
-      final key = html.window.sessionStorage.keys.elementAt(i);
-      final value = html.window.sessionStorage[key];
-      if (value != null) {
-        result[key] = value;
+    final storage = web.window.sessionStorage;
+    for (var i = 0; i < storage.length; i++) {
+      final key = storage.key(i);
+      if (key != null) {
+        final value = storage.getItem(key);
+        if (value != null) {
+          result[key] = value;
+        }
       }
     }
     return result;
@@ -90,13 +92,13 @@ class WebSessionStorage extends FlutterSecureStorage {
   @override
   Future<bool> containsKey({
     required String key,
-    IOSOptions? iOptions,
+    AppleOptions? iOptions,
     AndroidOptions? aOptions,
     LinuxOptions? lOptions,
     WebOptions? webOptions,
-    MacOsOptions? mOptions,
+    AppleOptions? mOptions,
     WindowsOptions? wOptions,
   }) async {
-    return html.window.sessionStorage.containsKey(key);
+    return web.window.sessionStorage.getItem(key) != null;
   }
 }
