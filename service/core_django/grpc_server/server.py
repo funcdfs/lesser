@@ -21,7 +21,7 @@ from .interceptors import LoggingInterceptor, AuthInterceptor
 logger = logging.getLogger(__name__)
 
 
-def create_server(port: int = None, max_workers: int = 10) -> grpc.Server:
+def create_server(port: int = None, max_workers: int = 50) -> grpc.Server:
     """Create and configure gRPC server."""
     if port is None:
         port = getattr(settings, 'GRPC_PORT', 50051)

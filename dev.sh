@@ -1077,35 +1077,37 @@ update_all() {
     check_docker || exit 1
     check_env || exit 1
     
-    # 1. 重启服务（触发热更新）
-    log_step "重启服务（应用代码更新）..."
-    docker compose -f "$COMPOSE_FILE" --env-file "$ENV_FILE" restart django chat celery-worker celery-beat
+    # 1. 生成 Proto 代码（强制全量更新，确保各端同步）
+    log_step "重新生成 Proto 代码（全量同步）..."
+    if [ -f "$PROTO_SCRIPT" ]; then
+        if ! bash "$PROTO_SCRIPT" all; then
+            log_error "Proto 生成失败！请检查 protoc 及相关插件是否安装"
+            log_info "运行 ./scripts/proto/generate.sh check 检查依赖"
+            exit 1
+        fi
+        log_success "Proto 代码已同步到所有端"
+    else
+        log_warn "Proto 生成脚本不存在: $PROTO_SCRIPT"
+    fi
+    
+    # 2. 重新构建服务（确保 proto 更新生效）
+    log_step "重新构建服务镜像..."
+    docker compose -f "$COMPOSE_FILE" build django chat
+    
+    # 3. 重启服务
+    log_step "重启服务..."
+    docker compose -f "$COMPOSE_FILE" --env-file "$ENV_FILE" up -d django chat celery-worker celery-beat
     
     # 等待服务启动
     log_info "等待服务启动..."
     sleep 8
     
-    # 2. 执行 Django 数据库迁移
+    # 4. 执行 Django 数据库迁移
     log_step "执行 Django 数据库迁移..."
     docker compose -f "$COMPOSE_FILE" exec -T django python manage.py migrate --noinput
     
-    # 3. 执行 SQL 迁移（Chat 服务等）
+    # 5. 执行 SQL 迁移（Chat 服务等）
     run_sql_migrations
-    
-    # 4. 生成 Proto 代码（静默模式，仅显示错误）
-    log_step "重新生成 Proto 代码..."
-    if [ -f "$PROTO_SCRIPT" ]; then
-        # 捕获输出，仅在有错误时显示
-        local proto_output
-        proto_output=$(bash "$PROTO_SCRIPT" all 2>&1) || {
-            echo "$proto_output"
-            log_error "Proto 生成失败"
-            exit 1
-        }
-    else
-        log_error "Proto 生成脚本不存在: $PROTO_SCRIPT"
-        exit 1
-    fi
     
     log_success "更新完成！"
     echo ""

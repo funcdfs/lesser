@@ -36,9 +36,12 @@ func NewPostgres(databaseURL string) (*gorm.DB, error) {
 	}
 
 	// Configure connection pool
+	// 注意: PostgreSQL 默认 max_connections=100，需要合理分配给各服务
+	// Go Chat 服务: 25, Django: 50, 预留: 25
 	sqlDB.SetMaxIdleConns(10)
-	sqlDB.SetMaxOpenConns(100)
+	sqlDB.SetMaxOpenConns(25)
 	sqlDB.SetConnMaxLifetime(time.Hour)
+	sqlDB.SetConnMaxIdleTime(5 * time.Minute) // 空闲连接 5 分钟后回收
 
 	// Test connection
 	if err := sqlDB.Ping(); err != nil {

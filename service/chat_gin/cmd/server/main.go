@@ -11,7 +11,6 @@ import (
 	"time"
 
 	"github.com/lesser/chat/internal/config"
-	grpchandler "github.com/lesser/chat/internal/handler/grpc"
 	"github.com/lesser/chat/internal/handler/ws"
 	"github.com/lesser/chat/internal/model"
 	"github.com/lesser/chat/internal/repository"
@@ -19,7 +18,6 @@ import (
 	"github.com/lesser/chat/internal/service"
 	"github.com/lesser/chat/pkg/cache"
 	"github.com/lesser/chat/pkg/database"
-	"google.golang.org/grpc"
 )
 
 func main() {
@@ -84,10 +82,8 @@ func main() {
 	// 初始化 HTTP 服务器
 	httpServer := server.NewHTTPServer(cfg, chatService, authClient, hub)
 
-	// 初始化 gRPC 服务器
-	grpcServer := grpc.NewServer()
-	chatGRPCHandler := grpchandler.NewChatHandler(chatService)
-	chatGRPCHandler.Register(grpcServer)
+	// 初始化 gRPC 服务器（带认证拦截器）
+	grpcServer := server.NewGRPCServer(chatService, authClient)
 
 	// 启动 gRPC 服务器
 	grpcListener, err := net.Listen("tcp", ":"+cfg.GRPCPort)

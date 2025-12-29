@@ -18,7 +18,7 @@ type GRPCServer struct {
 }
 
 // NewGRPCServer creates a new gRPC server
-func NewGRPCServer(chatService *service.ChatService) *GRPCServer {
+func NewGRPCServer(chatService *service.ChatService, authClient *service.AuthClient) *GRPCServer {
 	// Keepalive 配置
 	keepalivePolicy := keepalive.EnforcementPolicy{
 		MinTime:             10 * time.Second, // 客户端 ping 最小间隔
@@ -34,13 +34,17 @@ func NewGRPCServer(chatService *service.ChatService) *GRPCServer {
 	}
 
 	// Create gRPC server with options
+	// 使用 ChainUnaryInterceptor 链式调用多个拦截器
 	server := grpc.NewServer(
 		grpc.KeepaliveEnforcementPolicy(keepalivePolicy),
 		grpc.KeepaliveParams(keepaliveParams),
 		grpc.MaxRecvMsgSize(4*1024*1024),  // 4MB 最大接收消息
 		grpc.MaxSendMsgSize(4*1024*1024),  // 4MB 最大发送消息
 		grpc.MaxConcurrentStreams(100),    // 最大并发流
-		grpc.UnaryInterceptor(unaryServerInterceptor()),
+		grpc.ChainUnaryInterceptor(
+			authUnaryInterceptor(authClient), // 认证拦截器
+			unaryServerInterceptor(),         // 日志拦截器
+		),
 		grpc.StreamInterceptor(streamServerInterceptor()),
 	)
 

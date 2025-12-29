@@ -226,6 +226,20 @@ services:
       retries: 3
       start_period: 30s
 
+  # ==========================================================================
+  # Dozzle - Docker Log Viewer
+  # ==========================================================================
+  dozzle:
+    image: amir20/dozzle:latest
+    container_name: dozzle
+    restart: unless-stopped
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+    ports:
+      - "${DOZZLE_PORT:-9999}:8080"
+    networks:
+      - app-network
+
 # ============================================================================
 # Networks
 # ============================================================================

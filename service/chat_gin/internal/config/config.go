@@ -3,28 +3,29 @@ package config
 import (
 	"errors"
 	"os"
+	"strings"
 )
 
-// Config holds all configuration for the chat service
+// Config 服务配置
 type Config struct {
-	// Server ports
+	// 服务端口
 	HTTPPort string
 	GRPCPort string
 
-	// Database
+	// 数据库
 	DatabaseURL string
 
 	// Redis
 	RedisURL string
 
-	// Auth service
+	// Auth gRPC 服务地址
 	AuthGRPCAddr string
 
-	// Environment
+	// 环境
 	Environment string
 }
 
-// Load loads configuration from environment variables
+// Load 从环境变量加载配置
 func Load() (*Config, error) {
 	cfg := &Config{
 		HTTPPort:     getEnv("HTTP_PORT", "8080"),
@@ -35,7 +36,7 @@ func Load() (*Config, error) {
 		Environment:  getEnv("ENVIRONMENT", "development"),
 	}
 
-	// Validate required configuration
+	// 验证必填配置
 	if err := cfg.validate(); err != nil {
 		return nil, err
 	}
@@ -43,7 +44,7 @@ func Load() (*Config, error) {
 	return cfg, nil
 }
 
-// validate checks that all required configuration is present
+// validate 检查必填配置
 func (c *Config) validate() error {
 	var missing []string
 
@@ -52,38 +53,29 @@ func (c *Config) validate() error {
 	}
 
 	if len(missing) > 0 {
-		return errors.New("missing required environment variables: " + joinStrings(missing, ", "))
+		log.Println("missing required environment variables: " + strings.Join(missing, ", "))
+		return errors.New("missing required environment variables: " + strings.Join(missing, ", "))
 	}
 
 	return nil
 }
 
-// IsDevelopment returns true if running in development mode
+// IsDevelopment 判断是否开发环境
 func (c *Config) IsDevelopment() bool {
 	return c.Environment == "development"
 }
 
-// IsProduction returns true if running in production mode
+// IsProduction 判断是否生产环境
 func (c *Config) IsProduction() bool {
 	return c.Environment == "production"
 }
 
-// getEnv gets an environment variable with a default value
-func getEnv(key, defaultValue string) string {
+// getEnv 获取环境变量，如果不存在则报错
+func getEnv(key, defaultValue string) string, error) {
 	if value := os.Getenv(key); value != "" {
 		return value
 	}
-	return defaultValue
-}
-
-// joinStrings joins strings with a separator
-func joinStrings(strs []string, sep string) string {
-	if len(strs) == 0 {
-		return ""
-	}
-	result := strs[0]
-	for i := 1; i < len(strs); i++ {
-		result += sep + strs[i]
-	}
-	return result
+	log.Println("missing required environment variable: " + key)
+	err := errors.New("missing required environment variable: " + key)
+	return defaultValue, err
 }

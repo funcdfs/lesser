@@ -68,13 +68,13 @@ http:
     # WebSocket Routes
     chat-websocket:
       rule: "PathPrefix(`/ws/chat`)"
-      service: chat-go
+      service: chat-ws
       entryPoints:
         - web
 
     notifications-websocket:
       rule: "PathPrefix(`/ws/notifications`)"
-      service: django
+      service: django-ws
       entryPoints:
         - web
 
@@ -165,6 +165,13 @@ http:
           interval: "30s"
           timeout: "5s"
 
+    # Django WebSocket 服务（长连接优化）
+    django-ws:
+      loadBalancer:
+        servers:
+          - url: "http://django:8000"
+        serversTransport: websocket-transport
+
     django-grpc:
       loadBalancer:
         servers:
@@ -179,10 +186,28 @@ http:
           interval: "30s"
           timeout: "5s"
 
+    # Chat WebSocket 服务（长连接优化）
+    chat-ws:
+      loadBalancer:
+        servers:
+          - url: "http://chat:8080"
+        serversTransport: websocket-transport
+
     chat-grpc:
       loadBalancer:
         servers:
           - url: "h2c://chat:50052"
+
+  # ============================================================================
+  # Servers Transports (连接配置)
+  # ============================================================================
+  serversTransports:
+    # WebSocket 专用传输配置，优化长连接
+    websocket-transport:
+      forwardingTimeouts:
+        dialTimeout: "30s"
+        responseHeaderTimeout: "0s"    # 禁用响应头超时（WebSocket 需要）
+        idleConnTimeout: "300s"        # 5 分钟空闲超时
 
   # ============================================================================
   # Middlewares

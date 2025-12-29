@@ -6,6 +6,7 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/lesser/chat/internal/model"
+	grpcserver "github.com/lesser/chat/internal/server"
 	"github.com/lesser/chat/internal/service"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
@@ -15,7 +16,6 @@ import (
 // ChatHandler gRPC 聊天服务处理器
 type ChatHandler struct {
 	chatService *service.ChatService
-	UnimplementedChatServiceServer
 }
 
 // NewChatHandler 创建新的 gRPC 聊天处理器
@@ -49,7 +49,7 @@ func (h *ChatHandler) GetConversations(ctx context.Context, req *GetConversation
 	if pageSize < 1 {
 		pageSize = 20
 	}
-
+   // 分页就是把“大餐”切成“小块”（比如每页20条），让服务器和客户端都能“吃得消”。
 	result, err := h.chatService.GetUserConversations(ctx, userID, page, pageSize)
 	if err != nil {
 		return nil, status.Error(codes.Internal, err.Error())
@@ -92,32 +92,33 @@ func (h *ChatHandler) GetConversation(ctx context.Context, req *GetConversationR
 // CreateConversation 创建新会话
 func (h *ChatHandler) CreateConversation(ctx context.Context, req *CreateConversationRequest) (*Conversation, error) {
 	if req.CreatorId == "" {
-		return nil, status.Error(codes.InvalidArgument, "创建者ID不能为空")
+		return nil, status.Error(codes.InvalidArgument, "创建者用户 ID 不能为空")
 	}
 	if len(req.MemberIds) == 0 {
-		return nil, status.Error(codes.InvalidArgument, "成员ID列表不能为空")
+		return nil, status.Error(codes.InvalidArgument, "成员用户 ID 列表不能为空")
 	}
 
 	creatorID, err := uuid.Parse(req.CreatorId)
 	if err != nil {
-		return nil, status.Error(codes.InvalidArgument, "创建者ID格式无效")
+		return nil, status.Error(codes.InvalidArgument, "创建者用户 ID 格式无效")
 	}
 
 	memberIDs := make([]uuid.UUID, len(req.MemberIds))
 	for i, idStr := range req.MemberIds {
 		id, err := uuid.Parse(idStr)
 		if err != nil {
-			return nil, status.Errorf(codes.InvalidArgument, "成员ID格式无效: %s", idStr)
+			return nil, status.Errorf(codes.InvalidArgument, "成员用户 ID 格式无效: %s", idStr)
 		}
 		memberIDs[i] = id
 	}
 
 	convType := protoToModelConversationType(req.Type)
 
+	// 构造服务层请求对象 service.CreateConversationRequest
 	conv, err := h.chatService.CreateConversation(ctx, service.CreateConversationRequest{
 		Type:      convType,
 		Name:      req.Name,
-		MemberIDs: memberIDs,
+		MemberIDs: memberIDs,   
 		CreatorID: creatorID,
 	})
 	if err != nil {
@@ -130,16 +131,18 @@ func (h *ChatHandler) CreateConversation(ctx context.Context, req *CreateConvers
 // GetMessages 获取会话的消息列表
 func (h *ChatHandler) GetMessages(ctx context.Context, req *GetMessagesRequest) (*MessagesResponse, error) {
 	if req.ConversationId == "" {
-		return nil, status.Error(codes.InvalidArgument, "会话ID不能为空")
+		return nil, status.Error(codes.InvalidArgument, "会话 ID 不能为空")
 	}
 
 	convID, err := uuid.Parse(req.ConversationId)
 	if err != nil {
-		return nil, status.Error(codes.InvalidArgument, "会话ID格式无效")
+		return nil, status.Error(codes.InvalidArgument, "会话 ID 格式无效")
 	}
 
-	// 注意：生产环境中应从认证上下文获取用户ID
-	// 目前 gRPC 内部调用跳过成员检查
+	// 从认证上下文获取用户 ID
+	// 如果未认证（内部 gRPC 调用），使用 uuid.Nil 跳过成员检查
+	userID, _ := grpcserver.GetUserIDFromContext(ctx)
+
 	page := int(req.Pagination.GetPage())
 	if page < 1 {
 		page = 1
@@ -149,9 +152,7 @@ func (h *ChatHandler) GetMessages(ctx context.Context, req *GetMessagesRequest) 
 		pageSize = 50
 	}
 
-	// 使用空用户ID表示内部 gRPC 调用
-	// 生产环境中应从认证上下文获取
-	result, err := h.chatService.GetMessages(ctx, convID, uuid.Nil, page, pageSize)
+	result, err := h.chatService.GetMessages(ctx, convID, userID, page, pageSize)
 	if err != nil {
 		if err == service.ErrNotMember {
 			return nil, status.Error(codes.PermissionDenied, "您不是该会话的成员")
