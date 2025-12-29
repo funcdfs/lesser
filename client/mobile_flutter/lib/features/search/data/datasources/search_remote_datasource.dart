@@ -53,7 +53,8 @@ class SearchRemoteDataSourceImpl implements SearchRemoteDataSource {
       );
 
       if (response.statusCode == 200) {
-        final results = response.data['results'] as List<dynamic>;
+        final data = response.data as Map<String, dynamic>;
+        final results = data['results'] as List<dynamic>;
         return results
             .map((e) => FeedItemModel.fromJson(e as Map<String, dynamic>))
             .toList();
@@ -81,7 +82,8 @@ class SearchRemoteDataSourceImpl implements SearchRemoteDataSource {
       );
 
       if (response.statusCode == 200) {
-        final results = response.data['results'] as List<dynamic>;
+        final data = response.data as Map<String, dynamic>;
+        final results = data['results'] as List<dynamic>;
         return results
             .map((e) => UserModel.fromJson(e as Map<String, dynamic>))
             .toList();

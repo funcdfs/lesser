@@ -34,7 +34,8 @@ class NotificationRemoteDataSourceImpl implements NotificationRemoteDataSource {
       );
 
       if (response.statusCode == 200) {
-        final results = response.data['results'] as List<dynamic>;
+        final data = response.data as Map<String, dynamic>;
+        final results = data['results'] as List<dynamic>;
         return results
             .map((e) => NotificationModel.fromJson(e as Map<String, dynamic>))
             .toList();
@@ -73,7 +74,8 @@ class NotificationRemoteDataSourceImpl implements NotificationRemoteDataSource {
       );
 
       if (response.statusCode == 200) {
-        return response.data['count'] as int;
+        final data = response.data as Map<String, dynamic>;
+        return data['count'] as int;
       }
       throw ServerException(statusCode: response.statusCode);
     } on DioException catch (e) {

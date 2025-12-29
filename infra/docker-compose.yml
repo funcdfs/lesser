@@ -26,9 +26,10 @@ services:
       - app-network
     healthcheck:
       test: ["CMD", "traefik", "healthcheck", "--ping"]
-      interval: 10s
+      interval: 30s
       timeout: 5s
       retries: 3
+      start_period: 10s
 
   # ==========================================================================
   # Database - PostgreSQL (Isolated)
@@ -50,9 +51,10 @@ services:
       - app-network
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-lesser} -d ${POSTGRES_DB:-lesser_db}"]
-      interval: 5s
+      interval: 30s
       timeout: 5s
       retries: 5
+      start_period: 10s
 
   # ==========================================================================
   # Cache - Redis
@@ -71,9 +73,10 @@ services:
       - app-network
     healthcheck:
       test: ["CMD", "redis-cli", "ping"]
-      interval: 5s
+      interval: 30s
       timeout: 5s
       retries: 5
+      start_period: 5s
 
   # ==========================================================================
   # Django Core Service (Hot Reload with runserver + UV)
@@ -101,6 +104,7 @@ services:
       - GRPC_PORT=${DJANGO_GRPC_PORT:-50051}
     volumes:
       - ../service/core_django:/app
+      - ../protos:/protos:ro
     ports:
       - "${EXTERNAL_DJANGO_PORT:-8000}:8000"
       - "50051:50051"
@@ -110,10 +114,7 @@ services:
       redis:
         condition: service_healthy
     command: >
-      sh -c "uv pip install --system --no-cache -r requirements.txt &&
-             python manage.py makemigrations --noinput &&
-             python manage.py migrate --noinput &&
-             python manage.py runserver 0.0.0.0:8000"
+      sh -c "./start.sh"
     networks:
       - app-network
     labels:
@@ -122,7 +123,7 @@ services:
       - "traefik.http.services.django.loadbalancer.server.port=8000"
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8000/api/v1/health/"]
-      interval: 30s
+      interval: 60s
       timeout: 10s
       retries: 3
       start_period: 60s
@@ -220,7 +221,7 @@ services:
       - "traefik.http.services.chat.loadbalancer.server.port=8080"
     healthcheck:
       test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:8080/health"]
-      interval: 30s
+      interval: 60s
       timeout: 10s
       retries: 3
       start_period: 30s

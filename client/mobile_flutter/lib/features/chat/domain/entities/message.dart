@@ -23,6 +23,19 @@ class Message extends Equatable {
   final DateTime createdAt;
   final bool isRead;
 
+  /// 创建一个标记为已读的副本
+  Message copyWithRead() {
+    return Message(
+      id: id,
+      conversationId: conversationId,
+      senderId: senderId,
+      content: content,
+      messageType: messageType,
+      createdAt: createdAt,
+      isRead: true,
+    );
+  }
+
   @override
   List<Object?> get props => [
         id,

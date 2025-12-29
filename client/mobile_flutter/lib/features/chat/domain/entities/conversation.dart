@@ -3,10 +3,13 @@ import 'package:equatable/equatable.dart';
 import '../../../auth/domain/entities/user.dart';
 import 'message.dart';
 
-/// Conversation type enum
+/// copyWith 中用于区分 null 和未提供的哨兵值
+const _sentinel = Object();
+
+/// 会话类型枚举
 enum ConversationType { private, group, channel }
 
-/// Conversation entity
+/// 会话实体
 class Conversation extends Equatable {
   const Conversation({
     required this.id,
@@ -27,6 +30,28 @@ class Conversation extends Equatable {
   final String? creatorId;
   final Message? lastMessage;
   final int unreadCount;
+
+  Conversation copyWith({
+    String? id,
+    ConversationType? type,
+    List<User>? members,
+    DateTime? createdAt,
+    Object? name = _sentinel,
+    Object? creatorId = _sentinel,
+    Object? lastMessage = _sentinel,
+    int? unreadCount,
+  }) {
+    return Conversation(
+      id: id ?? this.id,
+      type: type ?? this.type,
+      members: members ?? this.members,
+      createdAt: createdAt ?? this.createdAt,
+      name: name == _sentinel ? this.name : name as String?,
+      creatorId: creatorId == _sentinel ? this.creatorId : creatorId as String?,
+      lastMessage: lastMessage == _sentinel ? this.lastMessage : lastMessage as Message?,
+      unreadCount: unreadCount ?? this.unreadCount,
+    );
+  }
 
   @override
   List<Object?> get props => [

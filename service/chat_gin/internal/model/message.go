@@ -24,10 +24,16 @@ type Message struct {
 	Content        string      `json:"content" gorm:"type:text;not null"`
 	MessageType    MessageType `json:"message_type" gorm:"type:varchar(20);not null;default:'text'"`
 	CreatedAt      time.Time   `json:"created_at" gorm:"autoCreateTime;index"`
-	IsRead         bool        `json:"is_read" gorm:"default:false"` // 已读状态
+	ReadAt         *time.Time  `json:"read_at,omitempty" gorm:"index"` // 已读时间戳，null 表示未读
 
 	// 不同消息类型的可选元数据
 	Metadata map[string]interface{} `json:"metadata,omitempty" gorm:"type:jsonb"`
+}
+
+// IsRead 判断消息是否已读
+// 返回 true 当 read_at 不为 null，返回 false 当 read_at 为 null
+func (m *Message) IsRead() bool {
+	return m.ReadAt != nil
 }
 
 // TableName 返回消息表名

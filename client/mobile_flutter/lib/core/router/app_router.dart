@@ -10,7 +10,7 @@ import '../../features/navigation/presentation/pages/main_navigation_page.dart';
 import '../../features/post/presentation/pages/create_post_page.dart';
 import '../../features/profile/presentation/pages/profile_page.dart';
 
-/// App router configuration
+/// 应用路由配置
 class AppRouter {
   AppRouter._();
 
@@ -18,7 +18,7 @@ class AppRouter {
     initialLocation: RouteConstants.login,
     debugLogDiagnostics: true,
     routes: [
-      // Auth routes
+      // 认证路由
       GoRoute(
         path: RouteConstants.login,
         name: 'login',
@@ -29,25 +29,25 @@ class AppRouter {
         name: 'register',
         builder: (context, state) => const RegisterPage(),
       ),
-      // Main navigation (home)
+      // 主导航（首页）
       GoRoute(
         path: RouteConstants.home,
         name: 'home',
         builder: (context, state) => const MainNavigationPage(),
       ),
-      // Create post
+      // 创建帖子
       GoRoute(
         path: RouteConstants.createPost,
         name: 'createPost',
         builder: (context, state) => const CreatePostPage(),
       ),
-      // New conversation
+      // 新建会话
       GoRoute(
         path: RouteConstants.newConversation,
         name: 'newConversation',
         builder: (context, state) => const NewConversationPage(),
       ),
-      // Chat room
+      // 聊天室
       GoRoute(
         path: RouteConstants.chatRoom,
         name: 'chatRoom',
@@ -56,7 +56,7 @@ class AppRouter {
           return ChatRoomPage(conversationId: conversationId);
         },
       ),
-      // User profile
+      // 用户资料
       GoRoute(
         path: RouteConstants.userProfile,
         name: 'userProfile',
@@ -65,7 +65,7 @@ class AppRouter {
           return ProfilePage(userId: userId);
         },
       ),
-      // Settings
+      // 设置
       GoRoute(
         path: RouteConstants.settings,
         name: 'settings',
@@ -73,7 +73,7 @@ class AppRouter {
           body: Center(child: Text('Settings - Coming Soon')),
         ),
       ),
-      // Edit profile
+      // 编辑资料
       GoRoute(
         path: RouteConstants.editProfile,
         name: 'editProfile',

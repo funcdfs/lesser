@@ -27,6 +27,7 @@ type Conversation struct {
 	// 关联关系
 	Members     []ConversationMember `json:"members,omitempty" gorm:"foreignKey:ConversationID"`
 	LastMessage *Message             `json:"last_message,omitempty" gorm:"-"` // 最后一条消息（不存储在数据库）
+	UnreadCount int                  `json:"unread_count" gorm:"-"`           // 未读消息数（不存储在数据库，动态计算）
 }
 
 // TableName 返回会话表名

@@ -129,10 +129,12 @@ class _NewConversationPageState extends ConsumerState<NewConversationPage> {
                     ),
                   )
                 : TextButton(
-                    onPressed: _selectedUsers.isEmpty ? null : _createConversation,
+                    onPressed: _selectedUsers.isEmpty
+                        ? null
+                        : _createConversation,
                     style: TextButton.styleFrom(
                       backgroundColor: _selectedUsers.isEmpty
-                          ? AppColors.primary.withOpacity(0.5)
+                          ? AppColors.primary.withValues(alpha: 0.5)
                           : AppColors.primary,
                       foregroundColor: Colors.white,
                       padding: const EdgeInsets.symmetric(horizontal: 16),
@@ -150,7 +152,7 @@ class _NewConversationPageState extends ConsumerState<NewConversationPage> {
           // 收件人区域
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-            decoration: BoxDecoration(
+            decoration: const BoxDecoration(
               border: Border(
                 bottom: BorderSide(color: AppColors.borderLight, width: 0.5),
               ),
@@ -185,7 +187,9 @@ class _NewConversationPageState extends ConsumerState<NewConversationPage> {
                           spacing: 8,
                           runSpacing: 8,
                           children: [
-                            ..._selectedUsers.map((user) => _buildSelectedChip(user)),
+                            ..._selectedUsers.map(
+                              (user) => _buildSelectedChip(user),
+                            ),
                             // 内联搜索框
                             SizedBox(
                               width: 120,
@@ -196,7 +200,9 @@ class _NewConversationPageState extends ConsumerState<NewConversationPage> {
                                   hintText: '添加更多',
                                   border: InputBorder.none,
                                   isDense: true,
-                                  contentPadding: EdgeInsets.symmetric(vertical: 8),
+                                  contentPadding: EdgeInsets.symmetric(
+                                    vertical: 8,
+                                  ),
                                 ),
                                 onChanged: _onSearchChanged,
                               ),
@@ -218,7 +224,7 @@ class _NewConversationPageState extends ConsumerState<NewConversationPage> {
     return Container(
       padding: const EdgeInsets.only(left: 4, right: 8),
       decoration: BoxDecoration(
-        color: AppColors.primary.withOpacity(0.1),
+        color: AppColors.primary.withValues(alpha: 0.1),
         borderRadius: BorderRadius.circular(20),
       ),
       child: Row(
@@ -240,11 +246,7 @@ class _NewConversationPageState extends ConsumerState<NewConversationPage> {
           const SizedBox(width: 4),
           GestureDetector(
             onTap: () => _toggleUserSelection(user),
-            child: const Icon(
-              Icons.close,
-              size: 18,
-              color: AppColors.primary,
-            ),
+            child: const Icon(Icons.close, size: 18, color: AppColors.primary),
           ),
         ],
       ),
@@ -261,7 +263,7 @@ class _NewConversationPageState extends ConsumerState<NewConversationPage> {
             Container(
               padding: const EdgeInsets.all(24),
               decoration: BoxDecoration(
-                color: AppColors.primary.withOpacity(0.1),
+                color: AppColors.primary.withValues(alpha: 0.1),
                 shape: BoxShape.circle,
               ),
               child: const Icon(
@@ -315,11 +317,7 @@ class _NewConversationPageState extends ConsumerState<NewConversationPage> {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            const Icon(
-              Icons.error_outline,
-              size: 48,
-              color: AppColors.error,
-            ),
+            const Icon(Icons.error_outline, size: 48, color: AppColors.error),
             const SizedBox(height: 16),
             Text(
               searchState.errorMessage ?? '搜索失败',
@@ -374,7 +372,10 @@ class _NewConversationPageState extends ConsumerState<NewConversationPage> {
         final isSelected = _selectedUsers.any((u) => u.id == user.id);
 
         return ListTile(
-          contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+          contentPadding: const EdgeInsets.symmetric(
+            horizontal: 16,
+            vertical: 4,
+          ),
           leading: UserAvatar(
             imageUrl: user.avatarUrl,
             name: user.displayName ?? user.username,
@@ -414,9 +415,10 @@ class _NewConversationPageState extends ConsumerState<NewConversationPage> {
   }
 }
 
-/// New conversation state
+/// 新会话状态枚举
 enum NewConversationStatus { initial, creating, created, error }
 
+/// 新会话状态
 class NewConversationState {
   const NewConversationState({
     this.status = NewConversationStatus.initial,
@@ -429,13 +431,15 @@ class NewConversationState {
   final String? errorMessage;
 }
 
-/// New conversation notifier
-class NewConversationNotifier extends StateNotifier<NewConversationState> {
-  NewConversationNotifier({required ChatRepository repository})
-    : _repository = repository,
-      super(const NewConversationState());
+/// 新会话状态管理器
+class NewConversationNotifier extends Notifier<NewConversationState> {
+  late final ChatRepository _repository;
 
-  final ChatRepository _repository;
+  @override
+  NewConversationState build() {
+    _repository = getIt<ChatRepository>();
+    return const NewConversationState();
+  }
 
   Future<Conversation?> create({
     required List<String> memberIds,
@@ -469,9 +473,7 @@ class NewConversationNotifier extends StateNotifier<NewConversationState> {
   }
 }
 
-/// New conversation provider
-final newConversationProvider =
-    StateNotifierProvider<NewConversationNotifier, NewConversationState>((ref) {
-      final repository = getIt<ChatRepository>();
-      return NewConversationNotifier(repository: repository);
-    });
+/// 新会话 Provider
+final newConversationProvider = NotifierProvider<NewConversationNotifier, NewConversationState>(
+  NewConversationNotifier.new,
+);

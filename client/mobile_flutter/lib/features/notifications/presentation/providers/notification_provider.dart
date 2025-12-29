@@ -36,13 +36,14 @@ class NotificationState {
 }
 
 /// Notification notifier
-class NotificationNotifier extends StateNotifier<NotificationState> {
-  NotificationNotifier({
-    required NotificationRepository repository,
-  })  : _repository = repository,
-        super(const NotificationState());
+class NotificationNotifier extends Notifier<NotificationState> {
+  late final NotificationRepository _repository;
 
-  final NotificationRepository _repository;
+  @override
+  NotificationState build() {
+    _repository = getIt<NotificationRepository>();
+    return const NotificationState();
+  }
 
   /// Load notifications
   Future<void> loadNotifications() async {
@@ -133,8 +134,6 @@ class NotificationNotifier extends StateNotifier<NotificationState> {
 }
 
 /// Notification provider
-final notificationProvider =
-    StateNotifierProvider<NotificationNotifier, NotificationState>((ref) {
-  final repository = getIt<NotificationRepository>();
-  return NotificationNotifier(repository: repository);
-});
+final notificationProvider = NotifierProvider<NotificationNotifier, NotificationState>(
+  NotificationNotifier.new,
+);

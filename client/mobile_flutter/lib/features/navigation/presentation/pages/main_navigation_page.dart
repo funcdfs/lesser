@@ -50,10 +50,6 @@ class _MainNavigationPageState extends ConsumerState<MainNavigationPage> {
     final notificationState = ref.watch(notificationProvider);
     final conversationsState = ref.watch(conversationsProvider);
 
-    // Calculate unread chat count
-    final unreadChatCount = conversationsState.conversations
-        .fold<int>(0, (sum, conv) => sum + conv.unreadCount);
-
     return Scaffold(
       body: IndexedStack(
         index: _currentIndex,
@@ -63,7 +59,7 @@ class _MainNavigationPageState extends ConsumerState<MainNavigationPage> {
         currentIndex: _currentIndex,
         onTap: _onTabSelected,
         notificationBadge: notificationState.unreadCount,
-        chatBadge: unreadChatCount,
+        chatBadge: conversationsState.totalUnreadCount,
       ),
       floatingActionButton: _currentIndex == 0
           ? FloatingActionButton(

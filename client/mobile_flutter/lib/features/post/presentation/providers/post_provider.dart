@@ -37,13 +37,14 @@ class CreatePostState {
 }
 
 /// Create post notifier
-class CreatePostNotifier extends StateNotifier<CreatePostState> {
-  CreatePostNotifier({
-    required PostRepository repository,
-  })  : _repository = repository,
-        super(const CreatePostState());
+class CreatePostNotifier extends Notifier<CreatePostState> {
+  late final PostRepository _repository;
 
-  final PostRepository _repository;
+  @override
+  CreatePostState build() {
+    _repository = getIt<PostRepository>();
+    return const CreatePostState();
+  }
 
   /// Select post type
   void selectPostType(PostType type) {
@@ -86,8 +87,6 @@ class CreatePostNotifier extends StateNotifier<CreatePostState> {
 }
 
 /// Create post provider
-final createPostProvider =
-    StateNotifierProvider<CreatePostNotifier, CreatePostState>((ref) {
-  final repository = getIt<PostRepository>();
-  return CreatePostNotifier(repository: repository);
-});
+final createPostProvider = NotifierProvider<CreatePostNotifier, CreatePostState>(
+  CreatePostNotifier.new,
+);

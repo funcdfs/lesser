@@ -1,8 +1,14 @@
 import 'package:equatable/equatable.dart';
 
-/// Pagination model
+/// 分页模型
 class Pagination extends Equatable {
-  /// Create from JSON
+  const Pagination({
+    required this.page,
+    required this.pageSize,
+    required this.total,
+  });
+
+  /// 从 JSON 创建
   factory Pagination.fromJson(Map<String, dynamic> json) {
     return Pagination(
       page: json['page'] as int? ?? 1,
@@ -10,34 +16,29 @@ class Pagination extends Equatable {
       total: json['total'] as int? ?? 0,
     );
   }
-  const Pagination({
-    required this.page,
-    required this.pageSize,
-    required this.total,
-  });
 
   final int page;
   final int pageSize;
   final int total;
 
-  /// Total number of pages
+  /// 总页数
   int get totalPages => (total / pageSize).ceil();
 
-  /// Whether there are more pages
+  /// 是否有更多页
   bool get hasMore => page < totalPages;
 
-  /// Whether this is the first page
+  /// 是否是第一页
   bool get isFirst => page == 1;
 
-  /// Whether this is the last page
+  /// 是否是最后一页
   bool get isLast => page >= totalPages;
 
-  /// Convert to JSON
+  /// 转换为 JSON
   Map<String, dynamic> toJson() {
     return {'page': page, 'page_size': pageSize, 'total': total};
   }
 
-  /// Create next page pagination
+  /// 创建下一页分页
   Pagination nextPage() {
     return Pagination(page: page + 1, pageSize: pageSize, total: total);
   }
@@ -46,7 +47,7 @@ class Pagination extends Equatable {
   List<Object?> get props => [page, pageSize, total];
 }
 
-/// Paginated response wrapper
+/// 分页响应包装器
 class PaginatedResponse<T> extends Equatable {
   const PaginatedResponse({required this.items, required this.pagination});
 

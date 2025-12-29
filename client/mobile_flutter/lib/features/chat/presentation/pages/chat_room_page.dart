@@ -17,6 +17,7 @@ class ChatRoomPage extends ConsumerStatefulWidget {
 
 class _ChatRoomPageState extends ConsumerState<ChatRoomPage> {
   final _scrollController = ScrollController();
+  bool _isAtBottom = true;
 
   @override
   void initState() {
@@ -37,14 +38,39 @@ class _ChatRoomPageState extends ConsumerState<ChatRoomPage> {
   }
 
   void _onScroll() {
+    // 加载更多历史消息
     if (_scrollController.position.pixels >=
         _scrollController.position.maxScrollExtent - 200) {
       ref.read(chatRoomProvider.notifier).loadMoreMessages();
     }
+    
+    // 检测是否在底部（reverse: true 时，底部是 pixels == 0）
+    final atBottom = _scrollController.position.pixels < 50;
+    if (atBottom != _isAtBottom) {
+      setState(() {
+        _isAtBottom = atBottom;
+      });
+      if (atBottom) {
+        ref.read(chatRoomProvider.notifier).clearNewMessagesFlag();
+      }
+    }
+  }
+
+  void _scrollToBottom() {
+    _scrollController.animateTo(
+      0,
+      duration: const Duration(milliseconds: 300),
+      curve: Curves.easeOut,
+    );
+    ref.read(chatRoomProvider.notifier).clearNewMessagesFlag();
   }
 
   void _handleSend(String content) {
     ref.read(chatRoomProvider.notifier).sendMessage(content);
+    // 发送消息后滚动到底部
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _scrollToBottom();
+    });
   }
 
   @override
@@ -75,6 +101,39 @@ class _ChatRoomPageState extends ConsumerState<ChatRoomPage> {
             isLoading: chatRoomState.status == ChatRoomStatus.sending,
           ),
         ],
+      ),
+      floatingActionButton: (!_isAtBottom || chatRoomState.hasNewMessages)
+          ? _buildScrollToBottomButton(chatRoomState.hasNewMessages)
+          : null,
+      floatingActionButtonLocation: FloatingActionButtonLocation.centerFloat,
+    );
+  }
+
+  Widget _buildScrollToBottomButton(bool hasNewMessages) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 60),
+      child: FloatingActionButton.small(
+        onPressed: _scrollToBottom,
+        backgroundColor: hasNewMessages ? AppColors.primary : AppColors.surfaceLight,
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(
+              Icons.keyboard_arrow_down,
+              color: hasNewMessages ? Colors.white : AppColors.textPrimaryLight,
+            ),
+            if (hasNewMessages)
+              Container(
+                width: 8,
+                height: 8,
+                decoration: const BoxDecoration(
+                  color: Colors.white,
+                  shape: BoxShape.circle,
+                ),
+              ),
+          ],
+        ),
       ),
     );
   }

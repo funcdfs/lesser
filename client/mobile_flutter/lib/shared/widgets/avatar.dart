@@ -23,7 +23,7 @@ class UserAvatar extends StatelessWidget {
       onTap: onTap,
       child: CircleAvatar(
         radius: size / 2,
-        backgroundColor: AppColors.primary.withOpacity(0.1),
+        backgroundColor: AppColors.primary.withValues(alpha: 0.1),
         backgroundImage: imageUrl != null ? NetworkImage(imageUrl!) : null,
         child: imageUrl == null
             ? Text(

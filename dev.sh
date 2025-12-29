@@ -873,6 +873,7 @@ show_help() {
     echo -e "  ${CYAN}init${NC}                     初始化开发环境 (首次使用)"
     echo -e "  ${CYAN}start${NC}                    启动所有服务"
     echo -e "  ${CYAN}stop${NC}                     停止所有服务"
+    echo -e "  ${CYAN}update${NC}                   更新代码并执行数据迁移"
     echo -e "  ${CYAN}status${NC}                   查看服务状态"
     echo ""
     
@@ -1028,6 +1029,90 @@ show_env() {
 }
 
 # ============================================================================
+# 更新操作 - Update Operations
+# ============================================================================
+run_sql_migrations() {
+    print_header "${ICON_DB} 执行 SQL 迁移"
+    
+    local migrations_dir="$SCRIPT_DIR/infra/database/migrations"
+    
+    if [ ! -d "$migrations_dir" ]; then
+        log_info "迁移目录不存在: $migrations_dir"
+        return 0
+    fi
+    
+    # 查找所有 .sql 文件
+    local sql_files=$(find "$migrations_dir" -name "*.sql" -type f | sort)
+    
+    if [ -z "$sql_files" ]; then
+        log_info "没有找到 SQL 迁移文件"
+        return 0
+    fi
+    
+    log_step "发现以下迁移文件:"
+    echo "$sql_files" | while read -r file; do
+        echo "  - $(basename "$file")"
+    done
+    echo ""
+    
+    # 执行每个迁移文件
+    echo "$sql_files" | while read -r file; do
+        local filename=$(basename "$file")
+        log_step "执行迁移: $filename"
+        
+        # 使用 docker compose exec 执行 SQL，设置 client_min_messages 为 warning 以抑制 NOTICE
+        if docker compose -f "$COMPOSE_FILE" exec -T postgres psql -U "${POSTGRES_USER:-lesser}" -d "${POSTGRES_DB:-lesser_db}" -v ON_ERROR_STOP=1 -c "SET client_min_messages TO warning;" -f - < "$file" > /dev/null 2>&1; then
+            log_success "迁移完成: $filename"
+        else
+            log_warn "迁移可能已存在或有警告: $filename"
+        fi
+    done
+    
+    log_success "SQL 迁移执行完成"
+}
+
+update_all() {
+    print_header "${ICON_GEAR} 更新开发环境"
+    
+    check_docker || exit 1
+    check_env || exit 1
+    
+    # 1. 重启服务（触发热更新）
+    log_step "重启服务（应用代码更新）..."
+    docker compose -f "$COMPOSE_FILE" --env-file "$ENV_FILE" restart django chat celery-worker celery-beat
+    
+    # 等待服务启动
+    log_info "等待服务启动..."
+    sleep 8
+    
+    # 2. 执行 Django 数据库迁移
+    log_step "执行 Django 数据库迁移..."
+    docker compose -f "$COMPOSE_FILE" exec -T django python manage.py migrate --noinput
+    
+    # 3. 执行 SQL 迁移（Chat 服务等）
+    run_sql_migrations
+    
+    # 4. 生成 Proto 代码（静默模式，仅显示错误）
+    log_step "重新生成 Proto 代码..."
+    if [ -f "$PROTO_SCRIPT" ]; then
+        # 捕获输出，仅在有错误时显示
+        local proto_output
+        proto_output=$(bash "$PROTO_SCRIPT" all 2>&1) || {
+            echo "$proto_output"
+            log_error "Proto 生成失败"
+            exit 1
+        }
+    else
+        log_error "Proto 生成脚本不存在: $PROTO_SCRIPT"
+        exit 1
+    fi
+    
+    log_success "更新完成！"
+    echo ""
+    show_status
+}
+
+# ============================================================================
 # 主命令处理 - Main Command Handler
 # ============================================================================
 main() {
@@ -1073,6 +1158,11 @@ main() {
         
         test)
             test_services
+            ;;
+        
+        # 更新操作
+        update)
+            update_all
             ;;
         
         # 数据库操作

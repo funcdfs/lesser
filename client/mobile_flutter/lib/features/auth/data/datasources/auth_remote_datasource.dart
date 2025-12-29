@@ -136,7 +136,8 @@ class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
       );
 
       if (response.statusCode == 200) {
-        return response.data['access'] as String;
+        final data = response.data as Map<String, dynamic>;
+        return data['access'] as String;
       }
       throw ServerException(
         message: 'Token refresh failed',

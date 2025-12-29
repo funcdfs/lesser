@@ -32,13 +32,14 @@ class ProfileState {
 }
 
 /// Profile notifier
-class ProfileNotifier extends StateNotifier<ProfileState> {
-  ProfileNotifier({
-    required ProfileRepository repository,
-  })  : _repository = repository,
-        super(const ProfileState());
+class ProfileNotifier extends Notifier<ProfileState> {
+  late final ProfileRepository _repository;
 
-  final ProfileRepository _repository;
+  @override
+  ProfileState build() {
+    _repository = getIt<ProfileRepository>();
+    return const ProfileState();
+  }
 
   /// Load current user's profile
   Future<void> loadCurrentProfile() async {
@@ -149,8 +150,6 @@ class ProfileNotifier extends StateNotifier<ProfileState> {
 }
 
 /// Profile provider
-final profileProvider =
-    StateNotifierProvider<ProfileNotifier, ProfileState>((ref) {
-  final repository = getIt<ProfileRepository>();
-  return ProfileNotifier(repository: repository);
-});
+final profileProvider = NotifierProvider<ProfileNotifier, ProfileState>(
+  ProfileNotifier.new,
+);

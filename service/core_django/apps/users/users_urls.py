@@ -1,5 +1,5 @@
 """
-User URLs for /api/v1/users/ endpoints.
+用户 URL 配置，用于 /api/v1/users/ 端点。
 """
 from django.urls import path
 

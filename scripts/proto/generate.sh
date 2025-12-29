@@ -88,8 +88,7 @@ generate_python() {
     log_step "Generating Python code..."
     
     if ! check_command grpc_tools_protoc && ! python3 -c "import grpc_tools.protoc" 2>/dev/null; then
-        log_warn "grpcio-tools not installed. Install with: pip install grpcio-tools"
-        log_warn "Skipping Python generation"
+        log_info "Skipping Python (grpcio-tools not installed)"
         return
     fi
     
@@ -119,8 +118,6 @@ generate_python() {
                 }
             
             log_info "  Generated: $proto"
-        else
-            log_warn "  Not found: $proto_path"
         fi
     done
     
@@ -132,10 +129,7 @@ generate_go() {
     log_step "Generating Go code..."
     
     if ! check_command protoc-gen-go; then
-        log_warn "protoc-gen-go not installed. Install with:"
-        log_warn "  go install google.golang.org/protobuf/cmd/protoc-gen-go@latest"
-        log_warn "  go install google.golang.org/grpc/cmd/protoc-gen-go-grpc@latest"
-        log_warn "Skipping Go generation"
+        log_info "Skipping Go (protoc-gen-go not installed)"
         return
     fi
     
@@ -162,8 +156,6 @@ generate_go() {
                 }
             
             log_info "  Generated: $proto"
-        else
-            log_warn "  Not found: $proto_path"
         fi
     done
     
@@ -175,9 +167,7 @@ generate_dart() {
     log_step "Generating Dart code..."
     
     if ! check_command protoc-gen-dart; then
-        log_warn "protoc-gen-dart not installed. Install with:"
-        log_warn "  dart pub global activate protoc_plugin"
-        log_warn "Skipping Dart generation"
+        log_info "Skipping Dart (protoc-gen-dart not installed)"
         return
     fi
     
@@ -194,8 +184,6 @@ generate_dart() {
                 "$proto_path"
             
             log_info "  Generated: $proto"
-        else
-            log_warn "  Not found: $proto_path"
         fi
     done
     

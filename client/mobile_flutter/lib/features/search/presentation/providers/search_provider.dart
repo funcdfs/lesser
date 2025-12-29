@@ -48,13 +48,14 @@ class SearchState {
 }
 
 /// Search notifier
-class SearchNotifier extends StateNotifier<SearchState> {
-  SearchNotifier({
-    required SearchRepository repository,
-  })  : _repository = repository,
-        super(const SearchState());
+class SearchNotifier extends Notifier<SearchState> {
+  late final SearchRepository _repository;
 
-  final SearchRepository _repository;
+  @override
+  SearchState build() {
+    _repository = getIt<SearchRepository>();
+    return const SearchState();
+  }
 
   /// Update search query
   void updateQuery(String query) {
@@ -131,7 +132,4 @@ class SearchNotifier extends StateNotifier<SearchState> {
 }
 
 /// Search provider
-final searchProvider = StateNotifierProvider<SearchNotifier, SearchState>((ref) {
-  final repository = getIt<SearchRepository>();
-  return SearchNotifier(repository: repository);
-});
+final searchProvider = NotifierProvider<SearchNotifier, SearchState>(SearchNotifier.new);

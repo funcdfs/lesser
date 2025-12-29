@@ -13,10 +13,11 @@ import (
 
 // ChatService 聊天业务服务层
 type ChatService struct {
-	conversationRepo *repository.ConversationRepository
-	messageRepo      *repository.MessageRepository
-	cache            *cache.RedisClient
-	userClient       *UserClient
+	conversationRepo   *repository.ConversationRepository
+	messageRepo        *repository.MessageRepository
+	cache              *cache.RedisClient
+	userClient         *UserClient
+	unreadCacheService *UnreadCacheService
 }
 
 // NewChatService 创建聊天服务实例
@@ -25,12 +26,14 @@ func NewChatService(
 	messageRepo *repository.MessageRepository,
 	cache *cache.RedisClient,
 	userClient *UserClient,
+	unreadCacheService *UnreadCacheService,
 ) *ChatService {
 	return &ChatService{
-		conversationRepo: conversationRepo,
-		messageRepo:      messageRepo,
-		cache:            cache,
-		userClient:       userClient,
+		conversationRepo:   conversationRepo,
+		messageRepo:        messageRepo,
+		cache:              cache,
+		userClient:         userClient,
+		unreadCacheService: unreadCacheService,
 	}
 }
 
@@ -98,11 +101,28 @@ func (s *ChatService) GetUserConversations(ctx context.Context, userID uuid.UUID
 		return nil, fmt.Errorf("获取会话列表失败: %w", err)
 	}
 
-	// 为每个会话获取最后一条消息并填充用户信息
+	// 收集所有会话ID用于批量查询未读数
+	conversationIDs := make([]uuid.UUID, len(conversations))
+	for i := range conversations {
+		conversationIDs[i] = conversations[i].ID
+	}
+
+	// 批量获取未读数
+	unreadCounts, err := s.GetUnreadCounts(ctx, userID, conversationIDs)
+	if err != nil {
+		fmt.Printf("警告: 批量获取未读数失败: %v\n", err)
+		// 不影响主流程，继续处理
+	}
+
+	// 为每个会话获取最后一条消息、设置未读数并填充用户信息
 	for i := range conversations {
 		lastMsg, err := s.messageRepo.GetLatestByConversationID(ctx, conversations[i].ID)
 		if err == nil && lastMsg != nil {
 			conversations[i].LastMessage = lastMsg
+		}
+		// 设置未读消息数（从批量查询结果中获取）
+		if unreadCounts != nil {
+			conversations[i].UnreadCount = int(unreadCounts[conversations[i].ID])
 		}
 		// 填充成员的用户信息
 		s.populateMemberUserInfo(ctx, &conversations[i])
@@ -149,6 +169,22 @@ func (s *ChatService) SendMessage(ctx context.Context, req SendMessageRequest) (
 	if err := s.conversationRepo.UpdateTimestamp(ctx, req.ConversationID); err != nil {
 		// 记录日志但不影响主流程
 		fmt.Printf("警告: 更新会话时间戳失败: %v\n", err)
+	}
+
+	// 增加会话成员的未读数缓存（发送者除外）
+	if s.unreadCacheService != nil {
+		memberIDs, err := s.conversationRepo.GetMemberIDs(ctx, req.ConversationID)
+		if err != nil {
+			fmt.Printf("警告: 获取会话成员失败: %v\n", err)
+		} else {
+			for _, memberID := range memberIDs {
+				if memberID != req.SenderID {
+					if err := s.unreadCacheService.IncrementUnreadCount(ctx, memberID, req.ConversationID); err != nil {
+						fmt.Printf("警告: 增加未读数缓存失败: %v\n", err)
+					}
+				}
+			}
+		}
 	}
 
 	// 通过 Redis 发布消息用于实时推送
@@ -249,6 +285,160 @@ func (s *ChatService) RemoveMember(ctx context.Context, conversationID, userID, 
 	}
 
 	return nil
+}
+
+// GetConversationMemberIDs 获取会话的所有成员ID
+func (s *ChatService) GetConversationMemberIDs(ctx context.Context, conversationID uuid.UUID) ([]uuid.UUID, error) {
+	return s.conversationRepo.GetMemberIDs(ctx, conversationID)
+}
+
+// IsMember 检查用户是否是会话成员
+func (s *ChatService) IsMember(ctx context.Context, conversationID, userID uuid.UUID) (bool, error) {
+	return s.conversationRepo.IsMember(ctx, conversationID, userID)
+}
+
+// GetMessageByID 根据ID获取消息
+func (s *ChatService) GetMessageByID(ctx context.Context, messageID uuid.UUID) (*model.Message, error) {
+	return s.messageRepo.GetByID(ctx, messageID)
+}
+
+// GetUnreadCount 获取用户在指定会话中的未读消息数
+func (s *ChatService) GetUnreadCount(ctx context.Context, conversationID, userID uuid.UUID) (int64, error) {
+	// 优先使用缓存服务
+	if s.unreadCacheService != nil {
+		return s.unreadCacheService.GetUnreadCount(ctx, userID, conversationID)
+	}
+	return s.messageRepo.GetUnreadCount(ctx, conversationID, userID)
+}
+
+// GetUnreadCounts 批量获取用户在多个会话中的未读消息数
+// 集成缓存服务，优先从缓存获取，缓存未命中时从数据库查询
+func (s *ChatService) GetUnreadCounts(ctx context.Context, userID uuid.UUID, conversationIDs []uuid.UUID) (map[uuid.UUID]int64, error) {
+	if len(conversationIDs) == 0 {
+		return make(map[uuid.UUID]int64), nil
+	}
+
+	// 优先使用缓存服务
+	if s.unreadCacheService != nil {
+		return s.unreadCacheService.GetUnreadCountsBatch(ctx, userID, conversationIDs)
+	}
+
+	// 降级到直接查询数据库
+	return s.messageRepo.GetUnreadCountsBatch(ctx, userID, conversationIDs)
+}
+
+// MarkConversationAsRead 标记会话中的消息为已读
+func (s *ChatService) MarkConversationAsRead(ctx context.Context, conversationID, userID uuid.UUID) (*model.BatchReadReceipt, error) {
+	// 检查用户是否是会话成员
+	isMember, err := s.conversationRepo.IsMember(ctx, conversationID, userID)
+	if err != nil {
+		return nil, fmt.Errorf("检查成员身份失败: %w", err)
+	}
+	if !isMember {
+		return nil, ErrNotMember
+	}
+
+	readAt := time.Now()
+	messageIDs, err := s.messageRepo.MarkConversationAsRead(ctx, conversationID, userID, readAt)
+	if err != nil {
+		return nil, err
+	}
+
+	// 重置未读数缓存
+	if s.unreadCacheService != nil {
+		if err := s.unreadCacheService.ResetUnreadCount(ctx, userID, conversationID); err != nil {
+			fmt.Printf("警告: 重置未读数缓存失败: %v\n", err)
+		}
+	}
+
+	return &model.BatchReadReceipt{
+		ConversationID: conversationID,
+		ReaderID:       userID,
+		MessageIDs:     messageIDs,
+		ReadAt:         readAt,
+	}, nil
+}
+
+// MarkMessageAsRead 标记单条消息为已读
+// 返回已读回执，用于通知消息发送者
+func (s *ChatService) MarkMessageAsRead(ctx context.Context, messageID, userID uuid.UUID) (*model.ReadReceipt, error) {
+	// 获取消息信息
+	msg, err := s.messageRepo.GetByID(ctx, messageID)
+	if err != nil {
+		return nil, fmt.Errorf("获取消息失败: %w", err)
+	}
+
+	// 检查用户是否是会话成员
+	isMember, err := s.conversationRepo.IsMember(ctx, msg.ConversationID, userID)
+	if err != nil {
+		return nil, fmt.Errorf("检查成员身份失败: %w", err)
+	}
+	if !isMember {
+		return nil, ErrNotMember
+	}
+
+	// 不能标记自己发送的消息为已读
+	if msg.SenderID == userID {
+		return nil, ErrCannotMarkOwnMessage
+	}
+
+	// 消息已经被标记为已读
+	if msg.IsRead() {
+		return nil, ErrAlreadyRead
+	}
+
+	readAt := time.Now()
+	if err := s.messageRepo.MarkAsRead(ctx, messageID, readAt); err != nil {
+		return nil, fmt.Errorf("标记消息已读失败: %w", err)
+	}
+
+	// 减少未读数缓存
+	if s.unreadCacheService != nil {
+		if err := s.unreadCacheService.DecrementUnreadCount(ctx, userID, msg.ConversationID, 1); err != nil {
+			fmt.Printf("警告: 减少未读数缓存失败: %v\n", err)
+		}
+	}
+
+	return &model.ReadReceipt{
+		MessageID:      messageID,
+		ConversationID: msg.ConversationID,
+		ReaderID:       userID,
+		ReadAt:         readAt,
+	}, nil
+}
+
+// MarkMessagesUpToAsRead 标记指定消息及之前的所有消息为已读
+// 返回批量已读回执，用于通知消息发送者
+func (s *ChatService) MarkMessagesUpToAsRead(ctx context.Context, conversationID, userID, upToMessageID uuid.UUID) (*model.BatchReadReceipt, error) {
+	// 检查用户是否是会话成员
+	isMember, err := s.conversationRepo.IsMember(ctx, conversationID, userID)
+	if err != nil {
+		return nil, fmt.Errorf("检查成员身份失败: %w", err)
+	}
+	if !isMember {
+		return nil, ErrNotMember
+	}
+
+	readAt := time.Now()
+	messageIDs, err := s.messageRepo.MarkMessagesUpToAsRead(ctx, conversationID, userID, upToMessageID, readAt)
+	if err != nil {
+		return nil, fmt.Errorf("标记消息已读失败: %w", err)
+	}
+
+	// 重置未读数缓存（因为标记到某条消息为止，可能还有更新的未读消息）
+	// 这里选择使缓存失效，让下次查询时重新从数据库获取
+	if s.unreadCacheService != nil {
+		if err := s.unreadCacheService.InvalidateCache(ctx, userID, conversationID); err != nil {
+			fmt.Printf("警告: 使未读数缓存失效失败: %v\n", err)
+		}
+	}
+
+	return &model.BatchReadReceipt{
+		ConversationID: conversationID,
+		ReaderID:       userID,
+		MessageIDs:     messageIDs,
+		ReadAt:         readAt,
+	}, nil
 }
 
 // SubscribeToConversation 订阅会话的实时消息

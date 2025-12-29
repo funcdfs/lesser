@@ -6,10 +6,12 @@ import '../../domain/repositories/auth_repository.dart';
 import '../../domain/usecases/login.dart';
 import '../../domain/usecases/logout.dart';
 import '../../domain/usecases/register.dart';
+import '../../../chat/data/datasources/chat_websocket_service.dart';
 
-/// Auth state
+/// 认证状态枚举
 enum AuthStatus { initial, loading, authenticated, unauthenticated, error }
 
+/// 认证状态
 class AuthState {
   const AuthState({
     this.status = AuthStatus.initial,
@@ -34,16 +36,19 @@ class AuthState {
   }
 }
 
-/// Auth notifier
-class AuthNotifier extends StateNotifier<AuthState> {
-  AuthNotifier({
-    required AuthRepository repository,
-  })  : _repository = repository,
-        super(const AuthState());
+/// 认证状态管理器
+class AuthNotifier extends Notifier<AuthState> {
+  late final AuthRepository _repository;
+  late final ChatWebSocketService _webSocketService;
 
-  final AuthRepository _repository;
+  @override
+  AuthState build() {
+    _repository = getIt<AuthRepository>();
+    _webSocketService = getIt<ChatWebSocketService>();
+    return const AuthState();
+  }
 
-  /// Check authentication status
+  /// 检查认证状态
   Future<void> checkAuthStatus() async {
     state = state.copyWith(status: AuthStatus.loading);
 
@@ -54,17 +59,21 @@ class AuthNotifier extends StateNotifier<AuthState> {
         (failure) => state = state.copyWith(
           status: AuthStatus.unauthenticated,
         ),
-        (user) => state = state.copyWith(
-          status: AuthStatus.authenticated,
-          user: user,
-        ),
+        (user) {
+          state = state.copyWith(
+            status: AuthStatus.authenticated,
+            user: user,
+          );
+          // 登录状态恢复后自动连接 WebSocket
+          _webSocketService.connect(user.id);
+        },
       );
     } else {
       state = state.copyWith(status: AuthStatus.unauthenticated);
     }
   }
 
-  /// Login
+  /// 登录
   Future<void> login({
     required String email,
     required String password,
@@ -82,14 +91,18 @@ class AuthNotifier extends StateNotifier<AuthState> {
         status: AuthStatus.error,
         errorMessage: failure.message,
       ),
-      (user) => state = state.copyWith(
-        status: AuthStatus.authenticated,
-        user: user,
-      ),
+      (user) {
+        state = state.copyWith(
+          status: AuthStatus.authenticated,
+          user: user,
+        );
+        // 登录成功后自动连接 WebSocket
+        _webSocketService.connect(user.id);
+      },
     );
   }
 
-  /// Register
+  /// 注册
   Future<void> register({
     required String username,
     required String email,
@@ -111,16 +124,23 @@ class AuthNotifier extends StateNotifier<AuthState> {
         status: AuthStatus.error,
         errorMessage: failure.message,
       ),
-      (user) => state = state.copyWith(
-        status: AuthStatus.authenticated,
-        user: user,
-      ),
+      (user) {
+        state = state.copyWith(
+          status: AuthStatus.authenticated,
+          user: user,
+        );
+        // 注册成功后自动连接 WebSocket
+        _webSocketService.connect(user.id);
+      },
     );
   }
 
-  /// Logout
+  /// 登出
   Future<void> logout() async {
     state = state.copyWith(status: AuthStatus.loading);
+
+    // 登出时断开 WebSocket 连接
+    await _webSocketService.disconnect();
 
     final logoutUseCase = LogoutUseCase(_repository);
     await logoutUseCase();
@@ -128,16 +148,11 @@ class AuthNotifier extends StateNotifier<AuthState> {
     state = const AuthState(status: AuthStatus.unauthenticated);
   }
 
-  /// Clear error
+  /// 清除错误
   void clearError() {
     state = state.copyWith(errorMessage: null);
   }
 }
 
-/// Auth provider
-final authProvider = StateNotifierProvider<AuthNotifier, AuthState>((ref) {
-  // This will be properly initialized after DI setup
-  // For now, we'll throw if repository is not registered
-  final repository = getIt<AuthRepository>();
-  return AuthNotifier(repository: repository);
-});
+/// 认证 Provider
+final authProvider = NotifierProvider<AuthNotifier, AuthState>(AuthNotifier.new);

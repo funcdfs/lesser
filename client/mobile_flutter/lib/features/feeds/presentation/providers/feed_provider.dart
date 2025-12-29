@@ -40,13 +40,14 @@ class FeedState {
 }
 
 /// Feed notifier
-class FeedNotifier extends StateNotifier<FeedState> {
-  FeedNotifier({
-    required FeedRepository repository,
-  })  : _repository = repository,
-        super(const FeedState());
+class FeedNotifier extends Notifier<FeedState> {
+  late final FeedRepository _repository;
 
-  final FeedRepository _repository;
+  @override
+  FeedState build() {
+    _repository = getIt<FeedRepository>();
+    return const FeedState();
+  }
 
   /// Load initial feeds
   Future<void> loadFeeds() async {
@@ -222,7 +223,4 @@ class FeedNotifier extends StateNotifier<FeedState> {
 }
 
 /// Feed provider
-final feedProvider = StateNotifierProvider<FeedNotifier, FeedState>((ref) {
-  final repository = getIt<FeedRepository>();
-  return FeedNotifier(repository: repository);
-});
+final feedProvider = NotifierProvider<FeedNotifier, FeedState>(FeedNotifier.new);

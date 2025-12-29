@@ -176,6 +176,24 @@ func (r *ConversationRepository) UpdateTimestamp(ctx context.Context, conversati
 		Update("updated_at", gorm.Expr("NOW()")).Error
 }
 
+// GetMemberIDs 获取会话的所有成员ID
+func (r *ConversationRepository) GetMemberIDs(ctx context.Context, conversationID uuid.UUID) ([]uuid.UUID, error) {
+	var members []model.ConversationMember
+	err := r.db.WithContext(ctx).
+		Select("user_id").
+		Where("conversation_id = ?", conversationID).
+		Find(&members).Error
+	if err != nil {
+		return nil, fmt.Errorf("获取成员列表失败: %w", err)
+	}
+
+	ids := make([]uuid.UUID, len(members))
+	for i, m := range members {
+		ids[i] = m.UserID
+	}
+	return ids, nil
+}
+
 // Delete 删除会话及其所有成员
 func (r *ConversationRepository) Delete(ctx context.Context, id uuid.UUID) error {
 	return r.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {

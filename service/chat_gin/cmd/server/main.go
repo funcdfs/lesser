@@ -55,18 +55,34 @@ func main() {
 	conversationRepo := repository.NewConversationRepository(db)
 	messageRepo := repository.NewMessageRepository(db)
 
-	// 初始化用户服务客户端（用于从 Django 获取用户信息）
+	// 初始化 Auth gRPC 客户端（用于 JWT 验证和获取用户信息）
+	var authClient *service.AuthClient
+	authClient, err = service.NewAuthClient(cfg.AuthGRPCAddr)
+	if err != nil {
+		log.Printf("警告: 连接 Auth gRPC 服务失败: %v，将使用降级模式（仅支持 X-User-ID header）", err)
+		// 继续运行，但处于降级模式
+	} else {
+		log.Printf("已连接到 Auth gRPC 服务: %s", cfg.AuthGRPCAddr)
+	}
+
+	// 初始化用户服务客户端（HTTP 备用，用于从 Django 获取用户信息）
 	userClient := service.NewUserClient("http://django:8000")
 
+	// 初始化未读数缓存服务
+	var unreadCacheService *service.UnreadCacheService
+	if redisClient != nil {
+		unreadCacheService = service.NewUnreadCacheService(redisClient, messageRepo)
+	}
+
 	// 初始化业务服务层
-	chatService := service.NewChatService(conversationRepo, messageRepo, redisClient, userClient)
+	chatService := service.NewChatService(conversationRepo, messageRepo, redisClient, userClient, unreadCacheService)
 
 	// 初始化 WebSocket 连接管理中心
 	hub := ws.NewHub(chatService)
 	go hub.Run()
 
 	// 初始化 HTTP 服务器
-	httpServer := server.NewHTTPServer(cfg, chatService, hub)
+	httpServer := server.NewHTTPServer(cfg, chatService, authClient, hub)
 
 	// 初始化 gRPC 服务器
 	grpcServer := grpc.NewServer()
@@ -125,6 +141,12 @@ func main() {
 		redisClient.Close()
 	}
 	log.Println("Redis 连接已关闭")
+
+	// 关闭 Auth gRPC 连接
+	if authClient != nil {
+		authClient.Close()
+	}
+	log.Println("Auth gRPC 连接已关闭")
 
 	log.Println("服务器已正常退出")
 }

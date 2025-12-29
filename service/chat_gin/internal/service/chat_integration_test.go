@@ -18,30 +18,30 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-// TestChatIntegration tests the complete chat flow between two users.
-// This test requires a running PostgreSQL and Redis instance.
-// Run with: go test -tags=integration ./internal/service/...
+// TestChatIntegration 测试两个用户之间的完整聊天流程
+// 此测试需要运行中的 PostgreSQL 和 Redis 实例
+// 运行命令: go test -tags=integration ./internal/service/...
 //
-// Feature: chat-integration-demo
-// Property 1: Message Round-Trip Integrity
-// Property 2: Conversation Membership Consistency
-// Validates: Requirements 4.1, 4.2, 4.3, 4.4
+// 功能: chat-integration-demo
+// 属性 1: 消息往返完整性
+// 属性 2: 会话成员一致性
+// 验证: 需求 4.1, 4.2, 4.3, 4.4
 func TestChatIntegration(t *testing.T) {
 	if os.Getenv("INTEGRATION_TEST") != "true" {
-		t.Skip("Skipping integration test. Set INTEGRATION_TEST=true to run.")
+		t.Skip("跳过集成测试。设置 INTEGRATION_TEST=true 以运行。")
 	}
 
-	// Setup database connection
+	// 设置数据库连接
 	dbURL := os.Getenv("DATABASE_URL")
 	if dbURL == "" {
 		dbURL = "postgres://lesser:lesser_dev_password@localhost:5432/lesser_db?sslmode=disable"
 	}
 
 	db, err := database.NewPostgresDB(dbURL)
-	require.NoError(t, err, "Failed to connect to database")
+	require.NoError(t, err, "连接数据库失败")
 	defer db.Close()
 
-	// Setup Redis connection
+	// 设置 Redis 连接
 	redisURL := os.Getenv("REDIS_URL")
 	if redisURL == "" {
 		redisURL = "redis://localhost:6379/1"
@@ -49,56 +49,60 @@ func TestChatIntegration(t *testing.T) {
 
 	redisClient, err := cache.NewRedisClient(redisURL)
 	if err != nil {
-		t.Logf("Warning: Redis not available, some features may not work: %v", err)
+		t.Logf("警告: Redis 不可用，部分功能可能无法工作: %v", err)
 		redisClient = nil
 	}
 
-	// Create repositories and service
+	// 创建仓库和服务
 	convRepo := repository.NewConversationRepository(db)
 	msgRepo := repository.NewMessageRepository(db)
-	chatService := service.NewChatService(convRepo, msgRepo, redisClient)
+	var unreadCacheService *service.UnreadCacheService
+	if redisClient != nil {
+		unreadCacheService = service.NewUnreadCacheService(redisClient, msgRepo)
+	}
+	chatService := service.NewChatService(convRepo, msgRepo, redisClient, nil, unreadCacheService)
 
 	ctx := context.Background()
 
-	// Generate test user IDs (in real scenario, these would come from Django)
+	// 生成测试用户ID（实际场景中这些会来自 Django）
 	test1ID := uuid.New()
 	test2ID := uuid.New()
 
-	t.Logf("Test User 1 ID: %s", test1ID)
-	t.Logf("Test User 2 ID: %s", test2ID)
+	t.Logf("测试用户 1 ID: %s", test1ID)
+	t.Logf("测试用户 2 ID: %s", test2ID)
 
-	// Test 1: Create private conversation
-	// Property 2: Conversation Membership Consistency
-	t.Run("CreatePrivateConversation", func(t *testing.T) {
+	// 测试 1: 创建私聊会话
+	// 属性 2: 会话成员一致性
+	t.Run("创建私聊会话", func(t *testing.T) {
 		conv, err := chatService.CreateConversation(ctx, service.CreateConversationRequest{
 			Type:      model.ConversationTypePrivate,
 			MemberIDs: []uuid.UUID{test1ID, test2ID},
 			CreatorID: test1ID,
 		})
-		require.NoError(t, err, "Failed to create conversation")
-		require.NotNil(t, conv, "Conversation should not be nil")
+		require.NoError(t, err, "创建会话失败")
+		require.NotNil(t, conv, "会话不应为空")
 
-		// Verify conversation properties
-		assert.Equal(t, model.ConversationTypePrivate, conv.Type, "Conversation type should be private")
-		assert.Equal(t, test1ID, conv.CreatorID, "Creator ID should match")
-		assert.Len(t, conv.Members, 2, "Private conversation should have exactly 2 members")
+		// 验证会话属性
+		assert.Equal(t, model.ConversationTypePrivate, conv.Type, "会话类型应为私聊")
+		assert.Equal(t, test1ID, conv.CreatorID, "创建者ID应匹配")
+		assert.Len(t, conv.Members, 2, "私聊会话应有且仅有2个成员")
 
-		// Verify both users are members
+		// 验证两个用户都是成员
 		memberIDs := make(map[uuid.UUID]bool)
 		for _, m := range conv.Members {
 			memberIDs[m.UserID] = true
 		}
-		assert.True(t, memberIDs[test1ID], "test1 should be a member")
-		assert.True(t, memberIDs[test2ID], "test2 should be a member")
+		assert.True(t, memberIDs[test1ID], "test1 应是成员")
+		assert.True(t, memberIDs[test2ID], "test2 应是成员")
 
-		// Store conversation ID for subsequent tests
-		t.Logf("Created conversation ID: %s", conv.ID)
+		// 保存会话ID供后续测试使用
+		t.Logf("创建的会话ID: %s", conv.ID)
 	})
 
-	// Test 2: Send messages and verify round-trip integrity
-	// Property 1: Message Round-Trip Integrity
-	t.Run("MessageRoundTrip", func(t *testing.T) {
-		// First create a conversation
+	// 测试 2: 发送消息并验证往返完整性
+	// 属性 1: 消息往返完整性
+	t.Run("消息往返测试", func(t *testing.T) {
+		// 首先创建会话
 		conv, err := chatService.CreateConversation(ctx, service.CreateConversationRequest{
 			Type:      model.ConversationTypePrivate,
 			MemberIDs: []uuid.UUID{test1ID, test2ID},
@@ -106,19 +110,19 @@ func TestChatIntegration(t *testing.T) {
 		})
 		require.NoError(t, err)
 
-		// Test messages with various content
+		// 测试各种内容的消息
 		testMessages := []struct {
 			senderID uuid.UUID
 			content  string
 		}{
-			{test1ID, "Hello from test1!"},
-			{test2ID, "Hello from test2!"},
-			{test1ID, "How are you?"},
-			{test2ID, "I'm doing great, thanks!"},
-			{test1ID, "Special chars: 你好世界 🎉 émojis"},
+			{test1ID, "来自 test1 的问候！"},
+			{test2ID, "来自 test2 的问候！"},
+			{test1ID, "你好吗？"},
+			{test2ID, "我很好，谢谢！"},
+			{test1ID, "特殊字符: 你好世界 🎉 émojis"},
 		}
 
-		// Send all messages
+		// 发送所有消息
 		sentMessages := make([]*model.Message, len(testMessages))
 		for i, tm := range testMessages {
 			msg, err := chatService.SendMessage(ctx, service.SendMessageRequest{
@@ -127,19 +131,19 @@ func TestChatIntegration(t *testing.T) {
 				Content:        tm.content,
 				MessageType:    model.MessageTypeText,
 			})
-			require.NoError(t, err, "Failed to send message %d", i)
-			require.NotNil(t, msg, "Message should not be nil")
-			assert.NotEqual(t, uuid.Nil, msg.ID, "Message should have a valid ID")
-			assert.Equal(t, tm.content, msg.Content, "Message content should match")
+			require.NoError(t, err, "发送消息 %d 失败", i)
+			require.NotNil(t, msg, "消息不应为空")
+			assert.NotEqual(t, uuid.Nil, msg.ID, "消息应有有效ID")
+			assert.Equal(t, tm.content, msg.Content, "消息内容应匹配")
 			sentMessages[i] = msg
 		}
 
-		// Retrieve messages and verify integrity
+		// 获取消息并验证完整性
 		result, err := chatService.GetMessages(ctx, conv.ID, test1ID, 1, 50)
-		require.NoError(t, err, "Failed to get messages")
-		assert.Equal(t, int64(len(testMessages)), result.Total, "Total message count should match")
+		require.NoError(t, err, "获取消息失败")
+		assert.Equal(t, int64(len(testMessages)), result.Total, "消息总数应匹配")
 
-		// Verify all sent messages are retrieved with correct content
+		// 验证所有发送的消息都能正确获取
 		retrievedContents := make(map[string]bool)
 		for _, msg := range result.Messages {
 			retrievedContents[msg.Content] = true
@@ -147,13 +151,13 @@ func TestChatIntegration(t *testing.T) {
 
 		for _, tm := range testMessages {
 			assert.True(t, retrievedContents[tm.content],
-				"Message content '%s' should be in retrieved messages", tm.content)
+				"消息内容 '%s' 应在获取的消息中", tm.content)
 		}
 	})
 
-	// Test 3: Verify conversation retrieval
-	t.Run("GetConversation", func(t *testing.T) {
-		// Create a conversation
+	// 测试 3: 验证会话获取
+	t.Run("获取会话", func(t *testing.T) {
+		// 创建会话
 		conv, err := chatService.CreateConversation(ctx, service.CreateConversationRequest{
 			Type:      model.ConversationTypePrivate,
 			MemberIDs: []uuid.UUID{test1ID, test2ID},
@@ -161,16 +165,16 @@ func TestChatIntegration(t *testing.T) {
 		})
 		require.NoError(t, err)
 
-		// Retrieve the conversation
+		// 获取会话
 		retrieved, err := chatService.GetConversation(ctx, conv.ID)
 		require.NoError(t, err)
 		assert.Equal(t, conv.ID, retrieved.ID)
 		assert.Equal(t, conv.Type, retrieved.Type)
 	})
 
-	// Test 4: Verify user conversations list
-	t.Run("GetUserConversations", func(t *testing.T) {
-		// Create multiple conversations
+	// 测试 4: 验证用户会话列表
+	t.Run("获取用户会话列表", func(t *testing.T) {
+		// 创建多个会话
 		for i := 0; i < 3; i++ {
 			otherUser := uuid.New()
 			_, err := chatService.CreateConversation(ctx, service.CreateConversationRequest{
@@ -181,16 +185,16 @@ func TestChatIntegration(t *testing.T) {
 			require.NoError(t, err)
 		}
 
-		// Get user's conversations
+		// 获取用户的会话
 		result, err := chatService.GetUserConversations(ctx, test1ID, 1, 20)
 		require.NoError(t, err)
 		assert.GreaterOrEqual(t, len(result.Conversations), 3,
-			"User should have at least 3 conversations")
+			"用户应至少有3个会话")
 	})
 
-	// Test 5: Non-member cannot send messages
-	t.Run("NonMemberCannotSendMessage", func(t *testing.T) {
-		// Create a conversation between test1 and test2
+	// 测试 5: 非成员不能发送消息
+	t.Run("非成员不能发送消息", func(t *testing.T) {
+		// 创建 test1 和 test2 之间的会话
 		conv, err := chatService.CreateConversation(ctx, service.CreateConversationRequest{
 			Type:      model.ConversationTypePrivate,
 			MemberIDs: []uuid.UUID{test1ID, test2ID},
@@ -198,28 +202,28 @@ func TestChatIntegration(t *testing.T) {
 		})
 		require.NoError(t, err)
 
-		// Try to send message as non-member
+		// 尝试以非成员身份发送消息
 		nonMember := uuid.New()
 		_, err = chatService.SendMessage(ctx, service.SendMessageRequest{
 			ConversationID: conv.ID,
 			SenderID:       nonMember,
-			Content:        "I shouldn't be able to send this",
+			Content:        "我不应该能发送这条消息",
 			MessageType:    model.MessageTypeText,
 		})
-		assert.Error(t, err, "Non-member should not be able to send messages")
+		assert.Error(t, err, "非成员不应能发送消息")
 		assert.Equal(t, service.ErrNotMember, err)
 	})
 }
 
-// TestMessageContentIntegrity is a property-based test for message content integrity.
-// Feature: chat-integration-demo, Property 1: Message Round-Trip Integrity
-// Validates: Requirements 4.2, 4.3, 4.4
+// TestMessageContentIntegrity 消息内容完整性的属性测试
+// 功能: chat-integration-demo, 属性 1: 消息往返完整性
+// 验证: 需求 4.2, 4.3, 4.4
 func TestMessageContentIntegrity(t *testing.T) {
 	if os.Getenv("INTEGRATION_TEST") != "true" {
-		t.Skip("Skipping integration test. Set INTEGRATION_TEST=true to run.")
+		t.Skip("跳过集成测试。设置 INTEGRATION_TEST=true 以运行。")
 	}
 
-	// Setup (same as above)
+	// 设置（同上）
 	dbURL := os.Getenv("DATABASE_URL")
 	if dbURL == "" {
 		dbURL = "postgres://lesser:lesser_dev_password@localhost:5432/lesser_db?sslmode=disable"
@@ -231,13 +235,13 @@ func TestMessageContentIntegrity(t *testing.T) {
 
 	convRepo := repository.NewConversationRepository(db)
 	msgRepo := repository.NewMessageRepository(db)
-	chatService := service.NewChatService(convRepo, msgRepo, nil)
+	chatService := service.NewChatService(convRepo, msgRepo, nil, nil, nil)
 
 	ctx := context.Background()
 	test1ID := uuid.New()
 	test2ID := uuid.New()
 
-	// Create conversation
+	// 创建会话
 	conv, err := chatService.CreateConversation(ctx, service.CreateConversationRequest{
 		Type:      model.ConversationTypePrivate,
 		MemberIDs: []uuid.UUID{test1ID, test2ID},
@@ -245,25 +249,25 @@ func TestMessageContentIntegrity(t *testing.T) {
 	})
 	require.NoError(t, err)
 
-	// Property: For any message content, send then retrieve should return identical content
+	// 属性: 对于任何消息内容，发送后获取应返回相同内容
 	testContents := []string{
-		"Simple text",
-		"Text with numbers 12345",
-		"Special chars: !@#$%^&*()",
+		"简单文本",
+		"带数字的文本 12345",
+		"特殊字符: !@#$%^&*()",
 		"Unicode: 你好世界 🎉 émojis 日本語",
-		"Newlines:\nLine 1\nLine 2",
-		"Tabs:\tTab1\tTab2",
-		"Long text: " + string(make([]byte, 1000)),
-		"Empty-ish:    ",
+		"换行符:\n第1行\n第2行",
+		"制表符:\t标签1\t标签2",
+		"长文本: " + string(make([]byte, 1000)),
+		"近空白:    ",
 	}
 
 	for _, content := range testContents {
 		if content == "" {
-			continue // Skip empty content as it's invalid
+			continue // 跳过空内容（无效）
 		}
 
-		t.Run("Content_"+content[:min(20, len(content))], func(t *testing.T) {
-			// Send message
+		t.Run("内容_"+content[:min(20, len(content))], func(t *testing.T) {
+			// 发送消息
 			sent, err := chatService.SendMessage(ctx, service.SendMessageRequest{
 				ConversationID: conv.ID,
 				SenderID:       test1ID,
@@ -272,10 +276,10 @@ func TestMessageContentIntegrity(t *testing.T) {
 			})
 			require.NoError(t, err)
 
-			// Small delay to ensure persistence
+			// 短暂延迟确保持久化
 			time.Sleep(10 * time.Millisecond)
 
-			// Retrieve and verify
+			// 获取并验证
 			result, err := chatService.GetMessages(ctx, conv.ID, test1ID, 1, 100)
 			require.NoError(t, err)
 
@@ -283,12 +287,12 @@ func TestMessageContentIntegrity(t *testing.T) {
 			for _, msg := range result.Messages {
 				if msg.ID == sent.ID {
 					assert.Equal(t, content, msg.Content,
-						"Retrieved content should match sent content")
+						"获取的内容应与发送的内容匹配")
 					found = true
 					break
 				}
 			}
-			assert.True(t, found, "Sent message should be found in retrieved messages")
+			assert.True(t, found, "发送的消息应在获取的消息中找到")
 		})
 	}
 }

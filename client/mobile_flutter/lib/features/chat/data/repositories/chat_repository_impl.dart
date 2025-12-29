@@ -149,6 +149,23 @@ class ChatRepositoryImpl implements ChatRepository {
   }
 
   @override
+  Future<Either<Failure, void>> markAsRead(String conversationId) async {
+    try {
+      await _remoteDataSource.markAsRead(conversationId);
+      return const Right(null);
+    } on ServerException catch (e) {
+      log.w('服务器异常: ${e.message}', tag: _tag);
+      return Left(ServerFailure(message: e.message));
+    } on NetworkException catch (e) {
+      log.w('网络异常: ${e.message}', tag: _tag);
+      return Left(NetworkFailure(message: e.message));
+    } catch (e, stackTrace) {
+      log.e('未知错误: $e', tag: _tag, stackTrace: stackTrace);
+      return Left(UnknownFailure(message: e.toString()));
+    }
+  }
+
+  @override
   Stream<Message> streamMessages(String conversationId) {
     // TODO: 实现 WebSocket/gRPC 流式消息
     // 这是一个占位实现，返回空流
