@@ -5,10 +5,18 @@ import (
 	"time"
 
 	"github.com/google/uuid"
+	"github.com/lesser/chat/internal/config"
 )
 
+// 创建测试用配置（开发环境，允许所有来源）
+func testConfig() *config.Config {
+	return &config.Config{
+		Environment: "development",
+	}
+}
+
 func TestHub_RegisterUnregister(t *testing.T) {
-	hub := NewHub(nil)
+	hub := NewHub(nil, testConfig())
 	go hub.Run()
 
 	// Give hub time to start
@@ -50,7 +58,7 @@ func TestHub_RegisterUnregister(t *testing.T) {
 }
 
 func TestHub_SubscribeToConversation(t *testing.T) {
-	hub := NewHub(nil)
+	hub := NewHub(nil, testConfig())
 	go hub.Run()
 
 	time.Sleep(10 * time.Millisecond)
@@ -96,7 +104,7 @@ func TestHub_SubscribeToConversation(t *testing.T) {
 }
 
 func TestHub_UnsubscribeFromConversation(t *testing.T) {
-	hub := NewHub(nil)
+	hub := NewHub(nil, testConfig())
 	go hub.Run()
 
 	time.Sleep(10 * time.Millisecond)

@@ -5,8 +5,8 @@ import (
 	"time"
 
 	"github.com/google/uuid"
+	"github.com/lesser/chat/internal/auth"
 	"github.com/lesser/chat/internal/model"
-	grpcserver "github.com/lesser/chat/internal/server"
 	"github.com/lesser/chat/internal/service"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
@@ -140,8 +140,10 @@ func (h *ChatHandler) GetMessages(ctx context.Context, req *GetMessagesRequest) 
 	}
 
 	// 从认证上下文获取用户 ID
-	// 如果未认证（内部 gRPC 调用），使用 uuid.Nil 跳过成员检查
-	userID, _ := grpcserver.GetUserIDFromContext(ctx)
+	userID, ok := auth.GetUserIDFromContext(ctx)
+	if !ok {
+		return nil, status.Error(codes.Unauthenticated, "需要认证")
+	}
 
 	page := int(req.Pagination.GetPage())
 	if page < 1 {

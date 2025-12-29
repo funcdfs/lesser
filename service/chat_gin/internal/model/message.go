@@ -30,10 +30,27 @@ type Message struct {
 	Metadata map[string]interface{} `json:"metadata,omitempty" gorm:"type:jsonb"`
 }
 
-// IsRead 判断消息是否已读
-// 返回 true 当 read_at 不为 null，返回 false 当 read_at 为 null
-func (m *Message) IsRead() bool {
+// IsReadByRecipient 判断消息是否已被接收方读取
+// 对于发送方：返回 true 表示对方已读我发的消息
+// 对于接收方：返回 true 表示我已读这条消息
+func (m *Message) IsReadByRecipient() bool {
 	return m.ReadAt != nil
+}
+
+// IsReadBy 判断消息是否已被指定用户读取
+// 如果 userID 是发送者，返回 false（发送者不需要"读"自己的消息）
+// 如果 userID 是接收者，返回 ReadAt != nil
+func (m *Message) IsReadBy(userID uuid.UUID) bool {
+	if m.SenderID == userID {
+		return false // 发送者不需要读自己的消息
+	}
+	return m.ReadAt != nil
+}
+
+// NeedsReadReceipt 判断是否需要向发送方发送已读回执
+// 当消息被接收方读取时，需要通知发送方
+func (m *Message) NeedsReadReceipt(readerID uuid.UUID) bool {
+	return m.SenderID != readerID && m.ReadAt != nil
 }
 
 // TableName 返回消息表名

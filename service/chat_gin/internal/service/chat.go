@@ -39,9 +39,8 @@ func NewChatService(
 
 // CreateConversation 创建新会话
 func (s *ChatService) CreateConversation(ctx context.Context, req CreateConversationRequest) (*model.Conversation, error) {
-	// 验证请求参数
 	if err := req.Validate(); err != nil {
-		return nil, fmt.Errorf("请求参数无效: %w", err)
+		return nil, err
 	}
 
 	// 对于私聊，检查是否已存在相同的会话
@@ -61,7 +60,7 @@ func (s *ChatService) CreateConversation(ctx context.Context, req CreateConversa
 	}
 
 	if err := s.conversationRepo.Create(ctx, conv, req.MemberIDs); err != nil {
-		return nil, fmt.Errorf("创建会话失败: %w", err)
+		return nil, fmt.Errorf("%w: %v", ErrCreateConversationFailed, err)
 	}
 
 	// 重新加载会话（包含成员信息）
@@ -98,7 +97,7 @@ func (s *ChatService) GetUserConversations(ctx context.Context, userID uuid.UUID
 
 	conversations, total, err := s.conversationRepo.GetByUserID(ctx, userID, page, pageSize)
 	if err != nil {
-		return nil, fmt.Errorf("获取会话列表失败: %w", err)
+		return nil, fmt.Errorf("%w: %v", ErrGetConversationsFailed, err)
 	}
 
 	// 收集所有会话ID用于批量查询未读数
@@ -138,15 +137,14 @@ func (s *ChatService) GetUserConversations(ctx context.Context, userID uuid.UUID
 
 // SendMessage 发送消息到会话
 func (s *ChatService) SendMessage(ctx context.Context, req SendMessageRequest) (*model.Message, error) {
-	// 验证请求参数
 	if err := req.Validate(); err != nil {
-		return nil, fmt.Errorf("请求参数无效: %w", err)
+		return nil, err
 	}
 
 	// 检查用户是否是会话成员
 	isMember, err := s.conversationRepo.IsMember(ctx, req.ConversationID, req.SenderID)
 	if err != nil {
-		return nil, fmt.Errorf("检查成员身份失败: %w", err)
+		return nil, fmt.Errorf("%w: %v", ErrCheckMemberFailed, err)
 	}
 	if !isMember {
 		return nil, ErrNotMember
@@ -162,7 +160,7 @@ func (s *ChatService) SendMessage(ctx context.Context, req SendMessageRequest) (
 	}
 
 	if err := s.messageRepo.Create(ctx, msg); err != nil {
-		return nil, fmt.Errorf("创建消息失败: %w", err)
+		return nil, fmt.Errorf("%w: %v", ErrCreateMessageFailed, err)
 	}
 
 	// 更新会话的最后活动时间
@@ -205,7 +203,7 @@ func (s *ChatService) GetMessages(ctx context.Context, conversationID uuid.UUID,
 	if userID != uuid.Nil {
 		isMember, err := s.conversationRepo.IsMember(ctx, conversationID, userID)
 		if err != nil {
-			return nil, fmt.Errorf("检查成员身份失败: %w", err)
+			return nil, fmt.Errorf("%w: %v", ErrCheckMemberFailed, err)
 		}
 		if !isMember {
 			return nil, ErrNotMember
@@ -221,7 +219,7 @@ func (s *ChatService) GetMessages(ctx context.Context, conversationID uuid.UUID,
 
 	messages, total, err := s.messageRepo.GetByConversationID(ctx, conversationID, page, pageSize)
 	if err != nil {
-		return nil, fmt.Errorf("获取消息列表失败: %w", err)
+		return nil, fmt.Errorf("%w: %v", ErrGetMessagesFailed, err)
 	}
 
 	return &MessagesResult{
@@ -237,7 +235,7 @@ func (s *ChatService) AddMember(ctx context.Context, conversationID, userID, add
 	// 检查添加者是否是会话成员
 	isMember, err := s.conversationRepo.IsMember(ctx, conversationID, addedBy)
 	if err != nil {
-		return fmt.Errorf("检查成员身份失败: %w", err)
+		return fmt.Errorf("%w: %v", ErrCheckMemberFailed, err)
 	}
 	if !isMember {
 		return ErrNotMember
@@ -246,7 +244,7 @@ func (s *ChatService) AddMember(ctx context.Context, conversationID, userID, add
 	// 获取会话信息以检查类型
 	conv, err := s.conversationRepo.GetByID(ctx, conversationID)
 	if err != nil {
-		return fmt.Errorf("获取会话信息失败: %w", err)
+		return fmt.Errorf("%w: %v", ErrGetConversationFailed, err)
 	}
 
 	// 私聊会话不能添加成员
@@ -256,7 +254,7 @@ func (s *ChatService) AddMember(ctx context.Context, conversationID, userID, add
 
 	// 添加成员
 	if err := s.conversationRepo.AddMember(ctx, conversationID, userID, model.MemberRoleMember); err != nil {
-		return fmt.Errorf("添加成员失败: %w", err)
+		return fmt.Errorf("%w: %v", ErrAddMemberFailed, err)
 	}
 
 	return nil
@@ -267,7 +265,7 @@ func (s *ChatService) RemoveMember(ctx context.Context, conversationID, userID, 
 	// 获取会话信息
 	conv, err := s.conversationRepo.GetByID(ctx, conversationID)
 	if err != nil {
-		return fmt.Errorf("获取会话信息失败: %w", err)
+		return fmt.Errorf("%w: %v", ErrGetConversationFailed, err)
 	}
 
 	// 检查权限（只有群主/管理员可以移除他人，任何人可以退出）
@@ -281,7 +279,7 @@ func (s *ChatService) RemoveMember(ctx context.Context, conversationID, userID, 
 
 	// 移除成员
 	if err := s.conversationRepo.RemoveMember(ctx, conversationID, userID); err != nil {
-		return fmt.Errorf("移除成员失败: %w", err)
+		return fmt.Errorf("%w: %v", ErrRemoveMemberFailed, err)
 	}
 
 	return nil
@@ -332,7 +330,7 @@ func (s *ChatService) MarkConversationAsRead(ctx context.Context, conversationID
 	// 检查用户是否是会话成员
 	isMember, err := s.conversationRepo.IsMember(ctx, conversationID, userID)
 	if err != nil {
-		return nil, fmt.Errorf("检查成员身份失败: %w", err)
+		return nil, fmt.Errorf("%w: %v", ErrCheckMemberFailed, err)
 	}
 	if !isMember {
 		return nil, ErrNotMember
@@ -341,7 +339,7 @@ func (s *ChatService) MarkConversationAsRead(ctx context.Context, conversationID
 	readAt := time.Now()
 	messageIDs, err := s.messageRepo.MarkConversationAsRead(ctx, conversationID, userID, readAt)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("%w: %v", ErrMarkReadFailed, err)
 	}
 
 	// 重置未读数缓存
@@ -365,13 +363,13 @@ func (s *ChatService) MarkMessageAsRead(ctx context.Context, messageID, userID u
 	// 获取消息信息
 	msg, err := s.messageRepo.GetByID(ctx, messageID)
 	if err != nil {
-		return nil, fmt.Errorf("获取消息失败: %w", err)
+		return nil, fmt.Errorf("%w: %v", ErrGetMessageFailed, err)
 	}
 
 	// 检查用户是否是会话成员
 	isMember, err := s.conversationRepo.IsMember(ctx, msg.ConversationID, userID)
 	if err != nil {
-		return nil, fmt.Errorf("检查成员身份失败: %w", err)
+		return nil, fmt.Errorf("%w: %v", ErrCheckMemberFailed, err)
 	}
 	if !isMember {
 		return nil, ErrNotMember
@@ -383,13 +381,13 @@ func (s *ChatService) MarkMessageAsRead(ctx context.Context, messageID, userID u
 	}
 
 	// 消息已经被标记为已读
-	if msg.IsRead() {
+	if msg.IsReadByRecipient() {
 		return nil, ErrAlreadyRead
 	}
 
 	readAt := time.Now()
 	if err := s.messageRepo.MarkAsRead(ctx, messageID, readAt); err != nil {
-		return nil, fmt.Errorf("标记消息已读失败: %w", err)
+		return nil, fmt.Errorf("%w: %v", ErrMarkReadFailed, err)
 	}
 
 	// 减少未读数缓存
@@ -413,7 +411,7 @@ func (s *ChatService) MarkMessagesUpToAsRead(ctx context.Context, conversationID
 	// 检查用户是否是会话成员
 	isMember, err := s.conversationRepo.IsMember(ctx, conversationID, userID)
 	if err != nil {
-		return nil, fmt.Errorf("检查成员身份失败: %w", err)
+		return nil, fmt.Errorf("%w: %v", ErrCheckMemberFailed, err)
 	}
 	if !isMember {
 		return nil, ErrNotMember
@@ -422,7 +420,7 @@ func (s *ChatService) MarkMessagesUpToAsRead(ctx context.Context, conversationID
 	readAt := time.Now()
 	messageIDs, err := s.messageRepo.MarkMessagesUpToAsRead(ctx, conversationID, userID, upToMessageID, readAt)
 	if err != nil {
-		return nil, fmt.Errorf("标记消息已读失败: %w", err)
+		return nil, fmt.Errorf("%w: %v", ErrMarkReadFailed, err)
 	}
 
 	// 重置未读数缓存（因为标记到某条消息为止，可能还有更新的未读消息）
@@ -446,7 +444,7 @@ func (s *ChatService) SubscribeToConversation(ctx context.Context, conversationI
 	// 检查用户是否是会话成员
 	isMember, err := s.conversationRepo.IsMember(ctx, conversationID, userID)
 	if err != nil {
-		return nil, fmt.Errorf("检查成员身份失败: %w", err)
+		return nil, fmt.Errorf("%w: %v", ErrCheckMemberFailed, err)
 	}
 	if !isMember {
 		return nil, ErrNotMember
@@ -501,16 +499,16 @@ type CreateConversationRequest struct {
 // Validate 验证创建会话请求
 func (r *CreateConversationRequest) Validate() error {
 	if len(r.MemberIDs) == 0 {
-		return fmt.Errorf("至少需要一个成员")
+		return ErrNoMembers
 	}
 	if r.CreatorID == uuid.Nil {
-		return fmt.Errorf("创建者ID不能为空")
+		return ErrInvalidCreatorID
 	}
 	if r.Type == model.ConversationTypePrivate && len(r.MemberIDs) != 2 {
-		return fmt.Errorf("私聊会话必须有且仅有2个成员")
+		return ErrPrivateMemberCount
 	}
 	if r.Type == model.ConversationTypeGroup && r.Name == "" {
-		return fmt.Errorf("群聊会话必须有名称")
+		return ErrGroupNameRequired
 	}
 	return nil
 }
@@ -526,13 +524,13 @@ type SendMessageRequest struct {
 // Validate 验证发送消息请求
 func (r *SendMessageRequest) Validate() error {
 	if r.ConversationID == uuid.Nil {
-		return fmt.Errorf("会话ID不能为空")
+		return ErrInvalidConversationID
 	}
 	if r.SenderID == uuid.Nil {
-		return fmt.Errorf("发送者ID不能为空")
+		return ErrInvalidSenderID
 	}
 	if r.Content == "" {
-		return fmt.Errorf("消息内容不能为空")
+		return ErrEmptyContent
 	}
 	if r.MessageType == "" {
 		r.MessageType = model.MessageTypeText

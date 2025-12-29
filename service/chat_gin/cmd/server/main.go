@@ -63,8 +63,8 @@ func main() {
 		log.Printf("已连接到 Auth gRPC 服务: %s", cfg.AuthGRPCAddr)
 	}
 
-	// 初始化用户服务客户端（HTTP 备用，用于从 Django 获取用户信息）
-	userClient := service.NewUserClient("http://django:8000")
+	// 初始化用户服务客户端（通过 gRPC 从 Django 获取用户信息，带 Redis 缓存）
+	userClient := service.NewUserClient(authClient, redisClient)
 
 	// 初始化未读数缓存服务
 	var unreadCacheService *service.UnreadCacheService
@@ -76,7 +76,7 @@ func main() {
 	chatService := service.NewChatService(conversationRepo, messageRepo, redisClient, userClient, unreadCacheService)
 
 	// 初始化 WebSocket 连接管理中心
-	hub := ws.NewHub(chatService)
+	hub := ws.NewHub(chatService, cfg)
 	go hub.Run()
 
 	// 初始化 HTTP 服务器

@@ -278,6 +278,17 @@ show_status() {
     echo -e "${BOLD}  服务名称          状态              端口${NC}"
     print_separator
     
+    # 检查是否有运行中的容器
+    local container_count=$(docker compose -f "$COMPOSE_FILE" ps -q 2>/dev/null | wc -l | tr -d ' ')
+    
+    if [ "$container_count" -eq 0 ]; then
+        echo -e "  ${DIM}没有运行中的服务${NC}"
+        echo ""
+        echo -e "  运行 ${CYAN}./dev.sh start${NC} 启动服务"
+        echo ""
+        return
+    fi
+    
     # 使用 docker compose ps --format json 获取状态
     docker compose -f "$COMPOSE_FILE" ps --format json 2>/dev/null | while read -r json_line; do
         name=$(echo "$json_line" | python3 -c "import sys,json; print(json.load(sys.stdin).get('Name',''))" 2>/dev/null)
@@ -324,12 +335,33 @@ else:
             *chat*) svc_icon="💬" ;;
             *traefik*) svc_icon="${ICON_WEB}" ;;
             *celery*) svc_icon="🔄" ;;
+            *dozzle*) svc_icon="📋" ;;
             *) svc_icon="${ICON_API}" ;;
         esac
         
         printf "  ${svc_icon} %-14s ${status_icon} %-12b ${DIM}ports: %s${NC}\n" "$name" "$status_text" "$port_str"
     done
     
+    echo ""
+}
+
+show_resource_usage() {
+    echo -e "${BOLD}  📊 资源使用${NC}"
+    print_separator
+    
+    # 获取容器资源使用情况
+    docker stats --no-stream --format "table {{.Name}}\t{{.CPUPerc}}\t{{.MemUsage}}" 2>/dev/null | tail -n +2 | while read -r line; do
+        name=$(echo "$line" | awk '{print $1}')
+        cpu=$(echo "$line" | awk '{print $2}')
+        mem=$(echo "$line" | awk '{print $3}')
+        
+        # 只显示我们项目的容器
+        case "$name" in
+            postgres|redis|django|chat|traefik|celery-worker|celery-beat|dozzle)
+                printf "  %-16s CPU: %-8s MEM: %s\n" "$name" "$cpu" "$mem"
+                ;;
+        esac
+    done
     echo ""
 }
 
@@ -340,6 +372,7 @@ show_urls() {
     echo -e "  ${CYAN}Django API${NC}          →  http://localhost:8000"
     echo -e "  ${CYAN}Chat API${NC}            →  http://localhost:8081"
     echo -e "  ${CYAN}Traefik Dashboard${NC}   →  http://localhost:8088"
+    echo -e "  ${CYAN}Dozzle (日志)${NC}       →  http://localhost:${DOZZLE_PORT:-9999}"
     echo ""
     
     echo -e "${BOLD}  ${ICON_API} 测试端点${NC}"
@@ -885,7 +918,7 @@ show_help() {
     echo -e "      ${DIM}target: service, client, flutter, react, <service-name>${NC}"
     echo -e "  ${CYAN}restart${NC} [service]        重启服务"
     echo -e "  ${CYAN}logs${NC} [service] [lines]   查看日志 (默认 100 行)"
-    echo -e "  ${CYAN}ps${NC}, ${CYAN}status${NC}              查看服务状态"
+    echo -e "  ${CYAN}ps${NC}, ${CYAN}status${NC}              查看服务状态、资源使用和访问地址"
     echo -e "  ${CYAN}test${NC}                     测试服务连通性"
     echo ""
     
@@ -1155,6 +1188,7 @@ main() {
         
         ps|status)
             show_status
+            show_resource_usage
             show_urls
             ;;
         

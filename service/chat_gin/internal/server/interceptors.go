@@ -7,26 +7,13 @@ import (
 	"time"
 
 	"github.com/google/uuid"
+	"github.com/lesser/chat/internal/auth"
 	"github.com/lesser/chat/internal/service"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/metadata"
 	"google.golang.org/grpc/status"
 )
-
-// 定义 context key 类型，避免冲突
-type contextKey string
-
-const (
-	// UserIDKey 用于在 context 中存储用户 ID
-	UserIDKey contextKey = "userID"
-)
-
-// GetUserIDFromContext 从 gRPC context 中获取用户 ID
-func GetUserIDFromContext(ctx context.Context) (uuid.UUID, bool) {
-	userID, ok := ctx.Value(UserIDKey).(uuid.UUID)
-	return userID, ok
-}
 
 // authUnaryInterceptor 认证拦截器，从 metadata 中提取并验证 token
 func authUnaryInterceptor(authClient *service.AuthClient) grpc.UnaryServerInterceptor {
@@ -53,7 +40,7 @@ func authUnaryInterceptor(authClient *service.AuthClient) grpc.UnaryServerInterc
 						return nil, status.Error(codes.Unauthenticated, "token 验证失败")
 					}
 					// 将用户 ID 存入 context
-					ctx = context.WithValue(ctx, UserIDKey, userID)
+					ctx = auth.SetUserIDInContext(ctx, userID)
 					return handler(ctx, req)
 				}
 			}
@@ -62,7 +49,7 @@ func authUnaryInterceptor(authClient *service.AuthClient) grpc.UnaryServerInterc
 			if userIDHeaders := md.Get("x-user-id"); len(userIDHeaders) > 0 {
 				userID, err := uuid.Parse(userIDHeaders[0])
 				if err == nil {
-					ctx = context.WithValue(ctx, UserIDKey, userID)
+					ctx = auth.SetUserIDInContext(ctx, userID)
 					return handler(ctx, req)
 				}
 			}
