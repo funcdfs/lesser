@@ -17,7 +17,7 @@ class ChatRoomPage extends ConsumerStatefulWidget {
 
 class _ChatRoomPageState extends ConsumerState<ChatRoomPage> {
   final _scrollController = ScrollController();
-  bool _isAtBottom = true;
+  bool _showScrollToBottom = false;
 
   @override
   void initState() {
@@ -44,15 +44,21 @@ class _ChatRoomPageState extends ConsumerState<ChatRoomPage> {
       ref.read(chatRoomProvider.notifier).loadMoreMessages();
     }
     
-    // 检测是否在底部（reverse: true 时，底部是 pixels == 0）
-    final atBottom = _scrollController.position.pixels < 50;
-    if (atBottom != _isAtBottom) {
+    // 检测是否需要显示回到底部按钮（reverse: true 时，底部是 pixels == 0）
+    // 只有滚动超过一个屏幕高度时才显示按钮
+    final viewportHeight = _scrollController.position.viewportDimension;
+    final scrolledDistance = _scrollController.position.pixels;
+    final shouldShow = scrolledDistance > viewportHeight;
+    
+    if (shouldShow != _showScrollToBottom) {
       setState(() {
-        _isAtBottom = atBottom;
+        _showScrollToBottom = shouldShow;
       });
-      if (atBottom) {
-        ref.read(chatRoomProvider.notifier).clearNewMessagesFlag();
-      }
+    }
+    
+    // 在底部时清除新消息标记
+    if (scrolledDistance < 50) {
+      ref.read(chatRoomProvider.notifier).clearNewMessagesFlag();
     }
   }
 
@@ -102,10 +108,10 @@ class _ChatRoomPageState extends ConsumerState<ChatRoomPage> {
           ),
         ],
       ),
-      floatingActionButton: (!_isAtBottom || chatRoomState.hasNewMessages)
+      floatingActionButton: (_showScrollToBottom || chatRoomState.hasNewMessages)
           ? _buildScrollToBottomButton(chatRoomState.hasNewMessages)
           : null,
-      floatingActionButtonLocation: FloatingActionButtonLocation.centerFloat,
+      floatingActionButtonLocation: FloatingActionButtonLocation.endFloat,
     );
   }
 
