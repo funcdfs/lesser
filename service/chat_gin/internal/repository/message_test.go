@@ -26,13 +26,13 @@ func TestMessageRepository_GetByID(t *testing.T) {
 	db, mock := setupMockDB(t)
 	repo := NewMessageRepository(db)
 
-	msgID := uuid.New()
-	convID := uuid.New()
+	var msgID int64 = 123
+	dialogID := uuid.New()
 	senderID := uuid.New()
 	now := time.Now()
 
-	rows := sqlmock.NewRows([]string{"id", "conversation_id", "sender_id", "content", "message_type", "created_at", "read_at"}).
-		AddRow(msgID, convID, senderID, "Hello", "text", now, nil)
+	rows := sqlmock.NewRows([]string{"id", "local_id", "dialog_id", "sender_id", "content", "msg_type", "date", "is_unread", "is_outgoing"}).
+		AddRow(msgID, 1, dialogID, senderID, "Hello", 0, now, true, true)
 
 	mock.ExpectQuery(`SELECT \* FROM "chat_messages" WHERE id = \$1`).
 		WithArgs(msgID, 1). // GORM adds LIMIT 1
@@ -56,7 +56,7 @@ func TestMessageRepository_GetByID_NotFound(t *testing.T) {
 	db, mock := setupMockDB(t)
 	repo := NewMessageRepository(db)
 
-	msgID := uuid.New()
+	var msgID int64 = 999
 
 	mock.ExpectQuery(`SELECT \* FROM "chat_messages" WHERE id = \$1`).
 		WithArgs(msgID, 1). // GORM adds LIMIT 1
@@ -88,19 +88,20 @@ func TestMessageRepository_GetLatestByConversationID(t *testing.T) {
 	db, mock := setupMockDB(t)
 	repo := NewMessageRepository(db)
 
-	convID := uuid.New()
-	msgID := uuid.New()
+	dialogID := uuid.New()
+	var msgID int64 = 456
 	senderID := uuid.New()
 	now := time.Now()
 
-	rows := sqlmock.NewRows([]string{"id", "conversation_id", "sender_id", "content", "message_type", "created_at", "read_at"}).
-		AddRow(msgID, convID, senderID, "Latest message", "text", now, nil)
+	rows := sqlmock.NewRows([]string{"id", "local_id", "dialog_id", "sender_id", "content", "msg_type", "date", "is_unread", "is_outgoing"}).
+		AddRow(msgID, 10, dialogID, senderID, "Latest message", 0, now, true, true)
 
-	mock.ExpectQuery(`SELECT \* FROM "chat_messages" WHERE conversation_id = \$1 ORDER BY created_at DESC`).
-		WithArgs(convID, 1). // GORM adds LIMIT 1
+	// GORM 使用软删除，所以会添加 deleted_at IS NULL 条件
+	mock.ExpectQuery(`SELECT \* FROM "chat_messages" WHERE dialog_id = \$1 AND "chat_messages"."deleted_at" IS NULL ORDER BY date DESC`).
+		WithArgs(dialogID, 1). // GORM adds LIMIT 1
 		WillReturnRows(rows)
 
-	msg, err := repo.GetLatestByConversationID(context.Background(), convID)
+	msg, err := repo.GetLatestByConversationID(context.Background(), dialogID)
 	if err != nil {
 		t.Errorf("GetLatestByConversationID() error = %v", err)
 		return
@@ -115,13 +116,13 @@ func TestMessageRepository_GetLatestByConversationID_NoMessages(t *testing.T) {
 	db, mock := setupMockDB(t)
 	repo := NewMessageRepository(db)
 
-	convID := uuid.New()
+	dialogID := uuid.New()
 
-	mock.ExpectQuery(`SELECT \* FROM "chat_messages" WHERE conversation_id = \$1 ORDER BY created_at DESC`).
-		WithArgs(convID, 1). // GORM adds LIMIT 1
+	mock.ExpectQuery(`SELECT \* FROM "chat_messages" WHERE dialog_id = \$1 AND "chat_messages"."deleted_at" IS NULL ORDER BY date DESC`).
+		WithArgs(dialogID, 1). // GORM adds LIMIT 1
 		WillReturnRows(sqlmock.NewRows([]string{}))
 
-	msg, err := repo.GetLatestByConversationID(context.Background(), convID)
+	msg, err := repo.GetLatestByConversationID(context.Background(), dialogID)
 	if err != nil {
 		t.Errorf("GetLatestByConversationID() error = %v", err)
 		return
@@ -132,37 +133,16 @@ func TestMessageRepository_GetLatestByConversationID_NoMessages(t *testing.T) {
 	}
 }
 
-func TestMessageRepository_GetUnreadCount(t *testing.T) {
-	db, mock := setupMockDB(t)
-	repo := NewMessageRepository(db)
-
-	convID := uuid.New()
-	userID := uuid.New()
-
-	mock.ExpectQuery(`SELECT count\(\*\) FROM "chat_messages" WHERE conversation_id = \$1 AND sender_id != \$2 AND read_at IS NULL`).
-		WithArgs(convID, userID).
-		WillReturnRows(sqlmock.NewRows([]string{"count"}).AddRow(5))
-
-	count, err := repo.GetUnreadCount(context.Background(), convID, userID)
-	if err != nil {
-		t.Errorf("GetUnreadCount() error = %v", err)
-		return
-	}
-
-	if count != 5 {
-		t.Errorf("GetUnreadCount() = %v, want 5", count)
-	}
-}
-
 func TestMessageRepository_Delete(t *testing.T) {
 	db, mock := setupMockDB(t)
 	repo := NewMessageRepository(db)
 
-	msgID := uuid.New()
+	var msgID int64 = 789
 
+	// GORM 使用软删除，所以是 UPDATE 而不是 DELETE
 	mock.ExpectBegin()
-	mock.ExpectExec(`DELETE FROM "chat_messages" WHERE id = \$1`).
-		WithArgs(msgID).
+	mock.ExpectExec(`UPDATE "chat_messages" SET "deleted_at"=`).
+		WithArgs(sqlmock.AnyArg(), msgID).
 		WillReturnResult(sqlmock.NewResult(0, 1))
 	mock.ExpectCommit()
 
@@ -176,11 +156,12 @@ func TestMessageRepository_Delete_NotFound(t *testing.T) {
 	db, mock := setupMockDB(t)
 	repo := NewMessageRepository(db)
 
-	msgID := uuid.New()
+	var msgID int64 = 999
 
+	// GORM 使用软删除，所以是 UPDATE 而不是 DELETE
 	mock.ExpectBegin()
-	mock.ExpectExec(`DELETE FROM "chat_messages" WHERE id = \$1`).
-		WithArgs(msgID).
+	mock.ExpectExec(`UPDATE "chat_messages" SET "deleted_at"=`).
+		WithArgs(sqlmock.AnyArg(), msgID).
 		WillReturnResult(sqlmock.NewResult(0, 0))
 	mock.ExpectCommit()
 
@@ -190,46 +171,28 @@ func TestMessageRepository_Delete_NotFound(t *testing.T) {
 	}
 }
 
-func TestMessageRepository_MarkAsRead(t *testing.T) {
-	db, mock := setupMockDB(t)
-	repo := NewMessageRepository(db)
-
-	msgID := uuid.New()
-	readAt := time.Now()
-
-	mock.ExpectBegin()
-	mock.ExpectExec(`UPDATE "chat_messages" SET "read_at"=\$1 WHERE id = \$2 AND read_at IS NULL`).
-		WithArgs(readAt, msgID).
-		WillReturnResult(sqlmock.NewResult(0, 1))
-	mock.ExpectCommit()
-
-	err := repo.MarkAsRead(context.Background(), msgID, readAt)
-	if err != nil {
-		t.Errorf("MarkAsRead() error = %v", err)
-	}
-}
-
 func TestMessageFilter(t *testing.T) {
+	dialogID := uuid.New()
 	senderID := uuid.New()
 	msgType := model.MessageTypeText
 	before := time.Now()
 	after := time.Now().Add(-time.Hour)
 
 	filter := model.MessageFilter{
-		ConversationID: uuid.New(),
-		SenderID:       &senderID,
-		MessageType:    &msgType,
-		Before:         &before,
-		After:          &after,
+		DialogID: &dialogID,
+		SenderID: &senderID,
+		MsgType:  &msgType,
+		Before:   &before,
+		After:    &after,
 	}
 
-	if filter.ConversationID == uuid.Nil {
-		t.Error("MessageFilter ConversationID should not be nil")
+	if filter.DialogID == nil || *filter.DialogID == uuid.Nil {
+		t.Error("MessageFilter DialogID should not be nil")
 	}
 	if filter.SenderID == nil {
 		t.Error("MessageFilter SenderID should not be nil")
 	}
-	if filter.MessageType == nil {
-		t.Error("MessageFilter MessageType should not be nil")
+	if filter.MsgType == nil {
+		t.Error("MessageFilter MsgType should not be nil")
 	}
 }

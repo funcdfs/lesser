@@ -114,9 +114,8 @@ func TestConversation_Fields(t *testing.T) {
 }
 
 func TestConversation_LastMessage(t *testing.T) {
-	msgID := uuid.New()
 	msg := &Message{
-		ID:      msgID,
+		ID:      1,
 		Content: "Last message",
 	}
 
@@ -129,8 +128,8 @@ func TestConversation_LastMessage(t *testing.T) {
 		t.Error("LastMessage should not be nil")
 		return
 	}
-	if conv.LastMessage.ID != msgID {
-		t.Errorf("LastMessage.ID = %v, want %v", conv.LastMessage.ID, msgID)
+	if conv.LastMessage.ID != 1 {
+		t.Errorf("LastMessage.ID = %v, want 1", conv.LastMessage.ID)
 	}
 	if conv.LastMessage.Content != "Last message" {
 		t.Errorf("LastMessage.Content = %v, want 'Last message'", conv.LastMessage.Content)

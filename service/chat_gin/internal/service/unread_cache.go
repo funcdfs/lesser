@@ -123,6 +123,7 @@ func (s *UnreadCacheService) GetUnreadCountsBatch(ctx context.Context, userID uu
 }
 
 // IncrementUnreadCount 增加未读数（发送新消息时调用）
+// 注意：此方法应在消息已插入数据库后调用
 func (s *UnreadCacheService) IncrementUnreadCount(ctx context.Context, userID, conversationID uuid.UUID) error {
 	key := unreadCacheKey(userID, conversationID)
 
@@ -140,21 +141,20 @@ func (s *UnreadCacheService) IncrementUnreadCount(ctx context.Context, userID, c
 		if err := client.Incr(ctx, key).Err(); err != nil {
 			return fmt.Errorf("增加未读数失败: %w", err)
 		}
+		// 刷新 TTL
+		if err := client.Expire(ctx, key, UnreadCacheTTL).Err(); err != nil {
+			fmt.Printf("警告: 刷新缓存 TTL 失败: %v\n", err)
+		}
 	} else {
 		// 键不存在，从数据库获取当前值并设置
+		// 注意：此时新消息已经在数据库中，所以直接使用数据库查询结果，不需要再 +1
 		count, err := s.messageRepo.GetUnreadCount(ctx, conversationID, userID)
 		if err != nil {
 			return fmt.Errorf("从数据库获取未读数失败: %w", err)
 		}
-		// 设置新值（当前值 + 1）
-		if err := s.cache.Set(ctx, key, count+1, UnreadCacheTTL); err != nil {
+		if err := s.cache.Set(ctx, key, count, UnreadCacheTTL); err != nil {
 			return fmt.Errorf("设置未读数缓存失败: %w", err)
 		}
-	}
-
-	// 刷新 TTL
-	if err := client.Expire(ctx, key, UnreadCacheTTL).Err(); err != nil {
-		fmt.Printf("警告: 刷新缓存 TTL 失败: %v\n", err)
 	}
 
 	return nil

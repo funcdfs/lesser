@@ -7,6 +7,7 @@ import '../../../../core/di/injection.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../shared/widgets/avatar.dart';
 import '../../../auth/domain/entities/user.dart';
+import '../../../auth/presentation/providers/auth_provider.dart';
 import '../../../search/presentation/providers/search_provider.dart';
 import '../../domain/entities/conversation.dart';
 import '../../domain/repositories/chat_repository.dart';
@@ -64,15 +65,33 @@ class _NewConversationPageState extends ConsumerState<NewConversationPage> {
       return;
     }
 
+    final currentUser = ref.read(authProvider).user;
+    if (currentUser == null) {
+      _showError('请先登录');
+      return;
+    }
+
+    // 选择 1 个用户 → 私聊
+    if (_selectedUsers.length == 1) {
+      await _createPrivateChat(currentUser.id);
+    } else {
+      // 选择多个用户 → 群聊，需要输入群名称
+      await _showGroupNameDialog(currentUser.id);
+    }
+  }
+
+  /// 创建私聊
+  Future<void> _createPrivateChat(String currentUserId) async {
     setState(() => _isCreating = true);
+
+    // 私聊需要包含当前用户和选中的用户，共 2 人
+    final memberIds = [currentUserId, _selectedUsers.first.id];
 
     final result = await ref
         .read(newConversationProvider.notifier)
         .create(
-          memberIds: _selectedUsers.map((u) => u.id).toList(),
-          type: _selectedUsers.length == 1
-              ? ConversationType.private
-              : ConversationType.group,
+          memberIds: memberIds,
+          type: ConversationType.private,
         );
 
     setState(() => _isCreating = false);
@@ -85,6 +104,84 @@ class _NewConversationPageState extends ConsumerState<NewConversationPage> {
     } else if (mounted) {
       final errorMsg = ref.read(newConversationProvider).errorMessage;
       _showError(errorMsg ?? '创建会话失败，请重试');
+    }
+  }
+
+  /// 显示群聊名称输入对话框
+  Future<void> _showGroupNameDialog(String currentUserId) async {
+    final groupNameController = TextEditingController();
+    
+    final groupName = await showDialog<String>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('创建群聊'),
+        content: TextField(
+          controller: groupNameController,
+          autofocus: true,
+          decoration: const InputDecoration(
+            hintText: '请输入群聊名称',
+            border: OutlineInputBorder(),
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(),
+            child: const Text('取消'),
+          ),
+          TextButton(
+            onPressed: () {
+              final name = groupNameController.text.trim();
+              if (name.isEmpty) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(content: Text('群聊名称不能为空')),
+                );
+                return;
+              }
+              Navigator.of(context).pop(name);
+            },
+            child: const Text('确定'),
+          ),
+        ],
+      ),
+    );
+
+    groupNameController.dispose();
+
+    if (groupName == null || groupName.isEmpty) {
+      return; // 用户取消或未输入名称
+    }
+
+    await _createGroupChat(currentUserId, groupName);
+  }
+
+  /// 创建群聊
+  Future<void> _createGroupChat(String currentUserId, String groupName) async {
+    setState(() => _isCreating = true);
+
+    // 群聊需要包含当前用户和所有选中的用户
+    final memberIds = [
+      currentUserId,
+      ..._selectedUsers.map((u) => u.id),
+    ];
+
+    final result = await ref
+        .read(newConversationProvider.notifier)
+        .create(
+          memberIds: memberIds,
+          type: ConversationType.group,
+          name: groupName,
+        );
+
+    setState(() => _isCreating = false);
+
+    if (result != null && mounted) {
+      ref.read(conversationsProvider.notifier).refresh();
+      context.pushReplacement(
+        RouteConstants.chatRoom.replaceFirst(':id', result.id),
+      );
+    } else if (mounted) {
+      final errorMsg = ref.read(newConversationProvider).errorMessage;
+      _showError(errorMsg ?? '创建群聊失败，请重试');
     }
   }
 

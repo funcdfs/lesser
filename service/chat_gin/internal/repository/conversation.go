@@ -3,6 +3,7 @@ package repository
 import (
 	"context"
 	"fmt"
+	"time"
 
 	"github.com/google/uuid"
 	"github.com/lesser/chat/internal/model"
@@ -168,12 +169,42 @@ func (r *ConversationRepository) IsMember(ctx context.Context, conversationID, u
 	return count > 0, nil
 }
 
+// GetMember 获取会话成员信息
+func (r *ConversationRepository) GetMember(ctx context.Context, conversationID, userID uuid.UUID) (*model.ConversationMember, error) {
+	var member model.ConversationMember
+	err := r.db.WithContext(ctx).
+		Where("conversation_id = ? AND user_id = ?", conversationID, userID).
+		First(&member).Error
+	if err != nil {
+		if err == gorm.ErrRecordNotFound {
+			return nil, ErrNotFound
+		}
+		return nil, fmt.Errorf("获取成员信息失败: %w", err)
+	}
+	return &member, nil
+}
+
 // UpdateTimestamp 更新会话的最后活动时间
 func (r *ConversationRepository) UpdateTimestamp(ctx context.Context, conversationID uuid.UUID) error {
 	return r.db.WithContext(ctx).
 		Model(&model.Conversation{}).
 		Where("id = ?", conversationID).
 		Update("updated_at", gorm.Expr("NOW()")).Error
+}
+
+// UpdateLastReadAt 更新成员的最后已读时间
+func (r *ConversationRepository) UpdateLastReadAt(ctx context.Context, conversationID, userID uuid.UUID, readAt time.Time) error {
+	result := r.db.WithContext(ctx).
+		Model(&model.ConversationMember{}).
+		Where("conversation_id = ? AND user_id = ?", conversationID, userID).
+		Update("last_read_at", readAt)
+	if result.Error != nil {
+		return fmt.Errorf("更新最后已读时间失败: %w", result.Error)
+	}
+	if result.RowsAffected == 0 {
+		return ErrNotFound
+	}
+	return nil
 }
 
 // GetMemberIDs 获取会话的所有成员ID

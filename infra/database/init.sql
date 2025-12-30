@@ -1,25 +1,30 @@
 -- ============================================================================
 -- PostgreSQL Database Initialization Script
 -- ============================================================================
--- This script runs when the PostgreSQL container is first created
+-- 架构说明:
+--   - lesser_db (默认): Django 核心服务 (用户、帖子、Feed 等)
+--   - lesser_chat_db:   Go Chat 服务 (会话、消息)
+-- 
+-- 这种设计在一个 PostgreSQL 容器中创建两个独立数据库，
+-- 既节省资源又保持服务间的数据隔离。
+-- 未来 DAU 增长后可轻松拆分为独立的数据库服务器。
 -- ============================================================================
 
--- Create extensions
+-- ============================================================================
+-- 1. 在默认数据库 (lesser_db) 中创建扩展和 Schema
+-- ============================================================================
 CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
 CREATE EXTENSION IF NOT EXISTS "pg_trgm";  -- For text search optimization
 
--- ============================================================================
--- Create separate schemas for different services
--- ============================================================================
+-- Django 核心服务使用的 Schema
 CREATE SCHEMA IF NOT EXISTS auth;
 CREATE SCHEMA IF NOT EXISTS posts;
 CREATE SCHEMA IF NOT EXISTS feeds;
-CREATE SCHEMA IF NOT EXISTS chat;
 CREATE SCHEMA IF NOT EXISTS notifications;
 CREATE SCHEMA IF NOT EXISTS search;
 
 -- ============================================================================
--- Create application user with limited privileges (for services)
+-- 2. 创建应用用户
 -- ============================================================================
 DO $$
 BEGIN
@@ -29,12 +34,11 @@ BEGIN
 END
 $$;
 
--- Grant privileges to application user
-GRANT USAGE ON SCHEMA auth, posts, feeds, chat, notifications, search TO lesser_app;
+-- Grant privileges to application user on core schemas
+GRANT USAGE ON SCHEMA auth, posts, feeds, notifications, search TO lesser_app;
 GRANT ALL PRIVILEGES ON ALL TABLES IN SCHEMA auth TO lesser_app;
 GRANT ALL PRIVILEGES ON ALL TABLES IN SCHEMA posts TO lesser_app;
 GRANT ALL PRIVILEGES ON ALL TABLES IN SCHEMA feeds TO lesser_app;
-GRANT ALL PRIVILEGES ON ALL TABLES IN SCHEMA chat TO lesser_app;
 GRANT ALL PRIVILEGES ON ALL TABLES IN SCHEMA notifications TO lesser_app;
 GRANT ALL PRIVILEGES ON ALL TABLES IN SCHEMA search TO lesser_app;
 
@@ -42,7 +46,6 @@ GRANT ALL PRIVILEGES ON ALL TABLES IN SCHEMA search TO lesser_app;
 ALTER DEFAULT PRIVILEGES IN SCHEMA auth GRANT ALL ON TABLES TO lesser_app;
 ALTER DEFAULT PRIVILEGES IN SCHEMA posts GRANT ALL ON TABLES TO lesser_app;
 ALTER DEFAULT PRIVILEGES IN SCHEMA feeds GRANT ALL ON TABLES TO lesser_app;
-ALTER DEFAULT PRIVILEGES IN SCHEMA chat GRANT ALL ON TABLES TO lesser_app;
 ALTER DEFAULT PRIVILEGES IN SCHEMA notifications GRANT ALL ON TABLES TO lesser_app;
 ALTER DEFAULT PRIVILEGES IN SCHEMA search GRANT ALL ON TABLES TO lesser_app;
 
@@ -50,66 +53,20 @@ ALTER DEFAULT PRIVILEGES IN SCHEMA search GRANT ALL ON TABLES TO lesser_app;
 GRANT USAGE, SELECT ON ALL SEQUENCES IN SCHEMA auth TO lesser_app;
 GRANT USAGE, SELECT ON ALL SEQUENCES IN SCHEMA posts TO lesser_app;
 GRANT USAGE, SELECT ON ALL SEQUENCES IN SCHEMA feeds TO lesser_app;
-GRANT USAGE, SELECT ON ALL SEQUENCES IN SCHEMA chat TO lesser_app;
 GRANT USAGE, SELECT ON ALL SEQUENCES IN SCHEMA notifications TO lesser_app;
 GRANT USAGE, SELECT ON ALL SEQUENCES IN SCHEMA search TO lesser_app;
 
 ALTER DEFAULT PRIVILEGES IN SCHEMA auth GRANT USAGE, SELECT ON SEQUENCES TO lesser_app;
 ALTER DEFAULT PRIVILEGES IN SCHEMA posts GRANT USAGE, SELECT ON SEQUENCES TO lesser_app;
 ALTER DEFAULT PRIVILEGES IN SCHEMA feeds GRANT USAGE, SELECT ON SEQUENCES TO lesser_app;
-ALTER DEFAULT PRIVILEGES IN SCHEMA chat GRANT USAGE, SELECT ON SEQUENCES TO lesser_app;
 ALTER DEFAULT PRIVILEGES IN SCHEMA notifications GRANT USAGE, SELECT ON SEQUENCES TO lesser_app;
 ALTER DEFAULT PRIVILEGES IN SCHEMA search GRANT USAGE, SELECT ON SEQUENCES TO lesser_app;
-
--- ============================================================================
--- Chat Service Tables (Go service will use these directly)
--- 注意: Go 服务使用 GORM，表名使用前缀格式 (chat_xxx) 而非 schema 格式 (chat.xxx)
--- ============================================================================
-CREATE TABLE IF NOT EXISTS chat_conversations (
-    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-    type VARCHAR(20) NOT NULL CHECK (type IN ('private', 'group', 'channel')),
-    name VARCHAR(255),
-    creator_id UUID NOT NULL,
-    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
-);
-
-CREATE TABLE IF NOT EXISTS chat_conversation_members (
-    conversation_id UUID NOT NULL REFERENCES chat_conversations(id) ON DELETE CASCADE,
-    user_id UUID NOT NULL,
-    role VARCHAR(20) DEFAULT 'member' CHECK (role IN ('owner', 'admin', 'member')),
-    joined_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
-    PRIMARY KEY (conversation_id, user_id)
-);
-
-CREATE TABLE IF NOT EXISTS chat_messages (
-    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-    conversation_id UUID NOT NULL REFERENCES chat_conversations(id) ON DELETE CASCADE,
-    sender_id UUID NOT NULL,
-    content TEXT NOT NULL,
-    message_type VARCHAR(20) DEFAULT 'text' CHECK (message_type IN ('text', 'image', 'file', 'system')),
-    read_at TIMESTAMP WITH TIME ZONE,  -- 已读时间戳，NULL 表示未读
-    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
-    deleted_at TIMESTAMP WITH TIME ZONE
-);
-
--- Create indexes for chat tables
-CREATE INDEX IF NOT EXISTS idx_chat_conversations_creator ON chat_conversations(creator_id);
-CREATE INDEX IF NOT EXISTS idx_chat_conversation_members_user ON chat_conversation_members(user_id);
-CREATE INDEX IF NOT EXISTS idx_chat_conversation_members_conversation ON chat_conversation_members(conversation_id);
-CREATE INDEX IF NOT EXISTS idx_chat_messages_conversation ON chat_messages(conversation_id);
-CREATE INDEX IF NOT EXISTS idx_chat_messages_sender ON chat_messages(sender_id);
-CREATE INDEX IF NOT EXISTS idx_chat_messages_created_at ON chat_messages(created_at DESC);
--- 未读消息查询优化索引
-CREATE INDEX IF NOT EXISTS idx_chat_messages_unread ON chat_messages(conversation_id, sender_id, read_at) WHERE read_at IS NULL;
-CREATE INDEX IF NOT EXISTS idx_chat_messages_read_at ON chat_messages(read_at);
 
 -- ============================================================================
 -- Logging
 -- ============================================================================
 DO $$
 BEGIN
-    RAISE NOTICE 'Database initialization completed successfully';
+    RAISE NOTICE 'Core database (lesser_db) initialization completed';
 END
 $$;

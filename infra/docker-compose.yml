@@ -32,7 +32,7 @@ services:
       start_period: 10s
 
   # ==========================================================================
-  # Database - PostgreSQL (Isolated)
+  # Database - PostgreSQL (Multi-Database: lesser_db + lesser_chat_db)
   # ==========================================================================
   postgres:
     image: postgres:latest
@@ -44,7 +44,9 @@ services:
       POSTGRES_DB: ${POSTGRES_DB:-lesser_db}
     volumes:
       - postgres_data:/var/lib/postgresql
-      - ./database/init.sql:/docker-entrypoint-initdb.d/init.sql:ro
+      - ./database/init.sql:/docker-entrypoint-initdb.d/01-init.sql:ro
+      - ./database/init-chat.sql:/docker-entrypoint-initdb.d/02-init-chat.sql:ro
+      - ./database/docker-entrypoint-initdb.sh:/docker-entrypoint-initdb.d/03-create-chat-db.sh:ro
     ports:
       - "${EXTERNAL_POSTGRES_PORT:-5432}:5432"
     networks:
@@ -198,7 +200,7 @@ services:
     container_name: chat
     restart: unless-stopped
     environment:
-      - DATABASE_URL=${DATABASE_URL:-postgres://lesser:lesser_dev_password@postgres:5432/lesser_db}
+      - DATABASE_URL=${CHAT_DATABASE_URL:-postgres://lesser:lesser_dev_password@postgres:5432/lesser_chat_db}
       - REDIS_URL=redis://redis:6379/1
       - HTTP_PORT=${CHAT_HTTP_PORT:-8080}
       - GRPC_PORT=${CHAT_GRPC_PORT:-50052}

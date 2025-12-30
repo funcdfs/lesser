@@ -24,7 +24,7 @@ class MessageModel extends Message {
       isRead: json['is_read'] as bool? ?? false,
     );
   }
-
+  
   /// Convert to JSON
   Map<String, dynamic> toJson() {
     return {

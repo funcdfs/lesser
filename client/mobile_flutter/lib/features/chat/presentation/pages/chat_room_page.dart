@@ -34,6 +34,7 @@ class _ChatRoomPageState extends ConsumerState<ChatRoomPage> {
   void dispose() {
     _scrollController.removeListener(_onScroll);
     _scrollController.dispose();
+    ref.read(conversationsProvider.notifier).leaveConversation();
     super.dispose();
   }
 

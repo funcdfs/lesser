@@ -14,6 +14,16 @@ import (
 // AuthMiddleware 使用 gRPC 调用 Django auth 服务验证 JWT token
 func AuthMiddleware(authClient *service.AuthClient) gin.HandlerFunc {
 	return func(c *gin.Context) {
+		// 开发模式：支持 X-User-ID header 直接传递用户ID（仅开发/测试使用）
+		if userIDHeader := c.GetHeader("X-User-ID"); userIDHeader != "" {
+			userID, err := uuid.Parse(userIDHeader)
+			if err == nil {
+				c.Set("userID", userID)
+				c.Next()
+				return
+			}
+		}
+
 		authHeader := c.GetHeader("Authorization")
 		if authHeader == "" || !strings.HasPrefix(authHeader, "Bearer ") {
 			c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{
@@ -63,6 +73,30 @@ func OptionalAuthMiddleware(authClient *service.AuthClient) gin.HandlerFunc {
 				c.Set("userID", userID)
 			}
 		}
+		c.Next()
+	}
+}
+
+// DevAuthMiddleware 开发模式认证中间件，仅使用 X-User-ID header
+func DevAuthMiddleware() gin.HandlerFunc {
+	return func(c *gin.Context) {
+		userIDHeader := c.GetHeader("X-User-ID")
+		if userIDHeader == "" {
+			c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{
+				"error": "需要认证（开发模式：请提供 X-User-ID header）",
+			})
+			return
+		}
+
+		userID, err := uuid.Parse(userIDHeader)
+		if err != nil {
+			c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{
+				"error": "X-User-ID 格式无效",
+			})
+			return
+		}
+
+		c.Set("userID", userID)
 		c.Next()
 	}
 }

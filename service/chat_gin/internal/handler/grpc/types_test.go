@@ -91,7 +91,7 @@ func TestModelToProtoConversation(t *testing.T) {
 
 func TestModelToProtoConversation_WithLastMessage(t *testing.T) {
 	convID := uuid.New()
-	msgID := uuid.New()
+	var msgID int64 = 123
 	senderID := uuid.New()
 	now := time.Now()
 
@@ -101,12 +101,12 @@ func TestModelToProtoConversation_WithLastMessage(t *testing.T) {
 		CreatorID: uuid.New(),
 		CreatedAt: now,
 		LastMessage: &model.Message{
-			ID:             msgID,
-			ConversationID: convID,
-			SenderID:       senderID,
-			Content:        "Hello",
-			MessageType:    model.MessageTypeText,
-			CreatedAt:      now,
+			ID:       msgID,
+			DialogID: convID,
+			SenderID: senderID,
+			Content:  "Hello",
+			MsgType:  model.MessageTypeText,
+			Date:     now,
 		},
 	}
 
@@ -116,33 +116,33 @@ func TestModelToProtoConversation_WithLastMessage(t *testing.T) {
 		t.Error("LastMessage should not be nil")
 		return
 	}
-	if proto.LastMessage.Id != msgID.String() {
-		t.Errorf("LastMessage.Id = %v, want %v", proto.LastMessage.Id, msgID.String())
+	if proto.LastMessage.Id != "123" {
+		t.Errorf("LastMessage.Id = %v, want '123'", proto.LastMessage.Id)
 	}
 }
 
 func TestModelToProtoMessage(t *testing.T) {
-	msgID := uuid.New()
-	convID := uuid.New()
+	var msgID int64 = 456
+	dialogID := uuid.New()
 	senderID := uuid.New()
 	now := time.Now()
 
 	msg := &model.Message{
-		ID:             msgID,
-		ConversationID: convID,
-		SenderID:       senderID,
-		Content:        "Test message",
-		MessageType:    model.MessageTypeText,
-		CreatedAt:      now,
+		ID:       msgID,
+		DialogID: dialogID,
+		SenderID: senderID,
+		Content:  "Test message",
+		MsgType:  model.MessageTypeText,
+		Date:     now,
 	}
 
 	proto := modelToProtoMessage(msg)
 
-	if proto.Id != msgID.String() {
-		t.Errorf("Id = %v, want %v", proto.Id, msgID.String())
+	if proto.Id != "456" {
+		t.Errorf("Id = %v, want '456'", proto.Id)
 	}
-	if proto.ConversationId != convID.String() {
-		t.Errorf("ConversationId = %v, want %v", proto.ConversationId, convID.String())
+	if proto.ConversationId != dialogID.String() {
+		t.Errorf("ConversationId = %v, want %v", proto.ConversationId, dialogID.String())
 	}
 	if proto.SenderId != senderID.String() {
 		t.Errorf("SenderId = %v, want %v", proto.SenderId, senderID.String())

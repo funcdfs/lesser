@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	"strconv"
 	"strings"
 	"time"
 
@@ -68,7 +69,6 @@ func NewHTTPServer(cfg *config.Config, chatService *service.ChatService, authCli
 	return s
 }
 
-
 // setupRoutes 配置所有 HTTP 路由
 func (s *HTTPServer) setupRoutes() {
 	// 健康检查端点（无需认证）
@@ -80,6 +80,9 @@ func (s *HTTPServer) setupRoutes() {
 	// 根据是否有 AuthClient 决定使用哪种认证方式
 	if s.authClient != nil {
 		v1.Use(middleware.AuthMiddleware(s.authClient))
+	} else {
+		// 开发模式：仅使用 X-User-ID header
+		v1.Use(middleware.DevAuthMiddleware())
 	}
 
 	{
@@ -253,7 +256,6 @@ func (s *HTTPServer) getConversation(c *gin.Context) {
 	c.JSON(http.StatusOK, conv)
 }
 
-
 // getMessages 获取会话的消息列表
 func (s *HTTPServer) getMessages(c *gin.Context) {
 	convIDStr := c.Param("id")
@@ -320,8 +322,20 @@ func (s *HTTPServer) sendMessage(c *gin.Context) {
 		return
 	}
 
-	msgType := model.MessageType(req.MessageType)
-	if msgType == "" {
+	// 简单的字符串到 int 映射 (默认 text=0)
+	var msgType model.MessageType
+	switch req.MessageType {
+	case "image":
+		msgType = model.MessageTypeImage
+	case "video":
+		msgType = model.MessageTypeVideo
+	case "link":
+		msgType = model.MessageTypeLink
+	case "file":
+		msgType = model.MessageTypeFile
+	case "system":
+		msgType = model.MessageTypeSystem
+	default:
 		msgType = model.MessageTypeText
 	}
 
@@ -432,7 +446,7 @@ func (s *HTTPServer) markAsRead(c *gin.Context) {
 // Requirements: 2.5
 func (s *HTTPServer) markMessageAsRead(c *gin.Context) {
 	msgIDStr := c.Param("id")
-	msgID, err := uuid.Parse(msgIDStr)
+	msgID, err := strconv.ParseInt(msgIDStr, 10, 64)
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "消息ID格式无效"})
 		return
@@ -511,7 +525,7 @@ func (s *HTTPServer) markMessagesUpToAsRead(c *gin.Context) {
 		return
 	}
 
-	upToMsgID, err := uuid.Parse(req.MessageID)
+	upToMsgID, err := strconv.ParseInt(req.MessageID, 10, 64)
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "消息ID格式无效"})
 		return
@@ -607,19 +621,19 @@ func (s *HTTPServer) getUnreadCounts(c *gin.Context) {
 }
 
 // getMessageSenderID 获取单条消息的发送者ID
-func (s *HTTPServer) getMessageSenderID(ctx context.Context, messageID uuid.UUID) uuid.UUID {
+func (s *HTTPServer) getMessageSenderID(ctx context.Context, messageID int64) uuid.UUID {
 	// 通过 chatService 获取消息信息
 	// 这里简化处理，实际可以通过 repository 直接查询
 	msg, err := s.chatService.GetMessageByID(ctx, messageID)
 	if err != nil {
-		log.Printf("获取消息 %s 发送者失败: %v", messageID, err)
+		log.Printf("获取消息 %d 发送者失败: %v", messageID, err)
 		return uuid.Nil
 	}
 	return msg.SenderID
 }
 
 // getMessageSenderIDs 获取多条消息的发送者ID列表（去重）
-func (s *HTTPServer) getMessageSenderIDs(ctx context.Context, messageIDs []uuid.UUID) []uuid.UUID {
+func (s *HTTPServer) getMessageSenderIDs(ctx context.Context, messageIDs []int64) []uuid.UUID {
 	senderMap := make(map[uuid.UUID]bool)
 	for _, msgID := range messageIDs {
 		senderID := s.getMessageSenderID(ctx, msgID)
@@ -633,18 +647,6 @@ func (s *HTTPServer) getMessageSenderIDs(ctx context.Context, messageIDs []uuid.
 		senders = append(senders, senderID)
 	}
 	return senders
-}
-
-// splitAndTrim 分割字符串并去除空白
-func splitAndTrim(s string, sep string) []string {
-	parts := make([]string, 0)
-	for _, part := range strings.Split(s, sep) {
-		trimmed := strings.TrimSpace(part)
-		if trimmed != "" {
-			parts = append(parts, trimmed)
-		}
-	}
-	return parts
 }
 
 // addMember 添加会话成员
@@ -745,6 +747,18 @@ func (s *HTTPServer) handleWebSocket(c *gin.Context) {
 	}
 
 	s.hub.HandleWebSocket(c.Writer, c.Request, userID)
+}
+
+// splitAndTrim 分割字符串并去除空白
+func splitAndTrim(s string, sep string) []string {
+	parts := make([]string, 0)
+	for _, part := range strings.Split(s, sep) {
+		trimmed := strings.TrimSpace(part)
+		if trimmed != "" {
+			parts = append(parts, trimmed)
+		}
+	}
+	return parts
 }
 
 // parseIntQuery 解析整数类型的查询参数

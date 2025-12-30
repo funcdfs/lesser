@@ -17,12 +17,18 @@ class ConversationModel extends Conversation {
 
   /// Create from JSON
   factory ConversationModel.fromJson(Map<String, dynamic> json) {
+    // 解析 members，处理可能为空或 null 的情况
+    final membersJson = json['members'] as List<dynamic>?;
+    final members = membersJson != null
+        ? membersJson
+            .map((e) => UserModel.fromJson(e as Map<String, dynamic>))
+            .toList()
+        : <UserModel>[];
+
     return ConversationModel(
       id: json['id'] as String,
       type: _parseConversationType(json['type'] as String),
-      members: (json['members'] as List<dynamic>)
-          .map((e) => UserModel.fromJson(e as Map<String, dynamic>))
-          .toList(),
+      members: members,
       createdAt: DateTime.parse(json['created_at'] as String),
       name: json['name'] as String?,
       creatorId: json['creator_id'] as String?,

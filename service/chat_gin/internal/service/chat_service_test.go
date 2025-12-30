@@ -250,7 +250,7 @@ func TestSendMessageRequest_Validate_DefaultsMessageType(t *testing.T) {
 		ConversationID: uuid.New(),
 		SenderID:       uuid.New(),
 		Content:        "Hello",
-		MessageType:    "",
+		MessageType:    model.MessageTypeText, // 默认值 0
 	}
 
 	err := req.Validate()
@@ -291,9 +291,9 @@ func TestConversationsResult(t *testing.T) {
 func TestMessagesResult(t *testing.T) {
 	result := MessagesResult{
 		Messages: []model.Message{
-			{ID: uuid.New()},
-			{ID: uuid.New()},
-			{ID: uuid.New()},
+			{ID: 1},
+			{ID: 2},
+			{ID: 3},
 		},
 		Total:    50,
 		Page:     1,

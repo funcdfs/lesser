@@ -5,6 +5,8 @@ import 'package:go_router/go_router.dart';
 import '../../../../core/constants/route_constants.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/utils/extensions.dart';
+import '../../../auth/domain/entities/user.dart';
+import '../../../auth/presentation/providers/auth_provider.dart';
 import '../../domain/entities/conversation.dart';
 import '../providers/chat_provider.dart';
 
@@ -95,8 +97,10 @@ class _ConversationsPageState extends ConsumerState<ConversationsPage> {
             separatorBuilder: (context, index) => const Divider(height: 1),
             itemBuilder: (context, index) {
               final conversation = conversationsState.conversations[index];
+              final currentUserId = ref.read(authProvider).user?.id;
               return _ConversationItem(
                 conversation: conversation,
+                currentUserId: currentUserId,
                 onTap: () {
                   context.push(
                     RouteConstants.chatRoom.replaceFirst(
@@ -114,16 +118,71 @@ class _ConversationsPageState extends ConsumerState<ConversationsPage> {
 }
 
 class _ConversationItem extends StatelessWidget {
-  const _ConversationItem({required this.conversation, this.onTap});
+  const _ConversationItem({
+    required this.conversation,
+    this.currentUserId,
+    this.onTap,
+  });
 
   final Conversation conversation;
+  final String? currentUserId;
   final VoidCallback? onTap;
 
   @override
   Widget build(BuildContext context) {
-    final otherMember = conversation.members.isNotEmpty
-        ? conversation.members.first
-        : null;
+    // 对于私聊，找到对方用户（排除当前用户）
+    // 对于群聊，显示群名称
+    User? otherMember;
+    if (conversation.members.isNotEmpty) {
+      // 尝试找到非当前用户的成员
+      for (final member in conversation.members) {
+        if (member.id != currentUserId) {
+          otherMember = member;
+          break;
+        }
+      }
+      // 如果没找到（比如只有自己），就用第一个
+      otherMember ??= conversation.members.first;
+    }
+
+    // 获取显示名称的首字母，处理空字符串情况
+    String getInitial() {
+      // 群聊优先显示群名称
+      if (conversation.type == ConversationType.group &&
+          conversation.name?.isNotEmpty == true) {
+        return conversation.name![0].toUpperCase();
+      }
+      if (otherMember?.displayName?.isNotEmpty == true) {
+        return otherMember!.displayName![0].toUpperCase();
+      }
+      if (otherMember != null && otherMember.username.isNotEmpty) {
+        return otherMember.username[0].toUpperCase();
+      }
+      if (conversation.name?.isNotEmpty == true) {
+        return conversation.name![0].toUpperCase();
+      }
+      return '?';
+    }
+
+    // 获取显示名称
+    String getDisplayName() {
+      // 群聊优先显示群名称
+      if (conversation.type == ConversationType.group &&
+          conversation.name?.isNotEmpty == true) {
+        return conversation.name!;
+      }
+      // 私聊显示对方名称
+      if (otherMember?.displayName?.isNotEmpty == true) {
+        return otherMember!.displayName!;
+      }
+      if (otherMember != null && otherMember.username.isNotEmpty) {
+        return otherMember.username;
+      }
+      if (conversation.name?.isNotEmpty == true) {
+        return conversation.name!;
+      }
+      return 'Unknown';
+    }
 
     return InkWell(
       onTap: onTap,
@@ -138,9 +197,7 @@ class _ConversationItem extends StatelessWidget {
                   : null,
               child: otherMember?.avatarUrl == null
                   ? Text(
-                      conversation.name?.isNotEmpty == true
-                          ? conversation.name![0].toUpperCase()
-                          : otherMember?.username[0].toUpperCase() ?? '?',
+                      getInitial(),
                       style: const TextStyle(fontWeight: FontWeight.bold),
                     )
                   : null,
@@ -154,10 +211,7 @@ class _ConversationItem extends StatelessWidget {
                     children: [
                       Expanded(
                         child: Text(
-                          conversation.name ??
-                              otherMember?.displayName ??
-                              otherMember?.username ??
-                              'Unknown',
+                          getDisplayName(),
                           style: const TextStyle(fontWeight: FontWeight.bold),
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
@@ -197,7 +251,7 @@ class _ConversationItem extends StatelessWidget {
                             vertical: 2,
                           ),
                           decoration: BoxDecoration(
-                            color: AppColors.primary,
+                            color: AppColors.error,
                             borderRadius: BorderRadius.circular(10),
                           ),
                           child: Text(

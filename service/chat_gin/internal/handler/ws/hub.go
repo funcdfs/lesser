@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	"strconv"
 	"sync"
 	"time"
 
@@ -386,7 +387,7 @@ func (h *Hub) NotifyReadReceipt(senderID uuid.UUID, receipt *model.ReadReceipt) 
 		UserID: senderID,
 		Type:   "read_receipt",
 		Payload: &ReadReceiptPayload{
-			MessageID:      receipt.MessageID.String(),
+			MessageID:      strconv.FormatInt(receipt.MessageID, 10),
 			ConversationID: receipt.ConversationID.String(),
 			ReaderID:       receipt.ReaderID.String(),
 			ReadAt:         receipt.ReadAt.Format(time.RFC3339),
@@ -400,10 +401,10 @@ func (h *Hub) NotifyBatchReadReceipt(senderID uuid.UUID, receipt *model.BatchRea
 		return
 	}
 
-	// 转换 UUID 列表为字符串列表
+	// 转换 ID 列表为字符串列表
 	messageIDs := make([]string, len(receipt.MessageIDs))
 	for i, id := range receipt.MessageIDs {
-		messageIDs[i] = id.String()
+		messageIDs[i] = strconv.FormatInt(id, 10)
 	}
 
 	h.userNotify <- &UserNotification{

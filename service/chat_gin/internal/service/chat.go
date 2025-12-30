@@ -2,6 +2,7 @@ package service
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"time"
 
@@ -152,11 +153,13 @@ func (s *ChatService) SendMessage(ctx context.Context, req SendMessageRequest) (
 
 	// 创建消息实体
 	msg := &model.Message{
-		ID:             uuid.New(),
-		ConversationID: req.ConversationID,
-		SenderID:       req.SenderID,
-		Content:        req.Content,
-		MessageType:    req.MessageType,
+		DialogID:   req.ConversationID,
+		SenderID:   req.SenderID,
+		Content:    req.Content,
+		MsgType:    req.MessageType,
+		Date:       time.Now().UTC(),
+		IsOutgoing: true, // 默认
+		IsUnread:   true, // 默认
 	}
 
 	if err := s.messageRepo.Create(ctx, msg); err != nil {
@@ -296,7 +299,7 @@ func (s *ChatService) IsMember(ctx context.Context, conversationID, userID uuid.
 }
 
 // GetMessageByID 根据ID获取消息
-func (s *ChatService) GetMessageByID(ctx context.Context, messageID uuid.UUID) (*model.Message, error) {
+func (s *ChatService) GetMessageByID(ctx context.Context, messageID int64) (*model.Message, error) {
 	return s.messageRepo.GetByID(ctx, messageID)
 }
 
@@ -327,18 +330,33 @@ func (s *ChatService) GetUnreadCounts(ctx context.Context, userID uuid.UUID, con
 
 // MarkConversationAsRead 标记会话中的消息为已读
 func (s *ChatService) MarkConversationAsRead(ctx context.Context, conversationID, userID uuid.UUID) (*model.BatchReadReceipt, error) {
-	// 检查用户是否是会话成员
-	isMember, err := s.conversationRepo.IsMember(ctx, conversationID, userID)
+	// 获取成员信息以得到当前的 LastReadAt
+	member, err := s.conversationRepo.GetMember(ctx, conversationID, userID)
 	if err != nil {
+		if err == repository.ErrNotFound {
+			return nil, ErrNotMember
+		}
 		return nil, fmt.Errorf("%w: %v", ErrCheckMemberFailed, err)
-	}
-	if !isMember {
-		return nil, ErrNotMember
 	}
 
 	readAt := time.Now()
-	messageIDs, err := s.messageRepo.MarkConversationAsRead(ctx, conversationID, userID, readAt)
+	
+	// 查找在此之前未读的消息ID（用于通知）
+	// 使用 Coalesce 处理 JoinedAt 作为默认值
+	lastRead := member.LastReadAt
+	if lastRead.IsZero() {
+		lastRead = member.JoinedAt
+	}
+	
+	// 查找所有比 lastRead 新的消息（因为是 MarkConversationAsRead，所以直到 now）
+	messageIDs, err := s.messageRepo.FindUnreadMessageIDsInRange(ctx, conversationID, userID, lastRead, readAt)
 	if err != nil {
+		fmt.Printf("警告: 查找未读消息失败: %v\n", err)
+		// 继续执行，只是通知可能不完整
+	}
+
+	// 更新 LastReadAt
+	if err := s.conversationRepo.UpdateLastReadAt(ctx, conversationID, userID, readAt); err != nil {
 		return nil, fmt.Errorf("%w: %v", ErrMarkReadFailed, err)
 	}
 
@@ -358,21 +376,21 @@ func (s *ChatService) MarkConversationAsRead(ctx context.Context, conversationID
 }
 
 // MarkMessageAsRead 标记单条消息为已读
-// 返回已读回执，用于通知消息发送者
-func (s *ChatService) MarkMessageAsRead(ctx context.Context, messageID, userID uuid.UUID) (*model.ReadReceipt, error) {
+// 实际上会更新 LastReadAt 到该消息的创建时间（如果是更新的）
+func (s *ChatService) MarkMessageAsRead(ctx context.Context, messageID int64, userID uuid.UUID) (*model.ReadReceipt, error) {
 	// 获取消息信息
 	msg, err := s.messageRepo.GetByID(ctx, messageID)
 	if err != nil {
 		return nil, fmt.Errorf("%w: %v", ErrGetMessageFailed, err)
 	}
 
-	// 检查用户是否是会话成员
-	isMember, err := s.conversationRepo.IsMember(ctx, msg.ConversationID, userID)
+	// 获取成员信息
+	member, err := s.conversationRepo.GetMember(ctx, msg.DialogID, userID)
 	if err != nil {
+		if err == repository.ErrNotFound {
+			return nil, ErrNotMember
+		}
 		return nil, fmt.Errorf("%w: %v", ErrCheckMemberFailed, err)
-	}
-	if !isMember {
-		return nil, ErrNotMember
 	}
 
 	// 不能标记自己发送的消息为已读
@@ -380,51 +398,92 @@ func (s *ChatService) MarkMessageAsRead(ctx context.Context, messageID, userID u
 		return nil, ErrCannotMarkOwnMessage
 	}
 
-	// 消息已经被标记为已读
-	if msg.IsReadByRecipient() {
+	// 如果消息的时间早于或等于 LastReadAt，说明已读
+	if !member.LastReadAt.IsZero() && !msg.Date.After(member.LastReadAt) {
 		return nil, ErrAlreadyRead
 	}
 
-	readAt := time.Now()
-	if err := s.messageRepo.MarkAsRead(ctx, messageID, readAt); err != nil {
+	// 更新 LastReadAt 为消息的 CreatedAt
+	// 注意：这里我们使用消息的创建时间作为"读到哪里"的标记
+	// 或者使用当前时间？通常 cursor 是指"读到了哪条消息"，意味着那条消息的时间点。
+	readAt := msg.Date
+	// 稍微加一点偏移量以确保包含该毫秒？或者直接用 CreatedAt。
+	// 大于 LastReadAt 的查询通常不包含 LastReadAt，所以如果 LastReadAt == CreatedAt，则 CreatedAt > LastReadAt 为 false (已读)。
+	
+	if err := s.conversationRepo.UpdateLastReadAt(ctx, msg.DialogID, userID, readAt); err != nil {
 		return nil, fmt.Errorf("%w: %v", ErrMarkReadFailed, err)
 	}
 
-	// 减少未读数缓存
+	// 减少未读数缓存 (Cursor 模式下减少缓存比较复杂，不如直接失效)
 	if s.unreadCacheService != nil {
-		if err := s.unreadCacheService.DecrementUnreadCount(ctx, userID, msg.ConversationID, 1); err != nil {
-			fmt.Printf("警告: 减少未读数缓存失败: %v\n", err)
+		if err := s.unreadCacheService.InvalidateCache(ctx, userID, msg.DialogID); err != nil {
+			fmt.Printf("警告: 使未读数缓存失效失败: %v\n", err)
 		}
 	}
 
 	return &model.ReadReceipt{
 		MessageID:      messageID,
-		ConversationID: msg.ConversationID,
+		ConversationID: msg.DialogID,
 		ReaderID:       userID,
-		ReadAt:         readAt,
+		ReadAt:         time.Now(), // 这是一个事件发生的时间
 	}, nil
 }
 
 // MarkMessagesUpToAsRead 标记指定消息及之前的所有消息为已读
-// 返回批量已读回执，用于通知消息发送者
-func (s *ChatService) MarkMessagesUpToAsRead(ctx context.Context, conversationID, userID, upToMessageID uuid.UUID) (*model.BatchReadReceipt, error) {
-	// 检查用户是否是会话成员
-	isMember, err := s.conversationRepo.IsMember(ctx, conversationID, userID)
+func (s *ChatService) MarkMessagesUpToAsRead(ctx context.Context, conversationID, userID uuid.UUID, upToMessageID int64) (*model.BatchReadReceipt, error) {
+	// 获取目标消息以得到时间
+	targetMsg, err := s.messageRepo.GetByID(ctx, upToMessageID)
 	if err != nil {
-		return nil, fmt.Errorf("%w: %v", ErrCheckMemberFailed, err)
-	}
-	if !isMember {
-		return nil, ErrNotMember
+		return nil, fmt.Errorf("%w: %v", ErrGetMessageFailed, err)
 	}
 
-	readAt := time.Now()
-	messageIDs, err := s.messageRepo.MarkMessagesUpToAsRead(ctx, conversationID, userID, upToMessageID, readAt)
+	if targetMsg.DialogID != conversationID {
+		return nil, fmt.Errorf("消息不属于该会话")
+	}
+
+	// 获取成员信息
+	member, err := s.conversationRepo.GetMember(ctx, conversationID, userID)
 	if err != nil {
+		if err == repository.ErrNotFound {
+			return nil, ErrNotMember
+		}
+		return nil, fmt.Errorf("%w: %v", ErrCheckMemberFailed, err)
+	}
+
+	// 如果目标消息已经读过，直接返回
+	if !member.LastReadAt.IsZero() && !targetMsg.Date.After(member.LastReadAt) {
+		return &model.BatchReadReceipt{
+			ConversationID: conversationID,
+			ReaderID:       userID,
+			MessageIDs:     []int64{},
+			ReadAt:         time.Now(),
+		}, nil
+	}
+	
+	readAt := targetMsg.Date
+
+	// 查找在此之前未读的消息ID（用于通知）
+	lastRead := member.LastReadAt
+	if lastRead.IsZero() {
+		lastRead = member.JoinedAt
+	}
+	
+	// 这里我们需要查找 (lastRead, readAt] 范围内的消息
+	// FindUnreadMessageIDs 返回 > lastRead 的
+	// 我们需要在内存中或者 DB 中过滤 <= readAt
+	allUnreadIDs, err := s.messageRepo.FindUnreadMessageIDsInRange(ctx, conversationID, userID, lastRead, readAt)
+	var markedIDs []int64
+	
+	if err == nil {
+		markedIDs = allUnreadIDs
+	}
+
+	// 更新 LastReadAt
+	if err := s.conversationRepo.UpdateLastReadAt(ctx, conversationID, userID, readAt); err != nil {
 		return nil, fmt.Errorf("%w: %v", ErrMarkReadFailed, err)
 	}
 
-	// 重置未读数缓存（因为标记到某条消息为止，可能还有更新的未读消息）
-	// 这里选择使缓存失效，让下次查询时重新从数据库获取
+	// 失效缓存
 	if s.unreadCacheService != nil {
 		if err := s.unreadCacheService.InvalidateCache(ctx, userID, conversationID); err != nil {
 			fmt.Printf("警告: 使未读数缓存失效失败: %v\n", err)
@@ -434,8 +493,8 @@ func (s *ChatService) MarkMessagesUpToAsRead(ctx context.Context, conversationID
 	return &model.BatchReadReceipt{
 		ConversationID: conversationID,
 		ReaderID:       userID,
-		MessageIDs:     messageIDs,
-		ReadAt:         readAt,
+		MessageIDs:     markedIDs, // 注意：这里返回的 IDs 列表可能不准确，如果对准确性要求高需要额外查询
+		ReadAt:         time.Now(),
 	}, nil
 }
 
@@ -476,7 +535,7 @@ func (s *ChatService) SubscribeToConversation(ctx context.Context, conversationI
 					return
 				}
 				var msg model.Message
-				if err := s.cache.Get(ctx, redisMsg.Payload, &msg); err == nil {
+				if err := json.Unmarshal([]byte(redisMsg.Payload), &msg); err == nil {
 					msgChan <- &msg
 				}
 			}
@@ -532,7 +591,8 @@ func (r *SendMessageRequest) Validate() error {
 	if r.Content == "" {
 		return ErrEmptyContent
 	}
-	if r.MessageType == "" {
+	// MessageType defaults to 0 (Text) which is valid
+	if r.MessageType < 0 {
 		r.MessageType = model.MessageTypeText
 	}
 	return nil

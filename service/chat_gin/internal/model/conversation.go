@@ -41,6 +41,7 @@ type ConversationMember struct {
 	UserID         uuid.UUID `json:"id" gorm:"type:uuid;primaryKey"`
 	Role           string    `json:"role" gorm:"type:varchar(20);default:'member'"`
 	JoinedAt       time.Time `json:"-" gorm:"autoCreateTime"`
+	LastReadAt     time.Time `json:"last_read_at" gorm:"default:null"`
 
 	// 用户信息（从认证服务获取，不存储在数据库）
 	Username    string  `json:"username,omitempty" gorm:"-"`

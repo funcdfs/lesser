@@ -15,52 +15,54 @@ func TestMessage_IsValid(t *testing.T) {
 		{
 			name: "valid message",
 			msg: Message{
-				ConversationID: uuid.New(),
-				SenderID:       uuid.New(),
-				Content:        "Hello, world!",
-				MessageType:    MessageTypeText,
+				DialogID: uuid.New(),
+				SenderID: uuid.New(),
+				Content:  "Hello, world!",
+				MsgType:  MessageTypeText,
 			},
 			want: true,
 		},
 		{
-			name: "nil conversation ID",
+			name: "nil dialog ID",
 			msg: Message{
-				ConversationID: uuid.Nil,
-				SenderID:       uuid.New(),
-				Content:        "Hello",
-				MessageType:    MessageTypeText,
+				DialogID: uuid.Nil,
+				SenderID: uuid.New(),
+				Content:  "Hello",
+				MsgType:  MessageTypeText,
 			},
 			want: false,
 		},
 		{
 			name: "nil sender ID",
 			msg: Message{
-				ConversationID: uuid.New(),
-				SenderID:       uuid.Nil,
-				Content:        "Hello",
-				MessageType:    MessageTypeText,
+				DialogID: uuid.New(),
+				SenderID: uuid.Nil,
+				Content:  "Hello",
+				MsgType:  MessageTypeText,
 			},
 			want: false,
 		},
 		{
-			name: "empty content",
+			name: "empty content no media",
 			msg: Message{
-				ConversationID: uuid.New(),
-				SenderID:       uuid.New(),
-				Content:        "",
-				MessageType:    MessageTypeText,
+				DialogID:  uuid.New(),
+				SenderID:  uuid.New(),
+				Content:   "",
+				MsgType:   MessageTypeText,
+				MediaInfo: nil,
 			},
 			want: false,
 		},
 		{
-			name: "empty message type",
+			name: "empty content with media",
 			msg: Message{
-				ConversationID: uuid.New(),
-				SenderID:       uuid.New(),
-				Content:        "Hello",
-				MessageType:    "",
+				DialogID:  uuid.New(),
+				SenderID:  uuid.New(),
+				Content:   "",
+				MsgType:   MessageTypeImage,
+				MediaInfo: map[string]interface{}{"url": "http://example.com/img.jpg"},
 			},
-			want: false,
+			want: true,
 		},
 	}
 
@@ -81,17 +83,23 @@ func TestMessage_TableName(t *testing.T) {
 }
 
 func TestMessageType_Constants(t *testing.T) {
-	// Verify message type constants are defined correctly
-	if MessageTypeText != "text" {
-		t.Errorf("MessageTypeText = %v, want text", MessageTypeText)
+	// Verify message type constants are defined correctly (now int)
+	if MessageTypeText != 0 {
+		t.Errorf("MessageTypeText = %v, want 0", MessageTypeText)
 	}
-	if MessageTypeImage != "image" {
-		t.Errorf("MessageTypeImage = %v, want image", MessageTypeImage)
+	if MessageTypeImage != 1 {
+		t.Errorf("MessageTypeImage = %v, want 1", MessageTypeImage)
 	}
-	if MessageTypeFile != "file" {
-		t.Errorf("MessageTypeFile = %v, want file", MessageTypeFile)
+	if MessageTypeVideo != 2 {
+		t.Errorf("MessageTypeVideo = %v, want 2", MessageTypeVideo)
 	}
-	if MessageTypeSystem != "system" {
-		t.Errorf("MessageTypeSystem = %v, want system", MessageTypeSystem)
+	if MessageTypeLink != 3 {
+		t.Errorf("MessageTypeLink = %v, want 3", MessageTypeLink)
+	}
+	if MessageTypeFile != 4 {
+		t.Errorf("MessageTypeFile = %v, want 4", MessageTypeFile)
+	}
+	if MessageTypeSystem != 9 {
+		t.Errorf("MessageTypeSystem = %v, want 9", MessageTypeSystem)
 	}
 }

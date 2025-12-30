@@ -4,53 +4,47 @@ import (
 	"time"
 
 	"github.com/google/uuid"
+	"gorm.io/gorm"
 )
 
-// MessageType 消息类型枚举
-type MessageType string
+// MessageType 消息类型枚举 (改为 int 映射)
+type MessageType int
 
 const (
-	MessageTypeText   MessageType = "text"   // 文本消息
-	MessageTypeImage  MessageType = "image"  // 图片消息
-	MessageTypeFile   MessageType = "file"   // 文件消息
-	MessageTypeSystem MessageType = "system" // 系统消息
+	MessageTypeText   MessageType = 0 // 文本
+	MessageTypeImage  MessageType = 1 // 图片
+	MessageTypeVideo  MessageType = 2 // 视频
+	MessageTypeLink   MessageType = 3 // 链接
+	MessageTypeFile   MessageType = 4 // 文件
+	MessageTypeSystem MessageType = 9 // 系统消息
 )
 
-// Message 消息实体模型
+// Message 消息实体模型 (Telegram 风格)
 type Message struct {
-	ID             uuid.UUID   `json:"id" gorm:"type:uuid;primary_key;default:gen_random_uuid()"`
-	ConversationID uuid.UUID   `json:"conversation_id" gorm:"type:uuid;not null;index"`
-	SenderID       uuid.UUID   `json:"sender_id" gorm:"type:uuid;not null;index"`
-	Content        string      `json:"content" gorm:"type:text;not null"`
-	MessageType    MessageType `json:"message_type" gorm:"type:varchar(20);not null;default:'text'"`
-	CreatedAt      time.Time   `json:"created_at" gorm:"autoCreateTime;index"`
-	ReadAt         *time.Time  `json:"read_at,omitempty" gorm:"index"` // 已读时间戳，null 表示未读
+	// 基础 ID
+	ID      int64 `json:"id" gorm:"primaryKey;autoIncrement"`                   // 消息的全局唯一 ID
+	LocalID int32 `json:"local_id" gorm:"type:int;not null;index:idx_local_id"` // 在该会话内的递增 ID
 
-	// 不同消息类型的可选元数据
-	Metadata map[string]interface{} `json:"metadata,omitempty" gorm:"type:jsonb"`
-}
+	// 关联 ID
+	DialogID uuid.UUID `json:"dialog_id" gorm:"type:uuid;column:dialog_id;not null;index"` // 会话 ID
+	SenderID uuid.UUID `json:"sender_id" gorm:"type:uuid;column:sender_id;not null;index"` // 发送者 ID
 
-// IsReadByRecipient 判断消息是否已被接收方读取
-// 对于发送方：返回 true 表示对方已读我发的消息
-// 对于接收方：返回 true 表示我已读这条消息
-func (m *Message) IsReadByRecipient() bool {
-	return m.ReadAt != nil
-}
+	// 内容与类型
+	Content string      `json:"content" gorm:"type:text"`                      // 消息纯文本内容
+	MsgType MessageType `json:"msg_type" gorm:"type:smallint;default:0"`       // 消息类型
+	Entities interface{} `json:"entities,omitempty" gorm:"type:jsonb"`    // 格式化信息
+	MediaInfo interface{} `json:"media_info,omitempty" gorm:"type:jsonb"` // 媒体详细元数据
 
-// IsReadBy 判断消息是否已被指定用户读取
-// 如果 userID 是发送者，返回 false（发送者不需要"读"自己的消息）
-// 如果 userID 是接收者，返回 ReadAt != nil
-func (m *Message) IsReadBy(userID uuid.UUID) bool {
-	if m.SenderID == userID {
-		return false // 发送者不需要读自己的消息
-	}
-	return m.ReadAt != nil
-}
+	// 引用与回复
+	ReplyToID *int64 `json:"reply_to_id,omitempty" gorm:"index"` // 被回复的消息 ID
 
-// NeedsReadReceipt 判断是否需要向发送方发送已读回执
-// 当消息被接收方读取时，需要通知发送方
-func (m *Message) NeedsReadReceipt(readerID uuid.UUID) bool {
-	return m.SenderID != readerID && m.ReadAt != nil
+	// 状态与时间
+	Date       time.Time      `json:"date" gorm:"not null;index"`          // 消息发送时间
+	EditDate   *time.Time     `json:"edit_date,omitempty"`                 // 最后修改时间
+	IsOutgoing bool           `json:"is_outgoing" gorm:"default:true"`     // 是否为发送出去的消息
+	IsUnread   bool           `json:"is_unread" gorm:"default:true"`       // 是否未读
+	Flags      int32          `json:"flags" gorm:"type:int"`               // 内部状态位掩码
+	DeletedAt  gorm.DeletedAt `json:"-" gorm:"index"`                      // 软删除支持
 }
 
 // TableName 返回消息表名
@@ -60,17 +54,16 @@ func (Message) TableName() string {
 
 // IsValid 检查消息是否有效
 func (m *Message) IsValid() bool {
-	return m.ConversationID != uuid.Nil &&
+	return m.DialogID != uuid.Nil &&
 		m.SenderID != uuid.Nil &&
-		m.Content != "" &&
-		m.MessageType != ""
+		(m.Content != "" || m.MediaInfo != nil)
 }
 
 // MessageFilter 消息查询过滤器
 type MessageFilter struct {
-	ConversationID uuid.UUID
-	SenderID       *uuid.UUID
-	MessageType    *MessageType
-	Before         *time.Time
-	After          *time.Time
+	DialogID *uuid.UUID
+	SenderID *uuid.UUID
+	MsgType  *MessageType
+	Before   *time.Time
+	After    *time.Time
 }

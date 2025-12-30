@@ -66,6 +66,29 @@ type Message struct {
 	Content        string     // 消息内容
 	MessageType    string     // 消息类型（text/image/file/system）
 	CreatedAt      *Timestamp // 创建时间
+	ReadAt         *Timestamp // 已读时间
+}
+
+// ReadReceipt 单条消息已读回执
+type ReadReceipt struct {
+	MessageId      string     // 消息ID
+	ConversationId string     // 会话ID
+	ReaderId       string     // 阅读者ID
+	ReadAt         *Timestamp // 已读时间
+}
+
+// BatchReadReceipt 批量已读回执
+type BatchReadReceipt struct {
+	ConversationId string     // 会话ID
+	ReaderId       string     // 阅读者ID
+	MessageIds     []string   // 消息ID列表
+	ReadAt         *Timestamp // 已读时间
+}
+
+// UnreadCount 单个会话的未读数
+type UnreadCount struct {
+	ConversationId string // 会话ID
+	Count          int64  // 未读数
 }
 
 // 请求/响应消息定义
@@ -120,6 +143,29 @@ type StreamRequest struct {
 	UserId string // 用户ID
 }
 
+// MarkAsReadRequest 标记单条消息已读请求
+type MarkAsReadRequest struct {
+	MessageId string // 消息ID
+	UserId    string // 用户ID
+}
+
+// MarkConversationAsReadRequest 标记会话所有消息已读请求
+type MarkConversationAsReadRequest struct {
+	ConversationId string // 会话ID
+	UserId         string // 用户ID
+}
+
+// GetUnreadCountsRequest 批量获取未读数请求
+type GetUnreadCountsRequest struct {
+	UserId          string   // 用户ID
+	ConversationIds []string // 会话ID列表
+}
+
+// GetUnreadCountsResponse 批量获取未读数响应
+type GetUnreadCountsResponse struct {
+	UnreadCounts []*UnreadCount // 未读数列表
+}
+
 // ChatServiceServer gRPC 聊天服务接口
 type ChatServiceServer interface {
 	GetConversations(context.Context, *GetConversationsRequest) (*ConversationsResponse, error)
@@ -128,6 +174,9 @@ type ChatServiceServer interface {
 	GetMessages(context.Context, *GetMessagesRequest) (*MessagesResponse, error)
 	SendMessage(context.Context, *SendMessageRequest) (*Message, error)
 	StreamMessages(*StreamRequest, ChatService_StreamMessagesServer) error
+	MarkAsRead(context.Context, *MarkAsReadRequest) (*ReadReceipt, error)
+	MarkConversationAsRead(context.Context, *MarkConversationAsReadRequest) (*BatchReadReceipt, error)
+	GetUnreadCounts(context.Context, *GetUnreadCountsRequest) (*GetUnreadCountsResponse, error)
 }
 
 // ChatService_StreamMessagesServer 消息流服务端接口
@@ -163,6 +212,18 @@ func (UnimplementedChatServiceServer) StreamMessages(*StreamRequest, ChatService
 	return nil
 }
 
+func (UnimplementedChatServiceServer) MarkAsRead(context.Context, *MarkAsReadRequest) (*ReadReceipt, error) {
+	return nil, nil
+}
+
+func (UnimplementedChatServiceServer) MarkConversationAsRead(context.Context, *MarkConversationAsReadRequest) (*BatchReadReceipt, error) {
+	return nil, nil
+}
+
+func (UnimplementedChatServiceServer) GetUnreadCounts(context.Context, *GetUnreadCountsRequest) (*GetUnreadCountsResponse, error) {
+	return nil, nil
+}
+
 // RegisterChatServiceServer 注册聊天服务到 gRPC 服务器
 func RegisterChatServiceServer(s *grpc.Server, srv ChatServiceServer) {
 	// 生产环境中由 protoc-gen-go-grpc 生成
@@ -194,6 +255,18 @@ var ChatService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "SendMessage",
 			Handler:    _ChatService_SendMessage_Handler,
+		},
+		{
+			MethodName: "MarkAsRead",
+			Handler:    _ChatService_MarkAsRead_Handler,
+		},
+		{
+			MethodName: "MarkConversationAsRead",
+			Handler:    _ChatService_MarkConversationAsRead_Handler,
+		},
+		{
+			MethodName: "GetUnreadCounts",
+			Handler:    _ChatService_GetUnreadCounts_Handler,
 		},
 	},
 	Streams: []grpc.StreamDesc{
@@ -312,4 +385,58 @@ func _ChatService_StreamMessages_Handler(srv interface{}, stream grpc.ServerStre
 		return err
 	}
 	return srv.(ChatServiceServer).StreamMessages(m, &chatServiceStreamMessagesServer{stream})
+}
+
+func _ChatService_MarkAsRead_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(MarkAsReadRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(ChatServiceServer).MarkAsRead(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/chat.ChatService/MarkAsRead",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(ChatServiceServer).MarkAsRead(ctx, req.(*MarkAsReadRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _ChatService_MarkConversationAsRead_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(MarkConversationAsReadRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(ChatServiceServer).MarkConversationAsRead(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/chat.ChatService/MarkConversationAsRead",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(ChatServiceServer).MarkConversationAsRead(ctx, req.(*MarkConversationAsReadRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _ChatService_GetUnreadCounts_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GetUnreadCountsRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(ChatServiceServer).GetUnreadCounts(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/chat.ChatService/GetUnreadCounts",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(ChatServiceServer).GetUnreadCounts(ctx, req.(*GetUnreadCountsRequest))
+	}
+	return interceptor(ctx, in, info, handler)
 }

@@ -55,21 +55,25 @@ func (m *MockConversationRepository) GetMemberIDs(ctx context.Context, conversat
 
 // MockMessageRepository 模拟消息仓库
 type MockMessageRepository struct {
-	messages map[uuid.UUID]*model.Message
+	messages map[int64]*model.Message
+	nextID   int64
 }
 
 func NewMockMessageRepository() *MockMessageRepository {
 	return &MockMessageRepository{
-		messages: make(map[uuid.UUID]*model.Message),
+		messages: make(map[int64]*model.Message),
+		nextID:   1,
 	}
 }
 
 func (m *MockMessageRepository) Create(ctx context.Context, msg *model.Message) error {
+	msg.ID = m.nextID
+	m.nextID++
 	m.messages[msg.ID] = msg
 	return nil
 }
 
-func (m *MockMessageRepository) GetByID(ctx context.Context, id uuid.UUID) (*model.Message, error) {
+func (m *MockMessageRepository) GetByID(ctx context.Context, id int64) (*model.Message, error) {
 	if msg, ok := m.messages[id]; ok {
 		return msg, nil
 	}
@@ -191,16 +195,23 @@ func TestConversationType_Values(t *testing.T) {
 }
 
 func TestMessageType_Values(t *testing.T) {
-	if model.MessageTypeText != "text" {
-		t.Errorf("MessageTypeText = %v, want 'text'", model.MessageTypeText)
+	// MessageType 现在是 int 类型
+	if model.MessageTypeText != 0 {
+		t.Errorf("MessageTypeText = %v, want 0", model.MessageTypeText)
 	}
-	if model.MessageTypeImage != "image" {
-		t.Errorf("MessageTypeImage = %v, want 'image'", model.MessageTypeImage)
+	if model.MessageTypeImage != 1 {
+		t.Errorf("MessageTypeImage = %v, want 1", model.MessageTypeImage)
 	}
-	if model.MessageTypeFile != "file" {
-		t.Errorf("MessageTypeFile = %v, want 'file'", model.MessageTypeFile)
+	if model.MessageTypeVideo != 2 {
+		t.Errorf("MessageTypeVideo = %v, want 2", model.MessageTypeVideo)
 	}
-	if model.MessageTypeSystem != "system" {
-		t.Errorf("MessageTypeSystem = %v, want 'system'", model.MessageTypeSystem)
+	if model.MessageTypeLink != 3 {
+		t.Errorf("MessageTypeLink = %v, want 3", model.MessageTypeLink)
+	}
+	if model.MessageTypeFile != 4 {
+		t.Errorf("MessageTypeFile = %v, want 4", model.MessageTypeFile)
+	}
+	if model.MessageTypeSystem != 9 {
+		t.Errorf("MessageTypeSystem = %v, want 9", model.MessageTypeSystem)
 	}
 }

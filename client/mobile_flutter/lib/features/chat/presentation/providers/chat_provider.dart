@@ -50,6 +50,7 @@ class ConversationsNotifier extends Notifier<ConversationsState> {
   late final ChatRepository _repository;
   late final ChatWebSocketService _webSocketService;
   StreamSubscription<ConversationUpdatePayload>? _updateSubscription;
+  String? _activeConversationId;
 
   @override
   ConversationsState build() {
@@ -100,7 +101,7 @@ class ConversationsNotifier extends Notifier<ConversationsState> {
     }
     
     final updatedConv = conversations[index].copyWith(
-      unreadCount: update.unreadCount, // 使用服务端返回的真实未读数
+      unreadCount: update.conversationId == _activeConversationId ? 0 : update.unreadCount, // Active conversation stays read
       lastMessage: newLastMessage ?? conversations[index].lastMessage,
     );
 
@@ -153,6 +154,17 @@ class ConversationsNotifier extends Notifier<ConversationsState> {
     final conversations = List<Conversation>.from(state.conversations);
     conversations[index] = conversations[index].copyWith(unreadCount: 0);
     _updateTotalUnreadCount(conversations);
+  }
+
+  /// Mark conversation as active (user entered chat)
+  void enterConversation(String conversationId) {
+    _activeConversationId = conversationId;
+    clearUnreadCount(conversationId);
+  }
+
+  /// Mark conversation as inactive (user left chat)
+  void leaveConversation() {
+    _activeConversationId = null;
   }
 }
 
@@ -281,7 +293,7 @@ class ChatRoomNotifier extends Notifier<ChatRoomState> {
 
   /// 进入会话时清除未读数的回调
   void _onEnterConversation(String conversationId) {
-    ref.read(conversationsProvider.notifier).clearUnreadCount(conversationId);
+    ref.read(conversationsProvider.notifier).enterConversation(conversationId);
   }
 
   /// 加载会话详情和消息

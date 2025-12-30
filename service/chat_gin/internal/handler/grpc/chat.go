@@ -2,6 +2,7 @@ package grpc
 
 import (
 	"context"
+	"strconv"
 	"time"
 
 	"github.com/google/uuid"
@@ -199,8 +200,20 @@ func (h *ChatHandler) SendMessage(ctx context.Context, req *SendMessageRequest) 
 		return nil, status.Error(codes.InvalidArgument, "发送者ID格式无效")
 	}
 
-	msgType := model.MessageType(req.MessageType)
-	if msgType == "" {
+	// 简单的字符串到 int 映射 (默认 text=0)
+	var msgType model.MessageType
+	switch req.MessageType {
+	case "image":
+		msgType = model.MessageTypeImage
+	case "video":
+		msgType = model.MessageTypeVideo
+	case "link":
+		msgType = model.MessageTypeLink
+	case "file":
+		msgType = model.MessageTypeFile
+	case "system":
+		msgType = model.MessageTypeSystem
+	default:
 		msgType = model.MessageTypeText
 	}
 
@@ -237,7 +250,132 @@ func (h *ChatHandler) StreamMessages(req *StreamRequest, stream ChatService_Stre
 
 	// 保持流连接直到客户端断开
 	<-stream.Context().Done()
-	return nil
+	return nil // 客户端断开连接时返回
+}
+
+// MarkAsRead 标记单条消息为已读
+func (h *ChatHandler) MarkAsRead(ctx context.Context, req *MarkAsReadRequest) (*ReadReceipt, error) {
+	if req.MessageId == "" {
+		return nil, status.Error(codes.InvalidArgument, "消息ID不能为空")
+	}
+	if req.UserId == "" {
+		return nil, status.Error(codes.InvalidArgument, "用户ID不能为空")
+	}
+
+	messageID, err := strconv.ParseInt(req.MessageId, 10, 64)
+	if err != nil {
+		return nil, status.Error(codes.InvalidArgument, "消息ID格式无效")
+	}
+
+	userID, err := uuid.Parse(req.UserId)
+	if err != nil {
+		return nil, status.Error(codes.InvalidArgument, "用户ID格式无效")
+	}
+
+	receipt, err := h.chatService.MarkMessageAsRead(ctx, messageID, userID)
+	if err != nil {
+		if err == service.ErrNotMember {
+			return nil, status.Error(codes.PermissionDenied, "您不是该会话的成员")
+		}
+		if err == service.ErrCannotMarkOwnMessage {
+			return nil, status.Error(codes.InvalidArgument, "不能标记自己发送的消息为已读")
+		}
+		if err == service.ErrAlreadyRead {
+			return nil, status.Error(codes.AlreadyExists, "消息已经标记为已读")
+		}
+		return nil, status.Error(codes.Internal, err.Error())
+	}
+
+	return &ReadReceipt{
+		MessageId:      strconv.FormatInt(receipt.MessageID, 10),
+		ConversationId: receipt.ConversationID.String(),
+		ReaderId:       receipt.ReaderID.String(),
+		ReadAt: &Timestamp{
+			Seconds: receipt.ReadAt.Unix(),
+			Nanos:   int32(receipt.ReadAt.Nanosecond()),
+		},
+	}, nil
+}
+
+// MarkConversationAsRead 标记会话中所有消息为已读
+func (h *ChatHandler) MarkConversationAsRead(ctx context.Context, req *MarkConversationAsReadRequest) (*BatchReadReceipt, error) {
+	if req.ConversationId == "" {
+		return nil, status.Error(codes.InvalidArgument, "会话ID不能为空")
+	}
+	if req.UserId == "" {
+		return nil, status.Error(codes.InvalidArgument, "用户ID不能为空")
+	}
+
+	convID, err := uuid.Parse(req.ConversationId)
+	if err != nil {
+		return nil, status.Error(codes.InvalidArgument, "会话ID格式无效")
+	}
+
+	userID, err := uuid.Parse(req.UserId)
+	if err != nil {
+		return nil, status.Error(codes.InvalidArgument, "用户ID格式无效")
+	}
+
+	receipt, err := h.chatService.MarkConversationAsRead(ctx, convID, userID)
+	if err != nil {
+		if err == service.ErrNotMember {
+			return nil, status.Error(codes.PermissionDenied, "您不是该会话的成员")
+		}
+		return nil, status.Error(codes.Internal, err.Error())
+	}
+
+	messageIDs := make([]string, len(receipt.MessageIDs))
+	for i, id := range receipt.MessageIDs {
+		messageIDs[i] = strconv.FormatInt(id, 10)
+	}
+
+	return &BatchReadReceipt{
+		ConversationId: receipt.ConversationID.String(),
+		ReaderId:       receipt.ReaderID.String(),
+		MessageIds:     messageIDs,
+		ReadAt: &Timestamp{
+			Seconds: receipt.ReadAt.Unix(),
+			Nanos:   int32(receipt.ReadAt.Nanosecond()),
+		},
+	}, nil
+}
+
+// GetUnreadCounts 批量获取多个会话的未读数
+func (h *ChatHandler) GetUnreadCounts(ctx context.Context, req *GetUnreadCountsRequest) (*GetUnreadCountsResponse, error) {
+	if req.UserId == "" {
+		return nil, status.Error(codes.InvalidArgument, "用户ID不能为空")
+	}
+
+	userID, err := uuid.Parse(req.UserId)
+	if err != nil {
+		return nil, status.Error(codes.InvalidArgument, "用户ID格式无效")
+	}
+
+	conversationIDs := make([]uuid.UUID, len(req.ConversationIds))
+	for i, idStr := range req.ConversationIds {
+		id, err := uuid.Parse(idStr)
+		if err != nil {
+			return nil, status.Errorf(codes.InvalidArgument, "会话ID格式无效: %s", idStr)
+		}
+		conversationIDs[i] = id
+	}
+
+	counts, err := h.chatService.GetUnreadCounts(ctx, userID, conversationIDs)
+	if err != nil {
+		return nil, status.Error(codes.Internal, err.Error())
+	}
+
+	unreadCounts := make([]*UnreadCount, 0, len(counts))
+	for convID, count := range counts {
+		unreadCounts = append(unreadCounts, &UnreadCount{
+			ConversationId: convID.String(),
+			Count:          count,
+		})
+	}
+
+	return &GetUnreadCountsResponse{
+		UnreadCounts: unreadCounts,
+	}, nil
 }
 
 // 类型转换辅助函数
@@ -270,15 +408,32 @@ func modelToProtoConversation(conv *model.Conversation) *Conversation {
 
 // modelToProtoMessage 将模型消息转换为 Proto 消息
 func modelToProtoMessage(msg *model.Message) *Message {
+	// 简单的 int 到字符串映射
+	var msgTypeStr string
+	switch msg.MsgType {
+	case model.MessageTypeImage:
+		msgTypeStr = "image"
+	case model.MessageTypeVideo:
+		msgTypeStr = "video"
+	case model.MessageTypeLink:
+		msgTypeStr = "link"
+	case model.MessageTypeFile:
+		msgTypeStr = "file"
+	case model.MessageTypeSystem:
+		msgTypeStr = "system"
+	default:
+		msgTypeStr = "text"
+	}
+
 	return &Message{
-		Id:             msg.ID.String(),
-		ConversationId: msg.ConversationID.String(),
+		Id:             strconv.FormatInt(msg.ID, 10),
+		ConversationId: msg.DialogID.String(),
 		SenderId:       msg.SenderID.String(),
 		Content:        msg.Content,
-		MessageType:    string(msg.MessageType),
+		MessageType:    msgTypeStr,
 		CreatedAt: &Timestamp{
-			Seconds: msg.CreatedAt.Unix(),
-			Nanos:   int32(msg.CreatedAt.Nanosecond()),
+			Seconds: msg.Date.Unix(),
+			Nanos:   int32(msg.Date.Nanosecond()),
 		},
 	}
 }
