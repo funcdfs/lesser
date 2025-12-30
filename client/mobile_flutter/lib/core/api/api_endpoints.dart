@@ -39,7 +39,7 @@ class ApiEndpoints {
   // 通知端点
   static const String notifications = '/api/v1/notifications/';
   static String notificationById(String id) => '/api/v1/notifications/$id/';
-  static const String notificationsMarkAllRead = '/api/v1/notifications/mark-all-read/';
+  static const String notificationsReadAll = '/api/v1/notifications/read-all/';
 
   // 聊天端点（通过聊天服务）
   static const String conversations = '/api/v1/chat/conversations/';

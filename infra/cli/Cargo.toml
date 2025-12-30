@@ -1,0 +1,57 @@
+[package]
+name = "devlesser"
+version = "0.1.0"
+edition = "2024"
+authors = ["Lesser Team"]
+description = "Lesser 项目开发环境管理 CLI 工具"
+readme = "README.md"
+license = "MIT"
+rust-version = "1.85"
+
+[[bin]]
+name = "devlesser"
+path = "src/main.rs"
+
+[dependencies]
+# CLI 框架
+clap = { version = "4.5", features = ["derive", "env", "cargo"] }
+clap_complete = "4.5"
+
+# 终端 UI
+console = "0.16"
+indicatif = "0.18"
+dialoguer = "0.12"
+
+# 错误处理
+anyhow = "1"
+thiserror = "2"
+
+# 异步运行时
+tokio = { version = "1", features = ["full"] }
+
+# HTTP 客户端 (健康检查)
+reqwest = { version = "0.12", features = ["json"] }
+
+# 序列化
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+
+# 环境变量
+dotenvy = "0.15"
+
+# 进程管理
+ctrlc = "3"
+
+# 并发工具
+futures = "0.3"
+
+[dev-dependencies]
+# 属性测试
+proptest = "1"
+
+# 命令行测试
+assert_cmd = "2"
+predicates = "3"
+
+# 临时文件
+tempfile = "3"

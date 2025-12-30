@@ -60,7 +60,7 @@ class NotificationRemoteDataSourceImpl implements NotificationRemoteDataSource {
   @override
   Future<void> markAllAsRead() async {
     try {
-      await _apiClient.post(ApiEndpoints.notificationsMarkAllRead);
+      await _apiClient.post(ApiEndpoints.notificationsReadAll);
     } on DioException catch (e) {
       throw _handleDioError(e);
     }
@@ -70,12 +70,12 @@ class NotificationRemoteDataSourceImpl implements NotificationRemoteDataSource {
   Future<int> getUnreadCount() async {
     try {
       final response = await _apiClient.get(
-        '${ApiEndpoints.notifications}unread-count/',
+        '${ApiEndpoints.notifications}count/',
       );
 
       if (response.statusCode == 200) {
         final data = response.data as Map<String, dynamic>;
-        return data['count'] as int;
+        return data['unread'] as int;
       }
       throw ServerException(statusCode: response.statusCode);
     } on DioException catch (e) {

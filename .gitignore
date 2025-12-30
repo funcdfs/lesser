@@ -250,3 +250,15 @@ dump.rdb
 *.lib
 *.so.*
 *.dylib.*
+
+
+# --- Rust 相关 ---
+# 编译生成的二进制文件和中间产物
+target/
+
+# 当使用 cargo fix 或某些编辑器插件时产生的备份文件
+**/*.rs.bk
+
+# --- 操作系统相关 ---
+.DS_Store
+Thumbs.db
