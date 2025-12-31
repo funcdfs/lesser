@@ -60,5 +60,6 @@ async fn main() -> Result<()> {
         Commands::Env => commands::env::execute().await,
         Commands::Urls => commands::urls::execute().await,
         Commands::Completion { shell } => commands::completion::execute(shell),
+        Commands::Mock => commands::mock::execute().await,
     }
 }

@@ -385,7 +385,7 @@ func (h *Hub) NotifyReadReceipt(senderID uuid.UUID, receipt *model.ReadReceipt) 
 
 	h.userNotify <- &UserNotification{
 		UserID: senderID,
-		Type:   "read_receipt",
+		Type:   "message_read",
 		Payload: &ReadReceiptPayload{
 			MessageID:      strconv.FormatInt(receipt.MessageID, 10),
 			ConversationID: receipt.ConversationID.String(),
@@ -409,7 +409,7 @@ func (h *Hub) NotifyBatchReadReceipt(senderID uuid.UUID, receipt *model.BatchRea
 
 	h.userNotify <- &UserNotification{
 		UserID: senderID,
-		Type:   "read_receipt_batch",
+		Type:   "messages_read",
 		Payload: &ReadReceiptPayload{
 			ConversationID: receipt.ConversationID.String(),
 			ReaderID:       receipt.ReaderID.String(),

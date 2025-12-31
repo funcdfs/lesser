@@ -141,6 +141,9 @@ pub enum Commands {
         /// Shell 类型: bash, zsh, fish
         shell: Shell,
     },
+
+    /// 生成 Mock 数据
+    Mock,
 }
 
 /// 启动目标

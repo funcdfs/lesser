@@ -9,6 +9,7 @@ import '../../../../core/errors/exceptions.dart';
 import '../../../../core/utils/app_logger.dart';
 import '../../domain/entities/conversation.dart';
 import '../../domain/entities/message.dart';
+import '../../domain/repositories/chat_repository.dart' show MarkAsReadResult, UnreadCountResult;
 import '../models/conversation_model.dart';
 import '../models/message_model.dart';
 
@@ -47,7 +48,10 @@ abstract class ChatRemoteDataSource {
   });
 
   /// 标记会话消息为已读
-  Future<void> markAsRead(String conversationId);
+  Future<MarkAsReadResult> markAsRead(String conversationId);
+
+  /// 批量获取多个会话的未读数
+  Future<List<UnreadCountResult>> getUnreadCounts(List<String> conversationIds);
 }
 
 /// 聊天远程数据源实现
@@ -202,16 +206,49 @@ class ChatRemoteDataSourceImpl implements ChatRemoteDataSource {
   }
 
   @override
-  Future<void> markAsRead(String conversationId) async {
+  Future<MarkAsReadResult> markAsRead(String conversationId) async {
     try {
       final response = await _apiClient.post(
         ApiEndpoints.markAsRead(conversationId),
         options: _getOptionsWithUserId(),
       );
 
-      if (response.statusCode != 200) {
-        throw ServerException(statusCode: response.statusCode);
+      if (response.statusCode == 200) {
+        final data = response.data as Map<String, dynamic>?;
+        final markedCount = data?['marked_count'] as int? ?? 0;
+        return MarkAsReadResult(markedCount: markedCount);
       }
+      throw ServerException(statusCode: response.statusCode);
+    } on DioException catch (e) {
+      throw _handleDioError(e);
+    }
+  }
+
+  @override
+  Future<List<UnreadCountResult>> getUnreadCounts(List<String> conversationIds) async {
+    if (conversationIds.isEmpty) return [];
+    
+    try {
+      final response = await _apiClient.get(
+        ApiEndpoints.unreadCounts,
+        queryParameters: {'conversation_ids': conversationIds.join(',')},
+        options: _getOptionsWithUserId(),
+      );
+
+      if (response.statusCode == 200) {
+        final data = response.data as Map<String, dynamic>;
+        final unreadCounts = data['unread_counts'] as List<dynamic>?;
+        if (unreadCounts == null) return [];
+        
+        return unreadCounts.map((e) {
+          final item = e as Map<String, dynamic>;
+          return UnreadCountResult(
+            conversationId: item['conversation_id'] as String,
+            count: item['count'] as int? ?? 0,
+          );
+        }).toList();
+      }
+      throw ServerException(statusCode: response.statusCode);
     } on DioException catch (e) {
       throw _handleDioError(e);
     }
@@ -238,6 +275,10 @@ class ChatRemoteDataSourceImpl implements ChatRemoteDataSource {
         return 'image';
       case MessageType.file:
         return 'file';
+      case MessageType.video:
+        return 'video';
+      case MessageType.link:
+        return 'link';
       case MessageType.system:
         return 'system';
     }

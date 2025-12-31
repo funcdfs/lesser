@@ -4,9 +4,10 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/lesser/chat/pkg/logger"
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
-	"gorm.io/gorm/logger"
+	gormlogger "gorm.io/gorm/logger"
 )
 
 // NewPostgres creates a new PostgreSQL connection using GORM
@@ -15,9 +16,17 @@ func NewPostgres(databaseURL string) (*gorm.DB, error) {
 		return nil, fmt.Errorf("database URL is required")
 	}
 
-	// Configure GORM
+	// Configure GORM with Zap Logger
+	zapLogger := logger.Get() // Get global Zap logger
+	gormLogger := NewZapGormLogger(zapLogger)
+	
+	// Apply custom configurations
+	gormLogger.LogLevel = gormlogger.Warn
+	gormLogger.SlowThreshold = time.Second
+	gormLogger.IgnoreRecordNotFoundError = true
+
 	config := &gorm.Config{
-		Logger: logger.Default.LogMode(logger.Info),
+		Logger: gormLogger,
 		NowFunc: func() time.Time {
 			return time.Now().UTC()
 		},

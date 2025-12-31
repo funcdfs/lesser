@@ -50,6 +50,7 @@ class ConversationsNotifier extends Notifier<ConversationsState> {
   late final ChatRepository _repository;
   late final ChatWebSocketService _webSocketService;
   StreamSubscription<ConversationUpdatePayload>? _updateSubscription;
+  StreamSubscription<int>? _totalUnreadSubscription;
   String? _activeConversationId;
 
   @override
@@ -60,21 +61,34 @@ class ConversationsNotifier extends Notifier<ConversationsState> {
     // 监听会话更新通知（未读数/最后消息变化）
     _updateSubscription = _webSocketService.conversationUpdateStream.listen(_onConversationUpdate);
     
+    // 监听总未读数变化
+    _totalUnreadSubscription = _webSocketService.totalUnreadCountStream.listen(_onTotalUnreadCountUpdate);
+
     // 清理订阅
     ref.onDispose(() {
       _updateSubscription?.cancel();
+      _totalUnreadSubscription?.cancel();
     });
     
     return const ConversationsState();
   }
 
   /// 计算并更新总未读数
+  /// [extraDelta] 是额外的增量（可选）
+  /// 如果服务端推送了总数，优先使用 _onTotalUnreadCountUpdate
   void _updateTotalUnreadCount(List<Conversation> conversations, {int extraDelta = 0}) {
     final listUnread = conversations.fold(0, (sum, conv) => sum + conv.unreadCount);
+    // 注意：这里我们使用列表计算的总和作为 fallback
+    // 理想情况下，应该有一个单独的接口获取 accurate total count
     state = state.copyWith(
       conversations: conversations,
       totalUnreadCount: listUnread + extraDelta,
     );
+  }
+
+  /// 处理总未读数更新 (ws 推送)
+  void _onTotalUnreadCountUpdate(int count) {
+    state = state.copyWith(totalUnreadCount: count);
   }
 
   /// 处理会话更新通知
@@ -83,10 +97,8 @@ class ConversationsNotifier extends Notifier<ConversationsState> {
     // 找到需要更新的会话
     final index = state.conversations.indexWhere((c) => c.id == update.conversationId);
     if (index == -1) {
-      // 会话不在列表中，直接更新总未读数
-      state = state.copyWith(
-        totalUnreadCount: state.totalUnreadCount + 1,
-      );
+      // 会话不在列表中，可能是新会话，刷新列表
+      refresh();
       return;
     }
 
@@ -100,8 +112,13 @@ class ConversationsNotifier extends Notifier<ConversationsState> {
       newLastMessage = MessageModel.fromJson(update.lastMessage!);
     }
     
+    // 如果当前会话是活跃的（用户正在查看），未读数保持为 0
+    final newUnreadCount = update.conversationId == _activeConversationId 
+        ? 0 
+        : update.unreadCount;
+    
     final updatedConv = conversations[index].copyWith(
-      unreadCount: update.conversationId == _activeConversationId ? 0 : update.unreadCount, // Active conversation stays read
+      unreadCount: newUnreadCount,
       lastMessage: newLastMessage ?? conversations[index].lastMessage,
     );
 
@@ -110,10 +127,14 @@ class ConversationsNotifier extends Notifier<ConversationsState> {
     conversations.insert(0, updatedConv);
 
     // 更新总未读数：减去旧的，加上新的
-    final delta = update.unreadCount - oldUnread;
+    // 注意：如果有 totalUnreadCountStream，这里可能不需要手动计算，
+    // 但为了 UI 即时响应，我们还是先做一个乐观更新
+    final delta = newUnreadCount - oldUnread;
+    final newTotalUnread = (state.totalUnreadCount + delta).clamp(0, double.infinity).toInt();
+    
     state = state.copyWith(
       conversations: conversations,
-      totalUnreadCount: state.totalUnreadCount + delta,
+      totalUnreadCount: newTotalUnread,
     );
   }
 
@@ -169,7 +190,7 @@ class ConversationsNotifier extends Notifier<ConversationsState> {
 }
 
 /// 聊天室状态枚举
-enum ChatRoomStatus { initial, loading, loaded, error, sending }
+enum ChatRoomStatus { initial, loading, loaded, error, sending, loadingMore }
 
 /// 聊天室状态
 class ChatRoomState {
@@ -180,6 +201,7 @@ class ChatRoomState {
     this.errorMessage,
     this.currentUserId,
     this.hasNewMessages = false,
+    this.hasMoreMessages = true,
   });
 
   final ChatRoomStatus status;
@@ -188,6 +210,7 @@ class ChatRoomState {
   final String? errorMessage;
   final String? currentUserId;
   final bool hasNewMessages; // 是否有新消息（用于显示跳转到底部按钮）
+  final bool hasMoreMessages; // 是否还有更多历史消息
 
   ChatRoomState copyWith({
     ChatRoomStatus? status,
@@ -196,6 +219,7 @@ class ChatRoomState {
     String? errorMessage,
     String? currentUserId,
     bool? hasNewMessages,
+    bool? hasMoreMessages,
   }) {
     return ChatRoomState(
       status: status ?? this.status,
@@ -204,6 +228,7 @@ class ChatRoomState {
       errorMessage: errorMessage,
       currentUserId: currentUserId ?? this.currentUserId,
       hasNewMessages: hasNewMessages ?? this.hasNewMessages,
+      hasMoreMessages: hasMoreMessages ?? this.hasMoreMessages,
     );
   }
 }
@@ -387,7 +412,15 @@ class ChatRoomNotifier extends Notifier<ChatRoomState> {
 
   /// 加载更多历史消息
   Future<void> loadMoreMessages() async {
-    if (state.conversation == null || state.messages.isEmpty) return;
+    // 防止重复加载或无效加载
+    if (state.conversation == null || 
+        state.messages.isEmpty ||
+        state.status == ChatRoomStatus.loadingMore ||
+        !state.hasMoreMessages) {
+      return;
+    }
+
+    state = state.copyWith(status: ChatRoomStatus.loadingMore);
 
     final currentPage = (state.messages.length / 50).ceil() + 1;
     final result = await _repository.getMessages(
@@ -396,11 +429,25 @@ class ChatRoomNotifier extends Notifier<ChatRoomState> {
     );
 
     result.fold(
-      (failure) => {},
+      (failure) {
+        state = state.copyWith(status: ChatRoomStatus.loaded);
+      },
       (messages) {
-        if (messages.isNotEmpty) {
+        if (messages.isEmpty) {
+          // 没有更多消息了
           state = state.copyWith(
-            messages: [...state.messages, ...messages],
+            status: ChatRoomStatus.loaded,
+            hasMoreMessages: false,
+          );
+        } else {
+          // 过滤掉已存在的消息（防止重复）
+          final existingIds = state.messages.map((m) => m.id).toSet();
+          final newMessages = messages.where((m) => !existingIds.contains(m.id)).toList();
+          
+          state = state.copyWith(
+            status: ChatRoomStatus.loaded,
+            messages: [...state.messages, ...newMessages],
+            hasMoreMessages: messages.length >= 50, // 假设每页 50 条
           );
         }
       },

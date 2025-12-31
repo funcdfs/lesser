@@ -80,6 +80,7 @@ class ChatWebSocketService {
   StreamController<MessageModel>? _messageController;
   StreamController<ConversationUpdatePayload>? _conversationUpdateController;
   StreamController<MessagesReadPayload>? _messagesReadController;
+  StreamController<int>? _totalUnreadCountController;
   StreamController<WebSocketError>? _errorController;
   final _subscribedConversations = <String>{};
   Timer? _reconnectTimer;
@@ -99,6 +100,10 @@ class ChatWebSocketService {
     }
     if (_messagesReadController == null || _messagesReadController!.isClosed) {
       _messagesReadController = StreamController<MessagesReadPayload>.broadcast();
+    }
+    if (_totalUnreadCountController == null ||
+        _totalUnreadCountController!.isClosed) {
+      _totalUnreadCountController = StreamController<int>.broadcast();
     }
     if (_errorController == null || _errorController!.isClosed) {
       _errorController = StreamController<WebSocketError>.broadcast();
@@ -121,6 +126,12 @@ class ChatWebSocketService {
   Stream<MessagesReadPayload> get messagesReadStream {
     _ensureControllers();
     return _messagesReadController!.stream;
+  }
+
+  /// 总未读数更新流
+  Stream<int> get totalUnreadCountStream {
+    _ensureControllers();
+    return _totalUnreadCountController!.stream;
   }
 
   /// 错误事件流（订阅失败等错误）
@@ -275,8 +286,13 @@ class ChatWebSocketService {
           log.d('收到已读通知: ${readPayload.conversationId}, 消息数: ${readPayload.messageIds.length}', tag: _tag);
           break;
         case WSMessageType.unreadUpdate:
-          log.d('收到未读数更新: ${json['payload']}', tag: _tag);
-          // TODO: 可以添加总未读数的流
+          final payload = json['payload'] as Map<String, dynamic>;
+          final totalCount = payload['count'] as int? ?? 0;
+          if (_totalUnreadCountController != null &&
+              !_totalUnreadCountController!.isClosed) {
+            _totalUnreadCountController!.add(totalCount);
+          }
+          log.d('收到未读数更新: $totalCount', tag: _tag);
           break;
         case WSMessageType.subscribed:
           log.d('已订阅: ${json['payload']}', tag: _tag);
@@ -316,6 +332,7 @@ class ChatWebSocketService {
     _messageController?.close();
     _conversationUpdateController?.close();
     _messagesReadController?.close();
+    _totalUnreadCountController?.close();
     _errorController?.close();
   }
 }

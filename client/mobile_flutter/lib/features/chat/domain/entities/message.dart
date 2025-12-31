@@ -1,7 +1,7 @@
 import 'package:equatable/equatable.dart';
 
 /// Message type enum
-enum MessageType { text, image, file, system }
+enum MessageType { text, image, video, link, file, system }
 
 /// Message entity
 class Message extends Equatable {
@@ -12,7 +12,7 @@ class Message extends Equatable {
     required this.content,
     required this.messageType,
     required this.createdAt,
-    this.isRead = false,
+    this.readAt,
   });
 
   final String id;
@@ -21,10 +21,13 @@ class Message extends Equatable {
   final String content;
   final MessageType messageType;
   final DateTime createdAt;
-  final bool isRead;
+  final DateTime? readAt; // null 表示未读
+
+  /// 是否已读
+  bool get isRead => readAt != null;
 
   /// 创建一个标记为已读的副本
-  Message copyWithRead() {
+  Message copyWithRead([DateTime? readTime]) {
     return Message(
       id: id,
       conversationId: conversationId,
@@ -32,7 +35,7 @@ class Message extends Equatable {
       content: content,
       messageType: messageType,
       createdAt: createdAt,
-      isRead: true,
+      readAt: readTime ?? DateTime.now(),
     );
   }
 
@@ -44,6 +47,6 @@ class Message extends Equatable {
         content,
         messageType,
         createdAt,
-        isRead,
+        readAt,
       ];
 }

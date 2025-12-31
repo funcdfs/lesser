@@ -42,10 +42,11 @@ class ApiEndpoints {
   static const String notificationsReadAll = '/api/v1/notifications/read-all/';
 
   // 聊天端点（通过聊天服务）
-  static const String conversations = '/api/v1/chat/conversations/';
-  static String conversationById(String id) => '/api/v1/chat/conversations/$id/';
+  static const String conversations = '/api/v1/chat/conversations';
+  static String conversationById(String id) => '/api/v1/chat/conversations/$id';
   static String messages(String conversationId) =>
-      '/api/v1/chat/conversations/$conversationId/messages/';
+      '/api/v1/chat/conversations/$conversationId/messages';
   static String markAsRead(String conversationId) =>
-      '/api/v1/chat/conversations/$conversationId/read/';
+      '/api/v1/chat/conversations/$conversationId/read';
+  static const String unreadCounts = '/api/v1/chat/unread-counts';
 }

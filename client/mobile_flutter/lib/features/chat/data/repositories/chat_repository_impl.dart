@@ -149,10 +149,31 @@ class ChatRepositoryImpl implements ChatRepository {
   }
 
   @override
-  Future<Either<Failure, void>> markAsRead(String conversationId) async {
+  Future<Either<Failure, MarkAsReadResult>> markAsRead(String conversationId) async {
     try {
-      await _remoteDataSource.markAsRead(conversationId);
-      return const Right(null);
+      final result = await _remoteDataSource.markAsRead(conversationId);
+      log.d('标记已读成功，标记了 ${result.markedCount} 条消息', tag: _tag);
+      return Right(MarkAsReadResult(markedCount: result.markedCount));
+    } on ServerException catch (e) {
+      log.w('服务器异常: ${e.message}', tag: _tag);
+      return Left(ServerFailure(message: e.message));
+    } on NetworkException catch (e) {
+      log.w('网络异常: ${e.message}', tag: _tag);
+      return Left(NetworkFailure(message: e.message));
+    } catch (e, stackTrace) {
+      log.e('未知错误: $e', tag: _tag, stackTrace: stackTrace);
+      return Left(UnknownFailure(message: e.toString()));
+    }
+  }
+
+  @override
+  Future<Either<Failure, List<UnreadCountResult>>> getUnreadCounts(List<String> conversationIds) async {
+    try {
+      final results = await _remoteDataSource.getUnreadCounts(conversationIds);
+      return Right(results.map((r) => UnreadCountResult(
+        conversationId: r.conversationId,
+        count: r.count,
+      )).toList());
     } on ServerException catch (e) {
       log.w('服务器异常: ${e.message}', tag: _tag);
       return Left(ServerFailure(message: e.message));

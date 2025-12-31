@@ -18,9 +18,13 @@ import (
 	"github.com/lesser/chat/internal/service"
 	"github.com/lesser/chat/pkg/cache"
 	"github.com/lesser/chat/pkg/database"
+	"github.com/lesser/chat/pkg/logger"
 )
 
 func main() {
+	// 初始化日志
+	logger.Init()
+
 	// 加载配置
 	cfg, err := config.Load()
 	if err != nil {

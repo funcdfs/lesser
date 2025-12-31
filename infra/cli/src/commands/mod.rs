@@ -17,4 +17,5 @@ pub mod status;
 pub mod stop;
 pub mod test;
 pub mod update;
+pub mod mock;
 pub mod urls;

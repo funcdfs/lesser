@@ -36,7 +36,15 @@ func NewHTTPServer(cfg *config.Config, chatService *service.ChatService, authCli
 		gin.SetMode(gin.ReleaseMode)
 	}
 
-	router := gin.Default()
+	// Use customized Gin instance
+	router := gin.New()
+	router.Use(gin.Recovery())
+
+	// Add Trace ID middleware
+	router.Use(middleware.TraceMiddleware())
+
+	// Add Zap Logger middleware (covers health check skipping log)
+	router.Use(middleware.ZapLogger())
 
 	// 禁用尾部斜杠重定向，避免 CORS 的 301 问题
 	router.RedirectTrailingSlash = false

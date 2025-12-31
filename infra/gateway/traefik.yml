@@ -29,10 +29,16 @@ providers:
 # Logging
 log:
   level: INFO
-  format: common
+  format: json
 
 accessLog:
-  format: common
+  format: json
+  fields:
+    defaultMode: keep
+    headers:
+      defaultMode: keep
+      names:
+        X-Trace-ID: keep
   filters:
     statusCodes:
       - "200-299"

@@ -4,6 +4,22 @@ import '../../../../core/errors/failures.dart';
 import '../entities/conversation.dart';
 import '../entities/message.dart';
 
+/// 标记已读结果
+class MarkAsReadResult {
+  const MarkAsReadResult({required this.markedCount});
+  final int markedCount;
+}
+
+/// 未读数结果
+class UnreadCountResult {
+  const UnreadCountResult({
+    required this.conversationId,
+    required this.count,
+  });
+  final String conversationId;
+  final int count;
+}
+
 /// 聊天仓库接口
 abstract class ChatRepository {
   /// 获取会话列表
@@ -37,7 +53,10 @@ abstract class ChatRepository {
   });
 
   /// 标记会话为已读
-  Future<Either<Failure, void>> markAsRead(String conversationId);
+  Future<Either<Failure, MarkAsReadResult>> markAsRead(String conversationId);
+
+  /// 批量获取多个会话的未读数
+  Future<Either<Failure, List<UnreadCountResult>>> getUnreadCounts(List<String> conversationIds);
 
   /// 消息流（用于实时更新）
   Stream<Message> streamMessages(String conversationId);

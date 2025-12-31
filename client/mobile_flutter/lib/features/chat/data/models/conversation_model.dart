@@ -15,12 +15,13 @@ class ConversationModel extends Conversation {
     super.unreadCount,
   });
 
-  /// Create from JSON
+  /// Create from JSON (匹配 Gin chat 服务的响应格式)
   factory ConversationModel.fromJson(Map<String, dynamic> json) {
     // 解析 members，处理可能为空或 null 的情况
     final membersJson = json['members'] as List<dynamic>?;
     final members = membersJson != null
         ? membersJson
+            .where((e) => e != null && e is Map<String, dynamic>)
             .map((e) => UserModel.fromJson(e as Map<String, dynamic>))
             .toList()
         : <UserModel>[];
@@ -29,7 +30,7 @@ class ConversationModel extends Conversation {
       id: json['id'] as String,
       type: _parseConversationType(json['type'] as String),
       members: members,
-      createdAt: DateTime.parse(json['created_at'] as String),
+      createdAt: _parseDateTime(json['created_at']),
       name: json['name'] as String?,
       creatorId: json['creator_id'] as String?,
       lastMessage: json['last_message'] != null
@@ -54,8 +55,16 @@ class ConversationModel extends Conversation {
     };
   }
 
+  /// 解析日期时间（支持 ISO8601 字符串格式）
+  static DateTime _parseDateTime(dynamic value) {
+    if (value is String) {
+      return DateTime.parse(value);
+    }
+    throw FormatException('无法解析日期时间: $value');
+  }
+
   static ConversationType _parseConversationType(String type) {
-    switch (type) {
+    switch (type.toLowerCase()) {
       case 'private':
         return ConversationType.private;
       case 'group':

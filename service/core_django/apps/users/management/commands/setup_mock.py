@@ -7,7 +7,7 @@ from apps.users.models import User, Follow
 
 
 class Command(BaseCommand):
-    help = 'Setup test users for chat demo with mutual follow relationships'
+    help = 'Setup mock users and data'
 
     def add_arguments(self, parser):
         parser.add_argument(
