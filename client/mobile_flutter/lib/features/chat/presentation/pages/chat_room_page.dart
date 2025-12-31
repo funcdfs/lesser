@@ -117,16 +117,17 @@ class _ChatRoomPageState extends ConsumerState<ChatRoomPage> {
 
   /// 获取对方用户（私聊）
   User? _getOtherMember(Conversation conversation, String? currentUserId) {
+    if (conversation.type != ConversationType.private) return null;
     if (conversation.members.isEmpty) return null;
     
-    try {
-      return conversation.members.firstWhere(
-        (m) => m.id != currentUserId,
-        orElse: () => conversation.members.first,
-      );
-    } catch (_) {
-      return conversation.members.firstOrNull;
+    // 优先寻找非当前用户的成员
+    final others = conversation.members.where((m) => m.id != currentUserId).toList();
+    if (others.isNotEmpty) {
+      return others.first;
     }
+    
+    // 如果只有一个人（或者是自聊），就返回第一个
+    return conversation.members.first;
   }
 
   @override

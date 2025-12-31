@@ -28,37 +28,37 @@ class Command(BaseCommand):
 
         if clean:
             self.stdout.write('Cleaning existing test users...')
-            User.objects.filter(username__in=['test1', 'test2']).delete()
+            User.objects.filter(username__in=['testuser1', 'testuser2']).delete()
 
-        # Create test1
+        # Create testuser1
         test1, created1 = User.objects.get_or_create(
-            username='test1',
+            username='testuser1',
             defaults={
-                'email': 'test1@example.com',
+                'email': 'testuser1@example.com',
                 'display_name': 'Test User 1',
             }
         )
         if created1:
             test1.set_password(password)
             test1.save()
-            self.stdout.write(self.style.SUCCESS(f'Created user: test1 (id: {test1.id})'))
+            self.stdout.write(self.style.SUCCESS(f'Created user: testuser1 (id: {test1.id})'))
         else:
-            self.stdout.write(f'User test1 already exists (id: {test1.id})')
+            self.stdout.write(f'User testuser1 already exists (id: {test1.id})')
 
-        # Create test2
+        # Create testuser2
         test2, created2 = User.objects.get_or_create(
-            username='test2',
+            username='testuser2',
             defaults={
-                'email': 'test2@example.com',
+                'email': 'testuser2@example.com',
                 'display_name': 'Test User 2',
             }
         )
         if created2:
             test2.set_password(password)
             test2.save()
-            self.stdout.write(self.style.SUCCESS(f'Created user: test2 (id: {test2.id})'))
+            self.stdout.write(self.style.SUCCESS(f'Created user: testuser2 (id: {test2.id})'))
         else:
-            self.stdout.write(f'User test2 already exists (id: {test2.id})')
+            self.stdout.write(f'User testuser2 already exists (id: {test2.id})')
 
         # Create mutual follow relationships (friends)
         follow1, created_f1 = Follow.objects.get_or_create(

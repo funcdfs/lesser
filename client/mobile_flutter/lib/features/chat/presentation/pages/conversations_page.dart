@@ -174,16 +174,14 @@ class _ConversationItem extends StatelessWidget {
   Widget build(BuildContext context) {
     // 尝试找到非当前用户的成员 (Private Chat Partner)
     User? otherMember;
-    if (conversation.members.isNotEmpty) {
-      try {
-        otherMember = conversation.members.firstWhere(
-          (m) => m.id != currentUserId,
-          orElse: () => conversation
-              .members
-              .first, // Fallback to first member (e.g. self chat)
-        );
-      } catch (_) {
-        otherMember = conversation.members.firstOrNull;
+    if (conversation.type == ConversationType.private) {
+      if (conversation.members.isNotEmpty) {
+        final others = conversation.members.where((m) => m.id != currentUserId).toList();
+        if (others.isNotEmpty) {
+          otherMember = others.first;
+        } else {
+          otherMember = conversation.members.first;
+        }
       }
     }
 

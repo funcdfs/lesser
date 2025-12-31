@@ -25,13 +25,9 @@ class _LoginPageState extends ConsumerState<LoginPage> {
   @override
   void initState() {
     super.initState();
-    // Pre-fill with test credentials in debug mode
-    _emailController = TextEditingController(
-      text: kDebugMode ? 'test1@example.com' : '',
-    );
-    _passwordController = TextEditingController(
-      text: kDebugMode ? 'testtesttest' : '',
-    );
+    // Initialize controllers with empty text
+    _emailController = TextEditingController();
+    _passwordController = TextEditingController();
   }
 
   @override

@@ -264,7 +264,12 @@ class ChatRoomNotifier extends Notifier<ChatRoomState> {
       if (_currentConversationId != null) {
         _webSocketService.unsubscribeFromConversation(_currentConversationId!);
         // Leave conversation to update global unread count logic
-        ref.read(conversationsProvider.notifier).leaveConversation();
+        // Use Future.microtask to avoid "Cannot use Ref or modify other providers inside life-cycles"
+        Future.microtask(() {
+          if (ref.exists(conversationsProvider)) {
+            ref.read(conversationsProvider.notifier).leaveConversation();
+          }
+        });
       }
     });
     
@@ -287,6 +292,13 @@ class ChatRoomNotifier extends Notifier<ChatRoomState> {
       messages: [message, ...state.messages],
       hasNewMessages: true, // 标记有新消息
     );
+
+    // 如果用户当前在聊天室中，收到消息应立即标记为已读
+    if (_currentConversationId != null) {
+      _repository.markAsRead(_currentConversationId!);
+      // 同时本地也要清除未读数（即时更新 UI）
+      ref.read(conversationsProvider.notifier).clearUnreadCount(_currentConversationId!);
+    }
   }
 
   /// 处理消息已读通知

@@ -183,4 +183,10 @@ pub enum CleanCommands {
     Containers,
     /// 清理数据卷 (需要确认)
     Volumes,
+    /// 清理聊天数据库数据
+    ChatDb,
+    /// 清理用户数据库数据
+    UserDb,
+    /// 清理帖子数据库数据
+    PostDb,
 }

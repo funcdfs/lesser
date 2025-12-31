@@ -69,7 +69,15 @@ class AuthNotifier extends Notifier<AuthState> {
         },
       );
     } else {
-      state = state.copyWith(status: AuthStatus.unauthenticated);
+      // 如果未登录，检查是否有自动登录的环境变量
+      const autoEmail = String.fromEnvironment('AUTO_LOGIN_EMAIL');
+      const autoPassword = String.fromEnvironment('AUTO_LOGIN_PASSWORD');
+
+      if (autoEmail.isNotEmpty && autoPassword.isNotEmpty) {
+        await login(email: autoEmail, password: autoPassword);
+      } else {
+        state = state.copyWith(status: AuthStatus.unauthenticated);
+      }
     }
   }
 

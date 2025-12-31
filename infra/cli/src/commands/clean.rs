@@ -21,8 +21,95 @@ pub async fn execute(command: Option<CleanCommands>, force: bool) -> Result<()> 
     match command {
         Some(CleanCommands::Containers) => clean_containers(&compose).await,
         Some(CleanCommands::Volumes) => clean_volumes(&compose, force).await,
+        Some(CleanCommands::ChatDb) => clean_chat_db(&compose).await,
+        Some(CleanCommands::UserDb) => clean_user_db(&compose).await,
+        Some(CleanCommands::PostDb) => clean_post_db(&compose).await,
         None => clean_all(&compose, force).await,
     }
+}
+
+/// 清理聊天数据库
+async fn clean_chat_db(compose: &DockerCompose) -> Result<()> {
+    ui::header("清理聊天数据库");
+    let spinner = Spinner::new("正在清空聊天数据...");
+
+    // 使用 psql 清空聊天相关的表
+    let sql = "TRUNCATE TABLE chat_messages, chat_conversation_members, chat_conversations CASCADE;";
+    compose
+        .exec(
+            "postgres",
+            &[
+                "psql",
+                "-U",
+                "lesser",
+                "-d",
+                "lesser_chat_db",
+                "-c",
+                sql,
+            ],
+            false,
+        )
+        .await?;
+
+    spinner.finish_and_clear();
+    ui::success("✨ 聊天数据已清空");
+    Ok(())
+}
+
+/// 清理用户数据库
+async fn clean_user_db(compose: &DockerCompose) -> Result<()> {
+    ui::header("清理用户数据库");
+    let spinner = Spinner::new("正在清空用户数据...");
+
+    // Django 默认用户表和其他认证相关表
+    let sql = "TRUNCATE TABLE users_user, users_follow, authtoken_token CASCADE;";
+    compose
+        .exec(
+            "postgres",
+            &[
+                "psql",
+                "-U",
+                "lesser",
+                "-d",
+                "lesser_db",
+                "-c",
+                sql,
+            ],
+            false,
+        )
+        .await?;
+
+    spinner.finish_and_clear();
+    ui::success("✨ 用户数据已清空");
+    Ok(())
+}
+
+/// 清理帖子数据库
+async fn clean_post_db(compose: &DockerCompose) -> Result<()> {
+    ui::header("清理帖子数据库");
+    let spinner = Spinner::new("正在清空帖子数据...");
+
+    // 帖子和 Feed 相关表
+    let sql = "TRUNCATE TABLE posts_post, posts_post_images, feeds_feeditem CASCADE;";
+    compose
+        .exec(
+            "postgres",
+            &[
+                "psql",
+                "-U",
+                "lesser",
+                "-d",
+                "lesser_db",
+                "-c",
+                sql,
+            ],
+            false,
+        )
+        .await?;
+
+    spinner.finish_and_clear();
+    ui::success("✨ 帖子数据已清空");
+    Ok(())
 }
 
 /// 清理所有容器、卷和孤立容器

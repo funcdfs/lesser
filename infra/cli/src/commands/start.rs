@@ -183,31 +183,38 @@ async fn start_flutter_internal(config: &Config) -> Result<()> {
     spinner.finish_and_clear();
     ui::success("📦 Flutter 依赖已安装");
     
-    // 启动 Flutter Web 开发服务器 (后台运行)
-    ui::info(&format!(
-        "📱 正在启动 Flutter Web 开发服务器 (端口: {})...",
-        config.flutter_port
-    ));
+    // 定义要启动的用户
+    let users = [
+        ("testuser1", config.flutter_port),
+        ("testuser2", config.flutter_port + 1),
+    ];
+
+    ui::info("🚀 正在启动双用户开发环境...");
+
+    for (username, port) in users {
+        ui::step(&format!("启动实例: {} (端口: {})", username, port));
+        
+        Command::new("flutter")
+            .args([
+                "run",
+                "-d",
+                "chrome",
+                "--web-port",
+                &port.to_string(),
+                &format!("--dart-define=AUTO_LOGIN_EMAIL={}@example.com", username),
+                "--dart-define=AUTO_LOGIN_PASSWORD=testtesttest",
+            ])
+            .current_dir(flutter_dir)
+            .stdout(Stdio::inherit())
+            .stderr(Stdio::inherit())
+            .spawn()?;
+    }
     
-    // 注意：spawn 后进程会在后台运行，但 _child 被丢弃时不会终止进程
-    // 因为 tokio::process::Child 在 drop 时不会 kill 子进程
-    Command::new("flutter")
-        .args([
-            "run",
-            "-d",
-            "chrome",
-            "--web-port",
-            &config.flutter_port.to_string(),
-        ])
-        .current_dir(flutter_dir)
-        .stdout(Stdio::inherit())
-        .stderr(Stdio::inherit())
-        .spawn()?;
-    
-    ui::success(&format!(
-        "🌐 Flutter Web: http://localhost:{}",
-        config.flutter_port
-    ));
+    ui::separator();
+    ui::success("🌐 Flutter Web 实例已启动:");
+    for (username, port) in users {
+        ui::url(&format!("用户 ({})", username), &format!("http://localhost:{}", port));
+    }
     
     Ok(())
 }
