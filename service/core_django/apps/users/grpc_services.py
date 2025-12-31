@@ -2,7 +2,6 @@
 gRPC service implementations for users.
 """
 import grpc
-from google.protobuf.timestamp_pb2 import Timestamp
 
 from .models import User
 from .services import UserService
@@ -27,18 +26,28 @@ class AuthServicer(auth_pb2_grpc.AuthServiceServicer if PROTO_AVAILABLE else obj
         if not PROTO_AVAILABLE:
             return None
             
-        created_at = Timestamp()
-        created_at.FromDatetime(user.created_at)
-        
-        return auth_pb2.User(
-            id=str(user.id),
-            username=user.username,
-            email=user.email,
-            display_name=user.display_name or '',
-            avatar_url=user.avatar_url or '',
-            bio=user.bio or '',
-            created_at=created_at,
-        )
+        try:
+            # 使用 dict 初始化 Timestamp 字段更加健壮，避免类不匹配问题
+            created_at_dict = {
+                'seconds': int(user.created_at.timestamp()),
+                'nanos': user.created_at.microsecond * 1000
+            }
+            
+            return auth_pb2.User(
+                id=str(user.id),
+                username=user.username,
+                email=user.email,
+                display_name=user.display_name or '',
+                avatar_url=user.avatar_url or '',
+                bio=user.bio or '',
+                created_at=created_at_dict,
+            )
+        except Exception as e:
+            import logging
+            logger = logging.getLogger(__name__)
+            logger.error(f"Error converting user to proto: {e}", exc_info=True)
+            # 返回一个至少包含 ID 的基本对象，避免整个请求失败
+            return auth_pb2.User(id=str(user.id), username=user.username)
 
     def ValidateToken(self, request, context):
         """Validate JWT token and return user info."""

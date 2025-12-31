@@ -228,13 +228,19 @@ http:
           - X-Requested-With
           - Accept
           - Origin
+          - X-Trace-ID
+          - X-User-ID
         accessControlAllowOriginList:
           - "http://localhost:3000"
           - "http://localhost:3001"
+          - "http://localhost:61400"  # Flutter web dev port
           - "http://127.0.0.1:3000"
           - "http://127.0.0.1:3001"
-          - "*"
+          - "http://127.0.0.1:61400"
         accessControlMaxAge: 86400
+        accessControlExposeHeaders:
+          - X-Trace-ID
+          - X-User-ID
         addVaryHeader: true
 
     grpc-web-headers:
@@ -248,6 +254,7 @@ http:
           - Content-Type
           - X-Grpc-Web
           - X-User-Agent
+          - X-Trace-ID
         accessControlAllowOriginList:
           - "*"
         accessControlExposeHeaders:

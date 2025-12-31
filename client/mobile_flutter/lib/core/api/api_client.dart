@@ -2,6 +2,7 @@ import 'package:dio/dio.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import '../constants/app_constants.dart';
 import '../utils/app_logger.dart';
+import 'trace_interceptor.dart';
 
 class ApiClient {
   ApiClient({
@@ -41,6 +42,7 @@ class ApiClient {
   Dio get dio => _dio;
 
   void _setupInterceptors() {
+    _dio.interceptors.add(TraceInterceptor());
     _dio.interceptors.add(
       InterceptorsWrapper(
         onRequest: (options, handler) async {

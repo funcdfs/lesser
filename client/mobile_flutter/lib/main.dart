@@ -12,7 +12,7 @@ void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
   // Initialize logger
-  log.init(minLevel: kDebugMode ? AppLogLevel.info : AppLogLevel.warning);
+  log.init();
 
   // Initialize dependencies
   await initializeDependencies();

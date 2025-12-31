@@ -1,8 +1,5 @@
-import 'package:flutter/foundation.dart';
 import 'package:logger/logger.dart';
-
-/// 日志级别枚举，用于过滤
-enum AppLogLevel { verbose, debug, info, warning, error, off }
+import 'unified_json_printer.dart';
 
 /// 应用统一日志管理器
 class AppLogger {
@@ -12,52 +9,28 @@ class AppLogger {
   static AppLogger get instance => _instance;
 
   late Logger _logger;
-  AppLogLevel _minLevel = kDebugMode ? AppLogLevel.debug : AppLogLevel.warning;
+  
+  /// 全局上下文信息
+  String? traceId;
+  String? userId;
 
   /// 初始化日志管理器
-  void init({AppLogLevel? minLevel}) {
-    if (minLevel != null) {
-      _minLevel = minLevel;
-    }
-
+  void init() {
     _logger = Logger(
-      printer: PrettyPrinter(
-        methodCount: 0,
-        errorMethodCount: 5,
-        lineLength: 80,
-        colors: true,
-        printEmojis: true,
-        dateTimeFormat: DateTimeFormat.onlyTimeAndSinceStart,
+      printer: UnifiedJsonPrinter(
+        serviceName: 'mobile-flutter',
+        getContext: () => {
+          if (traceId != null) 'trace_id': traceId,
+          if (userId != null) 'user_id': userId,
+        },
       ),
-      level: _mapLevel(_minLevel),
+      // 不在应用层做过滤，让外部工具（如 Dozzle/Logcat）处理
+      level: Level.all,
       filter: ProductionFilter(),
     );
   }
 
-  Level _mapLevel(AppLogLevel level) {
-    switch (level) {
-      case AppLogLevel.verbose:
-        return Level.trace;
-      case AppLogLevel.debug:
-        return Level.debug;
-      case AppLogLevel.info:
-        return Level.info;
-      case AppLogLevel.warning:
-        return Level.warning;
-      case AppLogLevel.error:
-        return Level.error;
-      case AppLogLevel.off:
-        return Level.off;
-    }
-  }
-
-  /// 运行时设置最小日志级别
-  void setLevel(AppLogLevel level) {
-    _minLevel = level;
-    init(minLevel: level);
-  }
-
-  /// 详细日志（最详细）
+  /// 详细日志（VERBOSE -> TRACE）
   void v(String message, {String? tag, Object? error, StackTrace? stackTrace}) {
     _log(Level.trace, message, tag: tag, error: error, stackTrace: stackTrace);
   }
@@ -82,25 +55,20 @@ class AppLogger {
     _log(Level.error, message, tag: tag, error: error, stackTrace: stackTrace);
   }
 
-  void _log(
-    Level level,
-    String message, {
-    String? tag,
-    Object? error,
-    StackTrace? stackTrace,
-  }) {
-    final formattedMessage = tag != null ? '[$tag] $message' : message;
-    _logger.log(level, formattedMessage, error: error, stackTrace: stackTrace);
+  void _log(Level level, String message, {String? tag, Object? error, StackTrace? stackTrace}) {
+    final msg = tag != null ? '[$tag] $message' : message;
+    _logger.log(level, msg, error: error, stackTrace: stackTrace);
   }
 }
 
-/// 全局日志实例，方便使用
+/// 全局日志实例
 final log = AppLogger.instance;
 
-/// 生产环境过滤器，遵循配置的日志级别
+/// 生产环境过滤器，输出所有日志
 class ProductionFilter extends LogFilter {
   @override
   bool shouldLog(LogEvent event) {
-    return true; // 让 Logger 处理级别过滤
+    return true;
   }
 }
+

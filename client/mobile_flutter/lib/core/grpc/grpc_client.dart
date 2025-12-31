@@ -39,6 +39,7 @@ class GrpcClientManager {
     return CallOptions(
       metadata: {
         if (token != null) 'authorization': 'Bearer $token',
+        if (log.traceId != null) 'x-trace-id': log.traceId!,
       },
       timeout: AppConstants.receiveTimeout,
     );

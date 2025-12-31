@@ -76,6 +76,10 @@ DATABASES = {
         'PASSWORD': os.environ.get('DB_PASSWORD', 'lesser_dev'),
         'HOST': os.environ.get('DB_HOST', 'localhost'),
         'PORT': os.environ.get('DB_PORT', '5432'),
+        'OPTIONS': {
+            'application_name': 'core_django',
+        },
+        'CONN_MAX_AGE': 60,
     }
 }
 

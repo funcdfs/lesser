@@ -121,10 +121,6 @@ services:
       sh -c "./start.sh"
     networks:
       - app-network
-    labels:
-      - "traefik.enable=true"
-      - "traefik.http.routers.django.rule=PathPrefix(`/api/v1`)"
-      - "traefik.http.services.django.loadbalancer.server.port=8000"
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8000/api/v1/health/"]
       interval: 5s
@@ -202,7 +198,7 @@ services:
     container_name: chat
     restart: unless-stopped
     environment:
-      - DATABASE_URL=${CHAT_DATABASE_URL:-postgres://lesser:lesser_dev_password@postgres:5432/lesser_chat_db}
+      - DATABASE_URL=${CHAT_DATABASE_URL:-postgres://lesser:lesser_dev_password@postgres:5432/lesser_chat_db?application_name=chat_gin}
       - REDIS_URL=redis://redis:6379/1
       - HTTP_PORT=${CHAT_HTTP_PORT:-8080}
       - GRPC_PORT=${CHAT_GRPC_PORT:-50052}
@@ -220,10 +216,6 @@ services:
         condition: service_healthy
     networks:
       - app-network
-    labels:
-      - "traefik.enable=true"
-      - "traefik.http.routers.chat.rule=PathPrefix(`/api/v1/chat`) || PathPrefix(`/ws/chat`)"
-      - "traefik.http.services.chat.loadbalancer.server.port=8080"
     healthcheck:
       test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:8080/health"]
       interval: 5s
@@ -250,6 +242,7 @@ services:
 # ============================================================================
 networks:
   app-network:
+    name: app-network
     driver: bridge
 
 # ============================================================================

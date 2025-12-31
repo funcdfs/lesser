@@ -235,8 +235,8 @@ class ChatRoomState {
 
 /// 聊天室状态管理器
 class ChatRoomNotifier extends Notifier<ChatRoomState> {
-  late final ChatRepository _repository;
-  late final ChatWebSocketService _webSocketService;
+  late ChatRepository _repository;
+  late ChatWebSocketService _webSocketService;
   StreamSubscription<Message>? _messageSubscription;
   StreamSubscription<MessagesReadPayload>? _messagesReadSubscription;
   StreamSubscription<WebSocketError>? _errorSubscription;
@@ -263,6 +263,8 @@ class ChatRoomNotifier extends Notifier<ChatRoomState> {
       _errorSubscription?.cancel();
       if (_currentConversationId != null) {
         _webSocketService.unsubscribeFromConversation(_currentConversationId!);
+        // Leave conversation to update global unread count logic
+        ref.read(conversationsProvider.notifier).leaveConversation();
       }
     });
     
@@ -468,6 +470,7 @@ final conversationsProvider = NotifierProvider<ConversationsNotifier, Conversati
 );
 
 /// 聊天室 Provider
-final chatRoomProvider = NotifierProvider<ChatRoomNotifier, ChatRoomState>(
+final chatRoomProvider =
+    NotifierProvider.autoDispose<ChatRoomNotifier, ChatRoomState>(
   ChatRoomNotifier.new,
 );

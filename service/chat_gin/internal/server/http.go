@@ -51,10 +51,17 @@ func NewHTTPServer(cfg *config.Config, chatService *service.ChatService, authCli
 
 	// CORS 中间件配置 - 处理 OPTIONS 预检请求
 	router.Use(cors.New(cors.Config{
-		AllowOrigins:     []string{"*"},
+		AllowOrigins: []string{
+			"http://localhost:3000",
+			"http://localhost:3001",
+			"http://localhost:61400",
+			"http://127.0.0.1:3000",
+			"http://127.0.0.1:3001",
+			"http://127.0.0.1:61400",
+		},
 		AllowMethods:     []string{"GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"},
-		AllowHeaders:     []string{"Origin", "Content-Type", "Authorization", "X-Requested-With", "Accept", "X-User-ID"},
-		ExposeHeaders:    []string{"Content-Length"},
+		AllowHeaders:     []string{"Origin", "Content-Type", "Authorization", "X-Requested-With", "Accept", "X-User-ID", "X-Trace-ID"},
+		ExposeHeaders:    []string{"Content-Length", "X-Trace-ID", "X-User-ID"},
 		AllowCredentials: true,
 		MaxAge:           86400,
 	}))

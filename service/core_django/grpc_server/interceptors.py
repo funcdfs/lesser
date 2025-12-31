@@ -36,6 +36,7 @@ class AuthInterceptor(grpc.ServerInterceptor):
         '/auth.AuthService/Register',
         '/auth.AuthService/ValidateToken',  # 内部服务调用，用于验证 token
         '/auth.AuthService/RefreshToken',   # 刷新 token 不需要认证
+        '/auth.AuthService/GetUser',       # 允许内部服务获取用户信息
         '/grpc.health.v1.Health/Check',
     ]
 
