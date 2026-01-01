@@ -1,4 +1,5 @@
 use anyhow::Result;
+use std::time::Duration;
 
 use crate::cli::StartTarget;
 use crate::config::Config;
@@ -13,28 +14,35 @@ struct ServiceGroup {
 }
 
 /// 基础设施服务
-const INFRA_SERVICES: ServiceGroup = ServiceGroup {
+const INFRA: ServiceGroup = ServiceGroup {
     name: "基础设施",
     services: &["postgres", "redis", "rabbitmq", "traefik", "dozzle"],
     emoji: "🔧",
 };
 
 /// Gateway 服务
-const GATEWAY_SERVICES: ServiceGroup = ServiceGroup {
+const GATEWAY: ServiceGroup = ServiceGroup {
     name: "Gateway",
     services: &["gateway"],
     emoji: "🚪",
 };
 
 /// Worker 服务
-const WORKER_SERVICES: ServiceGroup = ServiceGroup {
+const WORKERS: ServiceGroup = ServiceGroup {
     name: "Workers",
-    services: &["auth-worker", "post-worker", "feed-worker", "user-worker", "notification-worker", "search-worker", "chat-worker"],
+    services: &[
+        "auth-worker",
+        "user-worker", 
+        "post-worker",
+        "feed-worker",
+        "notification-worker",
+        "search-worker",
+    ],
     emoji: "⚙️",
 };
 
 /// Chat 服务
-const CHAT_SERVICES: ServiceGroup = ServiceGroup {
+const CHAT: ServiceGroup = ServiceGroup {
     name: "Chat",
     services: &["chat"],
     emoji: "💬",
@@ -43,147 +51,127 @@ const CHAT_SERVICES: ServiceGroup = ServiceGroup {
 /// 执行 start 命令
 pub async fn execute(target: StartTarget) -> Result<()> {
     let config = Config::load()?;
-    
+
     let compose = DockerCompose::new(
         config.compose_file.to_str().unwrap_or(""),
         config.env_file.to_str().unwrap_or(""),
     );
 
     match target {
-        StartTarget::All => start_all(&compose).await,
+        StartTarget::All => start_all(&compose, &config).await,
+        StartTarget::Infra => start_infra(&compose).await,
         StartTarget::Service => start_services(&compose).await,
-        StartTarget::Infra => start_group(&compose, &INFRA_SERVICES).await,
-        StartTarget::Gateway => start_group(&compose, &GATEWAY_SERVICES).await,
-        StartTarget::Chat => start_group(&compose, &CHAT_SERVICES).await,
-        StartTarget::Client => start_clients(&config).await,
         StartTarget::Flutter => start_flutter(&config).await,
-        StartTarget::React => start_react(&config).await,
     }
 }
 
 /// 启动所有服务
-async fn start_all(compose: &DockerCompose) -> Result<()> {
-    ui::header("启动所有服务");
+async fn start_all(compose: &DockerCompose, config: &Config) -> Result<()> {
+    ui::banner("启动 Lesser 开发环境");
+
+    // 1. 基础设施
+    start_group(compose, &INFRA).await?;
     
-    let spinner = Spinner::new("正在启动基础设施...");
-    compose.up_wait(INFRA_SERVICES.services).await?;
+    // 等待基础设施就绪
+    let spinner = Spinner::new("等待基础设施就绪...");
+    tokio::time::sleep(Duration::from_secs(3)).await;
     spinner.finish_and_clear();
-    ui::success(&format!("{} 基础设施已启动", INFRA_SERVICES.emoji));
-    
-    let spinner = Spinner::new("正在启动 Gateway 服务...");
-    compose.up_wait(GATEWAY_SERVICES.services).await?;
-    spinner.finish_and_clear();
-    ui::success(&format!("{} Gateway 服务已启动", GATEWAY_SERVICES.emoji));
-    
-    let spinner = Spinner::new("正在启动 Worker 服务...");
-    compose.up_wait(WORKER_SERVICES.services).await?;
-    spinner.finish_and_clear();
-    ui::success(&format!("{} Worker 服务已启动", WORKER_SERVICES.emoji));
-    
-    let spinner = Spinner::new("正在启动 Chat 服务...");
-    compose.up_wait(CHAT_SERVICES.services).await?;
-    spinner.finish_and_clear();
-    ui::success(&format!("{} Chat 服务已启动", CHAT_SERVICES.emoji));
+
+    // 2. Gateway
+    start_group(compose, &GATEWAY).await?;
+
+    // 3. Workers
+    start_group(compose, &WORKERS).await?;
+
+    // 4. Chat
+    start_group(compose, &CHAT).await?;
+
+    // 打印服务信息
+    ui::separator();
+    print_service_info(config);
+
+    Ok(())
+}
+
+/// 仅启动基础设施
+async fn start_infra(compose: &DockerCompose) -> Result<()> {
+    ui::banner("启动基础设施");
+    start_group(compose, &INFRA).await?;
     
     ui::separator();
-    print_service_urls();
+    ui::success("基础设施已就绪");
+    println!();
+    ui::kv("PostgreSQL", "localhost:5432");
+    ui::kv("Redis", "localhost:6379");
+    ui::kv("RabbitMQ", "localhost:5672 (管理: http://localhost:15672)");
+    ui::kv("Traefik", "http://localhost:8088");
     
     Ok(())
 }
 
-/// 启动后端服务 (Gateway + Workers + Chat)
+/// 仅启动后端服务
 async fn start_services(compose: &DockerCompose) -> Result<()> {
-    ui::header("启动后端服务");
-    
-    // 先确保基础设施运行
-    let spinner = Spinner::new("正在检查基础设施...");
-    compose.up_wait(INFRA_SERVICES.services).await?;
+    ui::banner("启动后端服务");
+
+    // 确保基础设施运行
+    let spinner = Spinner::new("检查基础设施...");
+    compose.up_wait(INFRA.services).await?;
     spinner.finish_and_clear();
-    ui::success(&format!("{} 基础设施就绪", INFRA_SERVICES.emoji));
-    
-    let spinner = Spinner::new("正在启动 Gateway 服务...");
-    compose.up_wait(GATEWAY_SERVICES.services).await?;
-    spinner.finish_and_clear();
-    ui::success(&format!("{} Gateway 服务已启动", GATEWAY_SERVICES.emoji));
-    
-    let spinner = Spinner::new("正在启动 Worker 服务...");
-    compose.up_wait(WORKER_SERVICES.services).await?;
-    spinner.finish_and_clear();
-    ui::success(&format!("{} Worker 服务已启动", WORKER_SERVICES.emoji));
-    
-    let spinner = Spinner::new("正在启动 Chat 服务...");
-    compose.up_wait(CHAT_SERVICES.services).await?;
-    spinner.finish_and_clear();
-    ui::success(&format!("{} Chat 服务已启动", CHAT_SERVICES.emoji));
-    
+    ui::step_done("基础设施就绪");
+
+    start_group(compose, &GATEWAY).await?;
+    start_group(compose, &WORKERS).await?;
+    start_group(compose, &CHAT).await?;
+
     ui::separator();
-    print_service_urls();
-    
+    ui::success("后端服务已启动");
+    println!();
+    ui::kv("Gateway gRPC", "localhost:50053");
+    ui::kv("Chat gRPC", "localhost:50052");
+    ui::kv("Chat WebSocket", "ws://localhost:8081/ws/chat");
+
     Ok(())
 }
 
 /// 启动指定服务组
 async fn start_group(compose: &DockerCompose, group: &ServiceGroup) -> Result<()> {
-    ui::header(&format!("启动{}", group.name));
-    
-    let spinner = Spinner::new(&format!("正在启动{}...", group.name));
+    let spinner = Spinner::new(&format!("启动 {}...", group.name));
     compose.up_wait(group.services).await?;
     spinner.finish_and_clear();
-    
-    ui::success(&format!("{} {} 已启动", group.emoji, group.name));
-    
-    Ok(())
-}
-
-/// 启动所有客户端
-async fn start_clients(config: &Config) -> Result<()> {
-    ui::header("启动客户端");
-    
-    // 启动 Flutter
-    if let Err(e) = start_flutter_internal(config).await {
-        ui::warn(&format!("Flutter 启动失败: {}", e));
-    }
-    
-    // 启动 React
-    if let Err(e) = start_react_internal(config).await {
-        ui::warn(&format!("React 启动失败: {}", e));
-    }
-    
+    ui::step_done(&format!("{} {} 已启动", group.emoji, group.name));
     Ok(())
 }
 
 /// 启动 Flutter Web
 async fn start_flutter(config: &Config) -> Result<()> {
-    ui::header("启动 Flutter Web");
-    start_flutter_internal(config).await
-}
-
-/// 启动 Flutter Web (内部实现)
-async fn start_flutter_internal(config: &Config) -> Result<()> {
     use std::process::Stdio;
     use tokio::process::Command;
-    
+
+    ui::banner("启动 Flutter Web 开发服务器");
+
     let flutter_dir = &config.flutter_dir;
-    
+
     if !flutter_dir.exists() {
-        anyhow::bail!("Flutter 目录不存在: {}", flutter_dir.display());
+        ui::error(&format!("Flutter 目录不存在: {}", flutter_dir.display()));
+        return Ok(());
     }
-    
-    // 检查 flutter 是否安装
+
+    // 检查 flutter
     let flutter_check = Command::new("flutter")
         .arg("--version")
         .stdout(Stdio::null())
         .stderr(Stdio::null())
         .status()
         .await;
-    
+
     if !flutter_check.map(|s| s.success()).unwrap_or(false) {
-        anyhow::bail!("Flutter 未安装，请先安装 Flutter SDK");
+        ui::error("Flutter 未安装，请先安装 Flutter SDK");
+        ui::info("安装指南: https://docs.flutter.dev/get-started/install");
+        return Ok(());
     }
-    
-    let spinner = Spinner::new("正在安装 Flutter 依赖...");
-    
-    // 运行 flutter pub get
+
+    // 安装依赖
+    let spinner = Spinner::new("安装 Flutter 依赖...");
     let pub_get = Command::new("flutter")
         .args(["pub", "get"])
         .current_dir(flutter_dir)
@@ -191,26 +179,25 @@ async fn start_flutter_internal(config: &Config) -> Result<()> {
         .stderr(Stdio::null())
         .status()
         .await?;
-    
-    if !pub_get.success() {
-        spinner.finish_and_clear();
-        anyhow::bail!("flutter pub get 失败");
-    }
-    
+
     spinner.finish_and_clear();
-    ui::success("📦 Flutter 依赖已安装");
-    
-    // 定义要启动的用户
+
+    if !pub_get.success() {
+        ui::error("flutter pub get 失败");
+        return Ok(());
+    }
+    ui::step_done("依赖已安装");
+
+    // 启动双用户实例
     let users = [
         ("testuser1", config.flutter_port),
         ("testuser2", config.flutter_port + 1),
     ];
 
-    ui::info("🚀 正在启动双用户开发环境...");
+    ui::info("启动双用户开发环境...");
+    println!();
 
     for (username, port) in users {
-        ui::step(&format!("启动实例: {} (端口: {})", username, port));
-        
         Command::new("flutter")
             .args([
                 "run",
@@ -225,95 +212,38 @@ async fn start_flutter_internal(config: &Config) -> Result<()> {
             .stdout(Stdio::inherit())
             .stderr(Stdio::inherit())
             .spawn()?;
+
+        ui::step_done(&format!("用户 {} → http://localhost:{}", username, port));
     }
-    
-    ui::separator();
-    ui::success("🌐 Flutter Web 实例已启动:");
-    for (username, port) in users {
-        ui::url(&format!("用户 ({})", username), &format!("http://localhost:{}", port));
-    }
-    
+
     Ok(())
 }
 
-/// 启动 React Web
-async fn start_react(config: &Config) -> Result<()> {
-    ui::header("启动 React Web");
-    start_react_internal(config).await
-}
+/// 打印服务信息
+fn print_service_info(config: &Config) {
+    ui::success("🎉 Lesser 开发环境已就绪!");
+    println!();
 
-/// 启动 React Web (内部实现)
-async fn start_react_internal(config: &Config) -> Result<()> {
-    use std::process::Stdio;
-    use tokio::process::Command;
-    
-    let react_dir = &config.react_dir;
-    
-    if !react_dir.exists() {
-        anyhow::bail!("React 目录不存在: {}", react_dir.display());
-    }
-    
-    // 检查 npm 是否安装
-    let npm_check = Command::new("npm")
-        .arg("--version")
-        .stdout(Stdio::null())
-        .stderr(Stdio::null())
-        .status()
-        .await;
-    
-    if !npm_check.map(|s| s.success()).unwrap_or(false) {
-        anyhow::bail!("npm 未安装，请先安装 Node.js");
-    }
-    
-    let spinner = Spinner::new("正在安装 React 依赖...");
-    
-    // 运行 npm install
-    let npm_install = Command::new("npm")
-        .args(["install"])
-        .current_dir(react_dir)
-        .stdout(Stdio::null())
-        .stderr(Stdio::null())
-        .status()
-        .await?;
-    
-    if !npm_install.success() {
-        spinner.finish_and_clear();
-        anyhow::bail!("npm install 失败");
-    }
-    
-    spinner.finish_and_clear();
-    ui::success("📦 React 依赖已安装");
-    
-    // 启动 React 开发服务器 (后台运行)
-    ui::info(&format!(
-        "⚛️  正在启动 React 开发服务器 (端口: {})...",
-        config.react_port
-    ));
-    
-    // spawn 后进程会在后台运行
-    Command::new("npm")
-        .args(["run", "dev"])
-        .current_dir(react_dir)
-        .env("PORT", config.react_port.to_string())
-        .stdout(Stdio::inherit())
-        .stderr(Stdio::inherit())
-        .spawn()?;
-    
-    ui::success(&format!(
-        "🌐 React Web: http://localhost:{}",
-        config.react_port
-    ));
-    
-    Ok(())
-}
+    println!("  {} gRPC 端点", ui::style_dim("▸"));
+    ui::kv("    Gateway", "localhost:50053");
+    ui::kv("    Chat", "localhost:50052");
+    println!();
 
-/// 打印服务访问地址
-fn print_service_urls() {
-    ui::info("服务访问地址:");
-    ui::url("Gateway gRPC", "localhost:50053");
-    ui::url("Chat HTTP", "http://localhost:8081");
-    ui::url("Chat WebSocket", "ws://localhost:8081/ws/chat");
-    ui::url("Traefik Dashboard", "http://localhost:8088");
-    ui::url("RabbitMQ Management", "http://localhost:15672");
-    ui::url("Dozzle (日志)", "http://localhost:9999");
+    println!("  {} WebSocket", ui::style_dim("▸"));
+    ui::kv("    Chat", "ws://localhost:8081/ws/chat");
+    println!();
+
+    println!("  {} 管理界面", ui::style_dim("▸"));
+    ui::kv("    Traefik", "http://localhost:8088");
+    ui::kv("    RabbitMQ", "http://localhost:15672");
+    ui::kv("    Dozzle", "http://localhost:9999");
+    println!();
+
+    println!("  {} Flutter Web", ui::style_dim("▸"));
+    ui::kv("    用户1", &format!("http://localhost:{}", config.flutter_port));
+    ui::kv("    用户2", &format!("http://localhost:{}", config.flutter_port + 1));
+    println!();
+
+    ui::hint("运行 'devlesser status' 查看服务状态");
+    ui::hint("运行 'devlesser logs <service>' 查看日志");
 }

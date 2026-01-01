@@ -1,21 +1,25 @@
-use console::{style, Emoji};
+use console::{style, StyledObject, Emoji};
 
 // Emoji 图标
 pub static ROCKET: Emoji<'_, '_> = Emoji("🚀", "");
-#[allow(dead_code)]
-pub static DOCKER: Emoji<'_, '_> = Emoji("🐳", "");
-#[allow(dead_code)]
-pub static DATABASE: Emoji<'_, '_> = Emoji("🗄", "");
-#[allow(dead_code)]
-pub static API: Emoji<'_, '_> = Emoji("🔌", "");
-#[allow(dead_code)]
-pub static WEB: Emoji<'_, '_> = Emoji("🌐", "");
-#[allow(dead_code)]
-pub static MOBILE: Emoji<'_, '_> = Emoji("📱", "");
-#[allow(dead_code)]
-pub static GEAR: Emoji<'_, '_> = Emoji("⚙", "");
-pub static CHECK: Emoji<'_, '_> = Emoji("✅", "[OK]");
-pub static CROSS: Emoji<'_, '_> = Emoji("❌", "[FAIL]");
+
+/// 返回 dim 样式的字符串
+pub fn style_dim(s: &str) -> StyledObject<&str> {
+    if no_color() {
+        style(s)
+    } else {
+        style(s).dim()
+    }
+}
+
+/// 返回命令样式的字符串
+pub fn style_cmd(s: &str) -> StyledObject<&str> {
+    if no_color() {
+        style(s)
+    } else {
+        style(s).cyan().bold()
+    }
+}
 
 /// 检查是否禁用颜色
 fn no_color() -> bool {
@@ -58,13 +62,56 @@ pub fn info(msg: &str) {
     }
 }
 
-/// 打印步骤消息
-pub fn step(msg: &str) {
+/// 打印步骤消息 (带编号)
+pub fn step(num: &str, msg: &str) {
     if no_color() {
-        println!(">> {}", msg);
+        println!("[{}] {}", num, msg);
     } else {
-        println!("{} {}", style("▶").blue().bold(), msg);
+        println!("{} {}", style(format!("[{}]", num)).blue().bold(), msg);
     }
+}
+
+/// 打印步骤完成消息
+pub fn step_done(msg: &str) {
+    if no_color() {
+        println!("  [OK] {}", msg);
+    } else {
+        println!("  {} {}", style("✓").green(), msg);
+    }
+}
+
+/// 打印键值对
+pub fn kv(key: &str, value: &str) {
+    if no_color() {
+        println!("  {}: {}", key, value);
+    } else {
+        println!("  {}: {}", style(key).dim(), value);
+    }
+}
+
+/// 打印提示信息
+pub fn hint(msg: &str) {
+    if no_color() {
+        println!("  TIP: {}", msg);
+    } else {
+        println!("  {} {}", style("💡").dim(), style(msg).dim());
+    }
+}
+
+/// 打印 Banner 标题
+pub fn banner(title: &str) {
+    println!();
+    if no_color() {
+        println!("=== {} {} ===", ROCKET, title);
+    } else {
+        println!(
+            "{} {} {}",
+            style("━━━").cyan(),
+            style(format!("{} {}", ROCKET, title)).bold(),
+            style("━━━").cyan()
+        );
+    }
+    println!();
 }
 
 /// 打印分隔线
@@ -115,17 +162,5 @@ pub fn url(name: &str, url: &str) {
         println!("  {}  ->  {}", name, url);
     } else {
         println!("  {}  →  {}", style(name).cyan(), url);
-    }
-}
-
-/// 打印调试信息
-#[allow(dead_code)]
-pub fn debug(msg: &str) {
-    if crate::is_debug() {
-        if no_color() {
-            println!("[DEBUG] {}", msg);
-        } else {
-            println!("{} {}", style("[DEBUG]").dim(), style(msg).dim());
-        }
     }
 }

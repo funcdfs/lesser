@@ -10,7 +10,8 @@ class AppConstants {
   static const String apiBaseUrl = 'http://localhost:80';
   static const String wsBaseUrl = 'ws://localhost:80';
   static const String grpcHost = 'localhost';
-  static const int grpcPort = 50050;
+  static const int grpcPort = 50053; // Gateway gRPC 端口
+  static const int chatGrpcPort = 50052; // Chat Service gRPC 端口
 
   // Pagination
   static const int defaultPageSize = 20;

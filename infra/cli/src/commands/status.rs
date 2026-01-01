@@ -5,165 +5,170 @@ use crate::config::Config;
 use crate::docker::{ContainerStats, DockerCompose, ServiceStatus};
 use crate::ui::{self, Spinner};
 
+/// 服务分组
+const SERVICE_GROUPS: &[(&str, &[&str])] = &[
+    (
+        "基础设施",
+        &["postgres", "redis", "rabbitmq", "traefik", "dozzle"],
+    ),
+    ("网关", &["gateway"]),
+    (
+        "Workers",
+        &[
+            "auth-worker",
+            "user-worker",
+            "post-worker",
+            "feed-worker",
+            "notification-worker",
+            "search-worker",
+        ],
+    ),
+    ("聊天", &["chat"]),
+];
+
 /// 执行 status 命令
 pub async fn execute() -> Result<()> {
     let config = Config::load()?;
-    
+
     let compose = DockerCompose::new(
         config.compose_file.to_str().unwrap_or(""),
         config.env_file.to_str().unwrap_or(""),
     );
 
-    ui::header("服务状态");
-    
-    let spinner = Spinner::new("正在获取服务状态...");
-    
-    // 获取服务状态
+    ui::banner("服务状态");
+
+    let spinner = Spinner::new("获取服务状态...");
     let statuses = compose.ps_json().await?;
-    
-    // 获取资源使用情况
     let stats = compose.stats().await.unwrap_or_default();
-    
     spinner.finish_and_clear();
-    
+
     if statuses.is_empty() {
         ui::info("没有运行中的服务");
-        ui::info("使用 'devlesser start' 启动服务");
+        println!();
+        ui::hint("运行 'devlesser start' 启动服务");
+        ui::hint("运行 'devlesser init' 初始化环境");
         return Ok(());
     }
-    
-    // 打印状态表格
-    print_status_table(&statuses, &stats);
-    
-    // 打印访问地址
-    ui::separator();
-    print_service_urls(&statuses);
-    
+
+    // 按分组显示
+    for (group_name, group_services) in SERVICE_GROUPS {
+        let group_statuses: Vec<_> = statuses
+            .iter()
+            .filter(|s| group_services.contains(&s.service_name()))
+            .collect();
+
+        if group_statuses.is_empty() {
+            continue;
+        }
+
+        println!("  {} {}", ui::style_dim("▸"), group_name);
+        
+        for status in group_statuses {
+            print_service_status(status, &stats);
+        }
+        println!();
+    }
+
+    // 显示未分组的服务
+    let grouped_services: Vec<&str> = SERVICE_GROUPS
+        .iter()
+        .flat_map(|(_, services)| services.iter().copied())
+        .collect();
+
+    let ungrouped: Vec<_> = statuses
+        .iter()
+        .filter(|s| !grouped_services.contains(&s.service_name()))
+        .collect();
+
+    if !ungrouped.is_empty() {
+        println!("  {} 其他", ui::style_dim("▸"));
+        for status in ungrouped {
+            print_service_status(status, &stats);
+        }
+        println!();
+    }
+
+    // 显示快速访问链接
+    print_quick_links(&statuses);
+
     Ok(())
 }
 
-/// 打印服务状态表格
-fn print_status_table(statuses: &[ServiceStatus], stats: &[ContainerStats]) {
-    // 表头
+/// 打印单个服务状态
+fn print_service_status(status: &ServiceStatus, stats: &[ContainerStats]) {
+    let name = status.service_name();
+
+    // 状态图标
+    let status_icon = if status.is_running() {
+        match status.health.as_deref() {
+            Some("healthy") => style("●").green(),
+            Some("unhealthy") => style("●").red(),
+            Some("starting") => style("●").yellow(),
+            _ => style("●").green(),
+        }
+    } else {
+        style("○").dim()
+    };
+
+    // 资源使用
+    let (cpu, mem) = stats
+        .iter()
+        .find(|s| s.name.contains(name))
+        .map(|s| (format!("{:.1}%", s.cpu_percent), format!("{:.1}%", s.memory_percent)))
+        .unwrap_or_else(|| ("-".to_string(), "-".to_string()));
+
+    // 端口
+    let ports = status.ports();
+    let port_str = if ports.is_empty() {
+        "-".to_string()
+    } else {
+        ports.iter().map(|p| p.to_string()).collect::<Vec<_>>().join(",")
+    };
+
     println!(
-        "{:15} {:12} {:12} {:10} {:10} {:20}",
-        style("服务").bold().cyan(),
-        style("状态").bold().cyan(),
-        style("健康").bold().cyan(),
-        style("CPU").bold().cyan(),
-        style("内存").bold().cyan(),
-        style("端口").bold().cyan(),
+        "    {} {:20} {:>6} {:>6}  {}",
+        status_icon,
+        name,
+        style(cpu).dim(),
+        style(mem).dim(),
+        style(port_str).dim(),
     );
-    
-    println!("{}", style("─".repeat(80)).dim());
-    
-    // 按服务名排序
-    let mut sorted_statuses = statuses.to_vec();
-    sorted_statuses.sort_by(|a, b| a.service_name().cmp(b.service_name()));
-    
-    for status in &sorted_statuses {
-        let service_name = status.service_name();
-        
-        // 状态显示
-        let state_display = if status.is_running() {
-            style("运行中").green().to_string()
-        } else {
-            style(&status.state).red().to_string()
-        };
-        
-        // 健康状态显示
-        let health_display = match status.health.as_deref() {
-            Some("healthy") => style("健康").green().to_string(),
-            Some("unhealthy") => style("不健康").red().to_string(),
-            Some("starting") => style("启动中").yellow().to_string(),
-            Some(h) => style(h).yellow().to_string(),
-            None => style("-").dim().to_string(),
-        };
-        
-        // 查找资源使用情况
-        let (cpu, mem) = stats
-            .iter()
-            .find(|s| s.name.contains(service_name))
-            .map(|s| {
-                (
-                    format!("{:.1}%", s.cpu_percent),
-                    format!("{:.1}%", s.memory_percent),
-                )
-            })
-            .unwrap_or_else(|| ("-".to_string(), "-".to_string()));
-        
-        // 端口显示
-        let ports = status.ports();
-        let ports_display = if ports.is_empty() {
-            "-".to_string()
-        } else {
-            ports
-                .iter()
-                .map(|p| p.to_string())
-                .collect::<Vec<_>>()
-                .join(", ")
-        };
-        
-        println!(
-            "{:15} {:12} {:12} {:10} {:10} {:20}",
-            service_name,
-            state_display,
-            health_display,
-            cpu,
-            mem,
-            ports_display,
-        );
-    }
 }
 
-/// 打印服务访问地址
-fn print_service_urls(statuses: &[ServiceStatus]) {
-    let running_services: Vec<_> = statuses.iter().filter(|s| s.is_running()).collect();
-    
-    if running_services.is_empty() {
+/// 打印快速访问链接
+fn print_quick_links(statuses: &[ServiceStatus]) {
+    let running: Vec<_> = statuses.iter().filter(|s| s.is_running()).collect();
+
+    if running.is_empty() {
         return;
     }
-    
-    ui::info("服务访问地址:");
-    
-    for status in &running_services {
-        let service_name = status.service_name();
-        let ports = status.ports();
-        
-        match service_name {
-            "django" => {
-                if ports.contains(&8000) {
-                    ui::url("Django API", "http://localhost:8000");
-                    ui::url("Django Admin", "http://localhost:8000/admin");
-                }
-            }
-            "chat" => {
-                if ports.contains(&8081) {
-                    ui::url("Chat HTTP", "http://localhost:8081");
-                    ui::url("Chat Health", "http://localhost:8081/health");
-                }
-            }
-            "traefik" => {
-                if ports.contains(&8088) {
-                    ui::url("Traefik Dashboard", "http://localhost:8088");
-                }
-            }
-            "postgres" => {
-                if ports.contains(&5432) {
-                    ui::url("PostgreSQL", "localhost:5432");
-                }
-            }
-            "redis" => {
-                if ports.contains(&6379) {
-                    ui::url("Redis", "localhost:6379");
-                }
-            }
-            _ => {
-                // 其他服务显示端口
-                for port in &ports {
-                    ui::url(service_name, &format!("localhost:{}", port));
-                }
-            }
-        }
+
+    ui::separator();
+    println!("  {} 快速访问", ui::style_dim("▸"));
+
+    // 检查各服务是否运行
+    let has_gateway = running.iter().any(|s| s.service_name() == "gateway");
+    let has_chat = running.iter().any(|s| s.service_name() == "chat");
+    let has_traefik = running.iter().any(|s| s.service_name() == "traefik");
+    let has_rabbitmq = running.iter().any(|s| s.service_name() == "rabbitmq");
+    let has_dozzle = running.iter().any(|s| s.service_name() == "dozzle");
+
+    if has_gateway {
+        ui::kv("    Gateway gRPC", "localhost:50053");
     }
+    if has_chat {
+        ui::kv("    Chat gRPC", "localhost:50052");
+        ui::kv("    Chat WebSocket", "ws://localhost:8081/ws/chat");
+    }
+    if has_traefik {
+        ui::kv("    Traefik", "http://localhost:8088");
+    }
+    if has_rabbitmq {
+        ui::kv("    RabbitMQ", "http://localhost:15672");
+    }
+    if has_dozzle {
+        ui::kv("    Dozzle", "http://localhost:9999");
+    }
+
+    println!();
 }

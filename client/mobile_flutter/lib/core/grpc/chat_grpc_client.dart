@@ -1,16 +1,29 @@
 import 'package:grpc/grpc.dart';
 import '../../generated/protos/chat/chat.pbgrpc.dart';
 import '../../generated/protos/common/common.pb.dart' as common;
+import '../constants/app_constants.dart';
 import 'grpc_client.dart';
 
 /// Chat gRPC 客户端
 /// 封装聊天相关的 gRPC 调用
+/// 注意：Chat 服务使用独立的 gRPC 端口
 class ChatGrpcClient {
   ChatGrpcClient(this._manager) {
-    _stub = ChatServiceClient(_manager.channel);
+    // Chat 服务使用独立端口，创建专用 channel
+    _channel = ClientChannel(
+      AppConstants.grpcHost,
+      port: AppConstants.chatGrpcPort,
+      options: const ChannelOptions(
+        credentials: ChannelCredentials.insecure(),
+        connectionTimeout: AppConstants.connectionTimeout,
+        idleTimeout: Duration(minutes: 5),
+      ),
+    );
+    _stub = ChatServiceClient(_channel);
   }
 
   final GrpcClientManager _manager;
+  late final ClientChannel _channel;
   late final ChatServiceClient _stub;
 
   /// 获取用户的所有会话

@@ -13,7 +13,45 @@ class ConversationModel extends Conversation {
     super.creatorId,
     super.lastMessage,
     super.unreadCount,
+    this.memberIds = const [],
   });
+
+  /// 成员 ID 列表（gRPC 数据源使用）
+  final List<String> memberIds;
+
+  /// 从 memberIds 创建（gRPC 数据源使用）
+  /// 由于 gRPC 只返回 memberIds，我们创建占位 User 对象
+  factory ConversationModel.fromMemberIds({
+    required String id,
+    required ConversationType type,
+    required List<String> memberIds,
+    required DateTime createdAt,
+    String? name,
+    String? creatorId,
+    MessageModel? lastMessage,
+    int unreadCount = 0,
+  }) {
+    // 为每个 memberId 创建一个占位 User
+    final members = memberIds
+        .map((memberId) => UserModel(
+              id: memberId,
+              username: '',
+              email: '',
+            ))
+        .toList();
+
+    return ConversationModel(
+      id: id,
+      type: type,
+      members: members,
+      createdAt: createdAt,
+      name: name,
+      creatorId: creatorId,
+      lastMessage: lastMessage,
+      unreadCount: unreadCount,
+      memberIds: memberIds,
+    );
+  }
 
   /// Create from JSON (匹配 Gin chat 服务的响应格式)
   factory ConversationModel.fromJson(Map<String, dynamic> json) {

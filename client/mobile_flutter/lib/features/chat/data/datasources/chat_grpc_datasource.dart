@@ -193,7 +193,7 @@ class ChatGrpcDataSourceImpl implements ChatRemoteDataSource {
 
   /// Proto 会话转模型
   ConversationModel _protoToConversationModel(pb.Conversation conv) {
-    return ConversationModel(
+    return ConversationModel.fromMemberIds(
       id: conv.id,
       type: _protoToConversationType(conv.type),
       name: conv.name,

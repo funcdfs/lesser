@@ -92,6 +92,7 @@ import '../../features/post/domain/repositories/post_repository.dart';
 
 // 聊天模块
 import '../../features/chat/data/datasources/chat_remote_datasource.dart';
+import '../../features/chat/data/datasources/chat_grpc_datasource.dart';
 import '../../features/chat/data/datasources/chat_websocket_service.dart';
 import '../../features/chat/data/repositories/chat_repository_impl.dart';
 import '../../features/chat/domain/repositories/chat_repository.dart';
@@ -225,10 +226,10 @@ void _registerDataSources() {
     () => PostRemoteDataSourceImpl(getIt<ApiClient>()),
   );
 
-  // 聊天数据源 - 会话列表、消息历史
+  // 聊天数据源 - 会话列表、消息历史（使用 gRPC）
   getIt.registerLazySingleton<ChatRemoteDataSource>(
-    () => ChatRemoteDataSourceImpl(
-      getIt<ApiClient>(),
+    () => ChatGrpcDataSourceImpl(
+      getIt<ChatGrpcClient>(),
       getIt<SharedPreferences>(),
     ),
   );
