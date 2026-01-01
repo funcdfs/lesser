@@ -83,6 +83,30 @@ services:
       start_period: 5s
 
   # ==========================================================================
+  # Message Broker - RabbitMQ
+  # ==========================================================================
+  rabbitmq:
+    image: rabbitmq:3-management-alpine
+    container_name: rabbitmq
+    restart: unless-stopped
+    environment:
+      RABBITMQ_DEFAULT_USER: ${RABBITMQ_USER:-guest}
+      RABBITMQ_DEFAULT_PASS: ${RABBITMQ_PASSWORD:-guest}
+    volumes:
+      - rabbitmq_data:/var/lib/rabbitmq
+    ports:
+      - "${EXTERNAL_RABBITMQ_PORT:-5672}:5672"
+      - "${RABBITMQ_MANAGEMENT_PORT:-15672}:15672"
+    networks:
+      - app-network
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "-q", "ping"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 30s
+
+  # ==========================================================================
   # Django Core Service (Hot Reload with runserver + UV)
   # ==========================================================================
   django:
@@ -224,6 +248,63 @@ services:
       start_period: 60s
 
   # ==========================================================================
+  # Gateway Service (Unified API Gateway with RabbitMQ)
+  # ==========================================================================
+  gateway:
+    build:
+      context: ../service/gateway
+      dockerfile: Dockerfile.dev
+    container_name: gateway
+    restart: unless-stopped
+    environment:
+      - GRPC_PORT=${GATEWAY_GRPC_PORT:-50053}
+      - RABBITMQ_URL=amqp://${RABBITMQ_USER:-guest}:${RABBITMQ_PASSWORD:-guest}@rabbitmq:5672/
+    volumes:
+      - ../service/gateway:/app
+      - go_mod_cache:/go/pkg/mod
+    ports:
+      - "${EXTERNAL_GATEWAY_PORT:-50053}:50053"
+    depends_on:
+      rabbitmq:
+        condition: service_healthy
+    networks:
+      - app-network
+    healthcheck:
+      test: ["CMD", "nc", "-z", "localhost", "50053"]
+      interval: 30s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+
+  # ==========================================================================
+  # Auth Worker (Consumes auth tasks from RabbitMQ)
+  # ==========================================================================
+  auth-worker:
+    build:
+      context: ../service/auth_worker
+      dockerfile: Dockerfile.dev
+    container_name: auth-worker
+    restart: unless-stopped
+    environment:
+      - RABBITMQ_URL=amqp://${RABBITMQ_USER:-guest}:${RABBITMQ_PASSWORD:-guest}@rabbitmq:5672/
+      - DB_HOST=postgres
+      - DB_PORT=5432
+      - DB_USER=${POSTGRES_USER:-lesser}
+      - DB_PASSWORD=${POSTGRES_PASSWORD:-lesser_dev_password}
+      - DB_NAME=${POSTGRES_DB:-lesser_db}
+      - JWT_SECRET=${JWT_SECRET_KEY:-jwt-dev-secret-key}
+    volumes:
+      - ../service/auth_worker:/app
+      - go_mod_cache:/go/pkg/mod
+    depends_on:
+      postgres:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+    networks:
+      - app-network
+
+  # ==========================================================================
   # Dozzle - Docker Log Viewer
   # ==========================================================================
   dozzle:
@@ -252,6 +333,8 @@ volumes:
   postgres_data:
     driver: local
   redis_data:
+    driver: local
+  rabbitmq_data:
     driver: local
   go_mod_cache:
     driver: local

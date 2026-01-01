@@ -1,0 +1,17 @@
+# Development Dockerfile with hot reload
+FROM golang:1.23-alpine
+
+WORKDIR /app
+
+# Install air for hot reload (use v1.52.3 which works with Go 1.23)
+RUN go install github.com/air-verse/air@v1.52.3
+
+# Copy go mod files
+COPY go.mod go.sum* ./
+RUN go mod download
+
+# Copy source code
+COPY . .
+
+# Run with air for hot reload
+CMD ["air", "-c", ".air.toml"]

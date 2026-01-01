@@ -1,0 +1,61 @@
+syntax = "proto3";
+package gateway;
+
+option go_package = "github.com/lesser/gateway/proto/gateway";
+
+// GatewayService 统一网关入口
+service GatewayService {
+  // Process 处理所有客户端请求
+  rpc Process(GatewayRequest) returns (GatewayResponse);
+  
+  // GetResult 获取异步任务结果
+  rpc GetResult(GetResultRequest) returns (TaskResult);
+}
+
+// Action 操作类型枚举
+enum Action {
+  ACTION_UNSPECIFIED = 0;
+  USER_REGISTER = 1;
+  USER_LOGIN = 2;
+  USER_LOGOUT = 3;
+}
+
+// GatewayRequest 统一网关请求
+message GatewayRequest {
+  Action action = 1;           // 操作类型
+  string version = 2;          // API 版本，如 "1.0"
+  bytes payload = 3;           // 序列化的具体请求 (RegisterRequest/LoginRequest 等)
+  string request_id = 4;       // 请求唯一标识，客户端生成
+}
+
+// GatewayResponse 统一网关响应
+message GatewayResponse {
+  string request_id = 1;       // 请求唯一标识
+  bool accepted = 2;           // 是否接受处理
+  string error_code = 3;       // 错误码（如有）
+  string error_message = 4;    // 错误信息（如有）
+}
+
+// GetResultRequest 获取任务结果请求
+message GetResultRequest {
+  string request_id = 1;
+}
+
+// TaskResult 任务处理结果
+message TaskResult {
+  string request_id = 1;       // 请求唯一标识
+  bool success = 2;            // 是否成功
+  bytes payload = 3;           // 序列化的具体响应 (AuthResponse 等)
+  string error_code = 4;       // 错误码（如有）
+  string error_message = 5;    // 错误信息（如有）
+  TaskStatus status = 6;       // 任务状态
+}
+
+// TaskStatus 任务状态
+enum TaskStatus {
+  TASK_STATUS_UNSPECIFIED = 0;
+  PENDING = 1;                 // 等待处理
+  PROCESSING = 2;              // 处理中
+  COMPLETED = 3;               // 已完成
+  FAILED = 4;                  // 失败
+}
