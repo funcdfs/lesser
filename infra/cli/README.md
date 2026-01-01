@@ -71,45 +71,35 @@ devlesser completion fish > ~/.config/fish/completions/devlesser.fish
 devlesser start
 
 # 启动指定服务
-devlesser start django
+devlesser start gateway
 devlesser start chat
-devlesser start infra    # PostgreSQL + Redis + Traefik
+devlesser start infra    # PostgreSQL + Redis + RabbitMQ + Traefik
 
 # 停止服务
 devlesser stop
-devlesser stop django
+devlesser stop gateway
 
 # 重启服务
-devlesser restart django
+devlesser restart gateway
 
 # 查看服务状态
 devlesser status
 devlesser ps             # 别名
 
 # 查看日志
-devlesser logs django
-devlesser logs django -f          # 实时跟踪
-devlesser logs django -n 200      # 显示最近 200 行
+devlesser logs gateway
+devlesser logs gateway -f          # 实时跟踪
+devlesser logs gateway -n 200      # 显示最近 200 行
 ```
 
 ### 数据库操作
 
 ```bash
-# 执行迁移
-devlesser migrate
-
-# 生成迁移文件
-devlesser makemigrations
-devlesser makemigrations users
-
 # 进入数据库 shell
 devlesser db shell
 
 # 重置数据库 (会提示确认)
 devlesser db reset
-
-# 创建超级用户
-devlesser createsuperuser
 ```
 
 ### 构建和更新
@@ -117,17 +107,16 @@ devlesser createsuperuser
 ```bash
 # 构建镜像
 devlesser build
-devlesser build django
+devlesser build gateway
 
 # 重新构建 (无缓存)
-devlesser rebuild django
+devlesser rebuild gateway
 
 # 生成 Proto 代码
 devlesser proto
-devlesser proto python
 devlesser proto go
 
-# 更新环境 (proto + rebuild + migrate)
+# 更新环境 (proto + rebuild)
 devlesser update
 ```
 
@@ -135,16 +124,13 @@ devlesser update
 
 ```bash
 # 进入容器
-devlesser enter django
+devlesser enter gateway
 devlesser enter chat
 devlesser enter postgres
 devlesser enter redis
 
-# Django Python shell
-devlesser shell
-
 # 进入容器 bash
-devlesser bash django
+devlesser bash gateway
 devlesser bash chat
 ```
 
@@ -199,7 +185,7 @@ devlesser stop react
 
 | 命令 | 说明 |
 |------|------|
-| `devlesser start [target]` | 启动服务 (all/service/infra/django/chat/client/flutter/react) |
+| `devlesser start [target]` | 启动服务 (all/service/infra/gateway/chat/client/flutter/react) |
 | `devlesser stop [target]` | 停止服务 |
 | `devlesser restart [service]` | 重启服务 |
 | `devlesser logs [service]` | 查看日志 |
@@ -208,9 +194,6 @@ devlesser stop react
 | `devlesser init` | 初始化开发环境 |
 | `devlesser check` | 检查依赖 |
 | `devlesser update` | 更新环境 |
-| `devlesser migrate` | 执行数据库迁移 |
-| `devlesser makemigrations [app]` | 生成迁移文件 |
-| `devlesser createsuperuser` | 创建超级用户 |
 | `devlesser db shell` | 进入数据库 shell |
 | `devlesser db reset` | 重置数据库 |
 | `devlesser build [service]` | 构建镜像 |
@@ -218,7 +201,6 @@ devlesser stop react
 | `devlesser proto [target]` | 生成 Proto 代码 |
 | `devlesser clean [subcommand]` | 清理环境 |
 | `devlesser enter <service>` | 进入容器 |
-| `devlesser shell` | Django Python shell |
 | `devlesser bash [service]` | 进入容器 sh |
 | `devlesser env` | 显示环境变量 |
 | `devlesser urls` | 显示服务访问地址 |
@@ -241,7 +223,7 @@ CLI 从 `infra/env/dev.env` 或 `infra/.env.dev` 读取配置。
 - `POSTGRES_PASSWORD` - PostgreSQL 密码
 - `POSTGRES_DB` - PostgreSQL 数据库名
 - `REDIS_URL` - Redis 连接地址
-- `DJANGO_SECRET_KEY` - Django 密钥
+- `JWT_SECRET_KEY` - JWT 密钥
 
 可选的环境变量:
 - `FLUTTER_WEB_PORT` - Flutter Web 端口 (默认: 3000)

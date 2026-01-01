@@ -23,7 +23,7 @@ pub struct Cli {
 pub enum Commands {
     /// 启动服务
     Start {
-        /// 目标: all, service, infra, django, chat, client, flutter, react
+        /// 目标: all, service, infra, gateway, chat, client, flutter, react
         #[arg(default_value = "all")]
         target: StartTarget,
     },
@@ -68,18 +68,6 @@ pub enum Commands {
     /// 更新环境
     Update,
 
-    /// 执行数据库迁移
-    Migrate,
-
-    /// 生成迁移文件
-    Makemigrations {
-        /// Django app 名称
-        app: Option<String>,
-    },
-
-    /// 创建超级用户
-    Createsuperuser,
-
     /// 数据库操作
     Db {
         #[command(subcommand)]
@@ -100,7 +88,7 @@ pub enum Commands {
 
     /// 生成 Proto 代码
     Proto {
-        /// 目标: all, python, go, dart, typescript
+        /// 目标: all, go, dart, typescript
         #[arg(default_value = "all")]
         target: String,
     },
@@ -116,17 +104,14 @@ pub enum Commands {
 
     /// 进入容器
     Enter {
-        /// 服务名称: django, chat, postgres, redis, traefik
+        /// 服务名称: gateway, chat, postgres, redis, traefik
         service: String,
     },
-
-    /// Django Python Shell
-    Shell,
 
     /// 进入容器 Shell
     Bash {
         /// 服务名称
-        #[arg(default_value = "django")]
+        #[arg(default_value = "gateway")]
         service: String,
     },
 
@@ -151,12 +136,12 @@ pub enum Commands {
 pub enum StartTarget {
     /// 启动所有服务
     All,
-    /// 启动后端服务 (Django + Chat)
+    /// 启动后端服务 (Gateway + Workers + Chat)
     Service,
-    /// 启动基础设施 (PostgreSQL + Redis + Traefik)
+    /// 启动基础设施 (PostgreSQL + Redis + RabbitMQ + Traefik)
     Infra,
-    /// 启动 Django 服务
-    Django,
+    /// 启动 Gateway 服务
+    Gateway,
     /// 启动 Chat 服务
     Chat,
     /// 启动所有客户端

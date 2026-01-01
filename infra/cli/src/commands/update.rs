@@ -4,7 +4,7 @@ use crate::config::Config;
 use crate::docker::DockerCompose;
 use crate::ui::{self, Spinner};
 
-/// 执行 update 命令 - 更新环境 (重新生成 proto、重建服务、运行迁移)
+/// 执行 update 命令 - 更新环境 (重新生成 proto、重建服务)
 pub async fn execute() -> Result<()> {
     ui::header("更新开发环境");
 
@@ -55,40 +55,6 @@ pub async fn execute() -> Result<()> {
             ui::info("尝试启动服务...");
             // 如果重启失败，尝试启动
             compose.up_wait(&[]).await?;
-        }
-    }
-
-    // Step 4: 执行数据库迁移
-    ui::step("执行数据库迁移...");
-
-    // 等待服务启动
-    tokio::time::sleep(tokio::time::Duration::from_secs(3)).await;
-
-    // 检查 Django 服务是否运行
-    let statuses = compose.ps_json().await?;
-    let django_running = statuses
-        .iter()
-        .any(|s| s.service_name() == "django" && s.is_running());
-
-    if !django_running {
-        ui::warn("Django 服务未运行，正在启动...");
-        compose.up_wait(&["django"]).await?;
-        // 等待服务完全启动
-        tokio::time::sleep(tokio::time::Duration::from_secs(5)).await;
-    }
-
-    // 执行迁移
-    let migrate_result = compose
-        .exec("django", &["python", "manage.py", "migrate"], false)
-        .await;
-
-    match migrate_result {
-        Ok(()) => {
-            ui::success("数据库迁移完成");
-        }
-        Err(e) => {
-            ui::warn(&format!("数据库迁移失败: {}", e));
-            ui::info("可以稍后运行 'devlesser migrate' 重新执行迁移");
         }
     }
 

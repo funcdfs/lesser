@@ -1,0 +1,95 @@
+syntax = "proto3";
+package user;
+
+option go_package = "github.com/lesser/user_worker/proto/user";
+
+import "common/common.proto";
+
+// UserService 用户服务（资料和关注）
+service UserService {
+  rpc GetProfile(GetProfileRequest) returns (Profile);
+  rpc UpdateProfile(UpdateProfileRequest) returns (Profile);
+  rpc Follow(FollowRequest) returns (common.Empty);
+  rpc Unfollow(UnfollowRequest) returns (common.Empty);
+  rpc GetFollowers(GetFollowersRequest) returns (FollowListResponse);
+  rpc GetFollowing(GetFollowingRequest) returns (FollowListResponse);
+  rpc CheckFollowing(CheckFollowingRequest) returns (CheckFollowingResponse);
+}
+
+// Profile 用户资料
+message Profile {
+  string id = 1;
+  string username = 2;
+  string email = 3;
+  string display_name = 4;
+  string avatar_url = 5;
+  string bio = 6;
+  bool is_verified = 7;
+  int32 followers_count = 8;
+  int32 following_count = 9;
+  int32 posts_count = 10;
+  common.Timestamp created_at = 11;
+  common.Timestamp updated_at = 12;
+}
+
+// GetProfileRequest 获取用户资料请求
+message GetProfileRequest {
+  string user_id = 1;
+}
+
+// UpdateProfileRequest 更新用户资料请求
+message UpdateProfileRequest {
+  string user_id = 1;
+  string display_name = 2;
+  string avatar_url = 3;
+  string bio = 4;
+}
+
+// FollowRequest 关注请求
+message FollowRequest {
+  string follower_id = 1;
+  string following_id = 2;
+}
+
+// UnfollowRequest 取消关注请求
+message UnfollowRequest {
+  string follower_id = 1;
+  string following_id = 2;
+}
+
+// GetFollowersRequest 获取粉丝列表请求
+message GetFollowersRequest {
+  string user_id = 1;
+  common.Pagination pagination = 2;
+}
+
+// GetFollowingRequest 获取关注列表请求
+message GetFollowingRequest {
+  string user_id = 1;
+  common.Pagination pagination = 2;
+}
+
+// FollowListResponse 关注/粉丝列表响应
+message FollowListResponse {
+  repeated Profile users = 1;
+  common.Pagination pagination = 2;
+}
+
+// CheckFollowingRequest 检查是否关注请求
+message CheckFollowingRequest {
+  string follower_id = 1;
+  string following_id = 2;
+}
+
+// CheckFollowingResponse 检查是否关注响应
+message CheckFollowingResponse {
+  bool is_following = 1;
+}
+
+// Follow 关注关系实体
+message Follow {
+  string id = 1;
+  string follower_id = 2;
+  string following_id = 3;
+  common.Timestamp created_at = 4;
+}

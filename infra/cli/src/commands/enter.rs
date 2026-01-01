@@ -39,11 +39,8 @@ fn get_service_command(service: &str) -> Result<(String, Vec<String>)> {
     let service_lower = service.to_lowercase();
     
     match service_lower.as_str() {
-        // Django / Python
-        "django" | "python" => Ok((
-            "django".to_string(),
-            vec!["python".to_string(), "manage.py".to_string(), "shell".to_string()],
-        )),
+        // Gateway / Go
+        "gateway" => Ok(("gateway".to_string(), vec!["sh".to_string()])),
         // Chat / Go
         "chat" | "go" => Ok(("chat".to_string(), vec!["sh".to_string()])),
         // PostgreSQL / DB - 从环境变量读取连接参数
@@ -57,12 +54,18 @@ fn get_service_command(service: &str) -> Result<(String, Vec<String>)> {
         }
         // Redis / Cache
         "redis" | "cache" => Ok(("redis".to_string(), vec!["redis-cli".to_string()])),
-        // Traefik / Gateway
-        "traefik" | "gateway" => Ok(("traefik".to_string(), vec!["sh".to_string()])),
-        // Celery Worker
-        "celery" | "celery-worker" | "worker" => Ok(("celery-worker".to_string(), vec!["sh".to_string()])),
-        // Celery Beat
-        "celery-beat" | "beat" => Ok(("celery-beat".to_string(), vec!["sh".to_string()])),
+        // Traefik
+        "traefik" => Ok(("traefik".to_string(), vec!["sh".to_string()])),
+        // RabbitMQ
+        "rabbitmq" | "mq" | "rabbit" => Ok(("rabbitmq".to_string(), vec!["sh".to_string()])),
+        // Workers
+        "auth-worker" | "auth" => Ok(("auth-worker".to_string(), vec!["sh".to_string()])),
+        "post-worker" | "post" => Ok(("post-worker".to_string(), vec!["sh".to_string()])),
+        "feed-worker" | "feed" => Ok(("feed-worker".to_string(), vec!["sh".to_string()])),
+        "user-worker" | "user" => Ok(("user-worker".to_string(), vec!["sh".to_string()])),
+        "notification-worker" | "notification" => Ok(("notification-worker".to_string(), vec!["sh".to_string()])),
+        "search-worker" | "search" => Ok(("search-worker".to_string(), vec!["sh".to_string()])),
+        "chat-worker" => Ok(("chat-worker".to_string(), vec!["sh".to_string()])),
         _ => {
             ui::error(&format!("未知服务: {}", service));
             println!();
@@ -78,12 +81,14 @@ fn print_usage() {
     println!();
     println!("可用服务:");
     ui::separator();
-    println!("  django, python      进入 Django Python shell");
+    println!("  gateway             进入 Gateway 容器 (sh)");
     println!("  chat, go            进入 Chat 容器 (sh)");
     println!("  postgres, db        进入 PostgreSQL (psql)");
     println!("  redis, cache        进入 Redis (redis-cli)");
-    println!("  traefik, gateway    进入 Traefik 容器 (sh)");
-    println!("  celery, worker      进入 Celery Worker 容器 (sh)");
-    println!("  celery-beat, beat   进入 Celery Beat 容器 (sh)");
+    println!("  traefik             进入 Traefik 容器 (sh)");
+    println!("  rabbitmq, mq        进入 RabbitMQ 容器 (sh)");
+    println!("  auth-worker         进入 Auth Worker 容器 (sh)");
+    println!("  post-worker         进入 Post Worker 容器 (sh)");
+    println!("  feed-worker         进入 Feed Worker 容器 (sh)");
     println!();
 }

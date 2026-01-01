@@ -7,7 +7,7 @@ use crate::config::paths;
 use crate::ui::{self, Spinner};
 
 /// 支持的 proto 生成目标
-const VALID_TARGETS: &[&str] = &["all", "python", "go", "dart", "typescript"];
+const VALID_TARGETS: &[&str] = &["all", "go", "dart", "typescript"];
 
 /// 执行 proto 命令
 ///
@@ -78,16 +78,15 @@ fn print_generated_locations(target: &str) {
 
     match target {
         "all" => {
-            ui::url("Python", "service/core_django/generated/protos/");
-            ui::url("Go", "service/chat_gin/generated/protos/");
+            ui::url("Go (Gateway)", "service/gateway/generated/");
+            ui::url("Go (Chat)", "service/chat_gin/generated/");
+            ui::url("Go (Workers)", "service/<xxx>_worker/generated/");
             ui::url("Dart", "client/mobile_flutter/lib/generated/protos/");
             ui::url("TypeScript", "client/web_react/src/generated/protos/");
         }
-        "python" => {
-            ui::url("Python", "service/core_django/generated/protos/");
-        }
         "go" => {
-            ui::url("Go", "service/chat_gin/generated/protos/");
+            ui::url("Go (Gateway)", "service/gateway/generated/");
+            ui::url("Go (Chat)", "service/chat_gin/generated/");
         }
         "dart" => {
             ui::url("Dart", "client/mobile_flutter/lib/generated/protos/");

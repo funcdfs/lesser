@@ -1,87 +1,83 @@
 syntax = "proto3";
 package notification;
 
-option go_package = "github.com/lesser/chat/generated/protos/notification";
+option go_package = "github.com/lesser/notification_worker/proto/notification";
 
 import "common/common.proto";
-import "auth/auth.proto";
 
-// NotificationService handles user notifications
+// NotificationService 通知服务
 service NotificationService {
-  // Get notifications for a user
-  rpc GetNotifications(GetNotificationsRequest) returns (NotificationsResponse);
-  // Get unread notification count
+  rpc List(ListNotificationsRequest) returns (ListNotificationsResponse);
+  rpc Read(ReadNotificationRequest) returns (common.Empty);
+  rpc ReadAll(ReadAllNotificationsRequest) returns (common.Empty);
   rpc GetUnreadCount(GetUnreadCountRequest) returns (UnreadCountResponse);
-  // Mark notification as read
-  rpc MarkAsRead(MarkAsReadRequest) returns (common.Empty);
-  // Mark all notifications as read
-  rpc MarkAllAsRead(MarkAllAsReadRequest) returns (common.Empty);
-  // Stream notifications in real-time
-  rpc StreamNotifications(StreamNotificationsRequest) returns (stream Notification);
 }
 
-// NotificationType enum for different notification types
+// NotificationType 通知类型
 enum NotificationType {
-  LIKE = 0;       // Someone liked your post
-  COMMENT = 1;    // Someone commented on your post
-  REPLY = 2;      // Someone replied to your comment
-  BOOKMARK = 3;   // Someone bookmarked your post
-  MENTION = 4;    // Someone mentioned you
-  FOLLOW = 5;     // Someone followed you
-  REPOST = 6;     // Someone reposted your post
+  NOTIFICATION_TYPE_UNSPECIFIED = 0;
+  LIKE = 1;
+  COMMENT = 2;
+  REPLY = 3;
+  BOOKMARK = 4;
+  MENTION = 5;
+  FOLLOW = 6;
+  REPOST = 7;
 }
 
-// Notification represents a user notification
+// Notification 通知实体
 message Notification {
   string id = 1;
-  string user_id = 2;           // Recipient user ID
+  string user_id = 2;
   NotificationType type = 3;
-  auth.User actor = 4;          // User who triggered the notification
-  string target_type = 5;       // 'post', 'comment', 'user'
+  string actor_id = 4;
+  string target_type = 5;  // post, comment, user
   string target_id = 6;
-  string preview_text = 7;      // Preview of the content
+  string message = 7;
   bool is_read = 8;
   common.Timestamp created_at = 9;
 }
 
-// GetNotificationsRequest for fetching notifications
-message GetNotificationsRequest {
+// ListNotificationsRequest 获取通知列表请求
+message ListNotificationsRequest {
   string user_id = 1;
-  NotificationType type = 2;    // Optional filter by type
-  bool unread_only = 3;         // Optional filter for unread only
-  common.Pagination pagination = 4;
+  bool unread_only = 2;  // 是否只获取未读
+  common.Pagination pagination = 3;
 }
 
-// NotificationsResponse with list of notifications
-message NotificationsResponse {
+// ListNotificationsResponse 通知列表响应
+message ListNotificationsResponse {
   repeated Notification notifications = 1;
   common.Pagination pagination = 2;
 }
 
-// GetUnreadCountRequest for getting unread count
-message GetUnreadCountRequest {
-  string user_id = 1;
-}
-
-// UnreadCountResponse with unread notification count
-message UnreadCountResponse {
-  int32 count = 1;
-  map<string, int32> count_by_type = 2;  // Count per notification type
-}
-
-// MarkAsReadRequest for marking a notification as read
-message MarkAsReadRequest {
+// ReadNotificationRequest 标记单条通知已读请求
+message ReadNotificationRequest {
   string notification_id = 1;
   string user_id = 2;
 }
 
-// MarkAllAsReadRequest for marking all notifications as read
-message MarkAllAsReadRequest {
+// ReadAllNotificationsRequest 标记所有通知已读请求
+message ReadAllNotificationsRequest {
   string user_id = 1;
-  NotificationType type = 2;  // Optional, mark only specific type
 }
 
-// StreamNotificationsRequest for real-time notification streaming
-message StreamNotificationsRequest {
+// GetUnreadCountRequest 获取未读数请求
+message GetUnreadCountRequest {
   string user_id = 1;
+}
+
+// UnreadCountResponse 未读数响应
+message UnreadCountResponse {
+  int32 count = 1;
+}
+
+// CreateNotificationRequest 创建通知请求（内部使用）
+message CreateNotificationRequest {
+  string user_id = 1;
+  NotificationType type = 2;
+  string actor_id = 3;
+  string target_type = 4;
+  string target_id = 5;
+  string message = 6;
 }

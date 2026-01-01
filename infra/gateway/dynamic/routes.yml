@@ -7,54 +7,68 @@ http:
   # Routers - HTTP/REST API
   # ============================================================================
   routers:
-    # Django REST API Routes
-    django-auth-api:
-      rule: "PathPrefix(`/api/v1/auth`)"
-      service: django
+    # Gateway gRPC-Web Routes (统一 API 入口)
+    grpc-web-gateway:
+      rule: "PathPrefix(`/grpc/gateway.`)"
+      service: gateway-grpc
       entryPoints:
         - web
       middlewares:
-        - cors-headers
+        - grpc-web-headers
 
-    django-feeds-api:
-      rule: "PathPrefix(`/api/v1/feeds`)"
-      service: django
+    # Auth API Routes (通过 Gateway)
+    grpc-web-auth:
+      rule: "PathPrefix(`/grpc/auth.`)"
+      service: gateway-grpc
       entryPoints:
         - web
       middlewares:
-        - cors-headers
+        - grpc-web-headers
 
-    django-posts-api:
-      rule: "PathPrefix(`/api/v1/posts`)"
-      service: django
+    # Feed API Routes (通过 Gateway)
+    grpc-web-feed:
+      rule: "PathPrefix(`/grpc/feed.`)"
+      service: gateway-grpc
       entryPoints:
         - web
       middlewares:
-        - cors-headers
+        - grpc-web-headers
 
-    django-search-api:
-      rule: "PathPrefix(`/api/v1/search`)"
-      service: django
+    # Post API Routes (通过 Gateway)
+    grpc-web-post:
+      rule: "PathPrefix(`/grpc/post.`)"
+      service: gateway-grpc
       entryPoints:
         - web
       middlewares:
-        - cors-headers
+        - grpc-web-headers
 
-    django-notifications-api:
-      rule: "PathPrefix(`/api/v1/notifications`)"
-      service: django
+    # User API Routes (通过 Gateway)
+    grpc-web-user:
+      rule: "PathPrefix(`/grpc/user.`)"
+      service: gateway-grpc
       entryPoints:
         - web
       middlewares:
-        - cors-headers
+        - grpc-web-headers
 
-    django-users-api:
-      rule: "PathPrefix(`/api/v1/users`)"
-      service: django
+    # Notification API Routes (通过 Gateway)
+    grpc-web-notification:
+      rule: "PathPrefix(`/grpc/notification.`)"
+      service: gateway-grpc
       entryPoints:
         - web
       middlewares:
-        - cors-headers
+        - grpc-web-headers
+
+    # Search API Routes (通过 Gateway)
+    grpc-web-search:
+      rule: "PathPrefix(`/grpc/search.`)"
+      service: gateway-grpc
+      entryPoints:
+        - web
+      middlewares:
+        - grpc-web-headers
 
     # Chat Service REST API Routes
     chat-api:
@@ -72,45 +86,7 @@ http:
       entryPoints:
         - web
 
-    notifications-websocket:
-      rule: "PathPrefix(`/ws/notifications`)"
-      service: django-ws
-      entryPoints:
-        - web
-
-    # gRPC-Web Routes (for browser clients)
-    grpc-web-auth:
-      rule: "PathPrefix(`/grpc/auth.`)"
-      service: django-grpc
-      entryPoints:
-        - web
-      middlewares:
-        - grpc-web-headers
-
-    grpc-web-feed:
-      rule: "PathPrefix(`/grpc/feed.`)"
-      service: django-grpc
-      entryPoints:
-        - web
-      middlewares:
-        - grpc-web-headers
-
-    grpc-web-post:
-      rule: "PathPrefix(`/grpc/post.`)"
-      service: django-grpc
-      entryPoints:
-        - web
-      middlewares:
-        - grpc-web-headers
-
-    grpc-web-notification:
-      rule: "PathPrefix(`/grpc/notification.`)"
-      service: django-grpc
-      entryPoints:
-        - web
-      middlewares:
-        - grpc-web-headers
-
+    # Chat gRPC-Web Routes
     grpc-web-chat:
       rule: "PathPrefix(`/grpc/chat.`)"
       service: chat-grpc
@@ -122,27 +98,46 @@ http:
   # ============================================================================
   # gRPC Routers (Internal Service Communication)
   # ============================================================================
+    # Gateway gRPC Routes
+    grpc-gateway:
+      rule: "PathPrefix(`/gateway.`)"
+      service: gateway-grpc
+      entryPoints:
+        - grpc
+
     grpc-auth:
       rule: "PathPrefix(`/auth.`)"
-      service: django-grpc
+      service: gateway-grpc
       entryPoints:
         - grpc
 
     grpc-feed:
       rule: "PathPrefix(`/feed.`)"
-      service: django-grpc
+      service: gateway-grpc
       entryPoints:
         - grpc
 
     grpc-post:
       rule: "PathPrefix(`/post.`)"
-      service: django-grpc
+      service: gateway-grpc
+      entryPoints:
+        - grpc
+
+    grpc-user:
+      rule: "PathPrefix(`/user.`)"
+      service: gateway-grpc
       entryPoints:
         - grpc
 
     grpc-notification:
       rule: "PathPrefix(`/notification.`)"
-      service: django-grpc
+      service: gateway-grpc
+      entryPoints:
+        - grpc
+
+    grpc-search:
+      rule: "PathPrefix(`/search.`)"
+      service: gateway-grpc
       entryPoints:
         - grpc
 
@@ -156,26 +151,11 @@ http:
   # Services
   # ============================================================================
   services:
-    django:
+    # Gateway gRPC 服务 (统一 API 入口)
+    gateway-grpc:
       loadBalancer:
         servers:
-          - url: "http://django:8000"
-        healthCheck:
-          path: /api/v1/health/
-          interval: "30s"
-          timeout: "5s"
-
-    # Django WebSocket 服务（长连接优化）
-    django-ws:
-      loadBalancer:
-        servers:
-          - url: "http://django:8000"
-        serversTransport: websocket-transport
-
-    django-grpc:
-      loadBalancer:
-        servers:
-          - url: "h2c://django:50051"
+          - url: "h2c://gateway:50053"
 
     chat-go:
       loadBalancer:

@@ -1,0 +1,39 @@
+syntax = "proto3";
+package search;
+
+option go_package = "github.com/lesser/search_worker/proto/search";
+
+import "common/common.proto";
+import "post/post.proto";
+import "user/user.proto";
+
+// SearchService 搜索服务
+service SearchService {
+  rpc SearchPosts(SearchPostsRequest) returns (SearchPostsResponse);
+  rpc SearchUsers(SearchUsersRequest) returns (SearchUsersResponse);
+}
+
+// SearchPostsRequest 搜索帖子请求
+message SearchPostsRequest {
+  string query = 1;
+  post.PostType post_type = 2;  // 可选，按类型筛选
+  common.Pagination pagination = 3;
+}
+
+// SearchPostsResponse 搜索帖子响应
+message SearchPostsResponse {
+  repeated post.Post posts = 1;
+  common.Pagination pagination = 2;
+}
+
+// SearchUsersRequest 搜索用户请求
+message SearchUsersRequest {
+  string query = 1;
+  common.Pagination pagination = 2;
+}
+
+// SearchUsersResponse 搜索用户响应
+message SearchUsersResponse {
+  repeated user.Profile users = 1;
+  common.Pagination pagination = 2;
+}

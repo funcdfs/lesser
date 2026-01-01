@@ -46,20 +46,19 @@ async fn main() -> Result<()> {
         Commands::Init => commands::init::execute().await,
         Commands::Check => commands::check::execute().await,
         Commands::Update => commands::update::execute().await,
-        Commands::Migrate => commands::migrate::execute().await,
-        Commands::Makemigrations { app } => commands::migrate::makemigrations(app).await,
-        Commands::Createsuperuser => commands::migrate::createsuperuser().await,
         Commands::Db { command } => commands::db::execute(command).await,
         Commands::Build { service } => commands::build::execute(service, false).await,
         Commands::Rebuild { service } => commands::build::execute(service, true).await,
         Commands::Proto { target } => commands::proto::execute(target).await,
         Commands::Clean { command, force } => commands::clean::execute(command, force).await,
         Commands::Enter { service } => commands::enter::execute(service).await,
-        Commands::Shell => commands::shell::execute().await,
         Commands::Bash { service } => commands::bash::execute(service).await,
         Commands::Env => commands::env::execute().await,
         Commands::Urls => commands::urls::execute().await,
         Commands::Completion { shell } => commands::completion::execute(shell),
-        Commands::Mock => commands::mock::execute().await,
+        Commands::Mock => {
+            ui::warn("Mock 命令暂不可用 (Django 已移除)");
+            Ok(())
+        }
     }
 }

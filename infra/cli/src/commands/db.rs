@@ -62,7 +62,7 @@ async fn reset() -> Result<()> {
     ui::header("重置数据库");
 
     ui::warn("⚠️  警告: 此操作将删除所有数据库数据!");
-    ui::warn("这包括所有表、数据和迁移记录。");
+    ui::warn("这包括所有表和数据。");
     ui::separator();
 
     // 确认操作
@@ -83,9 +83,9 @@ async fn reset() -> Result<()> {
     let db_name = std::env::var("POSTGRES_DB").unwrap_or_else(|_| "lesser_db".to_string());
 
     // 步骤 1: 停止依赖服务
-    ui::step("停止依赖服务 (Django, Chat)...");
+    ui::step("停止依赖服务...");
     let spinner = Spinner::new("正在停止服务...");
-    compose.stop(&["django", "chat"]).await.ok(); // 忽略错误，服务可能未运行
+    compose.stop(&["gateway", "chat", "auth-worker", "post-worker", "feed-worker", "user-worker", "notification-worker", "search-worker", "chat-worker"]).await.ok(); // 忽略错误，服务可能未运行
     spinner.finish_and_clear();
     ui::success("依赖服务已停止");
 
@@ -153,20 +153,12 @@ async fn reset() -> Result<()> {
     // 步骤 4: 重启服务
     ui::step("重启服务...");
     let spinner = Spinner::new("正在启动服务...");
-    compose.up_wait(&["django", "chat"]).await?;
+    compose.up_wait(&[]).await?;
     spinner.finish_and_clear();
     ui::success("服务已启动");
 
-    // 步骤 5: 运行迁移
-    ui::step("执行数据库迁移...");
-    compose
-        .exec("django", &["python", "manage.py", "migrate"], false)
-        .await?;
-    ui::success("迁移完成");
-
     ui::separator();
     ui::success("🗄 数据库重置完成!");
-    ui::info("提示: 使用 'devlesser createsuperuser' 创建新的管理员账户");
 
     Ok(())
 }

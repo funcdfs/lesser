@@ -84,8 +84,15 @@ class ChatWebSocketService {
   StreamController<WebSocketError>? _errorController;
   final _subscribedConversations = <String>{};
   Timer? _reconnectTimer;
+  Timer? _heartbeatTimer;
+  Timer? _heartbeatTimeoutTimer;
   bool _isConnecting = false;
   bool _isDisposed = false;
+  int _reconnectAttempts = 0;
+  static const int _maxReconnectAttempts = 10;
+  static const Duration _heartbeatInterval = Duration(seconds: 30);
+  static const Duration _heartbeatTimeout = Duration(seconds: 10);
+  static const Duration _baseReconnectDelay = Duration(seconds: 2);
 
   /// 确保 StreamController 已初始化
   void _ensureControllers() {
@@ -181,6 +188,12 @@ class ChatWebSocketService {
         _sendSubscribe(convId);
       }
 
+      // 启动心跳检测
+      _startHeartbeat();
+      
+      // 重置重连计数
+      _reconnectAttempts = 0;
+
       log.i('WebSocket 已连接，用户: $userId', tag: _tag);
     } catch (e) {
       log.e('连接 WebSocket 失败: $e', tag: _tag);
@@ -194,25 +207,88 @@ class ChatWebSocketService {
   Future<void> disconnect() async {
     _reconnectTimer?.cancel();
     _reconnectTimer = null;
+    _stopHeartbeat();
     await _disconnect();
     _currentUserId = null;
     _subscribedConversations.clear();
+    _reconnectAttempts = 0;
   }
 
   Future<void> _disconnect() async {
+    _stopHeartbeat();
     if (_channel != null) {
       await _channel!.sink.close();
       _channel = null;
     }
   }
 
-  /// 安排重连
+  /// 启动心跳检测
+  void _startHeartbeat() {
+    _stopHeartbeat();
+    _heartbeatTimer = Timer.periodic(_heartbeatInterval, (_) {
+      _sendPing();
+    });
+  }
+
+  /// 停止心跳检测
+  void _stopHeartbeat() {
+    _heartbeatTimer?.cancel();
+    _heartbeatTimer = null;
+    _heartbeatTimeoutTimer?.cancel();
+    _heartbeatTimeoutTimer = null;
+  }
+
+  /// 发送心跳 ping
+  void _sendPing() {
+    if (_channel == null) return;
+    
+    try {
+      _sendCommand({'action': 'ping'});
+      
+      // 设置超时检测
+      _heartbeatTimeoutTimer?.cancel();
+      _heartbeatTimeoutTimer = Timer(_heartbeatTimeout, () {
+        log.w('心跳超时，准备重连', tag: _tag);
+        _scheduleReconnect();
+      });
+    } catch (e) {
+      log.e('发送心跳失败: $e', tag: _tag);
+      _scheduleReconnect();
+    }
+  }
+
+  /// 处理心跳响应
+  void _handlePong() {
+    _heartbeatTimeoutTimer?.cancel();
+    _heartbeatTimeoutTimer = null;
+  }
+
+  /// 安排重连（指数退避）
   void _scheduleReconnect() {
     if (_isDisposed || _currentUserId == null || _reconnectTimer != null) {
       return;
     }
 
-    _reconnectTimer = Timer(const Duration(seconds: 3), () {
+    if (_reconnectAttempts >= _maxReconnectAttempts) {
+      log.e('达到最大重连次数 ($_maxReconnectAttempts)，停止重连', tag: _tag);
+      if (_errorController != null && !_errorController!.isClosed) {
+        _errorController!.add(
+          WebSocketError(action: 'reconnect', message: '连接失败，请检查网络后重试'),
+        );
+      }
+      return;
+    }
+
+    _reconnectAttempts++;
+    // 指数退避：2s, 4s, 8s, 16s, 32s, 最大 60s
+    final delay = Duration(
+      milliseconds: (_baseReconnectDelay.inMilliseconds * 
+          (1 << (_reconnectAttempts - 1).clamp(0, 5))).clamp(0, 60000),
+    );
+    
+    log.i('将在 ${delay.inSeconds}s 后重连 (尝试 $_reconnectAttempts/$_maxReconnectAttempts)', tag: _tag);
+
+    _reconnectTimer = Timer(delay, () {
       _reconnectTimer = null;
       if (!_isDisposed && _currentUserId != null) {
         connect(_currentUserId!);
@@ -300,6 +376,10 @@ class ChatWebSocketService {
         case WSMessageType.unsubscribed:
           log.d('已取消订阅: ${json['payload']}', tag: _tag);
           break;
+        case 'pong':
+          _handlePong();
+          log.d('收到心跳响应', tag: _tag);
+          break;
         case 'error':
           final payload = json['payload'] as Map<String, dynamic>?;
           final action = payload?['action'] as String? ?? 'unknown';
@@ -327,6 +407,7 @@ class ChatWebSocketService {
     log.i('WebSocket 服务正在释放资源', tag: _tag);
     _reconnectTimer?.cancel();
     _reconnectTimer = null;
+    _stopHeartbeat();
     _channel?.sink.close();
     _channel = null;
     _messageController?.close();
@@ -335,4 +416,16 @@ class ChatWebSocketService {
     _totalUnreadCountController?.close();
     _errorController?.close();
   }
+
+  /// 手动触发重连（用于用户主动重试）
+  void reconnect() {
+    if (_isDisposed || _currentUserId == null) return;
+    _reconnectAttempts = 0;
+    _reconnectTimer?.cancel();
+    _reconnectTimer = null;
+    connect(_currentUserId!);
+  }
+
+  /// 检查连接状态
+  bool get isConnected => _channel != null && !_isConnecting;
 }

@@ -14,7 +14,7 @@ All services **MUST** output logs in JSON format with the following standard fie
 |-------|------|-------------|---------|
 | `timestamp` | String | ISO8601 with timezone (UTC) | `"2025-12-31T01:36:30.680Z"` |
 | `level` | String | Log level (uppercase) | `"INFO"`, `"ERROR"`, `"WARN"` |
-| `service` | String | Service identifier | `"go-chat-service"`, `"django-api"` |
+| `service` | String | Service identifier | `"go-chat-service"`, `"auth-worker"` |
 | `msg` | String | Human-readable message | `"http_request"`, `"db_query"` |
 
 ### Tracing Fields
@@ -61,19 +61,6 @@ logger.Log.Info("http_request",
     zap.Int("status_code", 200),
     // ...
 )
-```
-
-### Django Services (python-json-logger)
-
-```python
-# Use UnifiedJSONFormatter from core.logging
-LOGGING = {
-    'formatters': {
-        'json': {
-            '()': 'core.logging.UnifiedJSONFormatter',
-        },
-    },
-}
 ```
 
 ## Log Filtering
@@ -163,12 +150,12 @@ Use log levels consistently:
 {
   "timestamp": "2025-12-31T01:36:40.456Z",
   "level": "ERROR",
-  "service": "django-api",
+  "service": "auth-worker",
   "msg": "Failed to send notification",
   "trace_id": "def456",
   "user_id": "user_123",
   "error": "Connection timeout",
-  "stacktrace": "Traceback..."
+  "stacktrace": "..."
 }
 ```
 

@@ -43,9 +43,9 @@ pub async fn execute() -> Result<()> {
     println!("开发依赖 (可选):");
     ui::separator();
 
-    // Python (本地开发用)
-    let python_info = check_python().await;
-    print_dependency(&python_info);
+    // Go
+    let go_info = check_go().await;
+    print_dependency(&go_info);
 
     // Flutter
     let flutter_info = check_flutter().await;
@@ -155,18 +155,18 @@ async fn check_docker_compose() -> DependencyInfo {
     info
 }
 
-/// 检查 Python
-async fn check_python() -> DependencyInfo {
+/// 检查 Go
+async fn check_go() -> DependencyInfo {
     let mut info = DependencyInfo {
-        name: "Python",
+        name: "Go",
         version: None,
         installed: false,
         required: false, // Docker 环境下不是必需的
-        install_url: "https://www.python.org/downloads/",
+        install_url: "https://go.dev/doc/install",
     };
 
-    if let Ok(output) = Command::new("python3")
-        .args(["--version"])
+    if let Ok(output) = Command::new("go")
+        .args(["version"])
         .stdout(Stdio::piped())
         .stderr(Stdio::null())
         .output()
@@ -174,9 +174,9 @@ async fn check_python() -> DependencyInfo {
     {
         if output.status.success() {
             let version_str = String::from_utf8_lossy(&output.stdout);
-            // Python 3.11.4
-            if let Some(version) = version_str.split_whitespace().nth(1) {
-                info.version = Some(version.to_string());
+            // go version go1.23.0 darwin/arm64
+            if let Some(version) = version_str.split_whitespace().nth(2) {
+                info.version = Some(version.trim_start_matches("go").to_string());
             }
             info.installed = true;
         }

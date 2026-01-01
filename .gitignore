@@ -1,38 +1,4 @@
 # ============================================================================
-# Python
-# ============================================================================
-__pycache__/
-*.py[cod]
-*$py.class
-*.so
-.Python
-.venv/
-venv/
-ENV/
-env/
-*.egg-info/
-dist/
-build/
-*.egg
-.eggs/
-pip-log.txt
-pip-delete-this-directory.txt
-
-# ============================================================================
-# Django
-# ============================================================================
-*.log
-local_settings.py
-db.sqlite3
-db.sqlite3-journal
-media/
-staticfiles/
-celerybeat-schedule
-celerybeat.pid
-*.pot
-*.mo
-
-# ============================================================================
 # Go
 # ============================================================================
 *.exe
@@ -142,12 +108,6 @@ infra/.env.local
 # ============================================================================
 # Generated Code (Proto / gRPC)
 # ============================================================================
-# Python generated proto files
-service/core_django/generated/protos/*.py
-service/core_django/generated/protos/**/*.py
-!service/core_django/generated/protos/__init__.py
-!service/core_django/generated/__init__.py
-
 # Go generated proto files
 service/chat_gin/generated/
 service/chat_gin/pkg/proto/

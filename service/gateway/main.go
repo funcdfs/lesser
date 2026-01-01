@@ -7,15 +7,40 @@ import (
 	"os/signal"
 	"syscall"
 
+	"github.com/lesser/gateway/internal/auth"
 	"github.com/lesser/gateway/internal/broker"
+	"github.com/lesser/gateway/internal/database"
 	"github.com/lesser/gateway/internal/server"
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/reflection"
 )
 
 func main() {
 	// 配置
 	grpcPort := getEnv("GRPC_PORT", "50053")
 	rabbitURL := getEnv("RABBITMQ_URL", "amqp://guest:guest@localhost:5672/")
+	jwtSecret := getEnv("JWT_SECRET", "your-secret-key")
+
+	// 数据库配置
+	dbConfig := database.Config{
+		Host:     getEnv("DB_HOST", "localhost"),
+		Port:     getEnv("DB_PORT", "5432"),
+		User:     getEnv("DB_USER", "postgres"),
+		Password: getEnv("DB_PASSWORD", "postgres"),
+		DBName:   getEnv("DB_NAME", "lesser"),
+		SSLMode:  getEnv("DB_SSLMODE", "disable"),
+	}
+
+	// 连接数据库
+	db, err := database.NewConnection(dbConfig)
+	if err != nil {
+		log.Fatalf("Failed to connect to database: %v", err)
+	}
+	defer db.Close()
+	log.Println("Connected to PostgreSQL")
+
+	// 创建 Auth 服务
+	authService := auth.NewAuthService(db, jwtSecret)
 
 	// 连接 RabbitMQ
 	rabbitConn, err := broker.NewConnection(rabbitURL)
@@ -31,11 +56,14 @@ func main() {
 	}
 
 	grpcServer := grpc.NewServer()
-	gatewayServer, err := server.NewGatewayServer(rabbitConn)
+	gatewayServer, err := server.NewGatewayServer(rabbitConn, authService)
 	if err != nil {
 		log.Fatalf("Failed to create gateway server: %v", err)
 	}
 	server.RegisterGatewayServer(grpcServer, gatewayServer)
+	
+	// Enable reflection for grpcurl testing
+	reflection.Register(grpcServer)
 
 	// 优雅关闭
 	go func() {

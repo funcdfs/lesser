@@ -53,16 +53,16 @@ async fn check_dependencies() -> Result<()> {
         bail!("Docker Compose 未安装");
     }
 
-    // 检查 Python (用于 Django)
-    let python_check = Command::new("python3")
-        .args(["--version"])
+    // 检查 Go (可选，用于本地开发)
+    let go_check = Command::new("go")
+        .args(["version"])
         .stdout(Stdio::null())
         .stderr(Stdio::null())
         .status()
         .await;
 
-    if !python_check.map(|s| s.success()).unwrap_or(false) {
-        ui::warn("Python 3 未安装 (可选，用于本地开发)");
+    if !go_check.map(|s| s.success()).unwrap_or(false) {
+        ui::warn("Go 未安装 (可选，用于本地开发)");
     }
 
     Ok(())
@@ -133,14 +133,16 @@ POSTGRES_PORT=5432
 # Redis
 REDIS_URL=redis://redis:6379/0
 
-# Django
-DJANGO_SECRET_KEY=dev-secret-key-change-in-production
-DJANGO_DEBUG=True
-DJANGO_ALLOWED_HOSTS=localhost,127.0.0.1
+# RabbitMQ
+RABBITMQ_USER=guest
+RABBITMQ_PASSWORD=guest
+
+# Gateway Service
+GATEWAY_GRPC_PORT=50053
 
 # Chat Service
-CHAT_GRPC_PORT=50051
-CHAT_HTTP_PORT=8081
+CHAT_GRPC_PORT=50052
+CHAT_HTTP_PORT=8080
 
 # JWT
 JWT_SECRET_KEY=jwt-secret-key-change-in-production

@@ -62,7 +62,6 @@ REQUIRED_VARS=(
     "POSTGRES_USER"
     "POSTGRES_PASSWORD"
     "POSTGRES_DB"
-    "DJANGO_SECRET_KEY"
     "JWT_SECRET_KEY"
     "REDIS_URL"
 )
@@ -93,10 +92,6 @@ validate_env() {
     done
     
     # 检查不安全的默认值
-    if [[ "$DJANGO_SECRET_KEY" == *"insecure"* ]] || [[ "$DJANGO_SECRET_KEY" == *"dev"* ]]; then
-        insecure+=("DJANGO_SECRET_KEY (使用了不安全的默认值)")
-    fi
-    
     if [[ "$JWT_SECRET_KEY" == *"dev"* ]] || [[ "$JWT_SECRET_KEY" == *"secret"* ]]; then
         insecure+=("JWT_SECRET_KEY (使用了不安全的默认值)")
     fi
@@ -217,13 +212,6 @@ show_logs() {
 # ============================================================================
 # 数据库操作 - Database Operations
 # ============================================================================
-db_migrate() {
-    print_header "数据库迁移"
-    log_step "执行迁移..."
-    docker compose -f "$COMPOSE_FILE" exec django python manage.py migrate --no-input
-    log_success "迁移完成"
-}
-
 db_backup() {
     print_header "数据库备份"
     
@@ -257,12 +245,6 @@ deploy() {
     log_step "重启服务..."
     docker compose -f "$COMPOSE_FILE" --env-file "$ENV_FILE" up -d
     
-    log_step "执行迁移..."
-    docker compose -f "$COMPOSE_FILE" exec django python manage.py migrate --no-input
-    
-    log_step "收集静态文件..."
-    docker compose -f "$COMPOSE_FILE" exec django python manage.py collectstatic --no-input
-    
     log_success "部署完成"
     show_status
 }
@@ -288,7 +270,6 @@ show_help() {
     echo -e "${BOLD}📦 部署操作:${NC}"
     print_separator
     echo -e "  ${CYAN}deploy${NC}                   部署更新"
-    echo -e "  ${CYAN}migrate${NC}                  执行数据库迁移"
     echo -e "  ${CYAN}backup${NC}                   备份数据库"
     echo ""
     
@@ -332,10 +313,6 @@ case "$1" in
     
     deploy)
         deploy
-        ;;
-    
-    migrate)
-        db_migrate
         ;;
     
     backup)

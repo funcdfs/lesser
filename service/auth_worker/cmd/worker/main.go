@@ -1,72 +1,48 @@
 package main
 
 import (
-	"log"
+	"context"
 	"os"
-	"os/signal"
-	"syscall"
 
-	"github.com/lesser/auth_worker/internal/broker"
-	"github.com/lesser/auth_worker/internal/database"
+	"github.com/lesser/auth_worker/internal/service"
 	"github.com/lesser/auth_worker/internal/worker"
+	"github.com/lesser/pkg/app"
+	"github.com/lesser/pkg/broker"
 )
 
 func main() {
-	// 配置
-	rabbitURL := getEnv("RABBITMQ_URL", "amqp://guest:guest@localhost:5672/")
-	dbHost := getEnv("DB_HOST", "localhost")
-	dbPort := getEnv("DB_PORT", "5432")
-	dbUser := getEnv("DB_USER", "postgres")
-	dbPassword := getEnv("DB_PASSWORD", "postgres")
-	dbName := getEnv("DB_NAME", "lesser")
+	ctx := context.Background()
+
+	// 1. 从环境变量初始化配置
+	cfg := app.ConfigFromEnv("auth-worker")
+
+	// 2. 创建应用实例
+	application, err := app.New(cfg)
+	if err != nil {
+		panic(err)
+	}
+
+	// 3. 获取 JWT Secret
 	jwtSecret := getEnv("JWT_SECRET", "your-secret-key")
 
-	// 连接 PostgreSQL
-	dbConfig := database.Config{
-		Host:     dbHost,
-		Port:     dbPort,
-		User:     dbUser,
-		Password: dbPassword,
-		DBName:   dbName,
-	}
-	db, err := database.NewConnection(dbConfig)
-	if err != nil {
-		log.Fatalf("Failed to connect to PostgreSQL: %v", err)
-	}
-	defer db.Close()
-	log.Println("Connected to PostgreSQL")
+	// 4. 创建业务服务
+	authSvc := service.NewAuthService(application.DB(), jwtSecret)
 
-	// 确保用户表存在
-	if err := database.EnsureUsersTable(db); err != nil {
-		log.Fatalf("Failed to ensure users table: %v", err)
-	}
-	log.Println("Users table ready")
+	// 5. 创建 Worker 处理器
+	authWorker := worker.NewAuthWorker(authSvc, application.Worker(), application.Logger())
 
-	// 连接 RabbitMQ
-	rabbitConn, err := broker.NewConnection(rabbitURL)
-	if err != nil {
-		log.Fatalf("Failed to connect to RabbitMQ: %v", err)
-	}
-	defer rabbitConn.Close()
-	log.Println("Connected to RabbitMQ")
-
-	// 创建 Auth Worker
-	authWorker := worker.NewAuthWorker(db, rabbitConn, jwtSecret)
-
-	// 启动消费者
-	if err := authWorker.Start(); err != nil {
-		log.Fatalf("Failed to start auth worker: %v", err)
+	// 6. 配置队列消费
+	// 注意: auth.login 和 auth.register 已迁移到 Gateway 同步处理
+	// 保留 Auth Worker 用于其他异步任务（如密码重置邮件）
+	brokerConfigs := []broker.Config{
+		// 密码重置等异步任务（未来扩展）
+		{Queue: "auth.password_reset", Handler: authWorker.HandlePasswordReset},
 	}
 
-	log.Println("Auth Worker started, waiting for messages...")
-
-	// 优雅关闭
-	sigCh := make(chan os.Signal, 1)
-	signal.Notify(sigCh, syscall.SIGINT, syscall.SIGTERM)
-	<-sigCh
-
-	log.Println("Shutting down Auth Worker...")
-	authWorker.Stop()
+	// 7. 启动应用
+	if err := application.Run(ctx, brokerConfigs...); err != nil {
+		panic(err)
+	}
 }
 
 func getEnv(key, defaultValue string) string {

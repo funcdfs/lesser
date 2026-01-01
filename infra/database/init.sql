@@ -70,3 +70,30 @@ BEGIN
     RAISE NOTICE 'Core database (lesser_db) initialization completed';
 END
 $$;
+
+-- ============================================================================
+-- 3. 创建 Users 表 (Gateway Auth Service 使用)
+-- ============================================================================
+CREATE TABLE IF NOT EXISTS users (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    username VARCHAR(50) UNIQUE NOT NULL,
+    email VARCHAR(255) UNIQUE NOT NULL,
+    password VARCHAR(255) NOT NULL,
+    display_name VARCHAR(100),
+    bio TEXT DEFAULT '',
+    avatar_url VARCHAR(500),
+    is_active BOOLEAN DEFAULT true,
+    is_staff BOOLEAN DEFAULT false,
+    is_superuser BOOLEAN DEFAULT false,
+    is_verified BOOLEAN DEFAULT false,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+-- 创建索引
+CREATE INDEX IF NOT EXISTS idx_users_username ON users(username);
+CREATE INDEX IF NOT EXISTS idx_users_email ON users(email);
+CREATE INDEX IF NOT EXISTS idx_users_created_at ON users(created_at);
+
+-- Grant privileges
+GRANT ALL PRIVILEGES ON TABLE users TO lesser_app;

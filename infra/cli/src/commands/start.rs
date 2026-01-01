@@ -15,15 +15,22 @@ struct ServiceGroup {
 /// 基础设施服务
 const INFRA_SERVICES: ServiceGroup = ServiceGroup {
     name: "基础设施",
-    services: &["postgres", "redis", "traefik", "dozzle"],
+    services: &["postgres", "redis", "rabbitmq", "traefik", "dozzle"],
     emoji: "🔧",
 };
 
-/// Django 服务
-const DJANGO_SERVICES: ServiceGroup = ServiceGroup {
-    name: "Django",
-    services: &["django"],
-    emoji: "🐍",
+/// Gateway 服务
+const GATEWAY_SERVICES: ServiceGroup = ServiceGroup {
+    name: "Gateway",
+    services: &["gateway"],
+    emoji: "🚪",
+};
+
+/// Worker 服务
+const WORKER_SERVICES: ServiceGroup = ServiceGroup {
+    name: "Workers",
+    services: &["auth-worker", "post-worker", "feed-worker", "user-worker", "notification-worker", "search-worker", "chat-worker"],
+    emoji: "⚙️",
 };
 
 /// Chat 服务
@@ -46,7 +53,7 @@ pub async fn execute(target: StartTarget) -> Result<()> {
         StartTarget::All => start_all(&compose).await,
         StartTarget::Service => start_services(&compose).await,
         StartTarget::Infra => start_group(&compose, &INFRA_SERVICES).await,
-        StartTarget::Django => start_group(&compose, &DJANGO_SERVICES).await,
+        StartTarget::Gateway => start_group(&compose, &GATEWAY_SERVICES).await,
         StartTarget::Chat => start_group(&compose, &CHAT_SERVICES).await,
         StartTarget::Client => start_clients(&config).await,
         StartTarget::Flutter => start_flutter(&config).await,
@@ -63,10 +70,15 @@ async fn start_all(compose: &DockerCompose) -> Result<()> {
     spinner.finish_and_clear();
     ui::success(&format!("{} 基础设施已启动", INFRA_SERVICES.emoji));
     
-    let spinner = Spinner::new("正在启动 Django 服务...");
-    compose.up_wait(DJANGO_SERVICES.services).await?;
+    let spinner = Spinner::new("正在启动 Gateway 服务...");
+    compose.up_wait(GATEWAY_SERVICES.services).await?;
     spinner.finish_and_clear();
-    ui::success(&format!("{} Django 服务已启动", DJANGO_SERVICES.emoji));
+    ui::success(&format!("{} Gateway 服务已启动", GATEWAY_SERVICES.emoji));
+    
+    let spinner = Spinner::new("正在启动 Worker 服务...");
+    compose.up_wait(WORKER_SERVICES.services).await?;
+    spinner.finish_and_clear();
+    ui::success(&format!("{} Worker 服务已启动", WORKER_SERVICES.emoji));
     
     let spinner = Spinner::new("正在启动 Chat 服务...");
     compose.up_wait(CHAT_SERVICES.services).await?;
@@ -79,7 +91,7 @@ async fn start_all(compose: &DockerCompose) -> Result<()> {
     Ok(())
 }
 
-/// 启动后端服务 (Django + Chat)
+/// 启动后端服务 (Gateway + Workers + Chat)
 async fn start_services(compose: &DockerCompose) -> Result<()> {
     ui::header("启动后端服务");
     
@@ -89,10 +101,15 @@ async fn start_services(compose: &DockerCompose) -> Result<()> {
     spinner.finish_and_clear();
     ui::success(&format!("{} 基础设施就绪", INFRA_SERVICES.emoji));
     
-    let spinner = Spinner::new("正在启动 Django 服务...");
-    compose.up_wait(DJANGO_SERVICES.services).await?;
+    let spinner = Spinner::new("正在启动 Gateway 服务...");
+    compose.up_wait(GATEWAY_SERVICES.services).await?;
     spinner.finish_and_clear();
-    ui::success(&format!("{} Django 服务已启动", DJANGO_SERVICES.emoji));
+    ui::success(&format!("{} Gateway 服务已启动", GATEWAY_SERVICES.emoji));
+    
+    let spinner = Spinner::new("正在启动 Worker 服务...");
+    compose.up_wait(WORKER_SERVICES.services).await?;
+    spinner.finish_and_clear();
+    ui::success(&format!("{} Worker 服务已启动", WORKER_SERVICES.emoji));
     
     let spinner = Spinner::new("正在启动 Chat 服务...");
     compose.up_wait(CHAT_SERVICES.services).await?;
@@ -293,8 +310,10 @@ async fn start_react_internal(config: &Config) -> Result<()> {
 /// 打印服务访问地址
 fn print_service_urls() {
     ui::info("服务访问地址:");
-    ui::url("Django API", "http://localhost:8000");
-    ui::url("Django Admin", "http://localhost:8000/admin");
+    ui::url("Gateway gRPC", "localhost:50053");
     ui::url("Chat HTTP", "http://localhost:8081");
+    ui::url("Chat WebSocket", "ws://localhost:8081/ws/chat");
     ui::url("Traefik Dashboard", "http://localhost:8088");
+    ui::url("RabbitMQ Management", "http://localhost:15672");
+    ui::url("Dozzle (日志)", "http://localhost:9999");
 }

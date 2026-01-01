@@ -1,179 +1,106 @@
 package worker
 
 import (
-	"database/sql"
-	"log"
-	"sync"
+	"context"
 
-	"github.com/lesser/auth_worker/internal/broker"
 	"github.com/lesser/auth_worker/internal/service"
 	"github.com/lesser/auth_worker/proto/auth"
 	"github.com/lesser/auth_worker/proto/gateway"
-	amqp "github.com/rabbitmq/amqp091-go"
+	"github.com/lesser/pkg/broker"
+	"github.com/lesser/pkg/logger"
+	"go.uber.org/zap"
 	"google.golang.org/protobuf/proto"
 )
 
-// AuthWorker 认证任务消费者
+// AuthWorker 认证任务处理器
 type AuthWorker struct {
-	db          *sql.DB
-	broker      *broker.Connection
 	authService *service.AuthService
-	stopCh      chan struct{}
-	wg          sync.WaitGroup
+	broker      *broker.Worker
+	log         *logger.Logger
 }
 
 // NewAuthWorker 创建新的 AuthWorker
-func NewAuthWorker(db *sql.DB, broker *broker.Connection, jwtSecret string) *AuthWorker {
+func NewAuthWorker(authService *service.AuthService, broker *broker.Worker, log *logger.Logger) *AuthWorker {
 	return &AuthWorker{
-		db:          db,
+		authService: authService,
 		broker:      broker,
-		authService: service.NewAuthService(db, jwtSecret),
-		stopCh:      make(chan struct{}),
+		log:         log,
 	}
 }
 
-// Start 启动消费者
-func (w *AuthWorker) Start() error {
-	// 启动注册队列消费者
-	registerMsgs, err := w.broker.Consume(broker.QueueAuthRegister)
-	if err != nil {
-		return err
-	}
-
-	// 启动登录队列消费者
-	loginMsgs, err := w.broker.Consume(broker.QueueAuthLogin)
-	if err != nil {
-		return err
-	}
-
-	// 处理注册消息
-	w.wg.Add(1)
-	go w.consumeRegister(registerMsgs)
-
-	// 处理登录消息
-	w.wg.Add(1)
-	go w.consumeLogin(loginMsgs)
-
-	return nil
-}
-
-// Stop 停止消费者
-func (w *AuthWorker) Stop() {
-	close(w.stopCh)
-	w.wg.Wait()
-}
-
-// consumeRegister 消费注册队列
-func (w *AuthWorker) consumeRegister(msgs <-chan amqp.Delivery) {
-	defer w.wg.Done()
-
-	for {
-		select {
-		case <-w.stopCh:
-			return
-		case msg, ok := <-msgs:
-			if !ok {
-				return
-			}
-			w.handleRegister(msg)
-		}
-	}
-}
-
-// consumeLogin 消费登录队列
-func (w *AuthWorker) consumeLogin(msgs <-chan amqp.Delivery) {
-	defer w.wg.Done()
-
-	for {
-		select {
-		case <-w.stopCh:
-			return
-		case msg, ok := <-msgs:
-			if !ok {
-				return
-			}
-			w.handleLogin(msg)
-		}
-	}
-}
-
-// handleRegister 处理注册任务
-func (w *AuthWorker) handleRegister(msg amqp.Delivery) {
-	log.Printf("Received register task")
+// HandleRegister 处理注册任务
+// 符合 broker.Handler 签名
+func (w *AuthWorker) HandleRegister(ctx context.Context, body []byte) error {
+	w.log.WithContext(ctx).Info("received register task")
 
 	// 解析 GatewayRequest
 	var gatewayReq gateway.GatewayRequest
-	if err := proto.Unmarshal(msg.Body, &gatewayReq); err != nil {
-		log.Printf("Failed to unmarshal gateway request: %v", err)
-		msg.Nack(false, false)
-		return
+	if err := proto.Unmarshal(body, &gatewayReq); err != nil {
+		w.log.WithContext(ctx).Error("failed to unmarshal gateway request", zap.Error(err))
+		return err
 	}
 
 	// 解析 RegisterRequest
 	var registerReq auth.RegisterRequest
 	if err := proto.Unmarshal(gatewayReq.Payload, &registerReq); err != nil {
-		log.Printf("Failed to unmarshal register request: %v", err)
-		w.publishError(gatewayReq.RequestId, "INVALID_PAYLOAD", "Invalid register request payload")
-		msg.Ack(false)
-		return
+		w.log.WithContext(ctx).Error("failed to unmarshal register request", zap.Error(err))
+		w.publishError(ctx, gatewayReq.RequestId, "INVALID_PAYLOAD", "Invalid register request payload")
+		return nil // 返回 nil 表示消息已处理（不重试）
 	}
 
 	// 处理注册
 	authResp, err := w.authService.Register(&registerReq)
 	if err != nil {
-		log.Printf("Register failed: %v", err)
-		w.publishError(gatewayReq.RequestId, "REGISTER_FAILED", err.Error())
-		msg.Ack(false)
-		return
+		w.log.WithContext(ctx).Error("register failed", zap.Error(err))
+		w.publishError(ctx, gatewayReq.RequestId, "REGISTER_FAILED", err.Error())
+		return nil // 业务错误，不重试
 	}
 
 	// 发布成功结果
-	w.publishSuccess(gatewayReq.RequestId, authResp)
-	msg.Ack(false)
-	log.Printf("Register task completed for request: %s", gatewayReq.RequestId)
+	w.publishSuccess(ctx, gatewayReq.RequestId, authResp)
+	w.log.WithContext(ctx).Info("register task completed", zap.String("request_id", gatewayReq.RequestId))
+	return nil
 }
 
-// handleLogin 处理登录任务
-func (w *AuthWorker) handleLogin(msg amqp.Delivery) {
-	log.Printf("Received login task")
+// HandleLogin 处理登录任务
+// 符合 broker.Handler 签名
+func (w *AuthWorker) HandleLogin(ctx context.Context, body []byte) error {
+	w.log.WithContext(ctx).Info("received login task")
 
 	// 解析 GatewayRequest
 	var gatewayReq gateway.GatewayRequest
-	if err := proto.Unmarshal(msg.Body, &gatewayReq); err != nil {
-		log.Printf("Failed to unmarshal gateway request: %v", err)
-		msg.Nack(false, false)
-		return
+	if err := proto.Unmarshal(body, &gatewayReq); err != nil {
+		w.log.WithContext(ctx).Error("failed to unmarshal gateway request", zap.Error(err))
+		return err
 	}
 
 	// 解析 LoginRequest
 	var loginReq auth.LoginRequest
 	if err := proto.Unmarshal(gatewayReq.Payload, &loginReq); err != nil {
-		log.Printf("Failed to unmarshal login request: %v", err)
-		w.publishError(gatewayReq.RequestId, "INVALID_PAYLOAD", "Invalid login request payload")
-		msg.Ack(false)
-		return
+		w.log.WithContext(ctx).Error("failed to unmarshal login request", zap.Error(err))
+		w.publishError(ctx, gatewayReq.RequestId, "INVALID_PAYLOAD", "Invalid login request payload")
+		return nil
 	}
 
 	// 处理登录
 	authResp, err := w.authService.Login(&loginReq)
 	if err != nil {
-		log.Printf("Login failed: %v", err)
-		w.publishError(gatewayReq.RequestId, "LOGIN_FAILED", err.Error())
-		msg.Ack(false)
-		return
+		w.log.WithContext(ctx).Error("login failed", zap.Error(err))
+		w.publishError(ctx, gatewayReq.RequestId, "LOGIN_FAILED", err.Error())
+		return nil
 	}
 
 	// 发布成功结果
-	w.publishSuccess(gatewayReq.RequestId, authResp)
-	msg.Ack(false)
-	log.Printf("Login task completed for request: %s", gatewayReq.RequestId)
+	w.publishSuccess(ctx, gatewayReq.RequestId, authResp)
+	w.log.WithContext(ctx).Info("login task completed", zap.String("request_id", gatewayReq.RequestId))
+	return nil
 }
 
 // publishSuccess 发布成功结果
-func (w *AuthWorker) publishSuccess(requestId string, authResp *auth.AuthResponse) {
+func (w *AuthWorker) publishSuccess(ctx context.Context, requestId string, authResp *auth.AuthResponse) {
 	payload, err := proto.Marshal(authResp)
 	if err != nil {
-		log.Printf("Failed to marshal auth response: %v", err)
+		w.log.WithContext(ctx).Error("failed to marshal auth response", zap.Error(err))
 		return
 	}
 
@@ -186,18 +113,18 @@ func (w *AuthWorker) publishSuccess(requestId string, authResp *auth.AuthRespons
 
 	resultBytes, err := proto.Marshal(result)
 	if err != nil {
-		log.Printf("Failed to marshal task result: %v", err)
+		w.log.WithContext(ctx).Error("failed to marshal task result", zap.Error(err))
 		return
 	}
 
-	// 发布到响应队列（使用 request_id 作为 routing key）
-	if err := w.broker.Publish("response."+requestId, resultBytes); err != nil {
-		log.Printf("Failed to publish result: %v", err)
+	// 发布到响应队列
+	if err := w.broker.Publish(ctx, "response."+requestId, resultBytes); err != nil {
+		w.log.WithContext(ctx).Error("failed to publish result", zap.Error(err))
 	}
 }
 
 // publishError 发布错误结果
-func (w *AuthWorker) publishError(requestId, errorCode, errorMessage string) {
+func (w *AuthWorker) publishError(ctx context.Context, requestId, errorCode, errorMessage string) {
 	result := &gateway.TaskResult{
 		RequestId:    requestId,
 		Success:      false,
@@ -208,12 +135,32 @@ func (w *AuthWorker) publishError(requestId, errorCode, errorMessage string) {
 
 	resultBytes, err := proto.Marshal(result)
 	if err != nil {
-		log.Printf("Failed to marshal task result: %v", err)
+		w.log.WithContext(ctx).Error("failed to marshal task result", zap.Error(err))
 		return
 	}
 
 	// 发布到响应队列
-	if err := w.broker.Publish("response."+requestId, resultBytes); err != nil {
-		log.Printf("Failed to publish error result: %v", err)
+	if err := w.broker.Publish(ctx, "response."+requestId, resultBytes); err != nil {
+		w.log.WithContext(ctx).Error("failed to publish error result", zap.Error(err))
 	}
+}
+
+// HandlePasswordReset 处理密码重置任务（异步发送邮件）
+func (w *AuthWorker) HandlePasswordReset(ctx context.Context, body []byte) error {
+	w.log.WithContext(ctx).Info("received password reset task")
+
+	// 解析 GatewayRequest
+	var gatewayReq gateway.GatewayRequest
+	if err := proto.Unmarshal(body, &gatewayReq); err != nil {
+		w.log.WithContext(ctx).Error("failed to unmarshal gateway request", zap.Error(err))
+		return err
+	}
+
+	// TODO: 实现密码重置邮件发送逻辑
+	// 1. 解析 PasswordResetRequest
+	// 2. 生成重置 token
+	// 3. 发送邮件
+
+	w.log.WithContext(ctx).Info("password reset task completed", zap.String("request_id", gatewayReq.RequestId))
+	return nil
 }

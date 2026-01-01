@@ -70,7 +70,6 @@ services:
           cpus: '2'
           memory: 2G
 
-
   # ==========================================================================
   # Cache - Redis (Production with Password)
   # ==========================================================================
@@ -97,103 +96,260 @@ services:
           memory: 512M
 
   # ==========================================================================
-  # Django Core Service (Production)
+  # Message Broker - RabbitMQ (Production)
   # ==========================================================================
-  django:
-    build:
-      context: ../service/core_django
-      dockerfile: Dockerfile.prod
-    container_name: django
+  rabbitmq:
+    image: rabbitmq:3-management-alpine
+    container_name: rabbitmq
     restart: always
     environment:
-      - DJANGO_SETTINGS_MODULE=config.settings.prod
-      - DATABASE_URL=${DATABASE_URL}
-      - REDIS_URL=${REDIS_URL}
-      - CELERY_BROKER_URL=${CELERY_BROKER_URL}
-      - CELERY_RESULT_BACKEND=${CELERY_RESULT_BACKEND}
-      - DJANGO_SECRET_KEY=${DJANGO_SECRET_KEY}
-      - DJANGO_DEBUG=False
-      - DJANGO_ALLOWED_HOSTS=${DJANGO_ALLOWED_HOSTS}
-      - JWT_SECRET_KEY=${JWT_SECRET_KEY}
-      - GRPC_PORT=50051
-      - SENTRY_DSN=${SENTRY_DSN:-}
-    expose:
-      - "8000"
-      - "50051"
-    depends_on:
-      postgres:
-        condition: service_healthy
-      redis:
-        condition: service_healthy
-    command: gunicorn config.wsgi:application --bind 0.0.0.0:8000 --workers 4 --threads 2
+      RABBITMQ_DEFAULT_USER: ${RABBITMQ_USER:-guest}
+      RABBITMQ_DEFAULT_PASS: ${RABBITMQ_PASSWORD:-guest}
+    volumes:
+      - rabbitmq_data:/var/lib/rabbitmq
     networks:
       - app-network
-    labels:
-      - "traefik.enable=true"
-      - "traefik.http.routers.django.rule=PathPrefix(`/api/v1`)"
-      - "traefik.http.routers.django.entrypoints=websecure"
-      - "traefik.http.routers.django.tls.certresolver=letsencrypt"
-      - "traefik.http.services.django.loadbalancer.server.port=8000"
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8000/api/v1/health/"]
-      interval: 60s
+      test: ["CMD", "rabbitmq-diagnostics", "-q", "ping"]
+      interval: 30s
       timeout: 10s
-      retries: 3
-      start_period: 40s
+      retries: 5
+      start_period: 30s
     deploy:
       resources:
         limits:
-          cpus: '2'
-          memory: 1G
-      replicas: 2
+          cpus: '1'
+          memory: 512M
 
   # ==========================================================================
-  # Celery Worker (Production)
+  # Gateway Service (Production)
   # ==========================================================================
-  celery-worker:
+  gateway:
     build:
-      context: ../service/core_django
+      context: ../service/gateway
       dockerfile: Dockerfile.prod
-    container_name: celery-worker
+    container_name: gateway
     restart: always
     environment:
-      - DJANGO_SETTINGS_MODULE=config.settings.prod
-      - DATABASE_URL=${DATABASE_URL}
-      - REDIS_URL=${REDIS_URL}
-      - CELERY_BROKER_URL=${CELERY_BROKER_URL}
-      - CELERY_RESULT_BACKEND=${CELERY_RESULT_BACKEND}
+      - GRPC_PORT=${GATEWAY_GRPC_PORT:-50053}
+      - RABBITMQ_URL=amqp://${RABBITMQ_USER:-guest}:${RABBITMQ_PASSWORD:-guest}@rabbitmq:5672/
+      - LOG_LEVEL=${LOG_LEVEL:-warning}
+    expose:
+      - "50053"
     depends_on:
-      - django
-      - redis
-    command: celery -A config worker -l WARNING --concurrency=4
+      rabbitmq:
+        condition: service_healthy
     networks:
       - app-network
     deploy:
       resources:
         limits:
           cpus: '1'
-          memory: 512M
-      replicas: 2
+          memory: 256M
 
   # ==========================================================================
-  # Celery Beat (Production)
+  # Auth Worker (Production)
   # ==========================================================================
-  celery-beat:
+  auth-worker:
     build:
-      context: ../service/core_django
+      context: ../service/auth_worker
       dockerfile: Dockerfile.prod
-    container_name: celery-beat
+    container_name: auth-worker
     restart: always
     environment:
-      - DJANGO_SETTINGS_MODULE=config.settings.prod
-      - DATABASE_URL=${DATABASE_URL}
-      - REDIS_URL=${REDIS_URL}
-      - CELERY_BROKER_URL=${CELERY_BROKER_URL}
-      - CELERY_RESULT_BACKEND=${CELERY_RESULT_BACKEND}
+      - RABBITMQ_URL=amqp://${RABBITMQ_USER:-guest}:${RABBITMQ_PASSWORD:-guest}@rabbitmq:5672/
+      - DB_HOST=postgres
+      - DB_PORT=5432
+      - DB_USER=${POSTGRES_USER}
+      - DB_PASSWORD=${POSTGRES_PASSWORD}
+      - DB_NAME=${POSTGRES_DB}
+      - JWT_SECRET=${JWT_SECRET_KEY}
+      - LOG_LEVEL=${LOG_LEVEL:-warning}
     depends_on:
-      - django
-      - redis
-    command: celery -A config beat -l WARNING
+      postgres:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+    networks:
+      - app-network
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 256M
+
+  # ==========================================================================
+  # Post Worker (Production)
+  # ==========================================================================
+  post-worker:
+    build:
+      context: ../service/post_worker
+      dockerfile: Dockerfile.prod
+    container_name: post-worker
+    restart: always
+    environment:
+      - RABBITMQ_URL=amqp://${RABBITMQ_USER:-guest}:${RABBITMQ_PASSWORD:-guest}@rabbitmq:5672/
+      - DB_HOST=postgres
+      - DB_PORT=5432
+      - DB_USER=${POSTGRES_USER}
+      - DB_PASSWORD=${POSTGRES_PASSWORD}
+      - DB_NAME=${POSTGRES_DB}
+      - LOG_LEVEL=${LOG_LEVEL:-warning}
+    depends_on:
+      postgres:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+    networks:
+      - app-network
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 256M
+
+  # ==========================================================================
+  # Feed Worker (Production)
+  # ==========================================================================
+  feed-worker:
+    build:
+      context: ../service/feed_worker
+      dockerfile: Dockerfile.prod
+    container_name: feed-worker
+    restart: always
+    environment:
+      - RABBITMQ_URL=amqp://${RABBITMQ_USER:-guest}:${RABBITMQ_PASSWORD:-guest}@rabbitmq:5672/
+      - DB_HOST=postgres
+      - DB_PORT=5432
+      - DB_USER=${POSTGRES_USER}
+      - DB_PASSWORD=${POSTGRES_PASSWORD}
+      - DB_NAME=${POSTGRES_DB}
+      - LOG_LEVEL=${LOG_LEVEL:-warning}
+    depends_on:
+      postgres:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+    networks:
+      - app-network
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 256M
+
+  # ==========================================================================
+  # Notification Worker (Production)
+  # ==========================================================================
+  notification-worker:
+    build:
+      context: ../service/notification_worker
+      dockerfile: Dockerfile.prod
+    container_name: notification-worker
+    restart: always
+    environment:
+      - RABBITMQ_URL=amqp://${RABBITMQ_USER:-guest}:${RABBITMQ_PASSWORD:-guest}@rabbitmq:5672/
+      - DB_HOST=postgres
+      - DB_PORT=5432
+      - DB_USER=${POSTGRES_USER}
+      - DB_PASSWORD=${POSTGRES_PASSWORD}
+      - DB_NAME=${POSTGRES_DB}
+      - LOG_LEVEL=${LOG_LEVEL:-warning}
+    depends_on:
+      postgres:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+    networks:
+      - app-network
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 256M
+
+  # ==========================================================================
+  # User Worker (Production)
+  # ==========================================================================
+  user-worker:
+    build:
+      context: ../service/user_worker
+      dockerfile: Dockerfile.prod
+    container_name: user-worker
+    restart: always
+    environment:
+      - RABBITMQ_URL=amqp://${RABBITMQ_USER:-guest}:${RABBITMQ_PASSWORD:-guest}@rabbitmq:5672/
+      - DB_HOST=postgres
+      - DB_PORT=5432
+      - DB_USER=${POSTGRES_USER}
+      - DB_PASSWORD=${POSTGRES_PASSWORD}
+      - DB_NAME=${POSTGRES_DB}
+      - LOG_LEVEL=${LOG_LEVEL:-warning}
+    depends_on:
+      postgres:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+    networks:
+      - app-network
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 256M
+
+  # ==========================================================================
+  # Search Worker (Production)
+  # ==========================================================================
+  search-worker:
+    build:
+      context: ../service/search_worker
+      dockerfile: Dockerfile.prod
+    container_name: search-worker
+    restart: always
+    environment:
+      - RABBITMQ_URL=amqp://${RABBITMQ_USER:-guest}:${RABBITMQ_PASSWORD:-guest}@rabbitmq:5672/
+      - DB_HOST=postgres
+      - DB_PORT=5432
+      - DB_USER=${POSTGRES_USER}
+      - DB_PASSWORD=${POSTGRES_PASSWORD}
+      - DB_NAME=${POSTGRES_DB}
+      - LOG_LEVEL=${LOG_LEVEL:-warning}
+    depends_on:
+      postgres:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+    networks:
+      - app-network
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 256M
+
+  # ==========================================================================
+  # Chat Worker (Production)
+  # ==========================================================================
+  chat-worker:
+    build:
+      context: ../service/chat_worker
+      dockerfile: Dockerfile.prod
+    container_name: chat-worker
+    restart: always
+    environment:
+      - RABBITMQ_URL=amqp://${RABBITMQ_USER:-guest}:${RABBITMQ_PASSWORD:-guest}@rabbitmq:5672/
+      - DB_HOST=postgres
+      - DB_PORT=5432
+      - DB_USER=${POSTGRES_USER}
+      - DB_PASSWORD=${POSTGRES_PASSWORD}
+      - DB_NAME=${POSTGRES_CHAT_DB:-lesser_chat_db}
+      - LOG_LEVEL=${LOG_LEVEL:-warning}
+    depends_on:
+      postgres:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
     networks:
       - app-network
     deploy:
@@ -207,16 +363,15 @@ services:
   # ==========================================================================
   chat:
     build:
-      context: ../service/chat_go
+      context: ../service/chat_gin
       dockerfile: Dockerfile.prod
     container_name: chat
     restart: always
     environment:
-      - DATABASE_URL=${DATABASE_URL}
+      - DATABASE_URL=${CHAT_DATABASE_URL:-postgres://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/lesser_chat_db}
       - REDIS_URL=${REDIS_URL}
       - HTTP_PORT=8080
       - GRPC_PORT=50052
-      - AUTH_GRPC_ADDR=django:50051
       - LOG_LEVEL=${LOG_LEVEL:-warning}
     expose:
       - "8080"
@@ -226,8 +381,6 @@ services:
         condition: service_healthy
       redis:
         condition: service_healthy
-      django:
-        condition: service_started
     networks:
       - app-network
     labels:
@@ -237,7 +390,7 @@ services:
       - "traefik.http.routers.chat.tls.certresolver=letsencrypt"
       - "traefik.http.services.chat.loadbalancer.server.port=8080"
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8080/health"]
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:8080/health"]
       interval: 60s
       timeout: 10s
       retries: 3
@@ -282,6 +435,8 @@ volumes:
   postgres_data:
     driver: local
   redis_data:
+    driver: local
+  rabbitmq_data:
     driver: local
   traefik_letsencrypt:
     driver: local

@@ -1,14 +1,15 @@
 # Lesser - 社交平台脚手架
 
-一个类似 X.com (Twitter) 的社交平台脚手架，采用混合架构模式：Django 模块化单体 + 高性能语言微服务。
+一个类似 X.com (Twitter) 的社交平台脚手架，采用 Go 微服务架构：Gateway + RabbitMQ + Worker 集群。
 
 ## 🚀 特性
 
-- **混合架构**: Django 核心业务 + Go 高并发服务
+- **微服务架构**: Go Gateway + Worker 集群 + 消息队列
 - **多端支持**: Flutter 移动端 + React Web 端
 - **实时通信**: WebSocket + gRPC
 - **完整功能**: 认证、Feed、帖子、搜索、通知、聊天
 - **开发友好**: Docker 一键启动、热重载、统一脚本
+- **共享公共库**: service/pkg 提供统一基础设施
 
 ## 📐 架构概览
 
@@ -28,12 +29,26 @@
             │                                │
             ▼                                ▼
 ┌─────────────────────────┐    ┌─────────────────────────────┐
-│   Django Core Service   │◄──►│     Go Chat Service         │
-│  (Auth, Feed, Post,     │gRPC│  (WebSocket, Real-time)     │
-│   Search, Notification) │    │                             │
+│     Go Gateway          │    │     Go Chat Service         │
+│   (gRPC API 入口)       │    │  (WebSocket, Real-time)     │
 └───────────┬─────────────┘    └───────────┬─────────────────┘
             │                              │
-            ▼                              ▼
+            ▼                              │
+┌─────────────────────────┐                │
+│       RabbitMQ          │                │
+│     (消息队列)          │                │
+└───────────┬─────────────┘                │
+            │                              │
+            ▼                              │
+┌─────────────────────────────────────────────────────────────┐
+│                    Worker 集群                               │
+│  ┌──────────┐ ┌──────────┐ ┌──────────┐ ┌──────────┐       │
+│  │Auth      │ │Post      │ │Feed      │ │Notif     │ ...   │
+│  │Worker    │ │Worker    │ │Worker    │ │Worker    │       │
+│  └──────────┘ └──────────┘ └──────────┘ └──────────┘       │
+└───────────┬─────────────────────────────┬───────────────────┘
+            │                             │
+            ▼                             ▼
 ┌─────────────────────────────────────────────────────────────┐
 │                    Data Layer                                │
 │  ┌─────────────────┐              ┌─────────────────┐       │
@@ -64,14 +79,24 @@
 └──────┬──────┘
        │
        ├─────────────────────────────────────┐
-       │ /api/v1/auth, /api/v1/feeds,        │ /api/v1/chat, /ws/chat
-       │ /api/v1/posts, /api/v1/search,      │
-       │ /api/v1/notifications               │
+       │ /grpc/*                             │ /api/v1/chat, /ws/chat
        ▼                                     ▼
 ┌─────────────┐                       ┌─────────────┐
-│   Django    │◄─────── gRPC ────────►│   Go Chat   │
-│   Core      │                       │   Service   │
+│  Gateway    │                       │   Go Chat   │
+│  (gRPC)     │                       │   Service   │
 └──────┬──────┘                       └──────┬──────┘
+       │                                     │
+       ▼                                     │
+┌─────────────┐                              │
+│  RabbitMQ   │                              │
+└──────┬──────┘                              │
+       │                                     │
+       ▼                                     │
+┌─────────────┐                              │
+│   Workers   │                              │
+│ (Auth/Post/ │                              │
+│  Feed/...)  │                              │
+└──────┬──────┘                              │
        │                                     │
        ├──────────────┬──────────────────────┤
        ▼              ▼                      ▼
@@ -90,24 +115,23 @@
 │                        新增路由完整修改清单                               │
 └──────────────────────────────────────────────────────────────────────────┘
 
-1. Proto 定义 (如需 gRPC 通信)
+1. Proto 定义 (gRPC 通信)
    └── protos/<service>/<service>.proto
 
 2. 后端服务
-   ├── Django (REST API)
-   │   ├── service/core_django/apps/<module>/models.py
-   │   ├── service/core_django/apps/<module>/serializers.py
-   │   ├── service/core_django/apps/<module>/views.py
-   │   ├── service/core_django/apps/<module>/urls.py
-   │   ├── service/core_django/apps/<module>/services.py
-   │   └── service/core_django/config/urls.py
+   ├── Gateway (gRPC 入口)
+   │   └── service/gateway/internal/server/
+   │
+   ├── Worker (业务处理)
+   │   ├── service/<xxx>_worker/internal/worker/
+   │   └── service/<xxx>_worker/internal/service/
    │
    └── Go Chat (如涉及聊天功能)
        ├── service/chat_gin/internal/model/*.go
        ├── service/chat_gin/internal/repository/*.go
        ├── service/chat_gin/internal/service/*.go
        ├── service/chat_gin/internal/handler/*.go
-       └── service/chat_gin/internal/server/router.go
+       └── service/chat_gin/internal/server/http.go
 
 3. 网关路由 (如需新路径前缀)
    └── infra/gateway/dynamic/routes.yml
@@ -120,20 +144,15 @@
    │
    └── React
        └── client/web_react/src/features/<module>/
-
-5. 测试
-   ├── service/core_django/apps/<module>/tests/
-   ├── service/chat_gin/internal/*_test.go
-   └── client/mobile_flutter/test/features/<module>/
 ```
 
 ### 简化版新增清单
 
 | 步骤 | 文件/目录 | 说明 |
 |------|----------|------|
-| 1 | `protos/` | gRPC 定义 (可选) |
-| 2 | `apps/<module>/` | Django 模块 |
-| 3 | `internal/` | Go 服务 (可选) |
+| 1 | `protos/` | gRPC 定义 |
+| 2 | `service/gateway/` | Gateway 处理器 |
+| 3 | `service/<xxx>_worker/` | Worker 业务逻辑 |
 | 4 | `routes.yml` | 网关路由 (可选) |
 | 5 | `features/<module>/` | 客户端模块 |
 
@@ -142,13 +161,15 @@
 | 层级 | 技术 |
 |------|------|
 | **网关** | Traefik |
-| **后端核心** | Django + DRF + Celery |
+| **API 网关** | Go + gRPC |
+| **消息队列** | RabbitMQ |
+| **Worker 服务** | Go |
 | **聊天服务** | Go + Gin + gRPC |
 | **数据库** | PostgreSQL |
 | **缓存** | Redis |
 | **移动端** | Flutter (Riverpod) |
 | **Web 端** | React + Next.js |
-| **通信协议** | REST + gRPC + WebSocket |
+| **通信协议** | gRPC + WebSocket |
 
 ## 📁 目录结构
 
@@ -160,26 +181,33 @@
 │   ├── auth/
 │   ├── chat/
 │   ├── feed/
-│   └── ...
+│   ├── post/
+│   ├── user/
+│   ├── notification/
+│   ├── search/
+│   └── gateway/
 ├── infra/                      # 基础设施配置
 │   ├── docker-compose.yml
 │   ├── env/                    # 环境变量 (统一管理)
-│   │   ├── dev.env
-│   │   └── prod.env
 │   ├── gateway/                # Traefik 配置
 │   ├── database/               # PostgreSQL 初始化
 │   └── cache/                  # Redis 配置
 ├── service/                    # 后端服务
-│   ├── core_django/            # Django 核心服务
+│   ├── gateway/                # Go API 网关
+│   ├── pkg/                    # 共享公共库
+│   ├── auth_worker/            # 认证 Worker
+│   ├── user_worker/            # 用户 Worker
+│   ├── post_worker/            # 帖子 Worker
+│   ├── feed_worker/            # Feed Worker
+│   ├── notification_worker/    # 通知 Worker
+│   ├── search_worker/          # 搜索 Worker
+│   ├── chat_worker/            # 聊天任务 Worker
 │   └── chat_gin/               # Go 聊天服务
 ├── client/                     # 前端客户端
 │   ├── mobile_flutter/         # Flutter 移动端
 │   └── web_react/              # React Web 端
 ├── scripts/                    # 辅助脚本
-│   ├── proto/                  # Proto 生成脚本
-│   └── dev/                    # 开发脚本
 └── docs/                       # 文档
-    └── 开发准则.md
 ```
 
 ## 🚀 快速开始
@@ -225,9 +253,11 @@
 | 服务 | 地址 |
 |------|------|
 | Gateway (统一入口) | http://localhost |
-| Django API | http://localhost:8000 |
+| Gateway gRPC | localhost:50053 |
 | Chat API | http://localhost:8081 |
 | Traefik Dashboard | http://localhost:8088 |
+| RabbitMQ Management | http://localhost:15672 |
+| Dozzle (日志) | http://localhost:9999 |
 | Flutter Web | http://localhost:3000 |
 | React Web | http://localhost:3001 |
 
@@ -248,7 +278,6 @@
 ./dev.sh db:shell                      # 进入数据库
 
 # 开发调试
-./dev.sh enter django                  # 进入 Django shell
 ./dev.sh enter db                      # 进入 PostgreSQL
 ./dev.sh enter redis                   # 进入 Redis
 
@@ -263,74 +292,34 @@
 
 ## 🔌 API 端点
 
-### 认证 API
-
-```bash
-# 注册
-POST /api/v1/auth/register/
-{
-  "username": "user",
-  "email": "user@example.com",
-  "password": "password123"
-}
-
-# 登录
-POST /api/v1/auth/login/
-{
-  "email": "user@example.com",
-  "password": "password123"
-}
-
-# 登出
-POST /api/v1/auth/logout/
-
-# 刷新 Token
-POST /api/v1/auth/token/refresh/
-```
-
-### Feed API
-
-```bash
-# 获取 Feed
-GET /api/v1/feeds/
-
-# 点赞
-POST /api/v1/feeds/{post_id}/like/
-
-# 评论
-POST /api/v1/feeds/{post_id}/comment/
-```
-
-### 帖子 API
-
-```bash
-# 创建帖子
-POST /api/v1/posts/
-{
-  "content": "Hello World",
-  "post_type": "short"  // short, story, column
-}
-
-# 获取帖子
-GET /api/v1/posts/{id}/
-```
-
-### 聊天 API
+### 聊天 API (REST)
 
 ```bash
 # 获取会话列表
 GET /api/v1/chat/conversations/
 
-# 发送消息
-POST /api/v1/chat/messages/
+# 创建会话
+POST /api/v1/chat/conversations/
 {
-  "conversation_id": "uuid",
+  "type": "private",
+  "member_ids": ["user-uuid"]
+}
+
+# 发送消息
+POST /api/v1/chat/conversations/{id}/messages/
+{
   "content": "Hello"
 }
 
 # WebSocket 连接
-ws://localhost/ws/chat/{conversation_id}/
+ws://localhost/ws/chat?user_id={uuid}
 ```
+
+### gRPC API (通过 Gateway)
+
+所有业务 API 通过 gRPC-Web 调用 Gateway，Gateway 将请求发布到 RabbitMQ，由对应 Worker 处理。
+
+详细 Proto 定义请参考 `protos/` 目录。
 
 ## ⚙️ 环境变量
 
@@ -350,15 +339,13 @@ infra/env/
 |------|------|--------|
 | `POSTGRES_USER` | 数据库用户 | lesser |
 | `POSTGRES_PASSWORD` | 数据库密码 | lesser_dev_password |
-| `DJANGO_SECRET_KEY` | Django 密钥 | (开发用) |
+| `RABBITMQ_USER` | RabbitMQ 用户 | guest |
+| `RABBITMQ_PASSWORD` | RabbitMQ 密码 | guest |
 | `JWT_SECRET_KEY` | JWT 密钥 | (开发用) |
 
 ## 🧪 测试
 
 ```bash
-# Django 测试
-docker compose -f infra/docker-compose.yml exec django pytest
-
 # Go 测试
 docker compose -f infra/docker-compose.yml exec chat go test ./...
 

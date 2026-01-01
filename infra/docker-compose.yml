@@ -6,8 +6,12 @@
 
 services:
   # ==========================================================================
-  # API Gateway - Traefik
+  # INFRA - Infrastructure Services
   # ==========================================================================
+
+  # --------------------------------------------------------------------------
+  # API Gateway - Traefik
+  # --------------------------------------------------------------------------
   traefik:
     image: traefik:latest
     container_name: traefik
@@ -31,9 +35,9 @@ services:
       retries: 3
       start_period: 10s
 
-  # ==========================================================================
-  # Database - PostgreSQL (Multi-Database: lesser_db + lesser_chat_db)
-  # ==========================================================================
+  # --------------------------------------------------------------------------
+  # Database - PostgreSQL
+  # --------------------------------------------------------------------------
   postgres:
     image: postgres:latest
     container_name: postgres
@@ -60,9 +64,9 @@ services:
       retries: 5
       start_period: 10s
 
-  # ==========================================================================
+  # --------------------------------------------------------------------------
   # Cache - Redis
-  # ==========================================================================
+  # --------------------------------------------------------------------------
   redis:
     image: redis:latest
     container_name: redis
@@ -82,11 +86,11 @@ services:
       retries: 5
       start_period: 5s
 
-  # ==========================================================================
+  # --------------------------------------------------------------------------
   # Message Broker - RabbitMQ
-  # ==========================================================================
+  # --------------------------------------------------------------------------
   rabbitmq:
-    image: rabbitmq:3-management-alpine
+    image: rabbitmq:latest
     container_name: rabbitmq
     restart: unless-stopped
     environment:
@@ -106,132 +110,82 @@ services:
       retries: 5
       start_period: 30s
 
+  # --------------------------------------------------------------------------
+  # Log Viewer - Dozzle
+  # --------------------------------------------------------------------------
+  dozzle:
+    image: amir20/dozzle:latest
+    container_name: dozzle
+    restart: unless-stopped
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+    ports:
+      - "${DOZZLE_PORT:-9999}:8080"
+    networks:
+      - app-network
+
   # ==========================================================================
-  # Django Core Service (Hot Reload with runserver + UV)
+  # SERVICES - Application Services (Gateway, Chat HTTP/gRPC)
   # ==========================================================================
-  django:
+
+  # --------------------------------------------------------------------------
+  # Gateway Service (Unified API Gateway with RabbitMQ)
+  # --------------------------------------------------------------------------
+  gateway:
     build:
-      context: ../service/core_django
-      dockerfile: Dockerfile
-    container_name: django
+      context: ../service/gateway
+      dockerfile: Dockerfile.dev
+    container_name: gateway
     restart: unless-stopped
     environment:
-      - DJANGO_SETTINGS_MODULE=${DJANGO_SETTINGS_MODULE:-config.settings.dev}
+      - GRPC_PORT=${GATEWAY_GRPC_PORT:-50053}
+      - RABBITMQ_URL=amqp://${RABBITMQ_USER:-guest}:${RABBITMQ_PASSWORD:-guest}@rabbitmq:5672/
       - DB_HOST=postgres
       - DB_PORT=5432
-      - DB_NAME=${POSTGRES_DB:-lesser_db}
       - DB_USER=${POSTGRES_USER:-lesser}
       - DB_PASSWORD=${POSTGRES_PASSWORD:-lesser_dev_password}
-      - REDIS_URL=redis://redis:6379/0
-      - CELERY_BROKER_URL=redis://redis:6379/3
-      - CELERY_RESULT_BACKEND=redis://redis:6379/4
-      - DJANGO_SECRET_KEY=${DJANGO_SECRET_KEY:-django-insecure-dev-key}
-      - DJANGO_DEBUG=${DJANGO_DEBUG:-True}
-      - DJANGO_ALLOWED_HOSTS=${DJANGO_ALLOWED_HOSTS:-*}
-      - JWT_SECRET_KEY=${JWT_SECRET_KEY:-jwt-dev-secret-key}
-      - GRPC_PORT=${DJANGO_GRPC_PORT:-50051}
+      - DB_NAME=${POSTGRES_DB:-lesser_db}
+      - DB_SSLMODE=disable
+      - JWT_SECRET=${JWT_SECRET_KEY:-jwt-dev-secret-key}
     volumes:
-      - ../service/core_django:/app
-      - ../protos:/protos:ro
+      - ../service/gateway:/app
+      - go_mod_cache:/go/pkg/mod
     ports:
-      - "${EXTERNAL_DJANGO_PORT:-8000}:8000"
-      - "50051:50051"
+      - "${EXTERNAL_GATEWAY_PORT:-50053}:50053"
     depends_on:
       postgres:
         condition: service_healthy
-      redis:
+      rabbitmq:
         condition: service_healthy
-    command: >
-      sh -c "./start.sh"
     networks:
       - app-network
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8000/api/v1/health/"]
-      interval: 5s
+      test: ["CMD", "nc", "-z", "localhost", "50053"]
+      interval: 30s
       timeout: 5s
-      retries: 3
-      start_period: 15s
+      retries: 5
+      start_period: 30s
 
-  # ==========================================================================
-  # Celery Worker (Background Tasks)
-  # ==========================================================================
-  celery-worker:
-    build:
-      context: ../service/core_django
-      dockerfile: Dockerfile
-    container_name: celery-worker
-    restart: unless-stopped
-    environment:
-      - DJANGO_SETTINGS_MODULE=${DJANGO_SETTINGS_MODULE:-config.settings.dev}
-      - DB_HOST=postgres
-      - DB_PORT=5432
-      - DB_NAME=${POSTGRES_DB:-lesser_db}
-      - DB_USER=${POSTGRES_USER:-lesser}
-      - DB_PASSWORD=${POSTGRES_PASSWORD:-lesser_dev_password}
-      - REDIS_URL=redis://redis:6379/0
-      - CELERY_BROKER_URL=redis://redis:6379/3
-      - CELERY_RESULT_BACKEND=redis://redis:6379/4
-    volumes:
-      - ../service/core_django:/app
-    depends_on:
-      - django
-      - redis
-    command: >
-      sh -c "uv pip install --system --no-cache -r requirements.txt &&
-             celery -A config worker -l INFO"
-    networks:
-      - app-network
-
-  # ==========================================================================
-  # Celery Beat (Scheduled Tasks)
-  # ==========================================================================
-  celery-beat:
-    build:
-      context: ../service/core_django
-      dockerfile: Dockerfile
-    container_name: celery-beat
-    restart: unless-stopped
-    environment:
-      - DJANGO_SETTINGS_MODULE=${DJANGO_SETTINGS_MODULE:-config.settings.dev}
-      - DB_HOST=postgres
-      - DB_PORT=5432
-      - DB_NAME=${POSTGRES_DB:-lesser_db}
-      - DB_USER=${POSTGRES_USER:-lesser}
-      - DB_PASSWORD=${POSTGRES_PASSWORD:-lesser_dev_password}
-      - REDIS_URL=redis://redis:6379/0
-      - CELERY_BROKER_URL=redis://redis:6379/3
-      - CELERY_RESULT_BACKEND=redis://redis:6379/4
-    volumes:
-      - ../service/core_django:/app
-    depends_on:
-      - django
-      - redis
-    command: >
-      sh -c "uv pip install --system --no-cache -r requirements.txt &&
-             celery -A config beat -l INFO"
-    networks:
-      - app-network
-
-  # ==========================================================================
-  # Go Chat Service (Hot Reload with Air)
-  # ==========================================================================
+  # --------------------------------------------------------------------------
+  # Chat Service (gRPC + WebSocket)
+  # --------------------------------------------------------------------------
   chat:
     build:
-      context: ../service/chat_gin
+      context: ../service/chat
       dockerfile: Dockerfile.dev
     container_name: chat
     restart: unless-stopped
     environment:
-      - DATABASE_URL=${CHAT_DATABASE_URL:-postgres://lesser:lesser_dev_password@postgres:5432/lesser_chat_db?application_name=chat_gin}
+      - DATABASE_URL=${CHAT_DATABASE_URL:-postgres://lesser:lesser_dev_password@postgres:5432/lesser_chat_db?application_name=chat}
       - REDIS_URL=redis://redis:6379/1
-      - HTTP_PORT=${CHAT_HTTP_PORT:-8080}
+      - WS_PORT=${CHAT_WS_PORT:-8080}
       - GRPC_PORT=${CHAT_GRPC_PORT:-50052}
-      - AUTH_GRPC_ADDR=${AUTH_GRPC_ADDR:-django:50051}
+      - AUTH_GRPC_ADDR=${AUTH_GRPC_ADDR:-gateway:50053}
     volumes:
-      - ../service/chat_gin:/app
+      - ../service/chat:/app
       - go_mod_cache:/go/pkg/mod
     ports:
-      - "${EXTERNAL_CHAT_PORT:-8081}:8080"
+      - "${EXTERNAL_CHAT_WS_PORT:-8081}:8080"
       - "50052:50052"
     depends_on:
       postgres:
@@ -248,37 +202,12 @@ services:
       start_period: 60s
 
   # ==========================================================================
-  # Gateway Service (Unified API Gateway with RabbitMQ)
+  # WORKERS - Background Task Processors (RabbitMQ Consumers)
   # ==========================================================================
-  gateway:
-    build:
-      context: ../service/gateway
-      dockerfile: Dockerfile.dev
-    container_name: gateway
-    restart: unless-stopped
-    environment:
-      - GRPC_PORT=${GATEWAY_GRPC_PORT:-50053}
-      - RABBITMQ_URL=amqp://${RABBITMQ_USER:-guest}:${RABBITMQ_PASSWORD:-guest}@rabbitmq:5672/
-    volumes:
-      - ../service/gateway:/app
-      - go_mod_cache:/go/pkg/mod
-    ports:
-      - "${EXTERNAL_GATEWAY_PORT:-50053}:50053"
-    depends_on:
-      rabbitmq:
-        condition: service_healthy
-    networks:
-      - app-network
-    healthcheck:
-      test: ["CMD", "nc", "-z", "localhost", "50053"]
-      interval: 30s
-      timeout: 5s
-      retries: 5
-      start_period: 30s
 
-  # ==========================================================================
-  # Auth Worker (Consumes auth tasks from RabbitMQ)
-  # ==========================================================================
+  # --------------------------------------------------------------------------
+  # Auth Worker
+  # --------------------------------------------------------------------------
   auth-worker:
     build:
       context: ../service/auth_worker
@@ -295,6 +224,7 @@ services:
       - JWT_SECRET=${JWT_SECRET_KEY:-jwt-dev-secret-key}
     volumes:
       - ../service/auth_worker:/app
+      - ../service/pkg:/pkg
       - go_mod_cache:/go/pkg/mod
     depends_on:
       postgres:
@@ -304,17 +234,143 @@ services:
     networks:
       - app-network
 
-  # ==========================================================================
-  # Dozzle - Docker Log Viewer
-  # ==========================================================================
-  dozzle:
-    image: amir20/dozzle:latest
-    container_name: dozzle
+  # --------------------------------------------------------------------------
+  # Post Worker
+  # --------------------------------------------------------------------------
+  post-worker:
+    build:
+      context: ../service/post_worker
+      dockerfile: Dockerfile.dev
+    container_name: post-worker
     restart: unless-stopped
+    environment:
+      - RABBITMQ_URL=amqp://${RABBITMQ_USER:-guest}:${RABBITMQ_PASSWORD:-guest}@rabbitmq:5672/
+      - DB_HOST=postgres
+      - DB_PORT=5432
+      - DB_USER=${POSTGRES_USER:-lesser}
+      - DB_PASSWORD=${POSTGRES_PASSWORD:-lesser_dev_password}
+      - DB_NAME=${POSTGRES_DB:-lesser_db}
     volumes:
-      - /var/run/docker.sock:/var/run/docker.sock:ro
-    ports:
-      - "${DOZZLE_PORT:-9999}:8080"
+      - ../service/post_worker:/app
+      - ../service/pkg:/pkg
+      - go_mod_cache:/go/pkg/mod
+    depends_on:
+      postgres:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+    networks:
+      - app-network
+
+  # --------------------------------------------------------------------------
+  # Feed Worker
+  # --------------------------------------------------------------------------
+  feed-worker:
+    build:
+      context: ../service/feed_worker
+      dockerfile: Dockerfile.dev
+    container_name: feed-worker
+    restart: unless-stopped
+    environment:
+      - RABBITMQ_URL=amqp://${RABBITMQ_USER:-guest}:${RABBITMQ_PASSWORD:-guest}@rabbitmq:5672/
+      - DB_HOST=postgres
+      - DB_PORT=5432
+      - DB_USER=${POSTGRES_USER:-lesser}
+      - DB_PASSWORD=${POSTGRES_PASSWORD:-lesser_dev_password}
+      - DB_NAME=${POSTGRES_DB:-lesser_db}
+    volumes:
+      - ../service/feed_worker:/app
+      - ../service/pkg:/pkg
+      - go_mod_cache:/go/pkg/mod
+    depends_on:
+      postgres:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+    networks:
+      - app-network
+
+  # --------------------------------------------------------------------------
+  # Notification Worker
+  # --------------------------------------------------------------------------
+  notification-worker:
+    build:
+      context: ../service/notification_worker
+      dockerfile: Dockerfile.dev
+    container_name: notification-worker
+    restart: unless-stopped
+    environment:
+      - RABBITMQ_URL=amqp://${RABBITMQ_USER:-guest}:${RABBITMQ_PASSWORD:-guest}@rabbitmq:5672/
+      - DB_HOST=postgres
+      - DB_PORT=5432
+      - DB_USER=${POSTGRES_USER:-lesser}
+      - DB_PASSWORD=${POSTGRES_PASSWORD:-lesser_dev_password}
+      - DB_NAME=${POSTGRES_DB:-lesser_db}
+    volumes:
+      - ../service/notification_worker:/app
+      - ../service/pkg:/pkg
+      - go_mod_cache:/go/pkg/mod
+    depends_on:
+      postgres:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+    networks:
+      - app-network
+
+  # --------------------------------------------------------------------------
+  # User Worker
+  # --------------------------------------------------------------------------
+  user-worker:
+    build:
+      context: ../service/user_worker
+      dockerfile: Dockerfile.dev
+    container_name: user-worker
+    restart: unless-stopped
+    environment:
+      - RABBITMQ_URL=amqp://${RABBITMQ_USER:-guest}:${RABBITMQ_PASSWORD:-guest}@rabbitmq:5672/
+      - DB_HOST=postgres
+      - DB_PORT=5432
+      - DB_USER=${POSTGRES_USER:-lesser}
+      - DB_PASSWORD=${POSTGRES_PASSWORD:-lesser_dev_password}
+      - DB_NAME=${POSTGRES_DB:-lesser_db}
+    volumes:
+      - ../service/user_worker:/app
+      - ../service/pkg:/pkg
+      - go_mod_cache:/go/pkg/mod
+    depends_on:
+      postgres:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+    networks:
+      - app-network
+
+  # --------------------------------------------------------------------------
+  # Search Worker
+  # --------------------------------------------------------------------------
+  search-worker:
+    build:
+      context: ../service/search_worker
+      dockerfile: Dockerfile.dev
+    container_name: search-worker
+    restart: unless-stopped
+    environment:
+      - RABBITMQ_URL=amqp://${RABBITMQ_USER:-guest}:${RABBITMQ_PASSWORD:-guest}@rabbitmq:5672/
+      - DB_HOST=postgres
+      - DB_PORT=5432
+      - DB_USER=${POSTGRES_USER:-lesser}
+      - DB_PASSWORD=${POSTGRES_PASSWORD:-lesser_dev_password}
+      - DB_NAME=${POSTGRES_DB:-lesser_db}
+    volumes:
+      - ../service/search_worker:/app
+      - ../service/pkg:/pkg
+      - go_mod_cache:/go/pkg/mod
+    depends_on:
+      postgres:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
     networks:
       - app-network
 
@@ -327,7 +383,7 @@ networks:
     driver: bridge
 
 # ============================================================================
-# Volumes (Only for isolated services)
+# Volumes
 # ============================================================================
 volumes:
   postgres_data:

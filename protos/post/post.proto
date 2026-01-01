@@ -1,92 +1,83 @@
 syntax = "proto3";
 package post;
 
-option go_package = "github.com/lesser/chat/generated/protos/post";
+option go_package = "github.com/lesser/post_worker/proto/post";
 
 import "common/common.proto";
-import "auth/auth.proto";
 
-// PostService handles post creation and management
+// PostService 帖子服务
 service PostService {
-  // Create a new post
-  rpc CreatePost(CreatePostRequest) returns (Post);
-  // Get a post by ID
-  rpc GetPost(GetPostRequest) returns (Post);
-  // Update a post
-  rpc UpdatePost(UpdatePostRequest) returns (Post);
-  // Delete a post
-  rpc DeletePost(DeletePostRequest) returns (common.Empty);
-  // Get posts by user
-  rpc GetUserPosts(GetUserPostsRequest) returns (PostsResponse);
-  // Get posts by type
-  rpc GetPostsByType(GetPostsByTypeRequest) returns (PostsResponse);
+  rpc Create(CreatePostRequest) returns (Post);
+  rpc Get(GetPostRequest) returns (Post);
+  rpc List(ListPostsRequest) returns (ListPostsResponse);
+  rpc Delete(DeletePostRequest) returns (common.Empty);
+  rpc Update(UpdatePostRequest) returns (Post);
 }
 
-// PostType enum for different post types
+// PostType 帖子类型
 enum PostType {
-  SHORT = 0;   // Short text post
-  STORY = 1;   // Story (24h auto-delete)
-  COLUMN = 2;  // Long-form column article
+  POST_TYPE_UNSPECIFIED = 0;
+  STORY = 1;   // 24小时后过期
+  SHORT = 2;   // 短文本
+  COLUMN = 3;  // 长文章
 }
 
-// Post represents a user post
+// Post 帖子实体
 message Post {
   string id = 1;
-  auth.User author = 2;
+  string author_id = 2;
   PostType post_type = 3;
-  string content = 4;
-  repeated string media_urls = 5;
-  common.Timestamp expires_at = 6;  // For story posts
-  int32 like_count = 7;
-  int32 comment_count = 8;
-  int32 repost_count = 9;
-  int32 bookmark_count = 10;
-  common.Timestamp created_at = 11;
-  common.Timestamp updated_at = 12;
+  string title = 4;
+  string content = 5;
+  repeated string media_urls = 6;
+  common.Timestamp expires_at = 7;
+  common.Timestamp created_at = 8;
+  common.Timestamp updated_at = 9;
+  int32 like_count = 10;
+  int32 comment_count = 11;
+  int32 repost_count = 12;
+  int32 bookmark_count = 13;
+  bool is_deleted = 14;
 }
 
-// CreatePostRequest for creating a new post
+// CreatePostRequest 创建帖子请求
 message CreatePostRequest {
   string author_id = 1;
   PostType post_type = 2;
-  string content = 3;
-  repeated string media_urls = 4;
+  string title = 3;
+  string content = 4;
+  repeated string media_urls = 5;
 }
 
-// GetPostRequest for fetching a single post
+// GetPostRequest 获取帖子请求
 message GetPostRequest {
   string post_id = 1;
 }
 
-// UpdatePostRequest for updating a post
-message UpdatePostRequest {
-  string post_id = 1;
-  string author_id = 2;  // For authorization
-  string content = 3;
-  repeated string media_urls = 4;
-}
-
-// DeletePostRequest for deleting a post
-message DeletePostRequest {
-  string post_id = 1;
-  string author_id = 2;  // For authorization
-}
-
-// GetUserPostsRequest for fetching posts by user
-message GetUserPostsRequest {
-  string user_id = 1;
-  PostType post_type = 2;  // Optional filter
+// ListPostsRequest 获取帖子列表请求
+message ListPostsRequest {
+  string author_id = 1;  // 可选，按作者筛选
+  PostType post_type = 2;  // 可选，按类型筛选
   common.Pagination pagination = 3;
 }
 
-// GetPostsByTypeRequest for fetching posts by type
-message GetPostsByTypeRequest {
-  PostType post_type = 1;
+// ListPostsResponse 帖子列表响应
+message ListPostsResponse {
+  repeated Post posts = 1;
   common.Pagination pagination = 2;
 }
 
-// PostsResponse with list of posts
-message PostsResponse {
-  repeated Post posts = 1;
-  common.Pagination pagination = 2;
+// DeletePostRequest 删除帖子请求
+message DeletePostRequest {
+  string post_id = 1;
+  string user_id = 2;  // 用于验证权限
+}
+
+// UpdatePostRequest 更新帖子请求
+message UpdatePostRequest {
+  string post_id = 1;
+  string user_id = 2;  // 用于验证权限
+  string title = 3;
+  string content = 4;
+  repeated string media_urls = 5;
 }

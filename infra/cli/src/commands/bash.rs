@@ -22,13 +22,13 @@ pub async fn execute(service: String) -> Result<()> {
         .any(|s| s.service_name() == container_name && s.is_running());
 
     if !service_running {
-        // 如果是 django，尝试启动
-        if container_name == "django" {
-            ui::warn("Django 服务未运行，正在启动...");
-            let spinner = Spinner::new("正在启动 Django 服务...");
-            compose.up_wait(&["django"]).await?;
+        // 如果是 gateway，尝试启动
+        if container_name == "gateway" {
+            ui::warn("Gateway 服务未运行，正在启动...");
+            let spinner = Spinner::new("正在启动 Gateway 服务...");
+            compose.up_wait(&["gateway"]).await?;
             spinner.finish_and_clear();
-            ui::success("Django 服务已启动");
+            ui::success("Gateway 服务已启动");
 
             // 等待服务完全启动
             tokio::time::sleep(tokio::time::Duration::from_secs(3)).await;
@@ -57,13 +57,10 @@ pub async fn execute(service: String) -> Result<()> {
 /// 规范化服务名称
 fn normalize_service_name(service: &str) -> String {
     match service.to_lowercase().as_str() {
-        "python" => "django".to_string(),
         "go" => "chat".to_string(),
         "db" | "database" | "postgresql" => "postgres".to_string(),
         "cache" => "redis".to_string(),
-        "gateway" => "traefik".to_string(),
-        "worker" => "celery-worker".to_string(),
-        "beat" => "celery-beat".to_string(),
+        "mq" | "rabbitmq" | "rabbit" => "rabbitmq".to_string(),
         other => other.to_string(),
     }
 }
