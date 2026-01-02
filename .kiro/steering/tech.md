@@ -1,40 +1,354 @@
-# 技术栈
+# 开发准则
 
-## 后端服务 (Go)
+- 中文注释。如果中英混杂时，中文和英文之间前后要加上空格。（更加美观的阅读体验） 
+- 实现功能的时候最好先搜一下有没有官方库，或者极其热门的库，放弃从头实现的想法
+## 0. 环境管理
 
-| 组件 | 技术 |
-|------|------|
-| 语言 | Go 1.23.x |
-| 通信协议 | gRPC + Protocol Buffers |
-| 数据库 | PostgreSQL 16 |
-| 缓存 | Redis 7 |
-| 消息队列 | RabbitMQ（仅次要异步任务） |
-| 日志 | Uber Zap (JSON 格式) |
-| 网关 | Traefik 3.x |
+**推荐版本:**
+- **Go** latest。
+- **Flutter**: latest。
+- 依赖库保持最新稳定版 
+- 确保所有用到的工具库都是最新版。注意不是你记忆中的最新版，是截止 2026-01-01 的最新版。你需要从互联网搜索最新版的最佳实践。或者用命令行工具查看是否存在可以用的更新。如果存在更新。必须更新之后再进行之后的动作。
 
-## 客户端 (Flutter)
 
-| 组件 | 技术 |
-|------|------|
-| SDK | Flutter 3.x / Dart ^3.10.4 |
-| 状态管理 | Riverpod 3.x |
-| 路由 | GoRouter |
-| 依赖注入 | GetIt + Injectable |
-| gRPC | grpc + protobuf |
-| 本地存储 | SharedPreferences + FlutterSecureStorage |
+---
 
-## 基础设施
+## 1. AI 辅助开发准则
 
-- Docker + Docker Compose
-- Traefik (反向代理/负载均衡)
-- Dozzle (日志查看)
+### 1.1 代码生成规范
 
-## 常用命令
+- **最小化原则**: 只生成完成任务所需的最少代码，避免过度设计，完成任务的时间长也要完成最佳实践，不能偷懒。
+- **一致性原则**: 遵循项目现有的代码风格和架构模式。不要乱拉屎文件和函数和以及各种抽象设计。
+- **可测试性**: 生成的代码必须易于测试，保持单一职责。
 
-### 开发环境管理 (Rust CLI: devlesser)
+### 1.2 新增路由完整流程
+
+```
+┌─────────────────────────────────────────────────────────────────────────┐
+│                        新增路由修改流程图                                 │
+└─────────────────────────────────────────────────────────────────────────┘
+
+1. Proto 定义 (gRPC 通信)
+   └── protos/<service>/<service>.proto
+       ├── 添加 message 定义
+       └── 添加 rpc 方法
+
+2. 后端服务
+   ├── Gateway (路由配置)
+   │   └── service/gateway/internal/router/
+   │
+   ├── Service (业务处理)
+   │   ├── service/<service>/internal/handler/
+   │   └── service/<service>/internal/service/
+   │
+   └── Chat Service (如涉及聊天功能)
+       ├── service/chat/internal/handler/grpc/
+       ├── service/chat/internal/service/
+       └── service/chat/internal/repository/
+
+3. 网关配置
+   └── infra/gateway/dynamic/routes.yml   # Traefik 路由规则
+
+4. 客户端
+   └── Flutter
+       ├── lib/features/<module>/data/datasources/   # gRPC 数据源
+       ├── lib/features/<module>/data/models/        # 数据模型
+       ├── lib/features/<module>/data/repositories/  # 仓库实现
+       ├── lib/features/<module>/domain/entities/    # 实体
+       ├── lib/features/<module>/domain/usecases/    # 用例
+       └── lib/features/<module>/presentation/       # UI 层
+```
+
+### 1.3 新增路由检查清单
+
+- [ ] Proto 定义已更新
+- [ ] Service gRPC 处理器已实现
+- [ ] Gateway 路由已配置
+- [ ] Traefik 路由规则已配置（如需新路径前缀）
+- [ ] 客户端 gRPC 数据源已实现
+- [ ] 客户端 UI 已对接
+
+### 1.4 禁止行为
+
+- ❌ 随意修改现有架构模式
+- ❌ 在不理解上下文的情况下删除代码
+- ❌ 添加未使用的依赖
+- ❌ 硬编码敏感信息
+- ❌ 跳过错误处理
+- ❌ 生成未经测试的代码直接合并
+
+### 1.5 推荐做法
+
+- ✅ 先理解现有代码结构再修改
+- ✅ 遵循项目的分层架构
+- ✅ 使用项目已有的工具函数和基类
+- ✅ 保持代码风格一致
+- ✅ 添加必要的注释和文档
+- ✅ 编写对应的测试用例
+
+---
+
+## 2. 架构原则
+
+### 2.1 API 设计原则
+- **对外 API**: 使用 gRPC / gRPC-Web 通过 Gateway 提供统一 API
+- **内部服务通信**: 使用 gRPC 同步调用
+- **实时通信**: 使用 gRPC 双向流 (Chat Service)
+- **异步任务**: RabbitMQ 仅用于次要、非阻塞的异步逻辑（通知推送、搜索索引）
+
+### 2.2 服务划分
+- **Gateway**: gRPC API 入口，JWT 验签、限流、路由转发
+- **Service Cluster**: Auth/User/Post/Feed/Search/Notification Service
+- **Chat Service**: 高并发实时聊天、gRPC 双向流
+
+---
+
+## 3. 代码规范
+
+### 3.1 注释语言规范
+
+**所有代码注释统一使用中文**，包括：
+- 文件头注释
+- 函数/方法注释
+- 行内注释
+- TODO/FIXME 注释
+
+### 3.2 Go 规范
+```go
+// 使用接口定义依赖
+type ChatService interface {
+    SendMessage(ctx context.Context, msg *Message) error
+    GetMessages(ctx context.Context, conversationID string) ([]*Message, error)
+}
+
+// 错误处理使用 errors 包
+var ErrNotFound = errors.New("resource not found")
+
+// 使用 context 传递请求上下文
+func (s *service) SendMessage(ctx context.Context, msg *Message) error {
+    // 实现
+}
+```
+
+### 3.3 Flutter/Dart 规范
+```dart
+// 使用 Clean Architecture 分层: data -> domain -> presentation
+
+// Entity (Domain Layer)
+class User {
+  final String id;
+  final String username;
+  const User({required this.id, required this.username});
+}
+
+// Repository Interface (Domain Layer)
+abstract class AuthRepository {
+  Future<Either<Failure, User>> login(String email, String password);
+}
+
+// Use Case (Domain Layer)
+class LoginUseCase {
+  final AuthRepository repository;
+  LoginUseCase(this.repository);
+  
+  Future<Either<Failure, User>> call(LoginParams params) {
+    return repository.login(params.email, params.password);
+  }
+}
+```
+
+---
+
+## 4. 目录结构规范
+
+### 4.1 环境变量管理
+```
+infra/env/
+├── dev.env.example    # 开发环境模板（提交）
+├── dev.env            # 开发环境配置（不提交）
+├── prod.env.example   # 生产环境模板（提交）
+└── prod.env           # 生产环境配置（不提交）
+```
+
+### 4.2 脚本文件管理
+
+**所有脚本文件必须放在 `scripts/` 目录下，禁止在项目根目录或其他位置随意创建脚本文件。**
+
+```
+scripts/
+├── prod.sh                              # 生产环境管理脚本
+├── database/
+│   └── docker-entrypoint-initdb.sh      # PostgreSQL 多数据库初始化脚本
+└── proto/
+    └── generate.sh                      # Proto 代码生成脚本
+```
+
+**例外情况**：
+- 第三方工具自动生成的脚本（如 Flutter 的 iOS 构建脚本）
+
+**禁止行为**：
+- ❌ 在项目根目录创建 `.sh` 文件
+- ❌ 在 `infra/` 根目录创建脚本（应放在对应子目录）
+- ❌ 散落的临时脚本不清理
+
+### 4.3 Proto 文件管理
+```
+protos/
+├── common/common.proto      # 通用类型定义
+├── auth/auth.proto          # 认证服务
+├── chat/chat.proto          # 聊天服务
+├── feed/feed.proto          # Feed 服务
+├── post/post.proto          # 帖子服务
+├── user/user.proto          # 用户服务
+├── search/search.proto      # 搜索服务
+├── gateway/gateway.proto    # 网关服务
+└── notification/notification.proto  # 通知服务
+```
+
+### 4.4 日志文件管理
+
+**所有日志文件统一放在项目根目录 `logs/` 下，按服务分类：**
+
+```
+logs/
+├── flutter/           # Flutter 客户端日志
+├── gateway/           # Gateway 服务日志
+├── chat/              # Chat 服务日志
+└── ...
+```
+
+**禁止行为**：
+- ❌ 在各服务目录下直接生成日志文件
+- ❌ 提交日志文件到 Git
+
+### 4.5 Flutter 开发注意事项
+
+**生成文件（不提交到 Git）**：
+- `ios/Podfile.lock` - CocoaPods 锁定文件（运行 `pod install` 生成）
+- `ios/Pods/` - CocoaPods 依赖目录
+- `ios/.symlinks/` - Flutter 插件符号链接
+- `ios/Flutter/Generated.xcconfig` - 自动生成的配置
+- `ios/Flutter/flutter_export_environment.sh` - 环境导出脚本
+- `build/` - 构建产物目录
+- `.dart_tool/` - Dart 工具缓存
+- `*.log` - 日志文件
+
+**需要提交的文件**：
+- `ios/Podfile` - CocoaPods 依赖声明
+- `ios/Runner.xcodeproj/` - Xcode 项目配置
+- `pubspec.yaml` - Flutter 依赖声明
+
+**首次运行 iOS 模拟器后**：
+```bash
+# 确保生成文件被正确忽略
+git status client/mobile_flutter/ios
+
+# 如果 Podfile.lock 被追踪，移除它
+git reset HEAD client/mobile_flutter/ios/Podfile.lock
+```
+
+### 4.6 生成代码目录
+```
+service/<name>/proto/                   # Go gRPC 生成代码
+client/mobile_flutter/lib/generated/    # Flutter gRPC 生成代码
+```
+
+---
+
+## 5. Git 提交规范
+
+### 5.1 Commit Message 格式
+```
+<type>(<scope>): <subject>
+
+<body>
+
+<footer>
+```
+
+**Type 类型**: `feat` | `fix` | `docs` | `style` | `refactor` | `test` | `chore`
+
+### 5.2 分支命名
+- `main`: 主分支，生产环境
+- `develop`: 开发分支
+- `feature/<name>`: 功能分支
+- `fix/<name>`: Bug 修复分支
+
+---
+
+## 6. 测试规范
+
+### 6.1 测试分层
+```
+tests/
+├── unit/           # 单元测试
+├── integration/    # 集成测试
+└── e2e/            # 端到端测试
+```
+
+### 6.2 测试覆盖率要求
+- 核心业务逻辑: >= 80%
+- 工具函数: >= 90%
+- API 端点: >= 70%
+
+---
+
+## 7. gRPC 规范
+
+### 7.1 错误处理
+```go
+import "google.golang.org/grpc/codes"
+import "google.golang.org/grpc/status"
+
+// 参数验证错误
+if req.UserId == "" {
+    return nil, status.Error(codes.InvalidArgument, "用户ID不能为空")
+}
+
+// 权限错误
+if !isMember {
+    return nil, status.Error(codes.PermissionDenied, "您不是该会话的成员")
+}
+```
+
+### 7.2 常用状态码
+- `codes.OK`: 成功
+- `codes.InvalidArgument`: 参数错误
+- `codes.Unauthenticated`: 未认证
+- `codes.PermissionDenied`: 无权限
+- `codes.NotFound`: 不存在
+- `codes.Internal`: 服务器错误
+
+---
+
+## 8. 安全规范
+
+### 8.1 认证与授权
+- 使用 JWT 进行 API 认证
+- Access Token 有效期: 开发环境 1 小时，生产环境 30 分钟
+- Refresh Token 有效期: 开发环境 7 天，生产环境 1 天
+
+### 8.2 数据安全
+- 密码使用 bcrypt/argon2 加密存储
+- 敏感数据传输使用 HTTPS
+- 数据库连接使用 SSL
+- 日志中不记录敏感信息
+
+### 8.3 输入验证
+- 所有用户输入必须验证
+- 使用参数化查询防止 SQL 注入
+- 对输出进行 HTML 转义防止 XSS
+
+---
+
+## 9. 开发流程
+
+### 9.1 本地开发
+
+使用 Rust CLI 工具 `devlesser`（位于 `infra/cli/`）：
 
 ```bash
-# 安装 CLI
+# 安装 CLI 工具
 cargo install --path infra/cli
 
 # 服务管理
@@ -42,7 +356,7 @@ devlesser start              # 启动所有服务
 devlesser start infra        # 只启动基础设施 (PostgreSQL/Redis/RabbitMQ/Traefik)
 devlesser start service      # 只启动后端服务
 devlesser start flutter      # Flutter 交互式选择平台
-devlesser start flutter-web  # Flutter Web
+devlesser start flutter-web  # Flutter Web (双用户调试)
 devlesser start flutter-android  # Flutter Android
 devlesser stop               # 停止服务
 devlesser restart [service]  # 重启服务
@@ -50,6 +364,8 @@ devlesser status             # 查看状态
 
 # Proto 代码生成
 devlesser proto              # 生成所有 Proto 代码
+devlesser proto go           # 仅生成 Go
+devlesser proto dart         # 仅生成 Dart
 
 # 清理
 devlesser clean              # 清理所有
@@ -60,28 +376,97 @@ devlesser clean volumes      # 清理数据卷
 devlesser init               # 初始化开发环境
 ```
 
-### Flutter 客户端
+### 9.2 代码审查清单
+- [ ] 代码符合规范
+- [ ] 有适当的测试覆盖
+- [ ] 没有硬编码的敏感信息
+- [ ] 错误处理完善
+- [ ] 有必要的注释和文档
+- [ ] 性能考虑（N+1 查询、缓存等）
 
-```bash
-cd client/mobile_flutter
+---
 
-# 依赖安装
-flutter pub get
+## 10. 性能优化指南
 
-# 代码生成 (Riverpod/Freezed/Injectable)
-dart run build_runner build --delete-conflicting-outputs
+### 10.1 数据库优化
+- 使用索引优化查询
+- 避免 N+1 查询问题
+- 使用 select_related/prefetch_related
+- 大数据量使用分页
 
-# 运行
-flutter run -d chrome    # Web
-flutter run              # 移动端
+### 10.2 缓存策略
+- 热点数据使用 Redis 缓存
+- 设置合理的缓存过期时间
+- 使用缓存失效策略
+
+### 10.3 API 优化
+- 使用分页返回列表数据
+- 支持字段选择
+- 使用 gzip 压缩响应
+
+---
+
+## 11. 监控与日志
+
+### 11.1 日志级别
+- `DEBUG`: 调试信息（仅开发环境）
+- `INFO`: 一般信息
+- `WARNING`: 警告信息
+- `ERROR`: 错误信息
+- `CRITICAL`: 严重错误
+
+### 11.2 日志格式
+```
+[2024-01-01 12:00:00] [INFO] [request_id:abc123] [user_id:123] Message here
 ```
 
-### Proto 代码生成
+### 11.3 监控指标
+- 请求响应时间
+- 错误率
+- 数据库查询时间
+- 缓存命中率
+- 内存/CPU 使用率
 
-```bash
-# 使用脚本
-./scripts/proto/generate.sh
+---
 
-# 或使用 CLI
-devlesser proto
+## 12. gRPC 双向流实践
+
+### 12.1 Chat 服务架构
+
+Chat 服务使用 gRPC 双向流替代 WebSocket 实现实时消息推送：
+
 ```
+客户端                          服务端
+   │                              │
+   │──── Subscribe(convId) ──────>│  订阅会话
+   │<─── Subscribed ──────────────│
+   │                              │
+   │──── SendMessage ────────────>│  发送消息
+   │<─── NewMessage ──────────────│  广播给所有订阅者
+   │                              │
+   │──── Typing ─────────────────>│  正在输入
+   │<─── TypingIndicator ─────────│  广播给其他成员
+   │                              │
+   │──── Ping ───────────────────>│  心跳
+   │<─── Pong ────────────────────│
+   │                              │
+```
+
+### 12.2 双向流 API 定义
+
+```protobuf
+// 双向流 RPC
+rpc StreamEvents(stream ClientEvent) returns (stream ServerEvent);
+
+// 客户端事件: Subscribe, Unsubscribe, SendMessage, Typing, Ping
+// 服务端事件: NewMessage, MessageRead, TypingIndicator, Pong, Error
+```
+
+### 12.3 注意事项
+
+1. **认证处理**: 生产环境使用 JWT Token
+2. **成员权限**: 所有消息操作需验证用户是否为会话成员
+3. **私聊限制**: 私聊会话不能添加新成员
+4. **实时推送**: 消息通过 Redis Pub/Sub 发布
+5. **重连机制**: 客户端断开后自动重连并重新订阅
+6. **心跳保活**: 定期发送 Ping/Pong 保持连接
