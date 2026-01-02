@@ -1,5 +1,6 @@
 import '../../../auth/data/models/user_model.dart';
 import '../../domain/entities/notification.dart';
+import '../../../../generated/protos/notification/notification.pb.dart' as notification_pb;
 
 /// Notification data model
 class NotificationModel extends AppNotification {
@@ -25,6 +26,24 @@ class NotificationModel extends AppNotification {
       commentId: json['comment_id'] as String?,
       message: json['message'] as String?,
       isRead: json['is_read'] as bool? ?? false,
+    );
+  }
+
+  /// Create from Proto message
+  factory NotificationModel.fromProto(notification_pb.Notification proto) {
+    return NotificationModel(
+      id: proto.id,
+      type: _parseProtoNotificationType(proto.type),
+      actor: UserModel.fromProto(proto.actor),
+      createdAt: proto.hasCreatedAt()
+          ? DateTime.fromMillisecondsSinceEpoch(
+              proto.createdAt.seconds.toInt() * 1000,
+            )
+          : DateTime.now(),
+      postId: proto.targetType == 'post' ? proto.targetId : null,
+      commentId: proto.targetType == 'comment' ? proto.targetId : null,
+      message: proto.hasPreviewText() ? proto.previewText : null,
+      isRead: proto.isRead,
     );
   }
 
@@ -57,6 +76,28 @@ class NotificationModel extends AppNotification {
       case 'mention':
         return NotificationType.mention;
       case 'bookmark':
+        return NotificationType.bookmark;
+      default:
+        return NotificationType.like;
+    }
+  }
+
+  static NotificationType _parseProtoNotificationType(
+      notification_pb.NotificationType type) {
+    switch (type) {
+      case notification_pb.NotificationType.LIKE:
+        return NotificationType.like;
+      case notification_pb.NotificationType.COMMENT:
+        return NotificationType.comment;
+      case notification_pb.NotificationType.REPLY:
+        return NotificationType.reply;
+      case notification_pb.NotificationType.REPOST:
+        return NotificationType.repost;
+      case notification_pb.NotificationType.FOLLOW:
+        return NotificationType.follow;
+      case notification_pb.NotificationType.MENTION:
+        return NotificationType.mention;
+      case notification_pb.NotificationType.BOOKMARK:
         return NotificationType.bookmark;
       default:
         return NotificationType.like;

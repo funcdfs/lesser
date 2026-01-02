@@ -1,3 +1,6 @@
+import 'package:fixnum/fixnum.dart';
+import '../../../generated/protos/auth/auth.pb.dart' as auth_pb;
+import '../../../generated/protos/common/common.pb.dart' as common_pb;
 import '../../domain/entities/user.dart';
 
 /// 用户数据模型
@@ -23,6 +26,39 @@ class UserModel extends User {
       bio: user.bio,
       createdAt: user.createdAt,
     );
+  }
+
+  /// 从 Proto 消息创建
+  factory UserModel.fromProto(auth_pb.User proto) {
+    return UserModel(
+      id: proto.id,
+      username: proto.username,
+      email: proto.email,
+      displayName: proto.hasDisplayName() ? proto.displayName : null,
+      avatarUrl: proto.hasAvatarUrl() ? proto.avatarUrl : null,
+      bio: proto.hasBio() ? proto.bio : null,
+      createdAt: proto.hasCreatedAt()
+          ? DateTime.fromMillisecondsSinceEpoch(
+              proto.createdAt.seconds.toInt() * 1000,
+            )
+          : null,
+    );
+  }
+
+  /// 转换为 Proto 消息
+  auth_pb.User toProto() {
+    final proto = auth_pb.User()
+      ..id = id
+      ..username = username
+      ..email = email;
+    if (displayName != null) proto.displayName = displayName!;
+    if (avatarUrl != null) proto.avatarUrl = avatarUrl!;
+    if (bio != null) proto.bio = bio!;
+    if (createdAt != null) {
+      proto.createdAt = common_pb.Timestamp()
+        ..seconds = Int64(createdAt!.millisecondsSinceEpoch ~/ 1000);
+    }
+    return proto;
   }
 
   /// 从 JSON 创建

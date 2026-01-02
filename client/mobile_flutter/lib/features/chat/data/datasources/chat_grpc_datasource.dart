@@ -1,9 +1,12 @@
+import 'dart:async';
+import 'dart:convert';
 import 'package:grpc/grpc.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'dart:convert';
 
 import '../../../../core/errors/exceptions.dart';
 import '../../../../core/grpc/chat_grpc_client.dart';
+import '../../../../core/network/unified_grpc_client.dart';
+import '../../../../core/network/stream_event_handler.dart';
 import '../../../../core/utils/app_logger.dart';
 import '../../../../generated/protos/chat/chat.pbgrpc.dart' as pb;
 import '../../domain/entities/conversation.dart';
@@ -17,11 +20,23 @@ const _tag = 'ChatGrpcDataSource';
 
 /// 聊天 gRPC 数据源实现
 /// 使用 Chat gRPC 客户端替代 Dio HTTP 客户端
+/// 支持双向流实时通信
 class ChatGrpcDataSourceImpl implements ChatRemoteDataSource {
   ChatGrpcDataSourceImpl(this._chatClient, this._sharedPreferences);
 
   final ChatGrpcClient _chatClient;
   final SharedPreferences _sharedPreferences;
+
+  /// 使用 UnifiedGrpcClient 的构造函数
+  factory ChatGrpcDataSourceImpl.fromUnified(
+    UnifiedGrpcClient unifiedClient,
+    SharedPreferences sharedPreferences,
+  ) {
+    return ChatGrpcDataSourceImpl(
+      ChatGrpcClient(unifiedClient.chatManager),
+      sharedPreferences,
+    );
+  }
 
   /// 获取当前用户ID
   String? _getCurrentUserId() {

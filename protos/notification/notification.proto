@@ -1,7 +1,7 @@
 syntax = "proto3";
 package notification;
 
-option go_package = "github.com/lesser/notification_worker/proto/notification";
+option go_package = "github.com/lesser/notification/proto/notification";
 
 import "common/common.proto";
 

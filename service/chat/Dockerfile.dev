@@ -1,11 +1,22 @@
 FROM golang:1.24-alpine
 
-RUN apk add --no-cache git ca-certificates tzdata curl
+RUN apk add --no-cache git netcat-openbsd
 
+# 安装 air 用于热重载
 RUN go install github.com/air-verse/air@v1.61.7
 
 WORKDIR /app
 
-EXPOSE 8080 50052
+# 复制 go.mod 文件
+COPY chat/go.mod ./chat/
+COPY pkg/go.mod ./pkg/
 
-CMD ["sh", "-c", "go mod tidy && air -c .air.toml"]
+# 下载依赖
+WORKDIR /app/chat
+RUN go mod download || true
+
+WORKDIR /app/chat
+
+EXPOSE 50052
+
+CMD ["air", "-c", ".air.toml"]

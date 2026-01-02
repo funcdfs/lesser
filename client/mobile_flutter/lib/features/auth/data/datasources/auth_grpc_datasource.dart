@@ -2,12 +2,13 @@ import 'package:grpc/grpc.dart';
 
 import '../../../../core/errors/exceptions.dart';
 import '../../../../core/network/unified_grpc_client.dart';
+import '../../../../generated/protos/auth/auth.pb.dart' as auth_pb;
 import '../models/token_model.dart';
 import '../models/user_model.dart';
 import 'auth_remote_datasource.dart';
 
 /// Auth gRPC data source implementation
-/// 使用 Gateway gRPC 客户端替代 Dio HTTP 客户端
+/// 使用 AuthGrpcClient 替代 Gateway 客户端
 class AuthGrpcDataSourceImpl implements AuthRemoteDataSource {
   const AuthGrpcDataSourceImpl(this._grpcClient);
 
@@ -21,20 +22,16 @@ class AuthGrpcDataSourceImpl implements AuthRemoteDataSource {
     String? displayName,
   }) async {
     try {
-      final result = await _grpcClient.gateway.register(
+      final result = await _grpcClient.auth.register(
         username: username,
         email: email,
         password: password,
+        displayName: displayName,
       );
 
-      if (result.success) {
+      if (result.success && result.user != null) {
         return (
-          user: UserModel(
-            id: result.userId!,
-            username: username,
-            email: email,
-            displayName: displayName ?? username,
-          ),
+          user: _protoUserToModel(result.user!),
           tokens: TokenModel(
             accessToken: result.accessToken!,
             refreshToken: result.refreshToken!,
@@ -54,19 +51,14 @@ class AuthGrpcDataSourceImpl implements AuthRemoteDataSource {
     required String password,
   }) async {
     try {
-      final result = await _grpcClient.gateway.login(
-        username: email, // Gateway 支持用户名或邮箱登录
+      final result = await _grpcClient.auth.login(
+        email: email,
         password: password,
       );
 
-      if (result.success) {
+      if (result.success && result.user != null) {
         return (
-          user: UserModel(
-            id: result.userId!,
-            username: '', // 需要额外请求获取用户信息
-            email: email,
-            displayName: '',
-          ),
+          user: _protoUserToModel(result.user!),
           tokens: TokenModel(
             accessToken: result.accessToken!,
             refreshToken: result.refreshToken!,
@@ -83,7 +75,7 @@ class AuthGrpcDataSourceImpl implements AuthRemoteDataSource {
   @override
   Future<void> logout(String accessToken) async {
     try {
-      await _grpcClient.gateway.logout();
+      await _grpcClient.auth.logout();
     } on GrpcError catch (e) {
       throw _handleGrpcError(e);
     }
@@ -91,14 +83,14 @@ class AuthGrpcDataSourceImpl implements AuthRemoteDataSource {
 
   @override
   Future<UserModel> getCurrentUser() async {
-    // TODO: 实现通过 Gateway 获取当前用户信息
-    throw const ServerException(message: 'Not implemented');
+    // 当前用户信息在登录时已返回，无需单独请求
+    throw const ServerException(message: '请使用登录返回的用户信息');
   }
 
   @override
   Future<String> refreshToken(String refreshToken) async {
     try {
-      final result = await _grpcClient.gateway.refreshToken();
+      final result = await _grpcClient.auth.refreshToken();
 
       if (result.success) {
         return result.accessToken!;
@@ -108,6 +100,17 @@ class AuthGrpcDataSourceImpl implements AuthRemoteDataSource {
     } on GrpcError catch (e) {
       throw _handleGrpcError(e);
     }
+  }
+
+  UserModel _protoUserToModel(auth_pb.User user) {
+    return UserModel(
+      id: user.id,
+      username: user.username,
+      email: user.email,
+      displayName: user.displayName.isNotEmpty ? user.displayName : user.username,
+      avatarUrl: user.avatarUrl.isNotEmpty ? user.avatarUrl : null,
+      bio: user.bio.isNotEmpty ? user.bio : null,
+    );
   }
 
   AppException _handleGrpcError(GrpcError e) {

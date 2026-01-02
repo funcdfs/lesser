@@ -1,4 +1,6 @@
 import '../../../auth/data/models/user_model.dart';
+import '../../../../generated/protos/feed/feed.pb.dart' as feed_pb;
+import '../../../../generated/protos/post/post.pb.dart' as post_pb;
 import '../../domain/entities/feed_item.dart';
 
 /// Feed item data model
@@ -19,6 +21,78 @@ class FeedItemModel extends FeedItem {
     super.isBookmarked,
     super.expiresAt,
   });
+
+  /// Create from Proto FeedItem message
+  factory FeedItemModel.fromProto(feed_pb.FeedItem proto) {
+    return FeedItemModel(
+      id: proto.id,
+      author: UserModel.fromProto(proto.author),
+      content: proto.content,
+      postType: _protoPostTypeToEntity(proto.postType),
+      createdAt: proto.hasCreatedAt()
+          ? DateTime.fromMillisecondsSinceEpoch(
+              proto.createdAt.seconds.toInt() * 1000,
+            )
+          : DateTime.now(),
+      title: null, // FeedItem proto doesn't have title
+      mediaUrls: proto.mediaUrls.toList(),
+      likesCount: proto.likeCount,
+      commentsCount: proto.commentCount,
+      repostsCount: proto.repostCount,
+      isLiked: proto.isLiked,
+      isReposted: proto.isReposted,
+      isBookmarked: proto.isBookmarked,
+      expiresAt: null, // FeedItem proto doesn't have expiresAt
+    );
+  }
+
+  /// Create from Proto Post message
+  factory FeedItemModel.fromPostProto(post_pb.Post proto) {
+    return FeedItemModel(
+      id: proto.id,
+      author: UserModel.fromProto(proto.author),
+      content: proto.content,
+      postType: _protoPostTypeToEntityFromPost(proto.postType),
+      createdAt: proto.hasCreatedAt()
+          ? DateTime.fromMillisecondsSinceEpoch(
+              proto.createdAt.seconds.toInt() * 1000,
+            )
+          : DateTime.now(),
+      title: null, // Post proto doesn't have title field
+      mediaUrls: proto.mediaUrls.toList(),
+      likesCount: proto.likeCount,
+      commentsCount: proto.commentCount,
+      repostsCount: proto.repostCount,
+      isLiked: false, // Post proto doesn't have interaction flags
+      isReposted: false,
+      isBookmarked: false,
+      expiresAt: proto.hasExpiresAt()
+          ? DateTime.fromMillisecondsSinceEpoch(
+              proto.expiresAt.seconds.toInt() * 1000,
+            )
+          : null,
+    );
+  }
+
+  /// Convert to Entity
+  FeedItem toEntity() {
+    return FeedItem(
+      id: id,
+      author: author,
+      content: content,
+      postType: postType,
+      createdAt: createdAt,
+      title: title,
+      mediaUrls: mediaUrls,
+      likesCount: likesCount,
+      commentsCount: commentsCount,
+      repostsCount: repostsCount,
+      isLiked: isLiked,
+      isReposted: isReposted,
+      isBookmarked: isBookmarked,
+      expiresAt: expiresAt,
+    );
+  }
 
   /// Create from JSON
   factory FeedItemModel.fromJson(Map<String, dynamic> json) {
@@ -86,6 +160,34 @@ class FeedItemModel extends FeedItem {
         return 'short';
       case PostType.column:
         return 'column';
+    }
+  }
+
+  static PostType _protoPostTypeToEntity(post_pb.PostType protoType) {
+    switch (protoType) {
+      case post_pb.PostType.STORY:
+        return PostType.story;
+      case post_pb.PostType.SHORT:
+        return PostType.short;
+      case post_pb.PostType.COLUMN:
+        return PostType.column;
+      default:
+        return PostType.short;
+    }
+  }
+
+  static PostType _protoPostTypeToEntityFromPost(post_pb.PostType protoType) {
+    return _protoPostTypeToEntity(protoType);
+  }
+
+  static post_pb.PostType entityPostTypeToProto(PostType type) {
+    switch (type) {
+      case PostType.story:
+        return post_pb.PostType.STORY;
+      case PostType.short:
+        return post_pb.PostType.SHORT;
+      case PostType.column:
+        return post_pb.PostType.COLUMN;
     }
   }
 }

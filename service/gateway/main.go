@@ -1,15 +1,14 @@
 package main
 
 import (
+	"context"
 	"log"
 	"net"
 	"os"
 	"os/signal"
+	"strconv"
 	"syscall"
 
-	"github.com/lesser/gateway/internal/auth"
-	"github.com/lesser/gateway/internal/broker"
-	"github.com/lesser/gateway/internal/database"
 	"github.com/lesser/gateway/internal/server"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/reflection"
@@ -18,52 +17,48 @@ import (
 func main() {
 	// 配置
 	grpcPort := getEnv("GRPC_PORT", "50053")
-	rabbitURL := getEnv("RABBITMQ_URL", "amqp://guest:guest@localhost:5672/")
-	jwtSecret := getEnv("JWT_SECRET", "your-secret-key")
 
-	// 数据库配置
-	dbConfig := database.Config{
-		Host:     getEnv("DB_HOST", "localhost"),
-		Port:     getEnv("DB_PORT", "5432"),
-		User:     getEnv("DB_USER", "postgres"),
-		Password: getEnv("DB_PASSWORD", "postgres"),
-		DBName:   getEnv("DB_NAME", "lesser"),
-		SSLMode:  getEnv("DB_SSLMODE", "disable"),
+	// Service 地址配置
+	config := server.GatewayConfig{
+		AuthServiceAddr:         getEnv("AUTH_SERVICE_ADDR", "auth:50054"),
+		UserServiceAddr:         getEnv("USER_SERVICE_ADDR", "user:50055"),
+		PostServiceAddr:         getEnv("POST_SERVICE_ADDR", "post:50056"),
+		FeedServiceAddr:         getEnv("FEED_SERVICE_ADDR", "feed:50057"),
+		ChatServiceAddr:         getEnv("CHAT_SERVICE_ADDR", "chat:50052"),
+		SearchServiceAddr:       getEnv("SEARCH_SERVICE_ADDR", "search:50058"),
+		NotificationServiceAddr: getEnv("NOTIFICATION_SERVICE_ADDR", "notification:50059"),
+		RateLimitRate:           getEnvFloat("RATE_LIMIT_RATE", 100),
+		RateLimitBurst:          getEnvInt("RATE_LIMIT_BURST", 200),
 	}
 
-	// 连接数据库
-	db, err := database.NewConnection(dbConfig)
+	// 创建 Gateway 服务器
+	gatewayServer, err := server.NewGatewayServer(config)
 	if err != nil {
-		log.Fatalf("Failed to connect to database: %v", err)
+		log.Fatalf("Failed to create gateway server: %v", err)
 	}
-	defer db.Close()
-	log.Println("Connected to PostgreSQL")
 
-	// 创建 Auth 服务
-	authService := auth.NewAuthService(db, jwtSecret)
+	// 启动 Gateway（初始化 JWT 验签器等）
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
 
-	// 连接 RabbitMQ
-	rabbitConn, err := broker.NewConnection(rabbitURL)
-	if err != nil {
-		log.Fatalf("Failed to connect to RabbitMQ: %v", err)
+	if err := gatewayServer.Start(ctx); err != nil {
+		log.Fatalf("Failed to start gateway: %v", err)
 	}
-	defer rabbitConn.Close()
 
-	// 创建 gRPC 服务器
+	// 创建 gRPC 服务器（带认证拦截器）
+	grpcServer := grpc.NewServer(
+		grpc.UnaryInterceptor(gatewayServer.AuthInterceptor()),
+		grpc.StreamInterceptor(gatewayServer.StreamAuthInterceptor()),
+	)
+
+	server.RegisterGatewayServer(grpcServer, gatewayServer)
+	reflection.Register(grpcServer)
+
+	// 监听端口
 	lis, err := net.Listen("tcp", ":"+grpcPort)
 	if err != nil {
 		log.Fatalf("Failed to listen: %v", err)
 	}
-
-	grpcServer := grpc.NewServer()
-	gatewayServer, err := server.NewGatewayServer(rabbitConn, authService)
-	if err != nil {
-		log.Fatalf("Failed to create gateway server: %v", err)
-	}
-	server.RegisterGatewayServer(grpcServer, gatewayServer)
-	
-	// Enable reflection for grpcurl testing
-	reflection.Register(grpcServer)
 
 	// 优雅关闭
 	go func() {
@@ -71,10 +66,17 @@ func main() {
 		signal.Notify(sigCh, syscall.SIGINT, syscall.SIGTERM)
 		<-sigCh
 		log.Println("Shutting down...")
+		cancel()
 		grpcServer.GracefulStop()
+		gatewayServer.Stop()
 	}()
 
 	log.Printf("Gateway server listening on :%s", grpcPort)
+	log.Printf("Connected services: Auth=%s, User=%s, Post=%s, Feed=%s, Chat=%s, Search=%s, Notification=%s",
+		config.AuthServiceAddr, config.UserServiceAddr, config.PostServiceAddr,
+		config.FeedServiceAddr, config.ChatServiceAddr, config.SearchServiceAddr,
+		config.NotificationServiceAddr)
+
 	if err := grpcServer.Serve(lis); err != nil {
 		log.Fatalf("Failed to serve: %v", err)
 	}
@@ -83,6 +85,24 @@ func main() {
 func getEnv(key, defaultValue string) string {
 	if value := os.Getenv(key); value != "" {
 		return value
+	}
+	return defaultValue
+}
+
+func getEnvInt(key string, defaultValue int) int {
+	if value := os.Getenv(key); value != "" {
+		if i, err := strconv.Atoi(value); err == nil {
+			return i
+		}
+	}
+	return defaultValue
+}
+
+func getEnvFloat(key string, defaultValue float64) float64 {
+	if value := os.Getenv(key); value != "" {
+		if f, err := strconv.ParseFloat(value, 64); err == nil {
+			return f
+		}
 	}
 	return defaultValue
 }

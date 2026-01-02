@@ -1,7 +1,7 @@
 syntax = "proto3";
 package common;
 
-option go_package = "github.com/lesser/auth_worker/proto/common";
+option go_package = "github.com/lesser/pkg/proto/common";
 
 // Pagination message for paginated requests and responses
 message Pagination {

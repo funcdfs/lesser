@@ -1,7 +1,7 @@
 syntax = "proto3";
 package search;
 
-option go_package = "github.com/lesser/search_worker/proto/search";
+option go_package = "github.com/lesser/search/proto/search";
 
 import "common/common.proto";
 import "post/post.proto";

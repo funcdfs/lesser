@@ -2,31 +2,96 @@ package server
 
 import (
 	"context"
-	"fmt"
 	"log"
 
 	"github.com/lesser/gateway/internal/auth"
-	"github.com/lesser/gateway/internal/broker"
+	"github.com/lesser/gateway/internal/ratelimit"
+	"github.com/lesser/gateway/internal/router"
 	pb "github.com/lesser/gateway/proto/gateway"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/metadata"
 	"google.golang.org/grpc/status"
-	"google.golang.org/protobuf/proto"
 )
 
 // GatewayServer 实现 GatewayService
+// 设计要点：
+// 1. Gateway 只做 JWT 验签、限流、路由，不做业务逻辑
+// 2. JWT 验签在本地完成（内存持有公钥）
+// 3. 所有业务请求同步转发到对应 Service
 type GatewayServer struct {
 	pb.UnimplementedGatewayServiceServer
-	broker      *broker.Connection
-	authService *auth.AuthService
+	jwtValidator *auth.JWTValidator
+	rateLimiter  *ratelimit.Limiter
+	router       *router.Router
+}
+
+// GatewayConfig Gateway 配置
+type GatewayConfig struct {
+	AuthServiceAddr         string
+	UserServiceAddr         string
+	PostServiceAddr         string
+	FeedServiceAddr         string
+	ChatServiceAddr         string
+	SearchServiceAddr       string
+	NotificationServiceAddr string
+	RateLimitRate           float64
+	RateLimitBurst          int
 }
 
 // NewGatewayServer 创建新的 Gateway 服务器
-func NewGatewayServer(brokerConn *broker.Connection, authSvc *auth.AuthService) (*GatewayServer, error) {
+func NewGatewayServer(config GatewayConfig) (*GatewayServer, error) {
+	rateLimiter := ratelimit.NewLimiter(ratelimit.Config{
+		Rate:  config.RateLimitRate,
+		Burst: config.RateLimitBurst,
+	})
+
+	r, err := router.NewRouter(router.ServiceConfig{
+		AuthAddr:         config.AuthServiceAddr,
+		UserAddr:         config.UserServiceAddr,
+		PostAddr:         config.PostServiceAddr,
+		FeedAddr:         config.FeedServiceAddr,
+		ChatAddr:         config.ChatServiceAddr,
+		SearchAddr:       config.SearchServiceAddr,
+		NotificationAddr: config.NotificationServiceAddr,
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	jwtValidator := auth.NewJWTValidator(auth.DefaultJWTValidatorConfig())
+
 	return &GatewayServer{
-		broker:      brokerConn,
-		authService: authSvc,
+		jwtValidator: jwtValidator,
+		rateLimiter:  rateLimiter,
+		router:       r,
 	}, nil
+}
+
+
+// Start 启动 Gateway
+func (s *GatewayServer) Start(ctx context.Context) error {
+	authConn := s.router.GetAuthConn()
+	if authConn == nil {
+		log.Println("[Gateway] Warning: Auth Service not configured, JWT validation disabled")
+		return nil
+	}
+	log.Println("[Gateway] JWT validator initialization skipped (Auth Service not ready)")
+	return nil
+}
+
+// Stop 停止 Gateway
+func (s *GatewayServer) Stop() {
+	if s.jwtValidator != nil {
+		s.jwtValidator.Stop()
+	}
+	if s.rateLimiter != nil {
+		s.rateLimiter.Stop()
+	}
+	if s.router != nil {
+		s.router.Close()
+	}
+	log.Println("[Gateway] Server stopped")
 }
 
 // RegisterGatewayServer 注册 gRPC 服务
@@ -34,357 +99,139 @@ func RegisterGatewayServer(s *grpc.Server, srv *GatewayServer) {
 	pb.RegisterGatewayServiceServer(s, srv)
 }
 
-// Process 处理所有客户端请求
-func (s *GatewayServer) Process(ctx context.Context, req *pb.GatewayRequest) (*pb.GatewayResponse, error) {
-	log.Printf("Received request: action=%v, request_id=%s", req.Action, req.RequestId)
-
-	// 验证请求
-	if req.RequestId == "" {
-		return &pb.GatewayResponse{
-			RequestId:    req.RequestId,
-			Accepted:     false,
-			ErrorCode:    "INVALID_REQUEST",
-			ErrorMessage: "request_id is required",
-		}, nil
+// Health 健康检查
+func (s *GatewayServer) Health(ctx context.Context, req *pb.HealthRequest) (*pb.HealthResponse, error) {
+	services := s.router.HealthCheck(ctx)
+	servicesMap := make(map[string]bool)
+	for k, v := range services {
+		servicesMap[k] = v
 	}
-
-	// 判断是 Command 还是 Query
-	actionType := s.getActionType(req.Action)
-
-	switch actionType {
-	case ActionTypeCommand:
-		// Command: 发布到 MQ 异步处理
-		return s.processCommand(ctx, req)
-	case ActionTypeQuery:
-		// Query: 直接查询返回（TODO: 实现直接查询逻辑）
-		return s.processQuery(ctx, req)
-	default:
-		return &pb.GatewayResponse{
-			RequestId:    req.RequestId,
-			Accepted:     false,
-			ErrorCode:    "INVALID_ACTION",
-			ErrorMessage: fmt.Sprintf("unknown action: %v", req.Action),
-		}, nil
-	}
-}
-
-// ActionType 操作类型
-type ActionType int
-
-const (
-	ActionTypeUnknown ActionType = iota
-	ActionTypeCommand
-	ActionTypeQuery
-)
-
-// getActionType 获取操作类型
-func (s *GatewayServer) getActionType(action pb.Action) ActionType {
-	switch action {
-	// Command 类型（写操作）
-	case pb.Action_POST_CREATE, pb.Action_POST_DELETE, pb.Action_POST_UPDATE,
-		pb.Action_FEED_LIKE, pb.Action_FEED_UNLIKE, pb.Action_FEED_COMMENT,
-		pb.Action_FEED_COMMENT_DELETE, pb.Action_FEED_REPOST, pb.Action_FEED_BOOKMARK,
-		pb.Action_FEED_UNBOOKMARK, pb.Action_NOTIFICATION_READ, pb.Action_NOTIFICATION_READ_ALL,
-		pb.Action_USER_PROFILE_UPDATE, pb.Action_USER_FOLLOW, pb.Action_USER_UNFOLLOW,
-		pb.Action_CHAT_SEND, pb.Action_CHAT_CREATE_CONVERSATION, pb.Action_CHAT_MARK_READ:
-		return ActionTypeCommand
-
-	// Query 类型（读操作）
-	case pb.Action_POST_GET, pb.Action_POST_LIST, pb.Action_NOTIFICATION_LIST,
-		pb.Action_USER_PROFILE_GET, pb.Action_USER_FOLLOWERS, pb.Action_USER_FOLLOWING,
-		pb.Action_SEARCH_POSTS, pb.Action_SEARCH_USERS,
-		pb.Action_CHAT_GET_CONVERSATIONS, pb.Action_CHAT_GET_MESSAGES:
-		return ActionTypeQuery
-
-	default:
-		return ActionTypeUnknown
-	}
-}
-
-// processCommand 处理 Command 请求（发布到 MQ）
-func (s *GatewayServer) processCommand(ctx context.Context, req *pb.GatewayRequest) (*pb.GatewayResponse, error) {
-	routingKey := s.getRoutingKey(req.Action)
-	if routingKey == "" {
-		return &pb.GatewayResponse{
-			RequestId:    req.RequestId,
-			Accepted:     false,
-			ErrorCode:    "INVALID_ACTION",
-			ErrorMessage: fmt.Sprintf("unknown action: %v", req.Action),
-		}, nil
-	}
-
-	// 序列化整个请求并发布到队列
-	msgBytes, err := serializeRequest(req)
-	if err != nil {
-		return &pb.GatewayResponse{
-			RequestId:    req.RequestId,
-			Accepted:     false,
-			ErrorCode:    "SERIALIZATION_ERROR",
-			ErrorMessage: err.Error(),
-		}, nil
-	}
-
-	// 发布到 RabbitMQ
-	if err := s.broker.Publish(routingKey, msgBytes); err != nil {
-		log.Printf("Failed to publish message: %v", err)
-		return &pb.GatewayResponse{
-			RequestId:    req.RequestId,
-			Accepted:     false,
-			ErrorCode:    "BROKER_ERROR",
-			ErrorMessage: "failed to queue task",
-		}, nil
-	}
-
-	log.Printf("Command queued: request_id=%s, queue=%s", req.RequestId, routingKey)
-
-	return &pb.GatewayResponse{
-		RequestId: req.RequestId,
-		Accepted:  true,
+	return &pb.HealthResponse{
+		Healthy:  true,
+		Services: servicesMap,
 	}, nil
 }
 
-// processQuery 处理 Query 请求（直接查询返回）
-func (s *GatewayServer) processQuery(ctx context.Context, req *pb.GatewayRequest) (*pb.GatewayResponse, error) {
-	// TODO: 实现直接查询逻辑
-	// 目前暂时仍通过 MQ 处理，后续可改为直接 RPC 调用下游服务
-	routingKey := s.getRoutingKey(req.Action)
-	if routingKey == "" {
-		return &pb.GatewayResponse{
-			RequestId:    req.RequestId,
-			Accepted:     false,
-			ErrorCode:    "INVALID_ACTION",
-			ErrorMessage: fmt.Sprintf("unknown action: %v", req.Action),
-		}, nil
-	}
-
-	// 序列化整个请求并发布到队列
-	msgBytes, err := serializeRequest(req)
-	if err != nil {
-		return &pb.GatewayResponse{
-			RequestId:    req.RequestId,
-			Accepted:     false,
-			ErrorCode:    "SERIALIZATION_ERROR",
-			ErrorMessage: err.Error(),
-		}, nil
-	}
-
-	// 发布到 RabbitMQ
-	if err := s.broker.Publish(routingKey, msgBytes); err != nil {
-		log.Printf("Failed to publish message: %v", err)
-		return &pb.GatewayResponse{
-			RequestId:    req.RequestId,
-			Accepted:     false,
-			ErrorCode:    "BROKER_ERROR",
-			ErrorMessage: "failed to queue task",
-		}, nil
-	}
-
-	log.Printf("Query queued: request_id=%s, queue=%s", req.RequestId, routingKey)
-
-	return &pb.GatewayResponse{
-		RequestId: req.RequestId,
-		Accepted:  true,
-	}, nil
+// GetRouter 获取路由器（供外部使用）
+func (s *GatewayServer) GetRouter() *router.Router {
+	return s.router
 }
 
-// getRoutingKey 根据 action 获取对应的队列名
-func (s *GatewayServer) getRoutingKey(action pb.Action) string {
-	switch action {
-	// Auth
-	case pb.Action_USER_REGISTER:
-		return broker.QueueAuthRegister
-	case pb.Action_USER_LOGIN:
-		return broker.QueueAuthLogin
-
-	// Post
-	case pb.Action_POST_CREATE:
-		return broker.QueuePostCreate
-	case pb.Action_POST_GET:
-		return broker.QueuePostGet
-	case pb.Action_POST_LIST:
-		return broker.QueuePostList
-	case pb.Action_POST_DELETE:
-		return broker.QueuePostDelete
-	case pb.Action_POST_UPDATE:
-		return broker.QueuePostUpdate
-
-	// Feed
-	case pb.Action_FEED_LIKE:
-		return broker.QueueFeedLike
-	case pb.Action_FEED_UNLIKE:
-		return broker.QueueFeedUnlike
-	case pb.Action_FEED_COMMENT:
-		return broker.QueueFeedComment
-	case pb.Action_FEED_COMMENT_DELETE:
-		return broker.QueueFeedCommentDelete
-	case pb.Action_FEED_REPOST:
-		return broker.QueueFeedRepost
-	case pb.Action_FEED_BOOKMARK:
-		return broker.QueueFeedBookmark
-	case pb.Action_FEED_UNBOOKMARK:
-		return broker.QueueFeedUnbookmark
-
-	// Notification
-	case pb.Action_NOTIFICATION_LIST:
-		return broker.QueueNotificationList
-	case pb.Action_NOTIFICATION_READ:
-		return broker.QueueNotificationRead
-	case pb.Action_NOTIFICATION_READ_ALL:
-		return broker.QueueNotificationReadAll
-
-	// User
-	case pb.Action_USER_PROFILE_GET:
-		return broker.QueueUserProfileGet
-	case pb.Action_USER_PROFILE_UPDATE:
-		return broker.QueueUserProfileUpdate
-	case pb.Action_USER_FOLLOW:
-		return broker.QueueUserFollow
-	case pb.Action_USER_UNFOLLOW:
-		return broker.QueueUserUnfollow
-	case pb.Action_USER_FOLLOWERS:
-		return broker.QueueUserFollowers
-	case pb.Action_USER_FOLLOWING:
-		return broker.QueueUserFollowing
-
-	// Search
-	case pb.Action_SEARCH_POSTS:
-		return broker.QueueSearchPosts
-	case pb.Action_SEARCH_USERS:
-		return broker.QueueSearchUsers
-
-	// Chat
-	case pb.Action_CHAT_SEND:
-		return broker.QueueChatSend
-	case pb.Action_CHAT_GET_CONVERSATIONS:
-		return broker.QueueChatGetConversations
-	case pb.Action_CHAT_GET_MESSAGES:
-		return broker.QueueChatGetMessages
-	case pb.Action_CHAT_CREATE_CONVERSATION:
-		return broker.QueueChatCreateConversation
-	case pb.Action_CHAT_MARK_READ:
-		return broker.QueueChatMarkRead
-
-	default:
-		return ""
-	}
+// GetJWTValidator 获取 JWT 验签器（供外部使用）
+func (s *GatewayServer) GetJWTValidator() *auth.JWTValidator {
+	return s.jwtValidator
 }
 
-// GetResult 获取异步任务结果（暂时返回 pending）
-func (s *GatewayServer) GetResult(ctx context.Context, req *pb.GetResultRequest) (*pb.TaskResult, error) {
-	// TODO: 从 Redis 或其他存储获取结果
-	return &pb.TaskResult{
-		RequestId: req.RequestId,
-		Status:    pb.TaskStatus_PENDING,
-	}, nil
+// GetRateLimiter 获取限流器（供外部使用）
+func (s *GatewayServer) GetRateLimiter() *ratelimit.Limiter {
+	return s.rateLimiter
 }
 
-// serializeRequest 序列化请求为字节
-func serializeRequest(req *pb.GatewayRequest) ([]byte, error) {
-	return proto.Marshal(req)
-}
-
-// Login 同步登录
-func (s *GatewayServer) Login(ctx context.Context, req *pb.LoginRequest) (*pb.AuthResponse, error) {
-	log.Printf("Login request: username=%s", req.Username)
-
-	if req.Username == "" || req.Password == "" {
-		return &pb.AuthResponse{
-			Success:      false,
-			ErrorCode:    "INVALID_ARGUMENT",
-			ErrorMessage: "username and password are required",
-		}, nil
-	}
-
-	result, err := s.authService.Login(req.Username, req.Password)
-	if err != nil {
-		if err == auth.ErrInvalidCredentials {
-			return &pb.AuthResponse{
-				Success:      false,
-				ErrorCode:    "UNAUTHENTICATED",
-				ErrorMessage: "invalid username or password",
-			}, nil
+// AuthInterceptor 认证拦截器（用于 gRPC 中间件）
+func (s *GatewayServer) AuthInterceptor() grpc.UnaryServerInterceptor {
+	return func(ctx context.Context, req interface{}, info *grpc.UnaryServerInfo, handler grpc.UnaryHandler) (interface{}, error) {
+		// 跳过不需要认证的方法
+		if isPublicMethod(info.FullMethod) {
+			return handler(ctx, req)
 		}
-		log.Printf("Login error: %v", err)
-		return nil, status.Errorf(codes.Internal, "internal error")
-	}
 
-	return &pb.AuthResponse{
-		Success:      true,
-		AccessToken:  result.AccessToken,
-		RefreshToken: result.RefreshToken,
-		UserId:       result.UserID,
-	}, nil
+		// 限流检查
+		if !s.rateLimiter.Allow() {
+			return nil, status.Error(codes.ResourceExhausted, "rate limit exceeded")
+		}
+
+		// JWT 验签
+		token, err := extractToken(ctx)
+		if err != nil {
+			return nil, err
+		}
+
+		claims, err := s.jwtValidator.ValidateToken(token)
+		if err != nil {
+			return nil, status.Error(codes.Unauthenticated, "invalid token")
+		}
+
+		// 将用户信息注入 context
+		ctx = context.WithValue(ctx, "user_id", claims.UserID)
+		md, _ := metadata.FromIncomingContext(ctx)
+		md = metadata.Join(md, metadata.Pairs("user_id", claims.UserID))
+		ctx = metadata.NewOutgoingContext(ctx, md)
+
+		return handler(ctx, req)
+	}
 }
 
-// Register 同步注册
-func (s *GatewayServer) Register(ctx context.Context, req *pb.RegisterRequest) (*pb.AuthResponse, error) {
-	log.Printf("Register request: username=%s, email=%s", req.Username, req.Email)
-
-	if req.Username == "" || req.Email == "" || req.Password == "" {
-		return &pb.AuthResponse{
-			Success:      false,
-			ErrorCode:    "INVALID_ARGUMENT",
-			ErrorMessage: "username, email and password are required",
-		}, nil
-	}
-
-	result, err := s.authService.Register(req.Username, req.Email, req.Password)
-	if err != nil {
-		if err == auth.ErrUserExists {
-			return &pb.AuthResponse{
-				Success:      false,
-				ErrorCode:    "ALREADY_EXISTS",
-				ErrorMessage: "user already exists",
-			}, nil
+// StreamAuthInterceptor 流式认证拦截器
+func (s *GatewayServer) StreamAuthInterceptor() grpc.StreamServerInterceptor {
+	return func(srv interface{}, ss grpc.ServerStream, info *grpc.StreamServerInfo, handler grpc.StreamHandler) error {
+		if isPublicMethod(info.FullMethod) {
+			return handler(srv, ss)
 		}
-		log.Printf("Register error: %v", err)
-		return nil, status.Errorf(codes.Internal, "internal error")
-	}
 
-	return &pb.AuthResponse{
-		Success:      true,
-		AccessToken:  result.AccessToken,
-		RefreshToken: result.RefreshToken,
-		UserId:       result.UserID,
-	}, nil
+		if !s.rateLimiter.Allow() {
+			return status.Error(codes.ResourceExhausted, "rate limit exceeded")
+		}
+
+		token, err := extractToken(ss.Context())
+		if err != nil {
+			return err
+		}
+
+		claims, err := s.jwtValidator.ValidateToken(token)
+		if err != nil {
+			return status.Error(codes.Unauthenticated, "invalid token")
+		}
+
+		wrapped := &wrappedServerStream{
+			ServerStream: ss,
+			ctx:          context.WithValue(ss.Context(), "user_id", claims.UserID),
+		}
+
+		return handler(srv, wrapped)
+	}
 }
 
-// RefreshToken 刷新 Token
-func (s *GatewayServer) RefreshToken(ctx context.Context, req *pb.RefreshTokenRequest) (*pb.AuthResponse, error) {
-	log.Printf("RefreshToken request")
+// wrappedServerStream 包装的 ServerStream
+type wrappedServerStream struct {
+	grpc.ServerStream
+	ctx context.Context
+}
 
-	if req.RefreshToken == "" {
-		return &pb.AuthResponse{
-			Success:      false,
-			ErrorCode:    "INVALID_ARGUMENT",
-			ErrorMessage: "refresh_token is required",
-		}, nil
+func (w *wrappedServerStream) Context() context.Context {
+	return w.ctx
+}
+
+// isPublicMethod 判断是否为公开方法（不需要认证）
+func isPublicMethod(method string) bool {
+	publicMethods := map[string]bool{
+		"/gateway.GatewayService/Health": true,
+		"/auth.AuthService/Login":        true,
+		"/auth.AuthService/Register":     true,
+		"/auth.AuthService/GetPublicKey": true,
+	}
+	return publicMethods[method]
+}
+
+// extractToken 从 context 提取 Token
+func extractToken(ctx context.Context) (string, error) {
+	md, ok := metadata.FromIncomingContext(ctx)
+	if !ok {
+		return "", status.Error(codes.Unauthenticated, "missing metadata")
 	}
 
-	result, err := s.authService.RefreshToken(req.RefreshToken)
-	if err != nil {
-		if err == auth.ErrInvalidToken || err == auth.ErrTokenExpired {
-			return &pb.AuthResponse{
-				Success:      false,
-				ErrorCode:    "UNAUTHENTICATED",
-				ErrorMessage: "invalid or expired refresh token",
-			}, nil
+	authHeader := md.Get("authorization")
+	if len(authHeader) > 0 {
+		token := authHeader[0]
+		if len(token) > 7 && token[:7] == "Bearer " {
+			return token[7:], nil
 		}
-		if err == auth.ErrUserNotFound {
-			return &pb.AuthResponse{
-				Success:      false,
-				ErrorCode:    "NOT_FOUND",
-				ErrorMessage: "user not found",
-			}, nil
-		}
-		log.Printf("RefreshToken error: %v", err)
-		return nil, status.Errorf(codes.Internal, "internal error")
+		return token, nil
 	}
 
-	return &pb.AuthResponse{
-		Success:      true,
-		AccessToken:  result.AccessToken,
-		RefreshToken: result.RefreshToken,
-		UserId:       result.UserID,
-	}, nil
+	accessToken := md.Get("access_token")
+	if len(accessToken) > 0 {
+		return accessToken[0], nil
+	}
+
+	return "", status.Error(codes.Unauthenticated, "missing authorization token")
 }

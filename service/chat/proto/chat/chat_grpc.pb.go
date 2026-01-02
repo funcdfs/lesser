@@ -24,21 +24,22 @@ const (
 	ChatService_CreateConversation_FullMethodName     = "/chat.ChatService/CreateConversation"
 	ChatService_GetMessages_FullMethodName            = "/chat.ChatService/GetMessages"
 	ChatService_SendMessage_FullMethodName            = "/chat.ChatService/SendMessage"
-	ChatService_StreamMessages_FullMethodName         = "/chat.ChatService/StreamMessages"
 	ChatService_MarkAsRead_FullMethodName             = "/chat.ChatService/MarkAsRead"
 	ChatService_MarkConversationAsRead_FullMethodName = "/chat.ChatService/MarkConversationAsRead"
 	ChatService_GetUnreadCounts_FullMethodName        = "/chat.ChatService/GetUnreadCounts"
+	ChatService_StreamEvents_FullMethodName           = "/chat.ChatService/StreamEvents"
 )
 
 // ChatServiceClient is the client API for ChatService service.
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 //
-// 聊天服务 - 处理实时消息
+// ChatService 聊天服务
+// 处理会话管理、消息收发、实时通信
 type ChatServiceClient interface {
 	// 获取用户的所有会话
 	GetConversations(ctx context.Context, in *GetConversationsRequest, opts ...grpc.CallOption) (*ConversationsResponse, error)
-	// 根据ID获取单个会话
+	// 根据 ID 获取单个会话
 	GetConversation(ctx context.Context, in *GetConversationRequest, opts ...grpc.CallOption) (*Conversation, error)
 	// 创建新会话
 	CreateConversation(ctx context.Context, in *CreateConversationRequest, opts ...grpc.CallOption) (*Conversation, error)
@@ -46,14 +47,15 @@ type ChatServiceClient interface {
 	GetMessages(ctx context.Context, in *GetMessagesRequest, opts ...grpc.CallOption) (*MessagesResponse, error)
 	// 发送消息到会话
 	SendMessage(ctx context.Context, in *SendMessageRequest, opts ...grpc.CallOption) (*Message, error)
-	// 实时消息流
-	StreamMessages(ctx context.Context, in *StreamRequest, opts ...grpc.CallOption) (grpc.ServerStreamingClient[Message], error)
 	// 标记单条消息为已读
 	MarkAsRead(ctx context.Context, in *MarkAsReadRequest, opts ...grpc.CallOption) (*ReadReceipt, error)
 	// 标记会话中所有消息为已读
 	MarkConversationAsRead(ctx context.Context, in *MarkConversationAsReadRequest, opts ...grpc.CallOption) (*BatchReadReceipt, error)
 	// 批量获取多个会话的未读数
 	GetUnreadCounts(ctx context.Context, in *GetUnreadCountsRequest, opts ...grpc.CallOption) (*GetUnreadCountsResponse, error)
+	// 双向流：实时事件（替代 WebSocket）
+	// 客户端通过此流订阅会话、发送消息、接收实时事件
+	StreamEvents(ctx context.Context, opts ...grpc.CallOption) (grpc.BidiStreamingClient[ClientEvent, ServerEvent], error)
 }
 
 type chatServiceClient struct {
@@ -114,25 +116,6 @@ func (c *chatServiceClient) SendMessage(ctx context.Context, in *SendMessageRequ
 	return out, nil
 }
 
-func (c *chatServiceClient) StreamMessages(ctx context.Context, in *StreamRequest, opts ...grpc.CallOption) (grpc.ServerStreamingClient[Message], error) {
-	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
-	stream, err := c.cc.NewStream(ctx, &ChatService_ServiceDesc.Streams[0], ChatService_StreamMessages_FullMethodName, cOpts...)
-	if err != nil {
-		return nil, err
-	}
-	x := &grpc.GenericClientStream[StreamRequest, Message]{ClientStream: stream}
-	if err := x.ClientStream.SendMsg(in); err != nil {
-		return nil, err
-	}
-	if err := x.ClientStream.CloseSend(); err != nil {
-		return nil, err
-	}
-	return x, nil
-}
-
-// This type alias is provided for backwards compatibility with existing code that references the prior non-generic stream type by name.
-type ChatService_StreamMessagesClient = grpc.ServerStreamingClient[Message]
-
 func (c *chatServiceClient) MarkAsRead(ctx context.Context, in *MarkAsReadRequest, opts ...grpc.CallOption) (*ReadReceipt, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(ReadReceipt)
@@ -163,15 +146,29 @@ func (c *chatServiceClient) GetUnreadCounts(ctx context.Context, in *GetUnreadCo
 	return out, nil
 }
 
+func (c *chatServiceClient) StreamEvents(ctx context.Context, opts ...grpc.CallOption) (grpc.BidiStreamingClient[ClientEvent, ServerEvent], error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	stream, err := c.cc.NewStream(ctx, &ChatService_ServiceDesc.Streams[0], ChatService_StreamEvents_FullMethodName, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	x := &grpc.GenericClientStream[ClientEvent, ServerEvent]{ClientStream: stream}
+	return x, nil
+}
+
+// This type alias is provided for backwards compatibility with existing code that references the prior non-generic stream type by name.
+type ChatService_StreamEventsClient = grpc.BidiStreamingClient[ClientEvent, ServerEvent]
+
 // ChatServiceServer is the server API for ChatService service.
 // All implementations must embed UnimplementedChatServiceServer
 // for forward compatibility.
 //
-// 聊天服务 - 处理实时消息
+// ChatService 聊天服务
+// 处理会话管理、消息收发、实时通信
 type ChatServiceServer interface {
 	// 获取用户的所有会话
 	GetConversations(context.Context, *GetConversationsRequest) (*ConversationsResponse, error)
-	// 根据ID获取单个会话
+	// 根据 ID 获取单个会话
 	GetConversation(context.Context, *GetConversationRequest) (*Conversation, error)
 	// 创建新会话
 	CreateConversation(context.Context, *CreateConversationRequest) (*Conversation, error)
@@ -179,14 +176,15 @@ type ChatServiceServer interface {
 	GetMessages(context.Context, *GetMessagesRequest) (*MessagesResponse, error)
 	// 发送消息到会话
 	SendMessage(context.Context, *SendMessageRequest) (*Message, error)
-	// 实时消息流
-	StreamMessages(*StreamRequest, grpc.ServerStreamingServer[Message]) error
 	// 标记单条消息为已读
 	MarkAsRead(context.Context, *MarkAsReadRequest) (*ReadReceipt, error)
 	// 标记会话中所有消息为已读
 	MarkConversationAsRead(context.Context, *MarkConversationAsReadRequest) (*BatchReadReceipt, error)
 	// 批量获取多个会话的未读数
 	GetUnreadCounts(context.Context, *GetUnreadCountsRequest) (*GetUnreadCountsResponse, error)
+	// 双向流：实时事件（替代 WebSocket）
+	// 客户端通过此流订阅会话、发送消息、接收实时事件
+	StreamEvents(grpc.BidiStreamingServer[ClientEvent, ServerEvent]) error
 	mustEmbedUnimplementedChatServiceServer()
 }
 
@@ -212,9 +210,6 @@ func (UnimplementedChatServiceServer) GetMessages(context.Context, *GetMessagesR
 func (UnimplementedChatServiceServer) SendMessage(context.Context, *SendMessageRequest) (*Message, error) {
 	return nil, status.Error(codes.Unimplemented, "method SendMessage not implemented")
 }
-func (UnimplementedChatServiceServer) StreamMessages(*StreamRequest, grpc.ServerStreamingServer[Message]) error {
-	return status.Error(codes.Unimplemented, "method StreamMessages not implemented")
-}
 func (UnimplementedChatServiceServer) MarkAsRead(context.Context, *MarkAsReadRequest) (*ReadReceipt, error) {
 	return nil, status.Error(codes.Unimplemented, "method MarkAsRead not implemented")
 }
@@ -223,6 +218,9 @@ func (UnimplementedChatServiceServer) MarkConversationAsRead(context.Context, *M
 }
 func (UnimplementedChatServiceServer) GetUnreadCounts(context.Context, *GetUnreadCountsRequest) (*GetUnreadCountsResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method GetUnreadCounts not implemented")
+}
+func (UnimplementedChatServiceServer) StreamEvents(grpc.BidiStreamingServer[ClientEvent, ServerEvent]) error {
+	return status.Error(codes.Unimplemented, "method StreamEvents not implemented")
 }
 func (UnimplementedChatServiceServer) mustEmbedUnimplementedChatServiceServer() {}
 func (UnimplementedChatServiceServer) testEmbeddedByValue()                     {}
@@ -335,17 +333,6 @@ func _ChatService_SendMessage_Handler(srv interface{}, ctx context.Context, dec 
 	return interceptor(ctx, in, info, handler)
 }
 
-func _ChatService_StreamMessages_Handler(srv interface{}, stream grpc.ServerStream) error {
-	m := new(StreamRequest)
-	if err := stream.RecvMsg(m); err != nil {
-		return err
-	}
-	return srv.(ChatServiceServer).StreamMessages(m, &grpc.GenericServerStream[StreamRequest, Message]{ServerStream: stream})
-}
-
-// This type alias is provided for backwards compatibility with existing code that references the prior non-generic stream type by name.
-type ChatService_StreamMessagesServer = grpc.ServerStreamingServer[Message]
-
 func _ChatService_MarkAsRead_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(MarkAsReadRequest)
 	if err := dec(in); err != nil {
@@ -400,6 +387,13 @@ func _ChatService_GetUnreadCounts_Handler(srv interface{}, ctx context.Context, 
 	return interceptor(ctx, in, info, handler)
 }
 
+func _ChatService_StreamEvents_Handler(srv interface{}, stream grpc.ServerStream) error {
+	return srv.(ChatServiceServer).StreamEvents(&grpc.GenericServerStream[ClientEvent, ServerEvent]{ServerStream: stream})
+}
+
+// This type alias is provided for backwards compatibility with existing code that references the prior non-generic stream type by name.
+type ChatService_StreamEventsServer = grpc.BidiStreamingServer[ClientEvent, ServerEvent]
+
 // ChatService_ServiceDesc is the grpc.ServiceDesc for ChatService service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -442,9 +436,10 @@ var ChatService_ServiceDesc = grpc.ServiceDesc{
 	},
 	Streams: []grpc.StreamDesc{
 		{
-			StreamName:    "StreamMessages",
-			Handler:       _ChatService_StreamMessages_Handler,
+			StreamName:    "StreamEvents",
+			Handler:       _ChatService_StreamEvents_Handler,
 			ServerStreams: true,
+			ClientStreams: true,
 		},
 	},
 	Metadata: "chat/chat.proto",

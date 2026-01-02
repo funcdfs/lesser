@@ -1,4 +1,5 @@
 import '../../../auth/data/models/user_model.dart';
+import '../../../../generated/protos/feed/feed.pb.dart' as feed_pb;
 import '../../domain/entities/comment.dart';
 
 /// Comment data model
@@ -14,6 +15,42 @@ class CommentModel extends Comment {
     super.repliesCount,
     super.isLiked,
   });
+
+  /// Create from Proto message
+  factory CommentModel.fromProto(feed_pb.Comment proto) {
+    return CommentModel(
+      id: proto.id,
+      postId: proto.postId,
+      author: UserModel.fromProto(proto.author),
+      content: proto.content,
+      createdAt: proto.hasCreatedAt()
+          ? DateTime.fromMillisecondsSinceEpoch(
+              proto.createdAt.seconds.toInt() * 1000,
+            )
+          : DateTime.now(),
+      parentId: proto.hasParentId() && proto.parentId.isNotEmpty
+          ? proto.parentId
+          : null,
+      likesCount: 0, // Not in proto, default to 0
+      repliesCount: proto.replyCount,
+      isLiked: false, // Not in proto, default to false
+    );
+  }
+
+  /// Convert to Entity
+  Comment toEntity() {
+    return Comment(
+      id: id,
+      postId: postId,
+      author: author,
+      content: content,
+      createdAt: createdAt,
+      parentId: parentId,
+      likesCount: likesCount,
+      repliesCount: repliesCount,
+      isLiked: isLiked,
+    );
+  }
 
   /// Create from JSON
   factory CommentModel.fromJson(Map<String, dynamic> json) {

@@ -10,7 +10,6 @@ import (
 	"github.com/google/uuid"
 	"github.com/lesser/chat/internal/auth"
 	grpchandler "github.com/lesser/chat/internal/handler/grpc"
-	"github.com/lesser/chat/internal/handler/ws"
 	"github.com/lesser/chat/internal/service"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
@@ -25,7 +24,7 @@ type GRPCServer struct {
 	chatHandler *grpchandler.ChatHandler
 }
 
-func NewGRPCServer(chatService *service.ChatService, authClient *service.AuthClient, hub *ws.Hub) *GRPCServer {
+func NewGRPCServer(chatService *service.ChatService, authClient *service.AuthClient) *GRPCServer {
 	keepalivePolicy := keepalive.EnforcementPolicy{
 		MinTime:             10 * time.Second,
 		PermitWithoutStream: true,
@@ -52,7 +51,7 @@ func NewGRPCServer(chatService *service.ChatService, authClient *service.AuthCli
 		grpc.StreamInterceptor(loggingStreamInterceptor()),
 	)
 
-	chatHandler := grpchandler.NewChatHandler(chatService, hub)
+	chatHandler := grpchandler.NewChatHandler(chatService)
 	chatHandler.Register(server)
 
 	reflection.Register(server)

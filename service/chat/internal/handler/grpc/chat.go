@@ -2,17 +2,14 @@ package grpc
 
 import (
 	"context"
-	"log"
 	"strconv"
-	"time"
 
 	"github.com/google/uuid"
 	"github.com/lesser/chat/internal/auth"
-	"github.com/lesser/chat/internal/handler/ws"
 	"github.com/lesser/chat/internal/model"
 	"github.com/lesser/chat/internal/service"
 	chatpb "github.com/lesser/chat/proto/chat"
-	"github.com/lesser/chat/proto/common"
+	"github.com/lesser/pkg/proto/common"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
@@ -20,14 +17,14 @@ import (
 
 type ChatHandler struct {
 	chatpb.UnimplementedChatServiceServer
-	chatService *service.ChatService
-	hub         *ws.Hub
+	chatService   *service.ChatService
+	streamManager *StreamManager
 }
 
-func NewChatHandler(chatService *service.ChatService, hub *ws.Hub) *ChatHandler {
+func NewChatHandler(chatService *service.ChatService) *ChatHandler {
 	return &ChatHandler{
-		chatService: chatService,
-		hub:         hub,
+		chatService:   chatService,
+		streamManager: NewStreamManager(chatService),
 	}
 }
 
@@ -227,54 +224,10 @@ func (h *ChatHandler) SendMessage(ctx context.Context, req *chatpb.SendMessageRe
 		return nil, status.Error(codes.Internal, err.Error())
 	}
 
-	// 通过 WebSocket 广播消息
-	if h.hub != nil {
-		h.hub.BroadcastToConversation(convID, msg)
-
-		// 异步通知会话成员
-		go func() {
-			ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
-			defer cancel()
-
-			memberIDs, err := h.chatService.GetConversationMemberIDs(ctx, convID)
-			if err != nil {
-				log.Printf("获取会话 %s 成员失败: %v", convID, err)
-				return
-			}
-
-			for _, memberID := range memberIDs {
-				if memberID != senderID {
-					unreadCount, err := h.chatService.GetUnreadCount(ctx, convID, memberID)
-					if err != nil {
-						unreadCount = 1
-					}
-
-					h.hub.NotifyUser(memberID, "conversation_update", ws.ConversationUpdatePayload{
-						ConversationID: convID.String(),
-						LastMessage:    msg,
-						UnreadCount:    int(unreadCount),
-					})
-				}
-			}
-		}()
-	}
+	// 通过 gRPC 双向流广播消息给在线用户
+	h.streamManager.BroadcastToConversation(convID, msg)
 
 	return modelToProtoMessage(msg), nil
-}
-
-func (h *ChatHandler) StreamMessages(req *chatpb.StreamRequest, stream grpc.ServerStreamingServer[chatpb.Message]) error {
-	if req.GetUserId() == "" {
-		return status.Error(codes.InvalidArgument, "用户ID不能为空")
-	}
-
-	userID, err := uuid.Parse(req.GetUserId())
-	if err != nil {
-		return status.Error(codes.InvalidArgument, "用户ID格式无效")
-	}
-
-	_ = userID
-	<-stream.Context().Done()
-	return nil
 }
 
 
@@ -310,18 +263,8 @@ func (h *ChatHandler) MarkAsRead(ctx context.Context, req *chatpb.MarkAsReadRequ
 		return nil, status.Error(codes.Internal, err.Error())
 	}
 
-	// 通过 WebSocket 通知消息发送者
-	if h.hub != nil {
-		go func() {
-			ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
-			defer cancel()
-
-			msg, err := h.chatService.GetMessageByID(ctx, messageID)
-			if err == nil && msg.SenderID != userID && h.hub.IsUserOnline(msg.SenderID) {
-				h.hub.NotifyReadReceipt(msg.SenderID, receipt)
-			}
-		}()
-	}
+	// 通过 gRPC 双向流通知消息发送者
+	h.streamManager.NotifyReadReceipt(receipt)
 
 	return &chatpb.ReadReceipt{
 		MessageId:      strconv.FormatInt(receipt.MessageID, 10),
@@ -360,20 +303,8 @@ func (h *ChatHandler) MarkConversationAsRead(ctx context.Context, req *chatpb.Ma
 		return nil, status.Error(codes.Internal, err.Error())
 	}
 
-	// 通过 WebSocket 通知消息发送者
-	if h.hub != nil && len(receipt.MessageIDs) > 0 {
-		go func() {
-			ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
-			defer cancel()
-
-			senderIDs := h.getMessageSenderIDs(ctx, receipt.MessageIDs)
-			for _, senderID := range senderIDs {
-				if senderID != userID && h.hub.IsUserOnline(senderID) {
-					h.hub.NotifyBatchReadReceipt(senderID, receipt)
-				}
-			}
-		}()
-	}
+	// 通过 gRPC 双向流通知消息发送者
+	h.streamManager.NotifyBatchReadReceipt(receipt)
 
 	messageIDs := make([]string, len(receipt.MessageIDs))
 	for i, id := range receipt.MessageIDs {
@@ -426,6 +357,11 @@ func (h *ChatHandler) GetUnreadCounts(ctx context.Context, req *chatpb.GetUnread
 	return &chatpb.GetUnreadCountsResponse{
 		UnreadCounts: unreadCounts,
 	}, nil
+}
+
+// StreamEvents 双向流 RPC（替代 WebSocket）
+func (h *ChatHandler) StreamEvents(stream chatpb.ChatService_StreamEventsServer) error {
+	return h.streamManager.HandleStreamEvents(stream)
 }
 
 

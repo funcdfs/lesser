@@ -3,152 +3,21 @@ package gateway;
 
 option go_package = "github.com/lesser/gateway/proto/gateway";
 
-// GatewayService 统一网关入口
+// GatewayService 网关服务
+// 设计要点：
+// 1. Gateway 只做 JWT 验签、限流、路由，不做业务逻辑
+// 2. 业务请求直接转发到对应 Service（Auth/User/Post/Feed/Chat/Search/Notification）
+// 3. Gateway 本身只提供健康检查接口
 service GatewayService {
-  // Process 处理所有客户端请求 (异步 Command)
-  rpc Process(GatewayRequest) returns (GatewayResponse);
-  
-  // GetResult 获取异步任务结果
-  rpc GetResult(GetResultRequest) returns (TaskResult);
-  
-  // 同步 Auth 接口
-  rpc Login(LoginRequest) returns (AuthResponse);
-  rpc Register(RegisterRequest) returns (AuthResponse);
-  rpc RefreshToken(RefreshTokenRequest) returns (AuthResponse);
+  // Health 健康检查
+  rpc Health(HealthRequest) returns (HealthResponse);
 }
 
-// LoginRequest 登录请求
-message LoginRequest {
-  string username = 1;
-  string password = 2;
-}
+// HealthRequest 健康检查请求
+message HealthRequest {}
 
-// RegisterRequest 注册请求
-message RegisterRequest {
-  string username = 1;
-  string email = 2;
-  string password = 3;
-}
-
-// RefreshTokenRequest 刷新 Token 请求
-message RefreshTokenRequest {
-  string refresh_token = 1;
-}
-
-// AuthResponse 认证响应
-message AuthResponse {
-  bool success = 1;
-  string access_token = 2;
-  string refresh_token = 3;
-  string user_id = 4;
-  string error_code = 5;
-  string error_message = 6;
-}
-
-// Action 操作类型枚举
-enum Action {
-  ACTION_UNSPECIFIED = 0;
-  
-  // Auth (1-9) - 已迁移到同步 RPC
-  USER_REGISTER = 1;  // [DEPRECATED] 使用 Register RPC
-  USER_LOGIN = 2;     // [DEPRECATED] 使用 Login RPC
-  USER_LOGOUT = 3;
-  
-  // Post (10-19)
-  // Command: POST_CREATE, POST_DELETE, POST_UPDATE
-  // Query: POST_GET, POST_LIST
-  POST_CREATE = 10;   // Command
-  POST_GET = 11;      // Query
-  POST_LIST = 12;     // Query
-  POST_DELETE = 13;   // Command
-  POST_UPDATE = 14;   // Command
-  
-  // Feed (20-29)
-  // Command: FEED_LIKE, FEED_UNLIKE, FEED_COMMENT, FEED_COMMENT_DELETE, FEED_REPOST, FEED_BOOKMARK, FEED_UNBOOKMARK
-  // Query: (none)
-  FEED_LIKE = 20;           // Command
-  FEED_UNLIKE = 21;         // Command
-  FEED_COMMENT = 22;        // Command
-  FEED_COMMENT_DELETE = 23; // Command
-  FEED_REPOST = 24;         // Command
-  FEED_BOOKMARK = 25;       // Command
-  FEED_UNBOOKMARK = 26;     // Command
-  
-  // Notification (30-39)
-  // Command: NOTIFICATION_READ, NOTIFICATION_READ_ALL
-  // Query: NOTIFICATION_LIST
-  NOTIFICATION_LIST = 30;     // Query
-  NOTIFICATION_READ = 31;     // Command
-  NOTIFICATION_READ_ALL = 32; // Command
-  
-  // User (40-49)
-  // Command: USER_PROFILE_UPDATE, USER_FOLLOW, USER_UNFOLLOW
-  // Query: USER_PROFILE_GET, USER_FOLLOWERS, USER_FOLLOWING
-  USER_PROFILE_GET = 40;    // Query
-  USER_PROFILE_UPDATE = 41; // Command
-  USER_FOLLOW = 42;         // Command
-  USER_UNFOLLOW = 43;       // Command
-  USER_FOLLOWERS = 44;      // Query
-  USER_FOLLOWING = 45;      // Query
-  
-  // Search (50-59)
-  // Query: SEARCH_POSTS, SEARCH_USERS
-  SEARCH_POSTS = 50; // Query
-  SEARCH_USERS = 51; // Query
-  
-  // Chat (60-69) - 已迁移到 Chat Service gRPC
-  // Command: CHAT_SEND, CHAT_CREATE_CONVERSATION, CHAT_MARK_READ
-  // Query: CHAT_GET_CONVERSATIONS, CHAT_GET_MESSAGES
-  CHAT_SEND = 60;                // Command [DEPRECATED] 使用 Chat Service gRPC
-  CHAT_GET_CONVERSATIONS = 61;   // Query [DEPRECATED] 使用 Chat Service gRPC
-  CHAT_GET_MESSAGES = 62;        // Query [DEPRECATED] 使用 Chat Service gRPC
-  CHAT_CREATE_CONVERSATION = 63; // Command [DEPRECATED] 使用 Chat Service gRPC
-  CHAT_MARK_READ = 64;           // Command [DEPRECATED] 使用 Chat Service gRPC
-}
-
-// ActionType 操作类型分类
-enum ActionType {
-  ACTION_TYPE_UNSPECIFIED = 0;
-  COMMAND = 1;  // 写操作，发布到 MQ 异步处理
-  QUERY = 2;    // 读操作，直接查询返回
-}
-
-// GatewayRequest 统一网关请求
-message GatewayRequest {
-  Action action = 1;           // 操作类型
-  string version = 2;          // API 版本，如 "1.0"
-  bytes payload = 3;           // 序列化的具体请求 (RegisterRequest/LoginRequest 等)
-  string request_id = 4;       // 请求唯一标识，客户端生成
-}
-
-// GatewayResponse 统一网关响应
-message GatewayResponse {
-  string request_id = 1;       // 请求唯一标识
-  bool accepted = 2;           // 是否接受处理
-  string error_code = 3;       // 错误码（如有）
-  string error_message = 4;    // 错误信息（如有）
-}
-
-// GetResultRequest 获取任务结果请求
-message GetResultRequest {
-  string request_id = 1;
-}
-
-// TaskResult 任务处理结果
-message TaskResult {
-  string request_id = 1;       // 请求唯一标识
-  bool success = 2;            // 是否成功
-  bytes payload = 3;           // 序列化的具体响应 (AuthResponse 等)
-  string error_code = 4;       // 错误码（如有）
-  string error_message = 5;    // 错误信息（如有）
-  TaskStatus status = 6;       // 任务状态
-}
-
-// TaskStatus 任务状态
-enum TaskStatus {
-  TASK_STATUS_UNSPECIFIED = 0;
-  PENDING = 1;                 // 等待处理
-  PROCESSING = 2;              // 处理中
-  COMPLETED = 3;               // 已完成
-  FAILED = 4;                  // 失败
+// HealthResponse 健康检查响应
+message HealthResponse {
+  bool healthy = 1;
+  map<string, bool> services = 2;  // 各服务健康状态
 }

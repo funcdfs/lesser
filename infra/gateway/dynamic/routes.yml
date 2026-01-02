@@ -1,10 +1,11 @@
 # ============================================================================
 # Traefik Dynamic Routes Configuration
+# gRPC 全面迁移后的路由配置 - 纯 gRPC + gRPC-Web
 # ============================================================================
 
 http:
   # ============================================================================
-  # Routers - HTTP/REST API
+  # gRPC-Web Routers (Flutter Web 客户端使用)
   # ============================================================================
   routers:
     # Gateway gRPC-Web Routes (统一 API 入口)
@@ -70,23 +71,7 @@ http:
       middlewares:
         - grpc-web-headers
 
-    # Chat Service REST API Routes
-    chat-api:
-      rule: "PathPrefix(`/api/v1/chat`)"
-      service: chat-go
-      entryPoints:
-        - web
-      middlewares:
-        - cors-headers
-
-    # WebSocket Routes
-    chat-websocket:
-      rule: "PathPrefix(`/ws/chat`)"
-      service: chat-ws
-      entryPoints:
-        - web
-
-    # Chat gRPC-Web Routes
+    # Chat gRPC-Web Routes (双向流)
     grpc-web-chat:
       rule: "PathPrefix(`/grpc/chat.`)"
       service: chat-grpc
@@ -94,9 +79,10 @@ http:
         - web
       middlewares:
         - grpc-web-headers
+        - grpc-stream-timeout
 
   # ============================================================================
-  # gRPC Routers (Internal Service Communication)
+  # gRPC Routers (Native gRPC - 移动端/服务间通信)
   # ============================================================================
     # Gateway gRPC Routes
     grpc-gateway:
@@ -141,6 +127,7 @@ http:
       entryPoints:
         - grpc
 
+    # Chat gRPC Routes (双向流 - 禁用超时)
     grpc-chat:
       rule: "PathPrefix(`/chat.`)"
       service: chat-grpc
@@ -157,72 +144,28 @@ http:
         servers:
           - url: "h2c://gateway:50053"
 
-    chat-go:
-      loadBalancer:
-        servers:
-          - url: "http://chat:8080"
-        healthCheck:
-          path: /health
-          interval: "30s"
-          timeout: "5s"
-
-    # Chat WebSocket 服务（长连接优化）
-    chat-ws:
-      loadBalancer:
-        servers:
-          - url: "http://chat:8080"
-        serversTransport: websocket-transport
-
+    # Chat gRPC 服务 (双向流)
     chat-grpc:
       loadBalancer:
         servers:
           - url: "h2c://chat:50052"
+        serversTransport: grpc-stream-transport
 
   # ============================================================================
   # Servers Transports (连接配置)
   # ============================================================================
   serversTransports:
-    # WebSocket 专用传输配置，优化长连接
-    websocket-transport:
+    # gRPC 双向流专用传输配置，禁用超时
+    grpc-stream-transport:
       forwardingTimeouts:
         dialTimeout: "30s"
-        responseHeaderTimeout: "0s"    # 禁用响应头超时（WebSocket 需要）
-        idleConnTimeout: "300s"        # 5 分钟空闲超时
+        responseHeaderTimeout: "0s"    # 禁用响应头超时（双向流需要）
+        idleConnTimeout: "0s"          # 禁用空闲超时（保持长连接）
 
   # ============================================================================
   # Middlewares
   # ============================================================================
   middlewares:
-    cors-headers:
-      headers:
-        accessControlAllowMethods:
-          - GET
-          - POST
-          - PUT
-          - PATCH
-          - DELETE
-          - OPTIONS
-        accessControlAllowHeaders:
-          - Content-Type
-          - Authorization
-          - X-Requested-With
-          - Accept
-          - Origin
-          - X-Trace-ID
-          - X-User-ID
-        accessControlAllowOriginList:
-          - "http://localhost:3000"
-          - "http://localhost:3001"
-          - "http://localhost:61400"  # Flutter web dev port
-          - "http://127.0.0.1:3000"
-          - "http://127.0.0.1:3001"
-          - "http://127.0.0.1:61400"
-        accessControlMaxAge: 86400
-        accessControlExposeHeaders:
-          - X-Trace-ID
-          - X-User-ID
-        addVaryHeader: true
-
     grpc-web-headers:
       headers:
         customRequestHeaders:
@@ -235,11 +178,18 @@ http:
           - X-Grpc-Web
           - X-User-Agent
           - X-Trace-ID
+          - Authorization
         accessControlAllowOriginList:
           - "*"
         accessControlExposeHeaders:
           - Grpc-Status
           - Grpc-Message
+
+    # gRPC 双向流超时配置
+    grpc-stream-timeout:
+      headers:
+        customResponseHeaders:
+          X-Stream-Timeout: "0"
 
     rate-limit:
       rateLimit:

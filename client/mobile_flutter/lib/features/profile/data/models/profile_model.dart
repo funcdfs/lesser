@@ -1,5 +1,6 @@
 import '../../../auth/data/models/user_model.dart';
 import '../../domain/entities/profile.dart';
+import '../../../../generated/protos/user/user.pb.dart' as user_pb;
 
 /// Profile data model
 class ProfileModel extends Profile {
@@ -21,6 +22,30 @@ class ProfileModel extends Profile {
       postsCount: json['posts_count'] as int? ?? 0,
       isFollowing: json['is_following'] as bool? ?? false,
       isFollowedBy: json['is_followed_by'] as bool? ?? false,
+    );
+  }
+
+  /// Create from Proto message
+  factory ProfileModel.fromProto(user_pb.Profile proto) {
+    return ProfileModel(
+      user: UserModel(
+        id: proto.id,
+        username: proto.username,
+        email: proto.email,
+        displayName: proto.hasDisplayName() ? proto.displayName : null,
+        avatarUrl: proto.hasAvatarUrl() ? proto.avatarUrl : null,
+        bio: proto.hasBio() ? proto.bio : null,
+        createdAt: proto.hasCreatedAt()
+            ? DateTime.fromMillisecondsSinceEpoch(
+                proto.createdAt.seconds.toInt() * 1000,
+              )
+            : null,
+      ),
+      followersCount: proto.followersCount,
+      followingCount: proto.followingCount,
+      postsCount: proto.postsCount,
+      isFollowing: false, // Not in proto, set default
+      isFollowedBy: false, // Not in proto, set default
     );
   }
 

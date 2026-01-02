@@ -1,21 +1,42 @@
 syntax = "proto3";
 package feed;
 
-option go_package = "github.com/lesser/feed_worker/proto/feed";
+option go_package = "github.com/lesser/feed/proto/feed";
 
 import "common/common.proto";
 
-// FeedService Feed 交互服务
-service FeedService {
-  rpc Like(LikeRequest) returns (common.Empty);
-  rpc Unlike(UnlikeRequest) returns (common.Empty);
-  rpc CreateComment(CreateCommentRequest) returns (Comment);
-  rpc DeleteComment(DeleteCommentRequest) returns (common.Empty);
-  rpc ListComments(ListCommentsRequest) returns (ListCommentsResponse);
-  rpc Repost(RepostRequest) returns (Repost);
-  rpc Bookmark(BookmarkRequest) returns (common.Empty);
-  rpc Unbookmark(UnbookmarkRequest) returns (common.Empty);
-  rpc ListBookmarks(ListBookmarksRequest) returns (ListBookmarksResponse);
+// ============================================================================
+// 消息定义（必须在 service 之前）
+// ============================================================================
+
+// Comment 评论实体
+message Comment {
+  string id = 1;
+  string author_id = 2;
+  string post_id = 3;
+  string parent_id = 4;  // 父评论 ID，用于回复
+  string content = 5;
+  bool is_deleted = 6;
+  common.Timestamp created_at = 7;
+  common.Timestamp updated_at = 8;
+  int32 reply_count = 9;
+}
+
+// Repost 转发实体
+message Repost {
+  string id = 1;
+  string user_id = 2;
+  string post_id = 3;
+  string quote = 4;  // 转发时的引用文字
+  common.Timestamp created_at = 5;
+}
+
+// Bookmark 收藏实体
+message Bookmark {
+  string id = 1;
+  string user_id = 2;
+  string post_id = 3;
+  common.Timestamp created_at = 4;
 }
 
 // LikeRequest 点赞请求
@@ -30,18 +51,6 @@ message UnlikeRequest {
   string post_id = 2;
 }
 
-// Comment 评论实体
-message Comment {
-  string id = 1;
-  string author_id = 2;
-  string post_id = 3;
-  string parent_id = 4;  // 父评论 ID，用于回复
-  string content = 5;
-  bool is_deleted = 6;
-  common.Timestamp created_at = 7;
-  common.Timestamp updated_at = 8;
-  int32 reply_count = 9;
-}
 
 // CreateCommentRequest 创建评论请求
 message CreateCommentRequest {
@@ -70,15 +79,6 @@ message ListCommentsResponse {
   common.Pagination pagination = 2;
 }
 
-// Repost 转发实体
-message Repost {
-  string id = 1;
-  string user_id = 2;
-  string post_id = 3;
-  string quote = 4;  // 转发时的引用文字
-  common.Timestamp created_at = 5;
-}
-
 // RepostRequest 转发请求
 message RepostRequest {
   string user_id = 1;
@@ -104,16 +104,25 @@ message ListBookmarksRequest {
   common.Pagination pagination = 2;
 }
 
-// Bookmark 收藏实体
-message Bookmark {
-  string id = 1;
-  string user_id = 2;
-  string post_id = 3;
-  common.Timestamp created_at = 4;
-}
-
 // ListBookmarksResponse 收藏列表响应
 message ListBookmarksResponse {
   repeated Bookmark bookmarks = 1;
   common.Pagination pagination = 2;
+}
+
+// ============================================================================
+// 服务定义
+// ============================================================================
+
+// FeedService Feed 交互服务
+service FeedService {
+  rpc Like(LikeRequest) returns (common.Empty);
+  rpc Unlike(UnlikeRequest) returns (common.Empty);
+  rpc CreateComment(CreateCommentRequest) returns (Comment);
+  rpc DeleteComment(DeleteCommentRequest) returns (common.Empty);
+  rpc ListComments(ListCommentsRequest) returns (ListCommentsResponse);
+  rpc CreateRepost(RepostRequest) returns (Repost);
+  rpc Bookmark(BookmarkRequest) returns (common.Empty);
+  rpc Unbookmark(UnbookmarkRequest) returns (common.Empty);
+  rpc ListBookmarks(ListBookmarksRequest) returns (ListBookmarksResponse);
 }

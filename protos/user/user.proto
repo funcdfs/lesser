@@ -1,7 +1,7 @@
 syntax = "proto3";
 package user;
 
-option go_package = "github.com/lesser/user_worker/proto/user";
+option go_package = "github.com/lesser/user/proto/user";
 
 import "common/common.proto";
 

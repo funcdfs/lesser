@@ -1,17 +1,13 @@
 package main
 
 import (
-	"context"
 	"log"
 	"net"
-	"net/http"
 	"os"
 	"os/signal"
 	"syscall"
-	"time"
 
 	"github.com/lesser/chat/internal/config"
-	"github.com/lesser/chat/internal/handler/ws"
 	"github.com/lesser/chat/internal/model"
 	"github.com/lesser/chat/internal/repository"
 	"github.com/lesser/chat/internal/server"
@@ -71,15 +67,8 @@ func main() {
 
 	chatService := service.NewChatService(conversationRepo, messageRepo, redisClient, userClient, unreadCacheService)
 
-	// 初始化 WebSocket Hub
-	hub := ws.NewHub(chatService, cfg)
-	go hub.Run()
-
-	// 初始化 WebSocket HTTP 服务器（仅 /ws/chat 和 /health）
-	wsServer := server.NewWSServer(cfg, hub)
-
 	// 初始化 gRPC 服务器
-	grpcServer := server.NewGRPCServer(chatService, authClient, hub)
+	grpcServer := server.NewGRPCServer(chatService, authClient)
 
 	// 启动 gRPC
 	grpcListener, err := net.Listen("tcp", ":"+cfg.GRPCPort)
@@ -93,30 +82,14 @@ func main() {
 		}
 	}()
 
-	// 启动 WebSocket HTTP 服务器
-	go func() {
-		log.Printf("WebSocket 服务器启动于端口 %s", cfg.WSPort)
-		if err := wsServer.Start(); err != nil && err != http.ErrServerClosed {
-			log.Fatalf("WebSocket 服务启动失败: %v", err)
-		}
-	}()
-
 	// 优雅关闭
 	quit := make(chan os.Signal, 1)
 	signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM)
 	<-quit
 	log.Println("正在关闭服务器...")
 
-	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
-	defer cancel()
-
 	grpcServer.GracefulStop()
 	log.Println("gRPC 服务器已停止")
-
-	if err := wsServer.Shutdown(ctx); err != nil {
-		log.Printf("WebSocket 服务器强制关闭: %v", err)
-	}
-	log.Println("WebSocket 服务器已停止")
 
 	sqlDB, _ := db.DB()
 	if sqlDB != nil {

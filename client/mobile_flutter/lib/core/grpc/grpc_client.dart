@@ -10,9 +10,9 @@ class GrpcClientManager {
     required FlutterSecureStorage secureStorage,
     String? host,
     int? port,
-  })  : _secureStorage = secureStorage,
-        _host = host ?? AppConstants.grpcHost,
-        _port = port ?? AppConstants.grpcPort;
+  }) : _secureStorage = secureStorage,
+       _host = host ?? AppConstants.grpcHost,
+       _port = port ?? AppConstants.grpcPort;
 
   final FlutterSecureStorage _secureStorage;
   final String _host;
@@ -46,7 +46,9 @@ class GrpcClientManager {
   }
 
   /// 创建带认证拦截器的 stub
-  T createStub<T>(T Function(ClientChannel, Iterable<ClientInterceptor>) factory) {
+  T createStub<T>(
+    T Function(ClientChannel, Iterable<ClientInterceptor>) factory,
+  ) {
     return factory(channel, [AuthInterceptor(_secureStorage)]);
   }
 
@@ -66,7 +68,7 @@ class GrpcClientManager {
 /// 认证拦截器
 class AuthInterceptor extends ClientInterceptor {
   AuthInterceptor(FlutterSecureStorage secureStorage)
-      : _secureStorage = secureStorage;
+    : _secureStorage = secureStorage;
 
   // ignore: unused_field
   final FlutterSecureStorage _secureStorage;
@@ -202,8 +204,8 @@ class GrpcErrorConverter {
   /// 获取建议的重试延迟（毫秒）
   static int getRetryDelay(GrpcError error, int attemptNumber) {
     // 指数退避：1s, 2s, 4s, 8s, 最大 30s
-    final baseDelay = 1000;
-    final maxDelay = 30000;
+    const baseDelay = 1000;
+    const maxDelay = 30000;
     final delay = baseDelay * (1 << attemptNumber.clamp(0, 5));
     return delay.clamp(baseDelay, maxDelay);
   }

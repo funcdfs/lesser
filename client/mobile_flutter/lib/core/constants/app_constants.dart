@@ -6,12 +6,10 @@ class AppConstants {
   static const String appName = 'Lesser';
   static const String appVersion = '1.0.0';
 
-  // API Configuration
-  static const String apiBaseUrl = 'http://localhost:80';
-  static const String wsBaseUrl = 'ws://localhost:80';
+  // gRPC Configuration
   static const String grpcHost = 'localhost';
   static const int grpcPort = 50053; // Gateway gRPC 端口
-  static const int chatGrpcPort = 50052; // Chat Service gRPC 端口
+  static const int chatGrpcPort = 50052; // Chat Service gRPC 端口（双向流）
 
   // Pagination
   static const int defaultPageSize = 20;

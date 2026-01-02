@@ -35,7 +35,7 @@ class _LesserAppState extends ConsumerState<LesserApp> {
   @override
   void initState() {
     super.initState();
-    // App 启动时检查登录状态，如果已登录会自动连接 WebSocket
+    // App 启动时检查登录状态，如果已登录会自动连接 gRPC 双向流
     WidgetsBinding.instance.addPostFrameCallback((_) {
       ref.read(authProvider.notifier).checkAuthStatus();
     });

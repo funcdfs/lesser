@@ -1,12 +1,12 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../core/di/injection.dart';
+import '../../../../core/network/unified_grpc_client.dart';
 import '../../domain/entities/user.dart';
 import '../../domain/repositories/auth_repository.dart';
 import '../../domain/usecases/login.dart';
 import '../../domain/usecases/logout.dart';
 import '../../domain/usecases/register.dart';
-import '../../../chat/data/datasources/chat_websocket_service.dart';
 
 /// 认证状态枚举
 enum AuthStatus { initial, loading, authenticated, unauthenticated, error }
@@ -39,12 +39,12 @@ class AuthState {
 /// 认证状态管理器
 class AuthNotifier extends Notifier<AuthState> {
   late final AuthRepository _repository;
-  late final ChatWebSocketService _webSocketService;
+  late final UnifiedGrpcClient _grpcClient;
 
   @override
   AuthState build() {
     _repository = getIt<AuthRepository>();
-    _webSocketService = getIt<ChatWebSocketService>();
+    _grpcClient = getIt<UnifiedGrpcClient>();
     return const AuthState();
   }
 
@@ -64,8 +64,8 @@ class AuthNotifier extends Notifier<AuthState> {
             status: AuthStatus.authenticated,
             user: user,
           );
-          // 登录状态恢复后自动连接 WebSocket
-          _webSocketService.connect(user.id);
+          // 登录状态恢复后自动连接 gRPC 双向流
+          _grpcClient.chatStream.connect();
         },
       );
     } else {
@@ -104,8 +104,8 @@ class AuthNotifier extends Notifier<AuthState> {
           status: AuthStatus.authenticated,
           user: user,
         );
-        // 登录成功后自动连接 WebSocket
-        _webSocketService.connect(user.id);
+        // 登录成功后自动连接 gRPC 双向流
+        _grpcClient.chatStream.connect();
       },
     );
   }
@@ -137,8 +137,8 @@ class AuthNotifier extends Notifier<AuthState> {
           status: AuthStatus.authenticated,
           user: user,
         );
-        // 注册成功后自动连接 WebSocket
-        _webSocketService.connect(user.id);
+        // 注册成功后自动连接 gRPC 双向流
+        _grpcClient.chatStream.connect();
       },
     );
   }
@@ -147,8 +147,8 @@ class AuthNotifier extends Notifier<AuthState> {
   Future<void> logout() async {
     state = state.copyWith(status: AuthStatus.loading);
 
-    // 登出时断开 WebSocket 连接
-    await _webSocketService.disconnect();
+    // 登出时断开 gRPC 双向流连接
+    await _grpcClient.chatStream.disconnect();
 
     final logoutUseCase = LogoutUseCase(_repository);
     await logoutUseCase();

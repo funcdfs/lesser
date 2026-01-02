@@ -188,8 +188,8 @@ class ChatRepositoryImpl implements ChatRepository {
 
   @override
   Stream<Message> streamMessages(String conversationId) {
-    // TODO: 实现 WebSocket/gRPC 流式消息
-    // 这是一个占位实现，返回空流
+    // 实时消息通过 gRPC 双向流 (ChatStreamClient) 处理
+    // 此方法保留用于兼容性，实际使用 ChatRoomNotifier 中的事件监听
     return const Stream.empty();
   }
 }

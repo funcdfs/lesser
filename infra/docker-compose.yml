@@ -1,6 +1,7 @@
 # ============================================================================
 # Docker Compose - Development Environment (Hot Reload)
 # ============================================================================
+# gRPC 全面迁移后的配置 - 纯 gRPC 架构
 # Usage: docker compose -f infra/docker-compose.yml --env-file infra/env/dev.env up -d
 # ============================================================================
 
@@ -87,7 +88,7 @@ services:
       start_period: 5s
 
   # --------------------------------------------------------------------------
-  # Message Broker - RabbitMQ
+  # Message Broker - RabbitMQ (仅用于次要异步任务)
   # --------------------------------------------------------------------------
   rabbitmq:
     image: rabbitmq:latest
@@ -125,37 +126,34 @@ services:
       - app-network
 
   # ==========================================================================
-  # SERVICES - Application Services (Gateway, Chat HTTP/gRPC)
+  # SERVICES - gRPC Service Cluster
   # ==========================================================================
 
   # --------------------------------------------------------------------------
-  # Gateway Service (Unified API Gateway with RabbitMQ)
+  # Gateway Service (统一 API 入口 - JWT 验签、限流、路由)
   # --------------------------------------------------------------------------
   gateway:
     build:
-      context: ../service/gateway
-      dockerfile: Dockerfile.dev
+      context: ../service
+      dockerfile: gateway/Dockerfile.dev
     container_name: gateway
     restart: unless-stopped
     environment:
       - GRPC_PORT=${GATEWAY_GRPC_PORT:-50053}
-      - RABBITMQ_URL=amqp://${RABBITMQ_USER:-guest}:${RABBITMQ_PASSWORD:-guest}@rabbitmq:5672/
-      - DB_HOST=postgres
-      - DB_PORT=5432
-      - DB_USER=${POSTGRES_USER:-lesser}
-      - DB_PASSWORD=${POSTGRES_PASSWORD:-lesser_dev_password}
-      - DB_NAME=${POSTGRES_DB:-lesser_db}
-      - DB_SSLMODE=disable
-      - JWT_SECRET=${JWT_SECRET_KEY:-jwt-dev-secret-key}
+      - AUTH_SERVICE_ADDR=auth:50054
+      - USER_SERVICE_ADDR=user:50055
+      - POST_SERVICE_ADDR=post:50056
+      - FEED_SERVICE_ADDR=feed:50057
+      - SEARCH_SERVICE_ADDR=search:50058
+      - NOTIFICATION_SERVICE_ADDR=notification:50059
+      - REDIS_URL=redis://redis:6379/0
     volumes:
-      - ../service/gateway:/app
+      - ../service:/app
       - go_mod_cache:/go/pkg/mod
     ports:
       - "${EXTERNAL_GATEWAY_PORT:-50053}:50053"
     depends_on:
-      postgres:
-        condition: service_healthy
-      rabbitmq:
+      redis:
         condition: service_healthy
     networks:
       - app-network
@@ -167,25 +165,234 @@ services:
       start_period: 30s
 
   # --------------------------------------------------------------------------
-  # Chat Service (gRPC + WebSocket)
+  # Auth Service (认证服务 - 登录/注册/Token管理)
+  # --------------------------------------------------------------------------
+  auth:
+    build:
+      context: ../service
+      dockerfile: auth/Dockerfile.dev
+    container_name: auth
+    restart: unless-stopped
+    environment:
+      - GRPC_PORT=50054
+      - DB_HOST=postgres
+      - DB_PORT=5432
+      - DB_USER=${POSTGRES_USER:-lesser}
+      - DB_PASSWORD=${POSTGRES_PASSWORD:-lesser_dev_password}
+      - DB_NAME=${POSTGRES_DB:-lesser_db}
+      - DB_SSLMODE=disable
+      - REDIS_URL=redis://redis:6379/0
+      - JWT_PRIVATE_KEY_PATH=/app/auth/keys/private.pem
+      - JWT_PUBLIC_KEY_PATH=/app/auth/keys/public.pem
+    volumes:
+      - ../service:/app
+      - go_mod_cache:/go/pkg/mod
+    ports:
+      - "50054:50054"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      - app-network
+    healthcheck:
+      test: ["CMD", "nc", "-z", "localhost", "50054"]
+      interval: 30s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+
+  # --------------------------------------------------------------------------
+  # User Service (用户服务 - 资料/关注)
+  # --------------------------------------------------------------------------
+  user:
+    build:
+      context: ../service
+      dockerfile: user/Dockerfile.dev
+    container_name: user
+    restart: unless-stopped
+    environment:
+      - GRPC_PORT=50055
+      - DB_HOST=postgres
+      - DB_PORT=5432
+      - DB_USER=${POSTGRES_USER:-lesser}
+      - DB_PASSWORD=${POSTGRES_PASSWORD:-lesser_dev_password}
+      - DB_NAME=${POSTGRES_DB:-lesser_db}
+      - DB_SSLMODE=disable
+      - RABBITMQ_URL=amqp://${RABBITMQ_USER:-guest}:${RABBITMQ_PASSWORD:-guest}@rabbitmq:5672/
+    volumes:
+      - ../service:/app
+      - go_mod_cache:/go/pkg/mod
+    depends_on:
+      postgres:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+    networks:
+      - app-network
+    healthcheck:
+      test: ["CMD", "nc", "-z", "localhost", "50055"]
+      interval: 30s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+
+  # --------------------------------------------------------------------------
+  # Post Service (帖子服务 - CRUD)
+  # --------------------------------------------------------------------------
+  post:
+    build:
+      context: ../service
+      dockerfile: post/Dockerfile.dev
+    container_name: post
+    restart: unless-stopped
+    environment:
+      - GRPC_PORT=50056
+      - DB_HOST=postgres
+      - DB_PORT=5432
+      - DB_USER=${POSTGRES_USER:-lesser}
+      - DB_PASSWORD=${POSTGRES_PASSWORD:-lesser_dev_password}
+      - DB_NAME=${POSTGRES_DB:-lesser_db}
+      - DB_SSLMODE=disable
+      - RABBITMQ_URL=amqp://${RABBITMQ_USER:-guest}:${RABBITMQ_PASSWORD:-guest}@rabbitmq:5672/
+    volumes:
+      - ../service:/app
+      - go_mod_cache:/go/pkg/mod
+    depends_on:
+      postgres:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+    networks:
+      - app-network
+    healthcheck:
+      test: ["CMD", "nc", "-z", "localhost", "50056"]
+      interval: 30s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+
+  # --------------------------------------------------------------------------
+  # Feed Service (信息流服务 - 点赞/评论/收藏)
+  # --------------------------------------------------------------------------
+  feed:
+    build:
+      context: ../service
+      dockerfile: feed/Dockerfile.dev
+    container_name: feed
+    restart: unless-stopped
+    environment:
+      - GRPC_PORT=50057
+      - DB_HOST=postgres
+      - DB_PORT=5432
+      - DB_USER=${POSTGRES_USER:-lesser}
+      - DB_PASSWORD=${POSTGRES_PASSWORD:-lesser_dev_password}
+      - DB_NAME=${POSTGRES_DB:-lesser_db}
+      - DB_SSLMODE=disable
+      - RABBITMQ_URL=amqp://${RABBITMQ_USER:-guest}:${RABBITMQ_PASSWORD:-guest}@rabbitmq:5672/
+    volumes:
+      - ../service:/app
+      - go_mod_cache:/go/pkg/mod
+    depends_on:
+      postgres:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+    networks:
+      - app-network
+    healthcheck:
+      test: ["CMD", "nc", "-z", "localhost", "50057"]
+      interval: 30s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+
+  # --------------------------------------------------------------------------
+  # Search Service (搜索服务)
+  # --------------------------------------------------------------------------
+  search:
+    build:
+      context: ../service
+      dockerfile: search/Dockerfile.dev
+    container_name: search
+    restart: unless-stopped
+    environment:
+      - GRPC_PORT=50058
+      - DB_HOST=postgres
+      - DB_PORT=5432
+      - DB_USER=${POSTGRES_USER:-lesser}
+      - DB_PASSWORD=${POSTGRES_PASSWORD:-lesser_dev_password}
+      - DB_NAME=${POSTGRES_DB:-lesser_db}
+      - DB_SSLMODE=disable
+    volumes:
+      - ../service:/app
+      - go_mod_cache:/go/pkg/mod
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - app-network
+    healthcheck:
+      test: ["CMD", "nc", "-z", "localhost", "50058"]
+      interval: 30s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+
+  # --------------------------------------------------------------------------
+  # Notification Service (通知服务)
+  # --------------------------------------------------------------------------
+  notification:
+    build:
+      context: ../service
+      dockerfile: notification/Dockerfile.dev
+    container_name: notification
+    restart: unless-stopped
+    environment:
+      - GRPC_PORT=50059
+      - DB_HOST=postgres
+      - DB_PORT=5432
+      - DB_USER=${POSTGRES_USER:-lesser}
+      - DB_PASSWORD=${POSTGRES_PASSWORD:-lesser_dev_password}
+      - DB_NAME=${POSTGRES_DB:-lesser_db}
+      - DB_SSLMODE=disable
+      - RABBITMQ_URL=amqp://${RABBITMQ_USER:-guest}:${RABBITMQ_PASSWORD:-guest}@rabbitmq:5672/
+    volumes:
+      - ../service:/app
+      - go_mod_cache:/go/pkg/mod
+    depends_on:
+      postgres:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+    networks:
+      - app-network
+    healthcheck:
+      test: ["CMD", "nc", "-z", "localhost", "50059"]
+      interval: 30s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+
+  # --------------------------------------------------------------------------
+  # Chat Service (聊天服务 - gRPC 双向流)
   # --------------------------------------------------------------------------
   chat:
     build:
-      context: ../service/chat
-      dockerfile: Dockerfile.dev
+      context: ../service
+      dockerfile: chat/Dockerfile.dev
     container_name: chat
     restart: unless-stopped
     environment:
       - DATABASE_URL=${CHAT_DATABASE_URL:-postgres://lesser:lesser_dev_password@postgres:5432/lesser_chat_db?application_name=chat}
       - REDIS_URL=redis://redis:6379/1
-      - WS_PORT=${CHAT_WS_PORT:-8080}
       - GRPC_PORT=${CHAT_GRPC_PORT:-50052}
-      - AUTH_GRPC_ADDR=${AUTH_GRPC_ADDR:-gateway:50053}
+      - AUTH_GRPC_ADDR=${AUTH_GRPC_ADDR:-auth:50054}
     volumes:
-      - ../service/chat:/app
+      - ../service:/app
       - go_mod_cache:/go/pkg/mod
     ports:
-      - "${EXTERNAL_CHAT_WS_PORT:-8081}:8080"
       - "50052:50052"
     depends_on:
       postgres:
@@ -195,184 +402,11 @@ services:
     networks:
       - app-network
     healthcheck:
-      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:8080/health"]
-      interval: 5s
+      test: ["CMD", "nc", "-z", "localhost", "50052"]
+      interval: 30s
       timeout: 5s
       retries: 5
-      start_period: 60s
-
-  # ==========================================================================
-  # WORKERS - Background Task Processors (RabbitMQ Consumers)
-  # ==========================================================================
-
-  # --------------------------------------------------------------------------
-  # Auth Worker
-  # --------------------------------------------------------------------------
-  auth-worker:
-    build:
-      context: ../service/auth_worker
-      dockerfile: Dockerfile.dev
-    container_name: auth-worker
-    restart: unless-stopped
-    environment:
-      - RABBITMQ_URL=amqp://${RABBITMQ_USER:-guest}:${RABBITMQ_PASSWORD:-guest}@rabbitmq:5672/
-      - DB_HOST=postgres
-      - DB_PORT=5432
-      - DB_USER=${POSTGRES_USER:-lesser}
-      - DB_PASSWORD=${POSTGRES_PASSWORD:-lesser_dev_password}
-      - DB_NAME=${POSTGRES_DB:-lesser_db}
-      - JWT_SECRET=${JWT_SECRET_KEY:-jwt-dev-secret-key}
-    volumes:
-      - ../service/auth_worker:/app
-      - ../service/pkg:/pkg
-      - go_mod_cache:/go/pkg/mod
-    depends_on:
-      postgres:
-        condition: service_healthy
-      rabbitmq:
-        condition: service_healthy
-    networks:
-      - app-network
-
-  # --------------------------------------------------------------------------
-  # Post Worker
-  # --------------------------------------------------------------------------
-  post-worker:
-    build:
-      context: ../service/post_worker
-      dockerfile: Dockerfile.dev
-    container_name: post-worker
-    restart: unless-stopped
-    environment:
-      - RABBITMQ_URL=amqp://${RABBITMQ_USER:-guest}:${RABBITMQ_PASSWORD:-guest}@rabbitmq:5672/
-      - DB_HOST=postgres
-      - DB_PORT=5432
-      - DB_USER=${POSTGRES_USER:-lesser}
-      - DB_PASSWORD=${POSTGRES_PASSWORD:-lesser_dev_password}
-      - DB_NAME=${POSTGRES_DB:-lesser_db}
-    volumes:
-      - ../service/post_worker:/app
-      - ../service/pkg:/pkg
-      - go_mod_cache:/go/pkg/mod
-    depends_on:
-      postgres:
-        condition: service_healthy
-      rabbitmq:
-        condition: service_healthy
-    networks:
-      - app-network
-
-  # --------------------------------------------------------------------------
-  # Feed Worker
-  # --------------------------------------------------------------------------
-  feed-worker:
-    build:
-      context: ../service/feed_worker
-      dockerfile: Dockerfile.dev
-    container_name: feed-worker
-    restart: unless-stopped
-    environment:
-      - RABBITMQ_URL=amqp://${RABBITMQ_USER:-guest}:${RABBITMQ_PASSWORD:-guest}@rabbitmq:5672/
-      - DB_HOST=postgres
-      - DB_PORT=5432
-      - DB_USER=${POSTGRES_USER:-lesser}
-      - DB_PASSWORD=${POSTGRES_PASSWORD:-lesser_dev_password}
-      - DB_NAME=${POSTGRES_DB:-lesser_db}
-    volumes:
-      - ../service/feed_worker:/app
-      - ../service/pkg:/pkg
-      - go_mod_cache:/go/pkg/mod
-    depends_on:
-      postgres:
-        condition: service_healthy
-      rabbitmq:
-        condition: service_healthy
-    networks:
-      - app-network
-
-  # --------------------------------------------------------------------------
-  # Notification Worker
-  # --------------------------------------------------------------------------
-  notification-worker:
-    build:
-      context: ../service/notification_worker
-      dockerfile: Dockerfile.dev
-    container_name: notification-worker
-    restart: unless-stopped
-    environment:
-      - RABBITMQ_URL=amqp://${RABBITMQ_USER:-guest}:${RABBITMQ_PASSWORD:-guest}@rabbitmq:5672/
-      - DB_HOST=postgres
-      - DB_PORT=5432
-      - DB_USER=${POSTGRES_USER:-lesser}
-      - DB_PASSWORD=${POSTGRES_PASSWORD:-lesser_dev_password}
-      - DB_NAME=${POSTGRES_DB:-lesser_db}
-    volumes:
-      - ../service/notification_worker:/app
-      - ../service/pkg:/pkg
-      - go_mod_cache:/go/pkg/mod
-    depends_on:
-      postgres:
-        condition: service_healthy
-      rabbitmq:
-        condition: service_healthy
-    networks:
-      - app-network
-
-  # --------------------------------------------------------------------------
-  # User Worker
-  # --------------------------------------------------------------------------
-  user-worker:
-    build:
-      context: ../service/user_worker
-      dockerfile: Dockerfile.dev
-    container_name: user-worker
-    restart: unless-stopped
-    environment:
-      - RABBITMQ_URL=amqp://${RABBITMQ_USER:-guest}:${RABBITMQ_PASSWORD:-guest}@rabbitmq:5672/
-      - DB_HOST=postgres
-      - DB_PORT=5432
-      - DB_USER=${POSTGRES_USER:-lesser}
-      - DB_PASSWORD=${POSTGRES_PASSWORD:-lesser_dev_password}
-      - DB_NAME=${POSTGRES_DB:-lesser_db}
-    volumes:
-      - ../service/user_worker:/app
-      - ../service/pkg:/pkg
-      - go_mod_cache:/go/pkg/mod
-    depends_on:
-      postgres:
-        condition: service_healthy
-      rabbitmq:
-        condition: service_healthy
-    networks:
-      - app-network
-
-  # --------------------------------------------------------------------------
-  # Search Worker
-  # --------------------------------------------------------------------------
-  search-worker:
-    build:
-      context: ../service/search_worker
-      dockerfile: Dockerfile.dev
-    container_name: search-worker
-    restart: unless-stopped
-    environment:
-      - RABBITMQ_URL=amqp://${RABBITMQ_USER:-guest}:${RABBITMQ_PASSWORD:-guest}@rabbitmq:5672/
-      - DB_HOST=postgres
-      - DB_PORT=5432
-      - DB_USER=${POSTGRES_USER:-lesser}
-      - DB_PASSWORD=${POSTGRES_PASSWORD:-lesser_dev_password}
-      - DB_NAME=${POSTGRES_DB:-lesser_db}
-    volumes:
-      - ../service/search_worker:/app
-      - ../service/pkg:/pkg
-      - go_mod_cache:/go/pkg/mod
-    depends_on:
-      postgres:
-        condition: service_healthy
-      rabbitmq:
-        condition: service_healthy
-    networks:
-      - app-network
+      start_period: 30s
 
 # ============================================================================
 # Networks
