@@ -95,6 +95,16 @@ func authUnaryInterceptor(authClient *service.AuthClient) grpc.UnaryServerInterc
 				}
 			}
 
+			// 检查 user_id header（客户端传递）
+			if userIDHeaders := md.Get("user_id"); len(userIDHeaders) > 0 {
+				userID, err := uuid.Parse(userIDHeaders[0])
+				if err == nil {
+					ctx = auth.SetUserIDInContext(ctx, userID)
+					return handler(ctx, req)
+				}
+			}
+			
+			// 兼容 x-user-id header（Gateway 转发）
 			if userIDHeaders := md.Get("x-user-id"); len(userIDHeaders) > 0 {
 				userID, err := uuid.Parse(userIDHeaders[0])
 				if err == nil {

@@ -5,7 +5,7 @@ import (
 
 	"github.com/lesser/feed/internal/repository"
 	"github.com/lesser/feed/internal/service"
-	"github.com/lesser/feed/proto/common"
+	"github.com/lesser/pkg/proto/common"
 	pb "github.com/lesser/feed/proto/feed"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
@@ -65,18 +65,25 @@ func (h *FeedHandler) ListComments(ctx context.Context, req *pb.ListCommentsRequ
 	if req.PostId == "" {
 		return nil, status.Error(codes.InvalidArgument, "post_id is required")
 	}
-	limit, offset := 20, 0
+	page, pageSize := int32(1), int32(20)
 	if req.Pagination != nil {
-		limit = int(req.Pagination.Limit)
-		offset = int(req.Pagination.Offset)
+		if req.Pagination.Page > 0 {
+			page = req.Pagination.Page
+		}
+		if req.Pagination.PageSize > 0 {
+			pageSize = req.Pagination.PageSize
+		}
 	}
+	limit := int(pageSize)
+	offset := int((page - 1) * pageSize)
+
 	comments, total, err := h.feedService.ListComments(req.PostId, req.ParentId, limit, offset)
 	if err != nil {
 		return nil, status.Error(codes.Internal, err.Error())
 	}
 	return &pb.ListCommentsResponse{
 		Comments:   commentsToProto(comments),
-		Pagination: &common.Pagination{Limit: int32(limit), Offset: int32(offset), Total: int32(total)},
+		Pagination: &common.Pagination{Page: page, PageSize: pageSize, Total: int32(total)},
 	}, nil
 }
 
@@ -109,18 +116,25 @@ func (h *FeedHandler) ListBookmarks(ctx context.Context, req *pb.ListBookmarksRe
 	if req.UserId == "" {
 		return nil, status.Error(codes.InvalidArgument, "user_id is required")
 	}
-	limit, offset := 20, 0
+	page, pageSize := int32(1), int32(20)
 	if req.Pagination != nil {
-		limit = int(req.Pagination.Limit)
-		offset = int(req.Pagination.Offset)
+		if req.Pagination.Page > 0 {
+			page = req.Pagination.Page
+		}
+		if req.Pagination.PageSize > 0 {
+			pageSize = req.Pagination.PageSize
+		}
 	}
+	limit := int(pageSize)
+	offset := int((page - 1) * pageSize)
+
 	bookmarks, total, err := h.feedService.ListBookmarks(req.UserId, limit, offset)
 	if err != nil {
 		return nil, status.Error(codes.Internal, err.Error())
 	}
 	return &pb.ListBookmarksResponse{
 		Bookmarks:  bookmarksToProto(bookmarks),
-		Pagination: &common.Pagination{Limit: int32(limit), Offset: int32(offset), Total: int32(total)},
+		Pagination: &common.Pagination{Page: page, PageSize: pageSize, Total: int32(total)},
 	}, nil
 }
 

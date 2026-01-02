@@ -3,9 +3,9 @@ package handler
 import (
 	"context"
 
+	"github.com/lesser/pkg/proto/common"
 	"github.com/lesser/user/internal/repository"
 	"github.com/lesser/user/internal/service"
-	"github.com/lesser/user/proto/common"
 	pb "github.com/lesser/user/proto/user"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
@@ -84,11 +84,17 @@ func (h *UserHandler) GetFollowers(ctx context.Context, req *pb.GetFollowersRequ
 		return nil, status.Error(codes.InvalidArgument, "user_id is required")
 	}
 
-	limit, offset := 20, 0
+	page, pageSize := int32(1), int32(20)
 	if req.Pagination != nil {
-		limit = int(req.Pagination.Limit)
-		offset = int(req.Pagination.Offset)
+		if req.Pagination.Page > 0 {
+			page = req.Pagination.Page
+		}
+		if req.Pagination.PageSize > 0 {
+			pageSize = req.Pagination.PageSize
+		}
 	}
+	limit := int(pageSize)
+	offset := int((page - 1) * pageSize)
 
 	users, total, err := h.userService.GetFollowers(req.UserId, limit, offset)
 	if err != nil {
@@ -97,7 +103,7 @@ func (h *UserHandler) GetFollowers(ctx context.Context, req *pb.GetFollowersRequ
 
 	return &pb.FollowListResponse{
 		Users:      usersToProto(users),
-		Pagination: &common.Pagination{Limit: int32(limit), Offset: int32(offset), Total: int32(total)},
+		Pagination: &common.Pagination{Page: page, PageSize: pageSize, Total: int32(total)},
 	}, nil
 }
 
@@ -106,11 +112,17 @@ func (h *UserHandler) GetFollowing(ctx context.Context, req *pb.GetFollowingRequ
 		return nil, status.Error(codes.InvalidArgument, "user_id is required")
 	}
 
-	limit, offset := 20, 0
+	page, pageSize := int32(1), int32(20)
 	if req.Pagination != nil {
-		limit = int(req.Pagination.Limit)
-		offset = int(req.Pagination.Offset)
+		if req.Pagination.Page > 0 {
+			page = req.Pagination.Page
+		}
+		if req.Pagination.PageSize > 0 {
+			pageSize = req.Pagination.PageSize
+		}
 	}
+	limit := int(pageSize)
+	offset := int((page - 1) * pageSize)
 
 	users, total, err := h.userService.GetFollowing(req.UserId, limit, offset)
 	if err != nil {
@@ -119,7 +131,7 @@ func (h *UserHandler) GetFollowing(ctx context.Context, req *pb.GetFollowingRequ
 
 	return &pb.FollowListResponse{
 		Users:      usersToProto(users),
-		Pagination: &common.Pagination{Limit: int32(limit), Offset: int32(offset), Total: int32(total)},
+		Pagination: &common.Pagination{Page: page, PageSize: pageSize, Total: int32(total)},
 	}, nil
 }
 

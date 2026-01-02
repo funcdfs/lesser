@@ -5,7 +5,7 @@ import (
 
 	"github.com/lesser/post/internal/repository"
 	"github.com/lesser/post/internal/service"
-	"github.com/lesser/post/proto/common"
+	"github.com/lesser/pkg/proto/common"
 	pb "github.com/lesser/post/proto/post"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
@@ -50,11 +50,17 @@ func (h *PostHandler) Get(ctx context.Context, req *pb.GetPostRequest) (*pb.Post
 }
 
 func (h *PostHandler) List(ctx context.Context, req *pb.ListPostsRequest) (*pb.ListPostsResponse, error) {
-	limit, offset := 20, 0
+	page, pageSize := int32(1), int32(20)
 	if req.Pagination != nil {
-		limit = int(req.Pagination.Limit)
-		offset = int(req.Pagination.Offset)
+		if req.Pagination.Page > 0 {
+			page = req.Pagination.Page
+		}
+		if req.Pagination.PageSize > 0 {
+			pageSize = req.Pagination.PageSize
+		}
 	}
+	limit := int(pageSize)
+	offset := int((page - 1) * pageSize)
 
 	posts, total, err := h.postService.List(req.AuthorId, int32(req.PostType), limit, offset)
 	if err != nil {
@@ -63,7 +69,7 @@ func (h *PostHandler) List(ctx context.Context, req *pb.ListPostsRequest) (*pb.L
 
 	return &pb.ListPostsResponse{
 		Posts:      postsToProto(posts),
-		Pagination: &common.Pagination{Limit: int32(limit), Offset: int32(offset), Total: int32(total)},
+		Pagination: &common.Pagination{Page: page, PageSize: pageSize, Total: int32(total)},
 	}, nil
 }
 

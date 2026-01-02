@@ -5,7 +5,7 @@ import (
 
 	"github.com/lesser/search/internal/repository"
 	"github.com/lesser/search/internal/service"
-	"github.com/lesser/search/proto/common"
+	"github.com/lesser/pkg/proto/common"
 	pb "github.com/lesser/search/proto/search"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
@@ -24,18 +24,25 @@ func (h *SearchHandler) SearchPosts(ctx context.Context, req *pb.SearchPostsRequ
 	if req.Query == "" {
 		return nil, status.Error(codes.InvalidArgument, "query is required")
 	}
-	limit, offset := 20, 0
+	page, pageSize := int32(1), int32(20)
 	if req.Pagination != nil {
-		limit = int(req.Pagination.Limit)
-		offset = int(req.Pagination.Offset)
+		if req.Pagination.Page > 0 {
+			page = req.Pagination.Page
+		}
+		if req.Pagination.PageSize > 0 {
+			pageSize = req.Pagination.PageSize
+		}
 	}
+	limit := int(pageSize)
+	offset := int((page - 1) * pageSize)
+
 	posts, total, err := h.searchService.SearchPosts(req.Query, limit, offset)
 	if err != nil {
 		return nil, status.Error(codes.Internal, err.Error())
 	}
 	return &pb.SearchPostsResponse{
 		Posts:      postsToProto(posts),
-		Pagination: &common.Pagination{Limit: int32(limit), Offset: int32(offset), Total: int32(total)},
+		Pagination: &common.Pagination{Page: page, PageSize: pageSize, Total: int32(total)},
 	}, nil
 }
 
@@ -43,18 +50,25 @@ func (h *SearchHandler) SearchUsers(ctx context.Context, req *pb.SearchUsersRequ
 	if req.Query == "" {
 		return nil, status.Error(codes.InvalidArgument, "query is required")
 	}
-	limit, offset := 20, 0
+	page, pageSize := int32(1), int32(20)
 	if req.Pagination != nil {
-		limit = int(req.Pagination.Limit)
-		offset = int(req.Pagination.Offset)
+		if req.Pagination.Page > 0 {
+			page = req.Pagination.Page
+		}
+		if req.Pagination.PageSize > 0 {
+			pageSize = req.Pagination.PageSize
+		}
 	}
+	limit := int(pageSize)
+	offset := int((page - 1) * pageSize)
+
 	users, total, err := h.searchService.SearchUsers(req.Query, limit, offset)
 	if err != nil {
 		return nil, status.Error(codes.Internal, err.Error())
 	}
 	return &pb.SearchUsersResponse{
 		Users:      usersToProto(users),
-		Pagination: &common.Pagination{Limit: int32(limit), Offset: int32(offset), Total: int32(total)},
+		Pagination: &common.Pagination{Page: page, PageSize: pageSize, Total: int32(total)},
 	}, nil
 }
 
