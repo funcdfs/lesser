@@ -16,12 +16,30 @@ class CommentModel extends Comment {
     super.isLiked,
   });
 
+  /// Create from JSON
+  factory CommentModel.fromJson(Map<String, dynamic> json) {
+    return CommentModel(
+      id: json['id'] as String,
+      postId: json['post_id'] as String,
+      author: UserModel.fromJson(json['author'] as Map<String, dynamic>),
+      content: json['content'] as String,
+      createdAt: DateTime.parse(json['created_at'] as String),
+      parentId: json['parent_id'] as String?,
+      likesCount: json['likes_count'] as int? ?? 0,
+      repliesCount: json['replies_count'] as int? ?? 0,
+      isLiked: json['is_liked'] as bool? ?? false,
+    );
+  }
+
   /// Create from Proto message
+  /// Note: Proto only provides author_id, so we create a placeholder user.
+  /// The full user details should be fetched separately if needed.
   factory CommentModel.fromProto(feed_pb.Comment proto) {
     return CommentModel(
       id: proto.id,
       postId: proto.postId,
-      author: UserModel.fromProto(proto.author),
+      // Proto only has author_id, create placeholder user
+      author: UserModel(id: proto.authorId, username: '', email: ''),
       content: proto.content,
       createdAt: proto.hasCreatedAt()
           ? DateTime.fromMillisecondsSinceEpoch(
@@ -49,21 +67,6 @@ class CommentModel extends Comment {
       likesCount: likesCount,
       repliesCount: repliesCount,
       isLiked: isLiked,
-    );
-  }
-
-  /// Create from JSON
-  factory CommentModel.fromJson(Map<String, dynamic> json) {
-    return CommentModel(
-      id: json['id'] as String,
-      postId: json['post_id'] as String,
-      author: UserModel.fromJson(json['author'] as Map<String, dynamic>),
-      content: json['content'] as String,
-      createdAt: DateTime.parse(json['created_at'] as String),
-      parentId: json['parent_id'] as String?,
-      likesCount: json['likes_count'] as int? ?? 0,
-      repliesCount: json['replies_count'] as int? ?? 0,
-      isLiked: json['is_liked'] as bool? ?? false,
     );
   }
 

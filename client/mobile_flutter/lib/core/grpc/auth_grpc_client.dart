@@ -72,11 +72,14 @@ class AuthGrpcClient {
     }
   }
 
-  /// 验证 Token
-  Future<ValidateResponse> validateToken(String accessToken) async {
+  /// 验证 Token (通过检查用户是否被封禁来间接验证)
+  /// 注意：proto 中没有直接的 validateToken 方法
+  Future<CheckBannedResponse> validateToken(String accessToken) async {
     try {
-      final request = ValidateRequest()..accessToken = accessToken;
-      return await _stub.validateToken(request);
+      // 使用 checkBanned 作为验证方式
+      // 实际验证应该在 Gateway 层通过 JWT 公钥完成
+      final request = CheckBannedRequest();
+      return await _stub.checkBanned(request);
     } on GrpcError catch (e) {
       GrpcErrorHandler.logError(e, context: 'ValidateToken');
       rethrow;

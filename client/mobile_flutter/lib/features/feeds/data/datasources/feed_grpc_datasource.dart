@@ -26,22 +26,10 @@ class FeedGrpcDataSourceImpl implements FeedRemoteDataSource {
     int page = 1,
     int pageSize = 20,
   }) async {
-    try {
-      final userId = _currentUserId;
-      if (userId == null) {
-        throw const UnauthorizedException();
-      }
-
-      final response = await _grpcClient.getFeeds(
-        userId: userId,
-        page: page,
-        pageSize: pageSize,
-      );
-
-      return response.items.map((item) => FeedItemModel.fromProto(item)).toList();
-    } on GrpcError catch (e) {
-      throw _handleGrpcError(e);
-    }
+    // Note: Feed service doesn't provide getFeed method
+    // This would need to be implemented via Post service
+    // For now, return empty list
+    throw UnimplementedError('getFeeds not implemented - use PostService instead');
   }
 
   @override
@@ -104,19 +92,9 @@ class FeedGrpcDataSourceImpl implements FeedRemoteDataSource {
 
   @override
   Future<void> removeRepost(String postId) async {
-    try {
-      final userId = _currentUserId;
-      if (userId == null) {
-        throw const UnauthorizedException();
-      }
-
-      await _grpcClient.removeRepost(
-        userId: userId,
-        postId: postId,
-      );
-    } on GrpcError catch (e) {
-      throw _handleGrpcError(e);
-    }
+    // Note: Feed service doesn't have removeRepost method
+    // This would need to be added to the proto
+    throw UnimplementedError('removeRepost not implemented in proto');
   }
 
   @override
@@ -230,9 +208,9 @@ class FeedGrpcDataSourceImpl implements FeedRemoteDataSource {
       case StatusCode.unavailable:
         return const NetworkException();
       case StatusCode.invalidArgument:
-        return ServerException(message: e.message);
+        return ServerException(message: e.message ?? 'Invalid argument');
       default:
-        return ServerException(message: e.message);
+        return ServerException(message: e.message ?? 'Server error');
     }
   }
 }

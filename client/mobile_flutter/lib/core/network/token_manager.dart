@@ -3,16 +3,10 @@ import 'dart:convert';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:grpc/grpc.dart';
 import '../../generated/protos/auth/auth.pbgrpc.dart' as auth_pb;
-import '../constants/app_constants.dart';
 import '../utils/app_logger.dart';
 
 /// Token 状态
-enum TokenStatus {
-  valid,
-  expiringSoon,
-  expired,
-  missing,
-}
+enum TokenStatus { valid, expiringSoon, expired, missing }
 
 /// Token 管理器
 /// 负责 Token 过期检测、自动刷新和认证失败处理
@@ -258,7 +252,7 @@ class TokenManager {
         // 确保 Token 有效
         final token = await ensureValidToken();
         if (token == null) {
-          throw GrpcError.unauthenticated('Token 无效');
+          throw const GrpcError.unauthenticated('Token 无效');
         }
 
         return await request();
@@ -283,7 +277,6 @@ class TokenManager {
 
 /// 回调类型定义
 typedef VoidCallback = void Function();
-
 
 /// Token 自动刷新拦截器
 /// 在 gRPC 请求前检查 Token 状态，自动刷新即将过期的 Token
@@ -327,12 +320,7 @@ class TokenRefreshInterceptor extends ClientInterceptor {
     // 创建一个新的 ResponseFuture 来处理 Token 刷新逻辑
     final completer = Completer<R>();
 
-    _executeWithTokenRefresh(
-      originalCall,
-      options,
-      retryCall,
-      completer,
-    );
+    _executeWithTokenRefresh(originalCall, options, retryCall, completer);
 
     // 返回原始调用，让调用者可以获取 headers 等信息
     return originalCall();
@@ -357,7 +345,7 @@ class TokenRefreshInterceptor extends ClientInterceptor {
         final success = await _tokenManager.refreshToken();
         if (!success) {
           completer.completeError(
-            GrpcError.unauthenticated('Token 刷新失败'),
+            const GrpcError.unauthenticated('Token 刷新失败'),
           );
           return;
         }
@@ -377,9 +365,7 @@ class TokenRefreshInterceptor extends ClientInterceptor {
             // 使用新 Token 重试
             final newToken = await _secureStorage.read(key: 'access_token');
             final newOptions = options.mergedWith(
-              CallOptions(
-                metadata: {'authorization': 'Bearer $newToken'},
-              ),
+              CallOptions(metadata: {'authorization': 'Bearer $newToken'}),
             );
             final result = await retryCall(newOptions);
             completer.complete(result);
@@ -399,10 +385,7 @@ class TokenRefreshInterceptor extends ClientInterceptor {
 
 /// 带 Token 自动刷新的 gRPC 客户端包装器
 class TokenAwareGrpcClient<T> {
-  TokenAwareGrpcClient({
-    required this.client,
-    required this.tokenManager,
-  });
+  TokenAwareGrpcClient({required this.client, required this.tokenManager});
 
   final T client;
   final TokenManager tokenManager;

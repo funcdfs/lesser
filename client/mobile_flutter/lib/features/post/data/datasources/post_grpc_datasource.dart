@@ -132,9 +132,9 @@ class PostGrpcDataSourceImpl implements PostRemoteDataSource {
       case StatusCode.unavailable:
         return const NetworkException();
       case StatusCode.invalidArgument:
-        return ServerException(message: e.message);
+        return ServerException(message: e.message ?? 'Invalid argument');
       default:
-        return ServerException(message: e.message);
+        return ServerException(message: e.message ?? 'Server error');
     }
   }
 }

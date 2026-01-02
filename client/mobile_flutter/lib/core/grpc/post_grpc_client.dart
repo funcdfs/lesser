@@ -29,7 +29,7 @@ class PostGrpcClient {
       if (mediaUrls != null && mediaUrls.isNotEmpty) {
         request.mediaUrls.addAll(mediaUrls);
       }
-      return await _stub.createPost(request, options: options);
+      return await _stub.create(request, options: options);
     } on GrpcError catch (e) {
       GrpcErrorHandler.logError(e, context: 'CreatePost');
       rethrow;
@@ -41,7 +41,7 @@ class PostGrpcClient {
     try {
       final options = await _manager.getAuthCallOptions();
       final request = GetPostRequest()..postId = postId;
-      return await _stub.getPost(request, options: options);
+      return await _stub.get(request, options: options);
     } on GrpcError catch (e) {
       GrpcErrorHandler.logError(e, context: 'GetPost');
       rethrow;
@@ -59,14 +59,14 @@ class PostGrpcClient {
       final options = await _manager.getAuthCallOptions();
       final request = UpdatePostRequest()
         ..postId = postId
-        ..authorId = authorId;
+        ..userId = authorId;
       if (content != null) {
         request.content = content;
       }
       if (mediaUrls != null) {
         request.mediaUrls.addAll(mediaUrls);
       }
-      return await _stub.updatePost(request, options: options);
+      return await _stub.update(request, options: options);
     } on GrpcError catch (e) {
       GrpcErrorHandler.logError(e, context: 'UpdatePost');
       rethrow;
@@ -82,16 +82,16 @@ class PostGrpcClient {
       final options = await _manager.getAuthCallOptions();
       final request = DeletePostRequest()
         ..postId = postId
-        ..authorId = authorId;
-      await _stub.deletePost(request, options: options);
+        ..userId = authorId;
+      await _stub.delete(request, options: options);
     } on GrpcError catch (e) {
       GrpcErrorHandler.logError(e, context: 'DeletePost');
       rethrow;
     }
   }
 
-  /// 获取用户的帖子列表
-  Future<PostsResponse> getUserPosts({
+  /// 获取帖子列表
+  Future<ListPostsResponse> getUserPosts({
     required String userId,
     PostType? postType,
     int page = 1,
@@ -99,37 +99,17 @@ class PostGrpcClient {
   }) async {
     try {
       final options = await _manager.getAuthCallOptions();
-      final request = GetUserPostsRequest()
-        ..userId = userId
+      final request = ListPostsRequest()
+        ..authorId = userId
         ..pagination = (common.Pagination()
           ..page = page
           ..pageSize = pageSize);
       if (postType != null) {
         request.postType = postType;
       }
-      return await _stub.getUserPosts(request, options: options);
+      return await _stub.list(request, options: options);
     } on GrpcError catch (e) {
       GrpcErrorHandler.logError(e, context: 'GetUserPosts');
-      rethrow;
-    }
-  }
-
-  /// 按类型获取帖子列表
-  Future<PostsResponse> getPostsByType({
-    required PostType postType,
-    int page = 1,
-    int pageSize = 20,
-  }) async {
-    try {
-      final options = await _manager.getAuthCallOptions();
-      final request = GetPostsByTypeRequest()
-        ..postType = postType
-        ..pagination = (common.Pagination()
-          ..page = page
-          ..pageSize = pageSize);
-      return await _stub.getPostsByType(request, options: options);
-    } on GrpcError catch (e) {
-      GrpcErrorHandler.logError(e, context: 'GetPostsByType');
       rethrow;
     }
   }

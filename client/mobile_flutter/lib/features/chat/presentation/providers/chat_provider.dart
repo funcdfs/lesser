@@ -340,11 +340,8 @@ class ChatRoomNotifier extends Notifier<ChatRoomState> {
       _serverEventSubscription?.cancel();
       if (_currentConversationId != null) {
         _grpcClient.chatStream.unsubscribe(_currentConversationId!);
-        Future.microtask(() {
-          if (ref.exists(conversationsProvider)) {
-            ref.read(conversationsProvider.notifier).leaveConversation();
-          }
-        });
+        // 注意：不能在 onDispose 中使用 ref，直接调用 leaveConversation
+        // 由于 provider 已经被 dispose，这里不再通知 conversationsProvider
       }
     });
     

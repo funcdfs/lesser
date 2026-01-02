@@ -10,6 +10,7 @@ import 'grpc_client.dart';
 class ChatGrpcClient {
   ChatGrpcClient(this._manager) {
     // Chat 服务使用独立端口，创建专用 channel
+    // 移动平台使用原生 gRPC
     _channel = ClientChannel(
       AppConstants.grpcHost,
       port: AppConstants.chatGrpcPort,
@@ -19,11 +20,11 @@ class ChatGrpcClient {
         idleTimeout: Duration(minutes: 5),
       ),
     );
-    _stub = ChatServiceClient(_channel);
+    _stub = ChatServiceClient(_channel!);
   }
 
   final GrpcClientManager _manager;
-  late final ClientChannel _channel;
+  ClientChannel? _channel;
   late final ChatServiceClient _stub;
 
   /// 获取用户的所有会话
@@ -122,10 +123,10 @@ class ChatGrpcClient {
     }
   }
 
-  /// 实时消息流
-  Stream<Message> streamMessages(String userId) {
-    final request = StreamRequest()..userId = userId;
-    return _stub.streamMessages(request);
+  /// 实时事件流（双向流）
+  /// 使用 ClientEvent/ServerEvent 进行实时通信
+  ResponseStream<ServerEvent> streamEvents(Stream<ClientEvent> requests) {
+    return _stub.streamEvents(requests);
   }
 
   /// 标记消息已读
@@ -178,5 +179,11 @@ class ChatGrpcClient {
       GrpcErrorHandler.logError(e, context: 'GetUnreadCounts');
       rethrow;
     }
+  }
+
+  /// 关闭连接
+  Future<void> shutdown() async {
+    await _channel?.shutdown();
+    _channel = null;
   }
 }

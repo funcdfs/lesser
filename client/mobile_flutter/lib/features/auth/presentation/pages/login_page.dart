@@ -1,4 +1,3 @@
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -39,7 +38,9 @@ class _LoginPageState extends ConsumerState<LoginPage> {
 
   void _handleLogin() {
     if (_formKey.currentState?.validate() ?? false) {
-      ref.read(authProvider.notifier).login(
+      ref
+          .read(authProvider.notifier)
+          .login(
             email: _emailController.text.trim(),
             password: _passwordController.text,
           );
@@ -84,16 +85,16 @@ class _LoginPageState extends ConsumerState<LoginPage> {
                 Text(
                   'Welcome Back',
                   style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-                        fontWeight: FontWeight.bold,
-                      ),
+                    fontWeight: FontWeight.bold,
+                  ),
                   textAlign: TextAlign.center,
                 ),
                 const SizedBox(height: 8),
                 Text(
                   'Sign in to continue',
                   style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                        color: AppColors.textSecondaryLight,
-                      ),
+                    color: AppColors.textSecondaryLight,
+                  ),
                   textAlign: TextAlign.center,
                 ),
                 const SizedBox(height: 48),

@@ -3,15 +3,15 @@ import 'dart:convert';
 import 'package:grpc/grpc.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
-import '../../../../core/errors/exceptions.dart';
+import '../../../../core/errors/exceptions.dart' as app_exceptions;
 import '../../../../core/grpc/chat_grpc_client.dart';
 import '../../../../core/network/unified_grpc_client.dart';
-import '../../../../core/network/stream_event_handler.dart';
 import '../../../../core/utils/app_logger.dart';
 import '../../../../generated/protos/chat/chat.pbgrpc.dart' as pb;
 import '../../domain/entities/conversation.dart';
 import '../../domain/entities/message.dart';
-import '../../domain/repositories/chat_repository.dart' show MarkAsReadResult, UnreadCountResult;
+import '../../domain/repositories/chat_repository.dart'
+    show MarkAsReadResult, UnreadCountResult;
 import '../models/conversation_model.dart';
 import '../models/message_model.dart';
 import 'chat_remote_datasource.dart';
@@ -24,9 +24,6 @@ const _tag = 'ChatGrpcDataSource';
 class ChatGrpcDataSourceImpl implements ChatRemoteDataSource {
   ChatGrpcDataSourceImpl(this._chatClient, this._sharedPreferences);
 
-  final ChatGrpcClient _chatClient;
-  final SharedPreferences _sharedPreferences;
-
   /// 使用 UnifiedGrpcClient 的构造函数
   factory ChatGrpcDataSourceImpl.fromUnified(
     UnifiedGrpcClient unifiedClient,
@@ -37,6 +34,9 @@ class ChatGrpcDataSourceImpl implements ChatRemoteDataSource {
       sharedPreferences,
     );
   }
+
+  final ChatGrpcClient _chatClient;
+  final SharedPreferences _sharedPreferences;
 
   /// 获取当前用户ID
   String? _getCurrentUserId() {
@@ -54,7 +54,7 @@ class ChatGrpcDataSourceImpl implements ChatRemoteDataSource {
     try {
       final userId = _getCurrentUserId();
       if (userId == null) {
-        throw const UnauthorizedException(message: '用户未登录');
+        throw const app_exceptions.UnauthorizedException(message: '用户未登录');
       }
 
       final response = await _chatClient.getConversations(
@@ -92,7 +92,7 @@ class ChatGrpcDataSourceImpl implements ChatRemoteDataSource {
     try {
       final userId = _getCurrentUserId();
       if (userId == null) {
-        throw const UnauthorizedException(message: '用户未登录');
+        throw const app_exceptions.UnauthorizedException(message: '用户未登录');
       }
 
       final response = await _chatClient.createConversation(
@@ -122,9 +122,7 @@ class ChatGrpcDataSourceImpl implements ChatRemoteDataSource {
         pageSize: pageSize,
       );
 
-      return response.messages
-          .map((msg) => _protoToMessageModel(msg))
-          .toList();
+      return response.messages.map((msg) => _protoToMessageModel(msg)).toList();
     } on GrpcError catch (e) {
       log.e('获取消息列表失败: ${e.message}', tag: _tag);
       throw _handleGrpcError(e);
@@ -140,7 +138,7 @@ class ChatGrpcDataSourceImpl implements ChatRemoteDataSource {
     try {
       final userId = _getCurrentUserId();
       if (userId == null) {
-        throw const UnauthorizedException(message: '用户未登录');
+        throw const app_exceptions.UnauthorizedException(message: '用户未登录');
       }
 
       final response = await _chatClient.sendMessage(
@@ -162,7 +160,7 @@ class ChatGrpcDataSourceImpl implements ChatRemoteDataSource {
     try {
       final userId = _getCurrentUserId();
       if (userId == null) {
-        throw const UnauthorizedException(message: '用户未登录');
+        throw const app_exceptions.UnauthorizedException(message: '用户未登录');
       }
 
       final response = await _chatClient.markConversationAsRead(
@@ -178,13 +176,15 @@ class ChatGrpcDataSourceImpl implements ChatRemoteDataSource {
   }
 
   @override
-  Future<List<UnreadCountResult>> getUnreadCounts(List<String> conversationIds) async {
+  Future<List<UnreadCountResult>> getUnreadCounts(
+    List<String> conversationIds,
+  ) async {
     if (conversationIds.isEmpty) return [];
 
     try {
       final userId = _getCurrentUserId();
       if (userId == null) {
-        throw const UnauthorizedException(message: '用户未登录');
+        throw const app_exceptions.UnauthorizedException(message: '用户未登录');
       }
 
       final response = await _chatClient.getUnreadCounts(
@@ -193,10 +193,12 @@ class ChatGrpcDataSourceImpl implements ChatRemoteDataSource {
       );
 
       return response.unreadCounts
-          .map((uc) => UnreadCountResult(
-                conversationId: uc.conversationId,
-                count: uc.count.toInt(),
-              ))
+          .map(
+            (uc) => UnreadCountResult(
+              conversationId: uc.conversationId,
+              count: uc.count.toInt(),
+            ),
+          )
           .toList();
     } on GrpcError catch (e) {
       log.e('获取未读数失败: ${e.message}', tag: _tag);
@@ -216,7 +218,8 @@ class ChatGrpcDataSourceImpl implements ChatRemoteDataSource {
       creatorId: conv.creatorId,
       createdAt: conv.hasCreatedAt()
           ? DateTime.fromMillisecondsSinceEpoch(
-              conv.createdAt.seconds.toInt() * 1000)
+              conv.createdAt.seconds.toInt() * 1000,
+            )
           : DateTime.now(),
       lastMessage: conv.hasLastMessage()
           ? _protoToMessageModel(conv.lastMessage)
@@ -234,11 +237,13 @@ class ChatGrpcDataSourceImpl implements ChatRemoteDataSource {
       messageType: _stringToMessageType(msg.messageType),
       createdAt: msg.hasCreatedAt()
           ? DateTime.fromMillisecondsSinceEpoch(
-              msg.createdAt.seconds.toInt() * 1000)
+              msg.createdAt.seconds.toInt() * 1000,
+            )
           : DateTime.now(),
       readAt: msg.hasReadAt()
           ? DateTime.fromMillisecondsSinceEpoch(
-              msg.readAt.seconds.toInt() * 1000)
+              msg.readAt.seconds.toInt() * 1000,
+            )
           : null,
     );
   }
@@ -306,22 +311,24 @@ class ChatGrpcDataSourceImpl implements ChatRemoteDataSource {
   }
 
   /// 处理 gRPC 错误
-  AppException _handleGrpcError(GrpcError e) {
+  app_exceptions.AppException _handleGrpcError(GrpcError e) {
     switch (e.code) {
       case StatusCode.unauthenticated:
-        return UnauthorizedException(message: e.message ?? '认证失败');
+        return app_exceptions.UnauthorizedException(
+          message: e.message ?? '认证失败',
+        );
       case StatusCode.permissionDenied:
-        return ForbiddenException(message: e.message ?? '权限不足');
+        return app_exceptions.ForbiddenException(message: e.message ?? '权限不足');
       case StatusCode.notFound:
-        return NotFoundException(message: e.message ?? '资源不存在');
+        return app_exceptions.NotFoundException(message: e.message ?? '资源不存在');
       case StatusCode.invalidArgument:
-        return ServerException(message: e.message ?? '参数无效');
+        return app_exceptions.ServerException(message: e.message ?? '参数无效');
       case StatusCode.unavailable:
-        return const NetworkException();
+        return const app_exceptions.NetworkException();
       case StatusCode.deadlineExceeded:
-        return const TimeoutException();
+        return const app_exceptions.TimeoutException();
       default:
-        return ServerException(message: e.message ?? '服务器错误');
+        return app_exceptions.ServerException(message: e.message ?? '服务器错误');
     }
   }
 }

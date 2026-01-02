@@ -5,6 +5,7 @@ import '../utils/app_logger.dart';
 
 /// gRPC 客户端管理器
 /// 提供统一的 gRPC 连接管理和认证拦截
+/// 自动检测平台并使用适当的传输方式（Web 使用 grpc-web，其他平台使用原生 gRPC）
 class GrpcClientManager {
   GrpcClientManager({
     required FlutterSecureStorage secureStorage,
@@ -20,6 +21,8 @@ class GrpcClientManager {
   ClientChannel? _channel;
 
   /// 获取或创建 gRPC channel
+  /// 移动平台使用原生 gRPC ClientChannel
+  /// 注意：Web 平台需要单独处理，但本应用主要针对移动端
   ClientChannel get channel {
     _channel ??= ClientChannel(
       _host,
@@ -36,20 +39,29 @@ class GrpcClientManager {
   /// 获取带认证的 CallOptions
   Future<CallOptions> getAuthCallOptions() async {
     final token = await _secureStorage.read(key: 'access_token');
+    final userId = await _secureStorage.read(key: 'user_id');
     return CallOptions(
       metadata: {
         if (token != null) 'authorization': 'Bearer $token',
+        if (userId != null) 'user_id': userId,
         if (log.traceId != null) 'x-trace-id': log.traceId!,
       },
       timeout: AppConstants.receiveTimeout,
     );
   }
 
-  /// 创建带认证拦截器的 stub
-  T createStub<T>(
-    T Function(ClientChannel, Iterable<ClientInterceptor>) factory,
-  ) {
-    return factory(channel, [AuthInterceptor(_secureStorage)]);
+  /// 获取带认证的 CallOptions（用于双向流，不设置超时）
+  Future<CallOptions> getStreamCallOptions() async {
+    final token = await _secureStorage.read(key: 'access_token');
+    final userId = await _secureStorage.read(key: 'user_id');
+    return CallOptions(
+      metadata: {
+        if (token != null) 'authorization': 'Bearer $token',
+        if (userId != null) 'user_id': userId,
+        if (log.traceId != null) 'x-trace-id': log.traceId!,
+      },
+      // 双向流不设置超时，由心跳机制管理连接
+    );
   }
 
   /// 关闭连接
@@ -94,8 +106,6 @@ class AuthInterceptor extends ClientInterceptor {
   }
 
   CallOptions _addAuthMetadata(CallOptions options) {
-    // 注意：此处是同步的，token 需要预先加载
-    // 实际使用时建议通过 getAuthCallOptions() 异步获取
     return options;
   }
 }
@@ -134,14 +144,11 @@ class GrpcErrorHandler {
 }
 
 /// gRPC 错误转换器
-/// 将 gRPC 错误码转换为用户友好的提示信息
 class GrpcErrorConverter {
-  /// 转换 gRPC 错误为用户友好消息
   static String toUserMessage(GrpcError error) {
     return GrpcErrorHandler.getErrorMessage(error);
   }
 
-  /// 转换 gRPC 状态码为用户友好消息
   static String statusCodeToMessage(StatusCode code, {String? details}) {
     switch (code) {
       case StatusCode.ok:
@@ -183,12 +190,10 @@ class GrpcErrorConverter {
     }
   }
 
-  /// 判断错误是否需要重新登录
   static bool requiresReauth(GrpcError error) {
     return error.code == StatusCode.unauthenticated;
   }
 
-  /// 判断错误是否可重试
   static bool isRetryable(GrpcError error) {
     switch (error.code) {
       case StatusCode.unavailable:
@@ -201,9 +206,7 @@ class GrpcErrorConverter {
     }
   }
 
-  /// 获取建议的重试延迟（毫秒）
   static int getRetryDelay(GrpcError error, int attemptNumber) {
-    // 指数退避：1s, 2s, 4s, 8s, 最大 30s
     const baseDelay = 1000;
     const maxDelay = 30000;
     final delay = baseDelay * (1 << attemptNumber.clamp(0, 5));

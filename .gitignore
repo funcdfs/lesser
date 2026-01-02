@@ -33,17 +33,26 @@ pubspec.lock
 *.g.dart
 *.freezed.dart
 *.mocks.dart
+.flutter-plugins
 
 # Flutter 平台特定构建产物
 **/ios/Pods/
 **/ios/.symlinks/
 **/ios/Flutter/Flutter.framework
 **/ios/Flutter/Flutter.podspec
+**/ios/Flutter/Generated.xcconfig
+**/ios/Flutter/flutter_export_environment.sh
+**/ios/Podfile.lock
 **/android/.gradle/
+**/android/.kotlin/
 **/android/local.properties
 **/android/**/GeneratedPluginRegistrant.*
 **/web/favicon.png
 **/*.dSYM/
+
+# Flutter 日志文件（统一放在 logs/flutter/）
+client/mobile_flutter/*.log
+client/mobile_flutter/flutter_*.log
 
 # ============================================================================
 # Node.js (保留用于可能的工具)

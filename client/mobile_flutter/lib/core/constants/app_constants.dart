@@ -7,6 +7,8 @@ class AppConstants {
   static const String appVersion = '1.0.0';
 
   // gRPC Configuration
+  // 使用 adb reverse 端口转发时，Android 设备可以通过 localhost 访问电脑上的服务
+  // 运行命令: adb reverse tcp:50053 tcp:50053 && adb reverse tcp:50052 tcp:50052
   static const String grpcHost = 'localhost';
   static const int grpcPort = 50053; // Gateway gRPC 端口
   static const int chatGrpcPort = 50052; // Chat Service gRPC 端口（双向流）

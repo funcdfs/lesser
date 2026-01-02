@@ -28,10 +28,22 @@ migrate_working_dir/
 **/ios/Flutter/.last_build_id
 .dart_tool/
 .flutter-plugins-dependencies
+.flutter-plugins
 .pub-cache/
 .pub/
 /build/
 /coverage/
+
+# iOS CocoaPods (运行 pod install 生成)
+/ios/Podfile.lock
+/ios/Pods/
+/ios/.symlinks/
+/ios/Flutter/Generated.xcconfig
+/ios/Flutter/flutter_export_environment.sh
+
+# 日志文件（统一放在项目根目录 logs/flutter/）
+*.log
+flutter_*.log
 
 # Symbolication related
 app.*.symbols

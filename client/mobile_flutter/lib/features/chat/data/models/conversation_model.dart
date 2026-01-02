@@ -16,9 +16,6 @@ class ConversationModel extends Conversation {
     this.memberIds = const [],
   });
 
-  /// 成员 ID 列表（gRPC 数据源使用）
-  final List<String> memberIds;
-
   /// 从 memberIds 创建（gRPC 数据源使用）
   /// 由于 gRPC 只返回 memberIds，我们创建占位 User 对象
   factory ConversationModel.fromMemberIds({
@@ -33,11 +30,7 @@ class ConversationModel extends Conversation {
   }) {
     // 为每个 memberId 创建一个占位 User
     final members = memberIds
-        .map((memberId) => UserModel(
-              id: memberId,
-              username: '',
-              email: '',
-            ))
+        .map((memberId) => UserModel(id: memberId, username: '', email: ''))
         .toList();
 
     return ConversationModel(
@@ -59,9 +52,9 @@ class ConversationModel extends Conversation {
     final membersJson = json['members'] as List<dynamic>?;
     final members = membersJson != null
         ? membersJson
-            .where((e) => e != null && e is Map<String, dynamic>)
-            .map((e) => UserModel.fromJson(e as Map<String, dynamic>))
-            .toList()
+              .where((e) => e != null && e is Map<String, dynamic>)
+              .map((e) => UserModel.fromJson(e as Map<String, dynamic>))
+              .toList()
         : <UserModel>[];
 
     return ConversationModel(
@@ -78,6 +71,9 @@ class ConversationModel extends Conversation {
     );
   }
 
+  /// 成员 ID 列表（gRPC 数据源使用）
+  final List<String> memberIds;
+
   /// Convert to JSON
   Map<String, dynamic> toJson() {
     return {
@@ -87,8 +83,9 @@ class ConversationModel extends Conversation {
       'created_at': createdAt.toIso8601String(),
       'name': name,
       'creator_id': creatorId,
-      'last_message':
-          lastMessage != null ? (lastMessage as MessageModel).toJson() : null,
+      'last_message': lastMessage != null
+          ? (lastMessage as MessageModel).toJson()
+          : null,
       'unread_count': unreadCount,
     };
   }

@@ -14,23 +14,21 @@ class NotificationGrpcClient {
   late final NotificationServiceClient _stub;
 
   /// 获取通知列表
-  Future<NotificationsResponse> getNotifications({
+  Future<ListNotificationsResponse> getNotifications({
     required String userId,
-    NotificationType? type,
     bool? unreadOnly,
     int page = 1,
     int pageSize = 20,
   }) async {
     try {
       final options = await _manager.getAuthCallOptions();
-      final request = GetNotificationsRequest()
+      final request = ListNotificationsRequest()
         ..userId = userId
         ..pagination = (common.Pagination()
           ..page = page
           ..pageSize = pageSize);
-      if (type != null) request.type = type;
       if (unreadOnly != null) request.unreadOnly = unreadOnly;
-      return await _stub.getNotifications(request, options: options);
+      return await _stub.list(request, options: options);
     } on GrpcError catch (e) {
       GrpcErrorHandler.logError(e, context: 'GetNotifications');
       rethrow;
@@ -58,10 +56,10 @@ class NotificationGrpcClient {
   }) async {
     try {
       final options = await _manager.getAuthCallOptions();
-      final request = MarkAsReadRequest()
+      final request = ReadNotificationRequest()
         ..notificationId = notificationId
         ..userId = userId;
-      await _stub.markAsRead(request, options: options);
+      await _stub.read(request, options: options);
     } on GrpcError catch (e) {
       GrpcErrorHandler.logError(e, context: 'MarkAsRead');
       rethrow;
@@ -71,29 +69,13 @@ class NotificationGrpcClient {
   /// 标记所有通知为已读
   Future<void> markAllAsRead({
     required String userId,
-    NotificationType? type,
   }) async {
     try {
       final options = await _manager.getAuthCallOptions();
-      final request = MarkAllAsReadRequest()..userId = userId;
-      if (type != null) request.type = type;
-      await _stub.markAllAsRead(request, options: options);
+      final request = ReadAllNotificationsRequest()..userId = userId;
+      await _stub.readAll(request, options: options);
     } on GrpcError catch (e) {
       GrpcErrorHandler.logError(e, context: 'MarkAllAsRead');
-      rethrow;
-    }
-  }
-
-  /// 实时通知流
-  Stream<Notification> streamNotifications({
-    required String userId,
-  }) async* {
-    try {
-      final options = await _manager.getAuthCallOptions();
-      final request = StreamNotificationsRequest()..userId = userId;
-      yield* _stub.streamNotifications(request, options: options);
-    } on GrpcError catch (e) {
-      GrpcErrorHandler.logError(e, context: 'StreamNotifications');
       rethrow;
     }
   }

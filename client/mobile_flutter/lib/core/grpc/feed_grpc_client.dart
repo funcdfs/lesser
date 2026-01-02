@@ -5,6 +5,7 @@ import 'grpc_client.dart';
 
 /// Feed gRPC 客户端
 /// 封装 Feed 相关的 gRPC 调用（点赞、评论、转发、收藏等）
+/// 注意：Feed 服务不提供获取动态流的功能，动态流需要通过 Post 服务获取
 class FeedGrpcClient {
   FeedGrpcClient(this._manager) {
     _stub = FeedServiceClient(_manager.channel);
@@ -13,48 +14,8 @@ class FeedGrpcClient {
   final GrpcClientManager _manager;
   late final FeedServiceClient _stub;
 
-  /// 获取动态流
-  Future<FeedResponse> getFeeds({
-    required String userId,
-    int page = 1,
-    int pageSize = 20,
-  }) async {
-    try {
-      final options = await _manager.getAuthCallOptions();
-      final request = GetFeedRequest()
-        ..userId = userId
-        ..pagination = (common.Pagination()
-          ..page = page
-          ..pageSize = pageSize);
-      return await _stub.getFeed(request, options: options);
-    } on GrpcError catch (e) {
-      GrpcErrorHandler.logError(e, context: 'GetFeeds');
-      rethrow;
-    }
-  }
-
-  /// 获取关注用户的动态流
-  Future<FeedResponse> getFollowingFeed({
-    required String userId,
-    int page = 1,
-    int pageSize = 20,
-  }) async {
-    try {
-      final options = await _manager.getAuthCallOptions();
-      final request = GetFeedRequest()
-        ..userId = userId
-        ..pagination = (common.Pagination()
-          ..page = page
-          ..pageSize = pageSize);
-      return await _stub.getFollowingFeed(request, options: options);
-    } on GrpcError catch (e) {
-      GrpcErrorHandler.logError(e, context: 'GetFollowingFeed');
-      rethrow;
-    }
-  }
-
   /// 点赞帖子
-  Future<LikeResponse> likePost({
+  Future<void> likePost({
     required String userId,
     required String postId,
   }) async {
@@ -63,7 +24,7 @@ class FeedGrpcClient {
       final request = LikeRequest()
         ..userId = userId
         ..postId = postId;
-      return await _stub.likePost(request, options: options);
+      await _stub.like(request, options: options);
     } on GrpcError catch (e) {
       GrpcErrorHandler.logError(e, context: 'LikePost');
       rethrow;
@@ -77,10 +38,10 @@ class FeedGrpcClient {
   }) async {
     try {
       final options = await _manager.getAuthCallOptions();
-      final request = LikeRequest()
+      final request = UnlikeRequest()
         ..userId = userId
         ..postId = postId;
-      await _stub.unlikePost(request, options: options);
+      await _stub.unlike(request, options: options);
     } on GrpcError catch (e) {
       GrpcErrorHandler.logError(e, context: 'UnlikePost');
       rethrow;
@@ -96,14 +57,14 @@ class FeedGrpcClient {
   }) async {
     try {
       final options = await _manager.getAuthCallOptions();
-      final request = AddCommentRequest()
-        ..userId = userId
+      final request = CreateCommentRequest()
+        ..authorId = userId
         ..postId = postId
         ..content = content;
       if (parentId != null) {
         request.parentId = parentId;
       }
-      return await _stub.addComment(request, options: options);
+      return await _stub.createComment(request, options: options);
     } on GrpcError catch (e) {
       GrpcErrorHandler.logError(e, context: 'AddComment');
       rethrow;
@@ -128,7 +89,7 @@ class FeedGrpcClient {
   }
 
   /// 获取评论列表
-  Future<CommentsResponse> getComments({
+  Future<ListCommentsResponse> getComments({
     required String postId,
     String? parentId,
     int page = 1,
@@ -136,7 +97,7 @@ class FeedGrpcClient {
   }) async {
     try {
       final options = await _manager.getAuthCallOptions();
-      final request = GetCommentsRequest()
+      final request = ListCommentsRequest()
         ..postId = postId
         ..pagination = (common.Pagination()
           ..page = page
@@ -144,7 +105,7 @@ class FeedGrpcClient {
       if (parentId != null) {
         request.parentId = parentId;
       }
-      return await _stub.getComments(request, options: options);
+      return await _stub.listComments(request, options: options);
     } on GrpcError catch (e) {
       GrpcErrorHandler.logError(e, context: 'GetComments');
       rethrow;
@@ -152,7 +113,7 @@ class FeedGrpcClient {
   }
 
   /// 转发帖子
-  Future<RepostResponse> repost({
+  Future<Repost> repost({
     required String userId,
     required String postId,
     String? quote,
@@ -165,26 +126,9 @@ class FeedGrpcClient {
       if (quote != null) {
         request.quote = quote;
       }
-      return await _stub.repost(request, options: options);
+      return await _stub.createRepost(request, options: options);
     } on GrpcError catch (e) {
       GrpcErrorHandler.logError(e, context: 'Repost');
-      rethrow;
-    }
-  }
-
-  /// 取消转发
-  Future<void> removeRepost({
-    required String userId,
-    required String postId,
-  }) async {
-    try {
-      final options = await _manager.getAuthCallOptions();
-      final request = RepostRequest()
-        ..userId = userId
-        ..postId = postId;
-      await _stub.removeRepost(request, options: options);
-    } on GrpcError catch (e) {
-      GrpcErrorHandler.logError(e, context: 'RemoveRepost');
       rethrow;
     }
   }
@@ -199,7 +143,7 @@ class FeedGrpcClient {
       final request = BookmarkRequest()
         ..userId = userId
         ..postId = postId;
-      await _stub.bookmarkPost(request, options: options);
+      await _stub.bookmark(request, options: options);
     } on GrpcError catch (e) {
       GrpcErrorHandler.logError(e, context: 'BookmarkPost');
       rethrow;
@@ -213,10 +157,10 @@ class FeedGrpcClient {
   }) async {
     try {
       final options = await _manager.getAuthCallOptions();
-      final request = BookmarkRequest()
+      final request = UnbookmarkRequest()
         ..userId = userId
         ..postId = postId;
-      await _stub.removeBookmark(request, options: options);
+      await _stub.unbookmark(request, options: options);
     } on GrpcError catch (e) {
       GrpcErrorHandler.logError(e, context: 'RemoveBookmark');
       rethrow;
@@ -224,19 +168,19 @@ class FeedGrpcClient {
   }
 
   /// 获取收藏列表
-  Future<FeedResponse> getBookmarks({
+  Future<ListBookmarksResponse> getBookmarks({
     required String userId,
     int page = 1,
     int pageSize = 20,
   }) async {
     try {
       final options = await _manager.getAuthCallOptions();
-      final request = GetBookmarksRequest()
+      final request = ListBookmarksRequest()
         ..userId = userId
         ..pagination = (common.Pagination()
           ..page = page
           ..pageSize = pageSize);
-      return await _stub.getBookmarks(request, options: options);
+      return await _stub.listBookmarks(request, options: options);
     } on GrpcError catch (e) {
       GrpcErrorHandler.logError(e, context: 'GetBookmarks');
       rethrow;

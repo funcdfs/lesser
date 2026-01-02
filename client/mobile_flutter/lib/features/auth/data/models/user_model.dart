@@ -1,6 +1,6 @@
 import 'package:fixnum/fixnum.dart';
-import '../../../generated/protos/auth/auth.pb.dart' as auth_pb;
-import '../../../generated/protos/common/common.pb.dart' as common_pb;
+import '../../../../generated/protos/auth/auth.pb.dart' as auth_pb;
+import '../../../../generated/protos/common/common.pb.dart' as common_pb;
 import '../../domain/entities/user.dart';
 
 /// 用户数据模型
@@ -14,6 +14,21 @@ class UserModel extends User {
     super.bio,
     super.createdAt,
   });
+
+  /// 从 JSON 创建
+  factory UserModel.fromJson(Map<String, dynamic> json) {
+    return UserModel(
+      id: json['id'] as String,
+      username: (json['username'] as String?) ?? '',
+      email: (json['email'] as String?) ?? '',
+      displayName: json['display_name'] as String?,
+      avatarUrl: json['avatar_url'] as String?,
+      bio: json['bio'] as String?,
+      createdAt: json['created_at'] != null
+          ? DateTime.parse(json['created_at'] as String)
+          : null,
+    );
+  }
 
   /// 从实体创建
   factory UserModel.fromEntity(User user) {
@@ -59,21 +74,6 @@ class UserModel extends User {
         ..seconds = Int64(createdAt!.millisecondsSinceEpoch ~/ 1000);
     }
     return proto;
-  }
-
-  /// 从 JSON 创建
-  factory UserModel.fromJson(Map<String, dynamic> json) {
-    return UserModel(
-      id: json['id'] as String,
-      username: (json['username'] as String?) ?? '',
-      email: (json['email'] as String?) ?? '',
-      displayName: json['display_name'] as String?,
-      avatarUrl: json['avatar_url'] as String?,
-      bio: json['bio'] as String?,
-      createdAt: json['created_at'] != null
-          ? DateTime.parse(json['created_at'] as String)
-          : null,
-    );
   }
 
   /// 转换为 JSON

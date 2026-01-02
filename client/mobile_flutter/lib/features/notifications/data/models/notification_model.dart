@@ -30,11 +30,18 @@ class NotificationModel extends AppNotification {
   }
 
   /// Create from Proto message
+  /// Note: Proto only provides actor_id, so we create a placeholder user.
+  /// The full user details should be fetched separately if needed.
   factory NotificationModel.fromProto(notification_pb.Notification proto) {
     return NotificationModel(
       id: proto.id,
       type: _parseProtoNotificationType(proto.type),
-      actor: UserModel.fromProto(proto.actor),
+      // Proto only has actor_id, create placeholder user
+      actor: UserModel(
+        id: proto.actorId,
+        username: '',
+        email: '',
+      ),
       createdAt: proto.hasCreatedAt()
           ? DateTime.fromMillisecondsSinceEpoch(
               proto.createdAt.seconds.toInt() * 1000,
@@ -42,7 +49,7 @@ class NotificationModel extends AppNotification {
           : DateTime.now(),
       postId: proto.targetType == 'post' ? proto.targetId : null,
       commentId: proto.targetType == 'comment' ? proto.targetId : null,
-      message: proto.hasPreviewText() ? proto.previewText : null,
+      message: proto.hasMessage() ? proto.message : null,
       isRead: proto.isRead,
     );
   }

@@ -45,7 +45,6 @@ dependencies:
   
   # Code Generation (runtime)
   freezed_annotation: ^3.1.0
-  web: ^1.1.1
 
 dev_dependencies:
   flutter_test:

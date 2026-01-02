@@ -1,5 +1,4 @@
 import '../../../auth/data/models/user_model.dart';
-import '../../../../generated/protos/feed/feed.pb.dart' as feed_pb;
 import '../../../../generated/protos/post/post.pb.dart' as post_pb;
 import '../../domain/entities/feed_item.dart';
 
@@ -22,35 +21,40 @@ class FeedItemModel extends FeedItem {
     super.expiresAt,
   });
 
-  /// Create from Proto FeedItem message
-  factory FeedItemModel.fromProto(feed_pb.FeedItem proto) {
+  /// Create from JSON
+  factory FeedItemModel.fromJson(Map<String, dynamic> json) {
     return FeedItemModel(
-      id: proto.id,
-      author: UserModel.fromProto(proto.author),
-      content: proto.content,
-      postType: _protoPostTypeToEntity(proto.postType),
-      createdAt: proto.hasCreatedAt()
-          ? DateTime.fromMillisecondsSinceEpoch(
-              proto.createdAt.seconds.toInt() * 1000,
-            )
-          : DateTime.now(),
-      title: null, // FeedItem proto doesn't have title
-      mediaUrls: proto.mediaUrls.toList(),
-      likesCount: proto.likeCount,
-      commentsCount: proto.commentCount,
-      repostsCount: proto.repostCount,
-      isLiked: proto.isLiked,
-      isReposted: proto.isReposted,
-      isBookmarked: proto.isBookmarked,
-      expiresAt: null, // FeedItem proto doesn't have expiresAt
+      id: json['id'] as String,
+      author: UserModel.fromJson(json['author'] as Map<String, dynamic>),
+      content: json['content'] as String,
+      postType: _parsePostType(json['post_type'] as String),
+      createdAt: DateTime.parse(json['created_at'] as String),
+      title: json['title'] as String?,
+      mediaUrls:
+          (json['media_urls'] as List<dynamic>?)
+              ?.map((e) => e as String)
+              .toList() ??
+          [],
+      likesCount: json['likes_count'] as int? ?? 0,
+      commentsCount: json['comments_count'] as int? ?? 0,
+      repostsCount: json['reposts_count'] as int? ?? 0,
+      isLiked: json['is_liked'] as bool? ?? false,
+      isReposted: json['is_reposted'] as bool? ?? false,
+      isBookmarked: json['is_bookmarked'] as bool? ?? false,
+      expiresAt: json['expires_at'] != null
+          ? DateTime.parse(json['expires_at'] as String)
+          : null,
     );
   }
 
   /// Create from Proto Post message
+  /// Note: Proto only provides author_id, so we create a placeholder user.
+  /// The full user details should be fetched separately if needed.
   factory FeedItemModel.fromPostProto(post_pb.Post proto) {
     return FeedItemModel(
       id: proto.id,
-      author: UserModel.fromProto(proto.author),
+      // Proto only has author_id, create placeholder user
+      author: UserModel(id: proto.authorId, username: '', email: ''),
       content: proto.content,
       postType: _protoPostTypeToEntityFromPost(proto.postType),
       createdAt: proto.hasCreatedAt()
@@ -58,7 +62,7 @@ class FeedItemModel extends FeedItem {
               proto.createdAt.seconds.toInt() * 1000,
             )
           : DateTime.now(),
-      title: null, // Post proto doesn't have title field
+      title: proto.hasTitle() && proto.title.isNotEmpty ? proto.title : null,
       mediaUrls: proto.mediaUrls.toList(),
       likesCount: proto.likeCount,
       commentsCount: proto.commentCount,
@@ -91,31 +95,6 @@ class FeedItemModel extends FeedItem {
       isReposted: isReposted,
       isBookmarked: isBookmarked,
       expiresAt: expiresAt,
-    );
-  }
-
-  /// Create from JSON
-  factory FeedItemModel.fromJson(Map<String, dynamic> json) {
-    return FeedItemModel(
-      id: json['id'] as String,
-      author: UserModel.fromJson(json['author'] as Map<String, dynamic>),
-      content: json['content'] as String,
-      postType: _parsePostType(json['post_type'] as String),
-      createdAt: DateTime.parse(json['created_at'] as String),
-      title: json['title'] as String?,
-      mediaUrls: (json['media_urls'] as List<dynamic>?)
-              ?.map((e) => e as String)
-              .toList() ??
-          [],
-      likesCount: json['likes_count'] as int? ?? 0,
-      commentsCount: json['comments_count'] as int? ?? 0,
-      repostsCount: json['reposts_count'] as int? ?? 0,
-      isLiked: json['is_liked'] as bool? ?? false,
-      isReposted: json['is_reposted'] as bool? ?? false,
-      isBookmarked: json['is_bookmarked'] as bool? ?? false,
-      expiresAt: json['expires_at'] != null
-          ? DateTime.parse(json['expires_at'] as String)
-          : null,
     );
   }
 

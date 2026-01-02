@@ -344,8 +344,8 @@ class ChatStreamClient {
       // 创建客户端事件流控制器
       _clientEventController = StreamController<chat_pb.ClientEvent>();
 
-      // 获取认证选项
-      final options = await _manager.getAuthCallOptions();
+      // 获取认证选项（双向流不设置超时）
+      final options = await _manager.getStreamCallOptions();
 
       // 建立双向流连接
       final serverStream = _client.streamEvents(
