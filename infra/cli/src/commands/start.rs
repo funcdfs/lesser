@@ -27,16 +27,16 @@ const GATEWAY: ServiceGroup = ServiceGroup {
     emoji: "🚪",
 };
 
-/// Worker 服务
-const WORKERS: ServiceGroup = ServiceGroup {
-    name: "Workers",
+/// gRPC 服务集群
+const SERVICES: ServiceGroup = ServiceGroup {
+    name: "Services",
     services: &[
-        "auth-worker",
-        "user-worker", 
-        "post-worker",
-        "feed-worker",
-        "notification-worker",
-        "search-worker",
+        "auth",
+        "user",
+        "post",
+        "feed",
+        "search",
+        "notification",
     ],
     emoji: "⚙️",
 };
@@ -61,7 +61,9 @@ pub async fn execute(target: StartTarget) -> Result<()> {
         StartTarget::All => start_all(&compose, &config).await,
         StartTarget::Infra => start_infra(&compose).await,
         StartTarget::Service => start_services(&compose).await,
-        StartTarget::Flutter => start_flutter(&config).await,
+        StartTarget::Flutter => start_flutter_interactive(&config).await,
+        StartTarget::FlutterWeb => start_flutter_web(&config).await,
+        StartTarget::FlutterAndroid => start_flutter_android(&config).await,
     }
 }
 
@@ -80,8 +82,8 @@ async fn start_all(compose: &DockerCompose, config: &Config) -> Result<()> {
     // 2. Gateway
     start_group(compose, &GATEWAY).await?;
 
-    // 3. Workers
-    start_group(compose, &WORKERS).await?;
+    // 3. gRPC Services
+    start_group(compose, &SERVICES).await?;
 
     // 4. Chat
     start_group(compose, &CHAT).await?;
@@ -120,15 +122,20 @@ async fn start_services(compose: &DockerCompose) -> Result<()> {
     ui::step_done("基础设施就绪");
 
     start_group(compose, &GATEWAY).await?;
-    start_group(compose, &WORKERS).await?;
+    start_group(compose, &SERVICES).await?;
     start_group(compose, &CHAT).await?;
 
     ui::separator();
     ui::success("后端服务已启动");
     println!();
     ui::kv("Gateway gRPC", "localhost:50053");
+    ui::kv("Auth gRPC", "localhost:50054");
+    ui::kv("User gRPC", "localhost:50055");
+    ui::kv("Post gRPC", "localhost:50056");
+    ui::kv("Feed gRPC", "localhost:50057");
+    ui::kv("Search gRPC", "localhost:50058");
+    ui::kv("Notification gRPC", "localhost:50059");
     ui::kv("Chat gRPC", "localhost:50052");
-    ui::kv("Chat WebSocket", "ws://localhost:8081/ws/chat");
 
     Ok(())
 }
@@ -142,8 +149,38 @@ async fn start_group(compose: &DockerCompose, group: &ServiceGroup) -> Result<()
     Ok(())
 }
 
+/// Flutter 交互式选择平台
+async fn start_flutter_interactive(config: &Config) -> Result<()> {
+    use std::io::{self, Write};
+
+    ui::banner("启动 Flutter 开发环境");
+    
+    println!();
+    println!("  请选择目标平台:");
+    println!();
+    println!("    [1] 🌐 Web (Chrome)");
+    println!("    [2] 📱 Android");
+    println!("    [3] 🍎 iOS (macOS only)");
+    println!();
+    print!("  请输入选项 [1-3]: ");
+    io::stdout().flush()?;
+
+    let mut input = String::new();
+    io::stdin().read_line(&mut input)?;
+
+    match input.trim() {
+        "1" | "web" | "w" => start_flutter_web(config).await,
+        "2" | "android" | "a" => start_flutter_android(config).await,
+        "3" | "ios" | "i" => start_flutter_ios(config).await,
+        _ => {
+            ui::error("无效选项，请输入 1、2 或 3");
+            Ok(())
+        }
+    }
+}
+
 /// 启动 Flutter Web
-async fn start_flutter(config: &Config) -> Result<()> {
+async fn start_flutter_web(config: &Config) -> Result<()> {
     use std::process::Stdio;
     use tokio::process::Command;
 
@@ -157,36 +194,14 @@ async fn start_flutter(config: &Config) -> Result<()> {
     }
 
     // 检查 flutter
-    let flutter_check = Command::new("flutter")
-        .arg("--version")
-        .stdout(Stdio::null())
-        .stderr(Stdio::null())
-        .status()
-        .await;
-
-    if !flutter_check.map(|s| s.success()).unwrap_or(false) {
-        ui::error("Flutter 未安装，请先安装 Flutter SDK");
-        ui::info("安装指南: https://docs.flutter.dev/get-started/install");
+    if !check_flutter().await {
         return Ok(());
     }
 
     // 安装依赖
-    let spinner = Spinner::new("安装 Flutter 依赖...");
-    let pub_get = Command::new("flutter")
-        .args(["pub", "get"])
-        .current_dir(flutter_dir)
-        .stdout(Stdio::null())
-        .stderr(Stdio::null())
-        .status()
-        .await?;
-
-    spinner.finish_and_clear();
-
-    if !pub_get.success() {
-        ui::error("flutter pub get 失败");
+    if !flutter_pub_get(flutter_dir).await? {
         return Ok(());
     }
-    ui::step_done("依赖已安装");
 
     // 启动双用户实例
     let users = [
@@ -219,6 +234,175 @@ async fn start_flutter(config: &Config) -> Result<()> {
     Ok(())
 }
 
+/// 启动 Flutter Android
+async fn start_flutter_android(config: &Config) -> Result<()> {
+    use std::process::Stdio;
+    use tokio::process::Command;
+
+    ui::banner("启动 Flutter Android 开发");
+
+    let flutter_dir = &config.flutter_dir;
+
+    if !flutter_dir.exists() {
+        ui::error(&format!("Flutter 目录不存在: {}", flutter_dir.display()));
+        return Ok(());
+    }
+
+    // 检查 flutter
+    if !check_flutter().await {
+        return Ok(());
+    }
+
+    // 安装依赖
+    if !flutter_pub_get(flutter_dir).await? {
+        return Ok(());
+    }
+
+    // 检查 Android 设备
+    let spinner = Spinner::new("检查 Android 设备...");
+    let devices_output = Command::new("flutter")
+        .args(["devices", "--machine"])
+        .current_dir(flutter_dir)
+        .output()
+        .await?;
+    spinner.finish_and_clear();
+
+    let devices_str = String::from_utf8_lossy(&devices_output.stdout);
+    let has_android = devices_str.contains("android");
+
+    if !has_android {
+        ui::warn("未检测到 Android 设备或模拟器");
+        ui::info("请确保:");
+        println!("    • Android 模拟器已启动，或");
+        println!("    • Android 设备已通过 USB 连接并启用调试模式");
+        println!();
+        ui::hint("运行 'flutter devices' 查看可用设备");
+        return Ok(());
+    }
+
+    // 设置 adb reverse 端口转发
+    ui::info("设置 ADB 端口转发...");
+    let ports = ["50053", "50052"]; // Gateway 和 Chat 端口
+    for port in ports {
+        let _ = Command::new("adb")
+            .args(["reverse", &format!("tcp:{}", port), &format!("tcp:{}", port)])
+            .output()
+            .await;
+    }
+    ui::step_done("ADB 端口转发已配置 (50053, 50052)");
+
+    // 启动 Flutter
+    ui::info("启动 Flutter Android...");
+    println!();
+
+    let status = Command::new("flutter")
+        .args(["run", "-d", "android"])
+        .current_dir(flutter_dir)
+        .stdout(Stdio::inherit())
+        .stderr(Stdio::inherit())
+        .status()
+        .await?;
+
+    if !status.success() {
+        ui::error("Flutter 启动失败");
+    }
+
+    Ok(())
+}
+
+/// 启动 Flutter iOS
+async fn start_flutter_ios(config: &Config) -> Result<()> {
+    use std::process::Stdio;
+    use tokio::process::Command;
+
+    ui::banner("启动 Flutter iOS 开发");
+
+    let flutter_dir = &config.flutter_dir;
+
+    if !flutter_dir.exists() {
+        ui::error(&format!("Flutter 目录不存在: {}", flutter_dir.display()));
+        return Ok(());
+    }
+
+    // 检查是否是 macOS
+    if std::env::consts::OS != "macos" {
+        ui::error("iOS 开发仅支持 macOS");
+        return Ok(());
+    }
+
+    // 检查 flutter
+    if !check_flutter().await {
+        return Ok(());
+    }
+
+    // 安装依赖
+    if !flutter_pub_get(flutter_dir).await? {
+        return Ok(());
+    }
+
+    // 启动 Flutter
+    ui::info("启动 Flutter iOS...");
+    println!();
+
+    let status = Command::new("flutter")
+        .args(["run", "-d", "ios"])
+        .current_dir(flutter_dir)
+        .stdout(Stdio::inherit())
+        .stderr(Stdio::inherit())
+        .status()
+        .await?;
+
+    if !status.success() {
+        ui::error("Flutter 启动失败");
+    }
+
+    Ok(())
+}
+
+/// 检查 Flutter 是否安装
+async fn check_flutter() -> bool {
+    use std::process::Stdio;
+    use tokio::process::Command;
+
+    let flutter_check = Command::new("flutter")
+        .arg("--version")
+        .stdout(Stdio::null())
+        .stderr(Stdio::null())
+        .status()
+        .await;
+
+    if !flutter_check.map(|s| s.success()).unwrap_or(false) {
+        ui::error("Flutter 未安装，请先安装 Flutter SDK");
+        ui::info("安装指南: https://docs.flutter.dev/get-started/install");
+        return false;
+    }
+    true
+}
+
+/// 执行 flutter pub get
+async fn flutter_pub_get(flutter_dir: &std::path::Path) -> Result<bool> {
+    use std::process::Stdio;
+    use tokio::process::Command;
+
+    let spinner = Spinner::new("安装 Flutter 依赖...");
+    let pub_get = Command::new("flutter")
+        .args(["pub", "get"])
+        .current_dir(flutter_dir)
+        .stdout(Stdio::null())
+        .stderr(Stdio::null())
+        .status()
+        .await?;
+
+    spinner.finish_and_clear();
+
+    if !pub_get.success() {
+        ui::error("flutter pub get 失败");
+        return Ok(false);
+    }
+    ui::step_done("依赖已安装");
+    Ok(true)
+}
+
 /// 打印服务信息
 fn print_service_info(config: &Config) {
     ui::success("🎉 Lesser 开发环境已就绪!");
@@ -226,11 +410,13 @@ fn print_service_info(config: &Config) {
 
     println!("  {} gRPC 端点", ui::style_dim("▸"));
     ui::kv("    Gateway", "localhost:50053");
+    ui::kv("    Auth", "localhost:50054");
+    ui::kv("    User", "localhost:50055");
+    ui::kv("    Post", "localhost:50056");
+    ui::kv("    Feed", "localhost:50057");
+    ui::kv("    Search", "localhost:50058");
+    ui::kv("    Notification", "localhost:50059");
     ui::kv("    Chat", "localhost:50052");
-    println!();
-
-    println!("  {} WebSocket", ui::style_dim("▸"));
-    ui::kv("    Chat", "ws://localhost:8081/ws/chat");
     println!();
 
     println!("  {} 管理界面", ui::style_dim("▸"));

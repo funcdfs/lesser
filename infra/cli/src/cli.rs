@@ -80,8 +80,14 @@ pub enum StartTarget {
     Infra,
     /// 仅启动后端服务 (Gateway + Workers + Chat)
     Service,
-    /// 启动 Flutter Web 开发服务器
+    /// Flutter 交互式选择平台
     Flutter,
+    /// Flutter Web 开发服务器
+    #[value(alias = "fw")]
+    FlutterWeb,
+    /// Flutter Android 开发
+    #[value(alias = "fa")]
+    FlutterAndroid,
 }
 
 /// 清理子命令

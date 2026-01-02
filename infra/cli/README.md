@@ -50,7 +50,11 @@ devlesser start
 # 启动指定目标
 devlesser start infra     # 仅基础设施
 devlesser start service   # 仅后端服务
-devlesser start flutter   # Flutter Web 开发服务器
+
+# Flutter 开发
+devlesser start flutter   # 交互式选择平台 (Web/Android/iOS)
+devlesser start fw        # Flutter Web (别名: flutter-web)
+devlesser start fa        # Flutter Android (别名: flutter-android)
 
 # 停止服务
 devlesser stop
@@ -105,9 +109,15 @@ devlesser proto dart     # 仅 Dart
 
 | 服务 | 端口 | 说明 |
 |------|------|------|
+| Traefik gRPC | 50050 | gRPC 入口 |
 | Gateway gRPC | 50053 | API 网关 |
+| Auth gRPC | 50054 | 认证服务 |
+| User gRPC | 50055 | 用户服务 |
+| Post gRPC | 50056 | 帖子服务 |
+| Feed gRPC | 50057 | Feed 服务 |
+| Search gRPC | 50058 | 搜索服务 |
+| Notification gRPC | 50059 | 通知服务 |
 | Chat gRPC | 50052 | 聊天服务 |
-| Chat WebSocket | 8081 | 实时消息 |
 | Traefik Dashboard | 8088 | 管理界面 |
 | RabbitMQ Management | 15672 | 管理界面 |
 | Dozzle | 9999 | 日志查看器 |
