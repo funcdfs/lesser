@@ -7,6 +7,7 @@ import (
 	"github.com/lesser/gateway/internal/auth"
 	"github.com/lesser/gateway/internal/ratelimit"
 	"github.com/lesser/gateway/internal/router"
+	authpb "github.com/lesser/gateway/proto/auth"
 	pb "github.com/lesser/gateway/proto/gateway"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
@@ -76,8 +77,37 @@ func (s *GatewayServer) Start(ctx context.Context) error {
 		log.Println("[Gateway] Warning: Auth Service not configured, JWT validation disabled")
 		return nil
 	}
-	log.Println("[Gateway] JWT validator initialization skipped (Auth Service not ready)")
+
+	// 创建 Auth 服务客户端适配器
+	authClient := authpb.NewAuthServiceClient(authConn)
+	adapter := &authClientAdapter{client: authClient}
+
+	// 启动 JWT 验证器
+	if err := s.jwtValidator.Start(ctx, adapter); err != nil {
+		log.Printf("[Gateway] Warning: Failed to start JWT validator: %v", err)
+		return nil
+	}
+
+	log.Println("[Gateway] JWT validator started successfully")
 	return nil
+}
+
+// authClientAdapter 适配 authpb.AuthServiceClient 到 auth.AuthServiceClient 接口
+type authClientAdapter struct {
+	client authpb.AuthServiceClient
+}
+
+func (a *authClientAdapter) GetPublicKey(ctx context.Context, in *auth.GetPublicKeyRequest, opts ...grpc.CallOption) (*auth.GetPublicKeyResponse, error) {
+	resp, err := a.client.GetPublicKey(ctx, &authpb.GetPublicKeyRequest{}, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return &auth.GetPublicKeyResponse{
+		PublicKey: resp.GetPublicKey(),
+		KeyID:     resp.GetKeyId(),
+		Algorithm: resp.GetAlgorithm(),
+		ExpiresAt: resp.GetExpiresAt(),
+	}, nil
 }
 
 // Stop 停止 Gateway
@@ -102,9 +132,11 @@ func RegisterGatewayServer(s *grpc.Server, srv *GatewayServer) {
 // Health 健康检查
 func (s *GatewayServer) Health(ctx context.Context, req *pb.HealthRequest) (*pb.HealthResponse, error) {
 	services := s.router.HealthCheck(ctx)
-	servicesMap := make(map[string]bool)
+	servicesMap := make(map[string]*pb.ServiceStatus)
 	for k, v := range services {
-		servicesMap[k] = v
+		servicesMap[k] = &pb.ServiceStatus{
+			Healthy: v,
+		}
 	}
 	return &pb.HealthResponse{
 		Healthy:  true,

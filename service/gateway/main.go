@@ -52,6 +52,23 @@ func main() {
 	)
 
 	server.RegisterGatewayServer(grpcServer, gatewayServer)
+	
+	// 注册 Auth 代理服务
+	authConn := gatewayServer.GetRouter().GetAuthConn()
+	if authConn != nil {
+		server.RegisterAuthProxyServer(grpcServer, authConn)
+	} else {
+		log.Println("[Gateway] Warning: Auth service not available, auth proxy not registered")
+	}
+	
+	// 注册 Search 代理服务
+	searchConn := gatewayServer.GetRouter().GetSearchConn()
+	if searchConn != nil {
+		server.RegisterSearchProxyServer(grpcServer, searchConn)
+	} else {
+		log.Println("[Gateway] Warning: Search service not available, search proxy not registered")
+	}
+	
 	reflection.Register(grpcServer)
 
 	// 监听端口
