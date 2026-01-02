@@ -12,8 +12,9 @@ set -e
 # 配置变量 - Configuration Variables
 # ============================================================================
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-COMPOSE_FILE="$SCRIPT_DIR/infra/docker-compose.prod.yml"
-ENV_FILE="$SCRIPT_DIR/infra/.env.prod"
+PROJECT_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
+COMPOSE_FILE="$PROJECT_ROOT/infra/docker-compose.prod.yml"
+ENV_FILE="$PROJECT_ROOT/infra/env/prod.env"
 
 # ============================================================================
 # 颜色和图标 - Colors and Icons
@@ -215,7 +216,7 @@ show_logs() {
 db_backup() {
     print_header "数据库备份"
     
-    local backup_dir="$SCRIPT_DIR/backups"
+    local backup_dir="$PROJECT_ROOT/backups"
     local timestamp=$(date +%Y%m%d_%H%M%S)
     local backup_file="$backup_dir/backup_$timestamp.sql"
     
