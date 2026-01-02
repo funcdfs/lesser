@@ -1,34 +1,34 @@
+// Package server 提供 Gateway gRPC 服务实现
+//
+// Gateway 职责：
+//   - JWT 验签（本地验签，不调用 AuthService）
+//   - 限流（令牌桶算法）
+//   - 路由转发（透明代理到后端服务）
+//   - 不处理业务逻辑
 package server
 
 import (
 	"context"
-	"log"
 
-	"github.com/lesser/gateway/internal/auth"
-	"github.com/lesser/gateway/internal/ratelimit"
-	"github.com/lesser/gateway/internal/router"
-	authpb "github.com/lesser/gateway/proto/auth"
-	pb "github.com/lesser/gateway/proto/gateway"
+	"go.uber.org/zap"
 	"google.golang.org/grpc"
-	"google.golang.org/grpc/codes"
-	"google.golang.org/grpc/metadata"
-	"google.golang.org/grpc/status"
+
+	"github.com/funcdfs/lesser/gateway/internal/auth"
+	"github.com/funcdfs/lesser/gateway/internal/interceptor"
+	"github.com/funcdfs/lesser/gateway/internal/ratelimit"
+	"github.com/funcdfs/lesser/gateway/internal/router"
+	"github.com/funcdfs/lesser/gateway/internal/streaming"
+	authpb "github.com/funcdfs/lesser/gateway/proto/auth"
+	pb "github.com/funcdfs/lesser/gateway/proto/gateway"
 )
 
-// GatewayServer 实现 GatewayService
-// 设计要点：
-// 1. Gateway 只做 JWT 验签、限流、路由，不做业务逻辑
-// 2. JWT 验签在本地完成（内存持有公钥）
-// 3. 所有业务请求同步转发到对应 Service
-type GatewayServer struct {
-	pb.UnimplementedGatewayServiceServer
-	jwtValidator *auth.JWTValidator
-	rateLimiter  *ratelimit.Limiter
-	router       *router.Router
-}
+// ============================================================================
+// 配置
+// ============================================================================
 
-// GatewayConfig Gateway 配置
-type GatewayConfig struct {
+// Config Gateway 配置
+type Config struct {
+	// 服务地址
 	AuthServiceAddr         string
 	UserServiceAddr         string
 	PostServiceAddr         string
@@ -36,45 +36,77 @@ type GatewayConfig struct {
 	ChatServiceAddr         string
 	SearchServiceAddr       string
 	NotificationServiceAddr string
-	RateLimitRate           float64
-	RateLimitBurst          int
+
+	// 限流配置
+	RateLimitRate  float64
+	RateLimitBurst int
 }
 
-// NewGatewayServer 创建新的 Gateway 服务器
-func NewGatewayServer(config GatewayConfig) (*GatewayServer, error) {
+// ============================================================================
+// Gateway 服务器
+// ============================================================================
+
+// GatewayServer Gateway 服务实现
+type GatewayServer struct {
+	pb.UnimplementedGatewayServiceServer
+
+	// 核心组件
+	jwtValidator  *auth.JWTValidator
+	rateLimiter   *ratelimit.Limiter
+	router        *router.Router
+	streamingProxy *streaming.Proxy
+
+	// 日志
+	log *zap.Logger
+}
+
+// NewGatewayServer 创建 Gateway 服务器
+func NewGatewayServer(cfg Config, log *zap.Logger) (*GatewayServer, error) {
+	if log == nil {
+		log = zap.NewNop()
+	}
+	log = log.Named("gateway")
+
+	// 创建限流器
 	rateLimiter := ratelimit.NewLimiter(ratelimit.Config{
-		Rate:  config.RateLimitRate,
-		Burst: config.RateLimitBurst,
+		Rate:  cfg.RateLimitRate,
+		Burst: cfg.RateLimitBurst,
 	})
 
+	// 创建路由器
 	r, err := router.NewRouter(router.ServiceConfig{
-		AuthAddr:         config.AuthServiceAddr,
-		UserAddr:         config.UserServiceAddr,
-		PostAddr:         config.PostServiceAddr,
-		FeedAddr:         config.FeedServiceAddr,
-		ChatAddr:         config.ChatServiceAddr,
-		SearchAddr:       config.SearchServiceAddr,
-		NotificationAddr: config.NotificationServiceAddr,
-	})
+		AuthAddr:         cfg.AuthServiceAddr,
+		UserAddr:         cfg.UserServiceAddr,
+		PostAddr:         cfg.PostServiceAddr,
+		FeedAddr:         cfg.FeedServiceAddr,
+		ChatAddr:         cfg.ChatServiceAddr,
+		SearchAddr:       cfg.SearchServiceAddr,
+		NotificationAddr: cfg.NotificationServiceAddr,
+	}, log)
 	if err != nil {
 		return nil, err
 	}
 
-	jwtValidator := auth.NewJWTValidator(auth.DefaultJWTValidatorConfig())
+	// 创建 JWT 验签器
+	jwtValidator := auth.NewJWTValidator(auth.DefaultValidatorConfig(), log)
+
+	// 创建流代理
+	streamingProxy := streaming.NewProxy(jwtValidator, streaming.DefaultProxyConfig(), log)
 
 	return &GatewayServer{
-		jwtValidator: jwtValidator,
-		rateLimiter:  rateLimiter,
-		router:       r,
+		jwtValidator:   jwtValidator,
+		rateLimiter:    rateLimiter,
+		router:         r,
+		streamingProxy: streamingProxy,
+		log:            log,
 	}, nil
 }
 
-
-// Start 启动 Gateway
+// Start 启动 Gateway 服务
 func (s *GatewayServer) Start(ctx context.Context) error {
 	authConn := s.router.GetAuthConn()
 	if authConn == nil {
-		log.Println("[Gateway] Warning: Auth Service not configured, JWT validation disabled")
+		s.log.Warn("Auth 服务未配置，JWT 验签已禁用")
 		return nil
 	}
 
@@ -82,15 +114,97 @@ func (s *GatewayServer) Start(ctx context.Context) error {
 	authClient := authpb.NewAuthServiceClient(authConn)
 	adapter := &authClientAdapter{client: authClient}
 
-	// 启动 JWT 验证器
+	// 启动 JWT 验签器
 	if err := s.jwtValidator.Start(ctx, adapter); err != nil {
-		log.Printf("[Gateway] Warning: Failed to start JWT validator: %v", err)
+		s.log.Warn("JWT 验签器启动失败", zap.Error(err))
 		return nil
 	}
 
-	log.Println("[Gateway] JWT validator started successfully")
+	s.log.Info("Gateway 服务已启动")
 	return nil
 }
+
+// Stop 停止 Gateway 服务
+func (s *GatewayServer) Stop() {
+	if s.jwtValidator != nil {
+		s.jwtValidator.Stop()
+	}
+	if s.rateLimiter != nil {
+		s.rateLimiter.Stop()
+	}
+	if s.router != nil {
+		s.router.Close()
+	}
+	s.log.Info("Gateway 服务已停止")
+}
+
+// ============================================================================
+// gRPC 服务方法
+// ============================================================================
+
+// Health 健康检查
+func (s *GatewayServer) Health(ctx context.Context, req *pb.HealthRequest) (*pb.HealthResponse, error) {
+	services := s.router.HealthCheck(ctx)
+	servicesMap := make(map[string]*pb.ServiceStatus)
+	for k, v := range services {
+		servicesMap[k] = &pb.ServiceStatus{Healthy: v}
+	}
+	return &pb.HealthResponse{
+		Healthy:  true,
+		Services: servicesMap,
+	}, nil
+}
+
+// ============================================================================
+// 拦截器
+// ============================================================================
+
+// AuthInterceptor 返回认证拦截器
+func (s *GatewayServer) AuthInterceptor() grpc.UnaryServerInterceptor {
+	return interceptor.AuthInterceptor(s.jwtValidator, s.rateLimiter, s.log)
+}
+
+// StreamAuthInterceptor 返回流式认证拦截器
+func (s *GatewayServer) StreamAuthInterceptor() grpc.StreamServerInterceptor {
+	return interceptor.StreamAuthInterceptor(s.jwtValidator, s.rateLimiter, s.log)
+}
+
+// ============================================================================
+// Getter 方法
+// ============================================================================
+
+// GetRouter 获取路由器
+func (s *GatewayServer) GetRouter() *router.Router {
+	return s.router
+}
+
+// GetJWTValidator 获取 JWT 验签器
+func (s *GatewayServer) GetJWTValidator() *auth.JWTValidator {
+	return s.jwtValidator
+}
+
+// GetRateLimiter 获取限流器
+func (s *GatewayServer) GetRateLimiter() *ratelimit.Limiter {
+	return s.rateLimiter
+}
+
+// GetStreamingProxy 获取流代理
+func (s *GatewayServer) GetStreamingProxy() *streaming.Proxy {
+	return s.streamingProxy
+}
+
+// ============================================================================
+// 注册函数
+// ============================================================================
+
+// RegisterGatewayServer 注册 Gateway gRPC 服务
+func RegisterGatewayServer(s *grpc.Server, srv *GatewayServer) {
+	pb.RegisterGatewayServiceServer(s, srv)
+}
+
+// ============================================================================
+// Auth 客户端适配器
+// ============================================================================
 
 // authClientAdapter 适配 authpb.AuthServiceClient 到 auth.AuthServiceClient 接口
 type authClientAdapter struct {
@@ -108,162 +222,4 @@ func (a *authClientAdapter) GetPublicKey(ctx context.Context, in *auth.GetPublic
 		Algorithm: resp.GetAlgorithm(),
 		ExpiresAt: resp.GetExpiresAt(),
 	}, nil
-}
-
-// Stop 停止 Gateway
-func (s *GatewayServer) Stop() {
-	if s.jwtValidator != nil {
-		s.jwtValidator.Stop()
-	}
-	if s.rateLimiter != nil {
-		s.rateLimiter.Stop()
-	}
-	if s.router != nil {
-		s.router.Close()
-	}
-	log.Println("[Gateway] Server stopped")
-}
-
-// RegisterGatewayServer 注册 gRPC 服务
-func RegisterGatewayServer(s *grpc.Server, srv *GatewayServer) {
-	pb.RegisterGatewayServiceServer(s, srv)
-}
-
-// Health 健康检查
-func (s *GatewayServer) Health(ctx context.Context, req *pb.HealthRequest) (*pb.HealthResponse, error) {
-	services := s.router.HealthCheck(ctx)
-	servicesMap := make(map[string]*pb.ServiceStatus)
-	for k, v := range services {
-		servicesMap[k] = &pb.ServiceStatus{
-			Healthy: v,
-		}
-	}
-	return &pb.HealthResponse{
-		Healthy:  true,
-		Services: servicesMap,
-	}, nil
-}
-
-// GetRouter 获取路由器（供外部使用）
-func (s *GatewayServer) GetRouter() *router.Router {
-	return s.router
-}
-
-// GetJWTValidator 获取 JWT 验签器（供外部使用）
-func (s *GatewayServer) GetJWTValidator() *auth.JWTValidator {
-	return s.jwtValidator
-}
-
-// GetRateLimiter 获取限流器（供外部使用）
-func (s *GatewayServer) GetRateLimiter() *ratelimit.Limiter {
-	return s.rateLimiter
-}
-
-// AuthInterceptor 认证拦截器（用于 gRPC 中间件）
-func (s *GatewayServer) AuthInterceptor() grpc.UnaryServerInterceptor {
-	return func(ctx context.Context, req interface{}, info *grpc.UnaryServerInfo, handler grpc.UnaryHandler) (interface{}, error) {
-		// 跳过不需要认证的方法
-		if isPublicMethod(info.FullMethod) {
-			return handler(ctx, req)
-		}
-
-		// 限流检查
-		if !s.rateLimiter.Allow() {
-			return nil, status.Error(codes.ResourceExhausted, "rate limit exceeded")
-		}
-
-		// JWT 验签
-		token, err := extractToken(ctx)
-		if err != nil {
-			return nil, err
-		}
-
-		claims, err := s.jwtValidator.ValidateToken(token)
-		if err != nil {
-			return nil, status.Error(codes.Unauthenticated, "invalid token")
-		}
-
-		// 将用户信息注入 context
-		ctx = context.WithValue(ctx, "user_id", claims.UserID)
-		md, _ := metadata.FromIncomingContext(ctx)
-		md = metadata.Join(md, metadata.Pairs("user_id", claims.UserID))
-		ctx = metadata.NewOutgoingContext(ctx, md)
-
-		return handler(ctx, req)
-	}
-}
-
-// StreamAuthInterceptor 流式认证拦截器
-func (s *GatewayServer) StreamAuthInterceptor() grpc.StreamServerInterceptor {
-	return func(srv interface{}, ss grpc.ServerStream, info *grpc.StreamServerInfo, handler grpc.StreamHandler) error {
-		if isPublicMethod(info.FullMethod) {
-			return handler(srv, ss)
-		}
-
-		if !s.rateLimiter.Allow() {
-			return status.Error(codes.ResourceExhausted, "rate limit exceeded")
-		}
-
-		token, err := extractToken(ss.Context())
-		if err != nil {
-			return err
-		}
-
-		claims, err := s.jwtValidator.ValidateToken(token)
-		if err != nil {
-			return status.Error(codes.Unauthenticated, "invalid token")
-		}
-
-		wrapped := &wrappedServerStream{
-			ServerStream: ss,
-			ctx:          context.WithValue(ss.Context(), "user_id", claims.UserID),
-		}
-
-		return handler(srv, wrapped)
-	}
-}
-
-// wrappedServerStream 包装的 ServerStream
-type wrappedServerStream struct {
-	grpc.ServerStream
-	ctx context.Context
-}
-
-func (w *wrappedServerStream) Context() context.Context {
-	return w.ctx
-}
-
-// isPublicMethod 判断是否为公开方法（不需要认证）
-func isPublicMethod(method string) bool {
-	publicMethods := map[string]bool{
-		"/gateway.GatewayService/Health": true,
-		"/auth.AuthService/Login":        true,
-		"/auth.AuthService/Register":     true,
-		"/auth.AuthService/GetPublicKey": true,
-	}
-	return publicMethods[method]
-}
-
-// extractToken 从 context 提取 Token
-func extractToken(ctx context.Context) (string, error) {
-	md, ok := metadata.FromIncomingContext(ctx)
-	if !ok {
-		return "", status.Error(codes.Unauthenticated, "missing metadata")
-	}
-
-	authHeader := md.Get("authorization")
-	if len(authHeader) > 0 {
-		token := authHeader[0]
-		if len(token) > 7 && token[:7] == "Bearer " {
-			return token[7:], nil
-		}
-		return token, nil
-	}
-
-	accessToken := md.Get("access_token")
-	if len(accessToken) > 0 {
-		return accessToken[0], nil
-	}
-
-	return "", status.Error(codes.Unauthenticated, "missing authorization token")
 }

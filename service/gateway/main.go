@@ -1,25 +1,100 @@
+// Gateway 服务入口
+// 职责：JWT 验签、限流、路由转发
 package main
 
 import (
 	"context"
-	"log"
 	"net"
 	"os"
 	"os/signal"
 	"strconv"
 	"syscall"
 
-	"github.com/lesser/gateway/internal/server"
+	"go.uber.org/zap"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/reflection"
+
+	"github.com/funcdfs/lesser/gateway/internal/server"
 )
 
 func main() {
-	// 配置
-	grpcPort := getEnv("GRPC_PORT", "50053")
+	// 初始化日志
+	log := initLogger()
+	defer log.Sync()
 
-	// Service 地址配置
-	config := server.GatewayConfig{
+	// 加载配置
+	cfg := loadConfig()
+
+	// 创建 Gateway 服务器
+	gatewayServer, err := server.NewGatewayServer(cfg, log)
+	if err != nil {
+		log.Fatal("创建 Gateway 服务器失败", zap.Error(err))
+	}
+
+	// 启动 Gateway
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+
+	if err := gatewayServer.Start(ctx); err != nil {
+		log.Fatal("启动 Gateway 失败", zap.Error(err))
+	}
+
+	// 创建 gRPC 服务器
+	grpcServer := grpc.NewServer(
+		grpc.UnaryInterceptor(gatewayServer.AuthInterceptor()),
+		grpc.StreamInterceptor(gatewayServer.StreamAuthInterceptor()),
+	)
+
+	// 注册服务
+	server.RegisterGatewayServer(grpcServer, gatewayServer)
+	registerProxyServices(grpcServer, gatewayServer, log)
+	reflection.Register(grpcServer)
+
+	// 监听端口
+	grpcPort := getEnv("GRPC_PORT", "50053")
+	lis, err := net.Listen("tcp", ":"+grpcPort)
+	if err != nil {
+		log.Fatal("监听端口失败", zap.String("port", grpcPort), zap.Error(err))
+	}
+
+	// 优雅关闭
+	go gracefulShutdown(cancel, grpcServer, gatewayServer, log)
+
+	log.Info("Gateway 服务已启动",
+		zap.String("port", grpcPort),
+		zap.String("auth", cfg.AuthServiceAddr),
+		zap.String("user", cfg.UserServiceAddr),
+		zap.String("post", cfg.PostServiceAddr),
+		zap.String("feed", cfg.FeedServiceAddr),
+		zap.String("chat", cfg.ChatServiceAddr),
+		zap.String("search", cfg.SearchServiceAddr),
+		zap.String("notification", cfg.NotificationServiceAddr))
+
+	if err := grpcServer.Serve(lis); err != nil {
+		log.Fatal("gRPC 服务异常退出", zap.Error(err))
+	}
+}
+
+// initLogger 初始化日志
+func initLogger() *zap.Logger {
+	var log *zap.Logger
+	var err error
+
+	if os.Getenv("ENV") == "production" {
+		log, err = zap.NewProduction()
+	} else {
+		log, err = zap.NewDevelopment()
+	}
+
+	if err != nil {
+		panic("初始化日志失败: " + err.Error())
+	}
+	return log.Named("gateway")
+}
+
+// loadConfig 加载配置
+func loadConfig() server.Config {
+	return server.Config{
 		AuthServiceAddr:         getEnv("AUTH_SERVICE_ADDR", "auth:50054"),
 		UserServiceAddr:         getEnv("USER_SERVICE_ADDR", "user:50055"),
 		PostServiceAddr:         getEnv("POST_SERVICE_ADDR", "post:50056"),
@@ -30,75 +105,40 @@ func main() {
 		RateLimitRate:           getEnvFloat("RATE_LIMIT_RATE", 100),
 		RateLimitBurst:          getEnvInt("RATE_LIMIT_BURST", 200),
 	}
+}
 
-	// 创建 Gateway 服务器
-	gatewayServer, err := server.NewGatewayServer(config)
-	if err != nil {
-		log.Fatalf("Failed to create gateway server: %v", err)
-	}
+// registerProxyServices 注册代理服务
+func registerProxyServices(grpcServer *grpc.Server, gatewayServer *server.GatewayServer, log *zap.Logger) {
+	router := gatewayServer.GetRouter()
 
-	// 启动 Gateway（初始化 JWT 验签器等）
-	ctx, cancel := context.WithCancel(context.Background())
-	defer cancel()
-
-	if err := gatewayServer.Start(ctx); err != nil {
-		log.Fatalf("Failed to start gateway: %v", err)
-	}
-
-	// 创建 gRPC 服务器（带认证拦截器）
-	grpcServer := grpc.NewServer(
-		grpc.UnaryInterceptor(gatewayServer.AuthInterceptor()),
-		grpc.StreamInterceptor(gatewayServer.StreamAuthInterceptor()),
-	)
-
-	server.RegisterGatewayServer(grpcServer, gatewayServer)
-	
-	// 注册 Auth 代理服务
-	authConn := gatewayServer.GetRouter().GetAuthConn()
-	if authConn != nil {
-		server.RegisterAuthProxyServer(grpcServer, authConn)
+	// 注册 Auth 代理
+	if authConn := router.GetAuthConn(); authConn != nil {
+		server.RegisterAuthProxyServer(grpcServer, authConn, log)
 	} else {
-		log.Println("[Gateway] Warning: Auth service not available, auth proxy not registered")
+		log.Warn("Auth 服务不可用，代理未注册")
 	}
-	
-	// 注册 Search 代理服务
-	searchConn := gatewayServer.GetRouter().GetSearchConn()
-	if searchConn != nil {
-		server.RegisterSearchProxyServer(grpcServer, searchConn)
+
+	// 注册 Search 代理
+	if searchConn := router.GetSearchConn(); searchConn != nil {
+		server.RegisterSearchProxyServer(grpcServer, searchConn, log)
 	} else {
-		log.Println("[Gateway] Warning: Search service not available, search proxy not registered")
-	}
-	
-	reflection.Register(grpcServer)
-
-	// 监听端口
-	lis, err := net.Listen("tcp", ":"+grpcPort)
-	if err != nil {
-		log.Fatalf("Failed to listen: %v", err)
-	}
-
-	// 优雅关闭
-	go func() {
-		sigCh := make(chan os.Signal, 1)
-		signal.Notify(sigCh, syscall.SIGINT, syscall.SIGTERM)
-		<-sigCh
-		log.Println("Shutting down...")
-		cancel()
-		grpcServer.GracefulStop()
-		gatewayServer.Stop()
-	}()
-
-	log.Printf("Gateway server listening on :%s", grpcPort)
-	log.Printf("Connected services: Auth=%s, User=%s, Post=%s, Feed=%s, Chat=%s, Search=%s, Notification=%s",
-		config.AuthServiceAddr, config.UserServiceAddr, config.PostServiceAddr,
-		config.FeedServiceAddr, config.ChatServiceAddr, config.SearchServiceAddr,
-		config.NotificationServiceAddr)
-
-	if err := grpcServer.Serve(lis); err != nil {
-		log.Fatalf("Failed to serve: %v", err)
+		log.Warn("Search 服务不可用，代理未注册")
 	}
 }
 
+// gracefulShutdown 优雅关闭
+func gracefulShutdown(cancel context.CancelFunc, grpcServer *grpc.Server, gatewayServer *server.GatewayServer, log *zap.Logger) {
+	sigCh := make(chan os.Signal, 1)
+	signal.Notify(sigCh, syscall.SIGINT, syscall.SIGTERM)
+	<-sigCh
+
+	log.Info("收到关闭信号，开始关闭...")
+	cancel()
+	grpcServer.GracefulStop()
+	gatewayServer.Stop()
+}
+
+// 环境变量辅助函数
 func getEnv(key, defaultValue string) string {
 	if value := os.Getenv(key); value != "" {
 		return value

@@ -1,153 +1,173 @@
+// Package ratelimit 提供基于令牌桶算法的限流器
+//
+// 使用 golang.org/x/time/rate 官方库实现
+// 特性：
+//   - 支持全局限流和按 Key（IP/用户ID）限流
+//   - 自动清理过期的限流器
+//   - 线程安全
 package ratelimit
 
 import (
 	"sync"
+	"sync/atomic"
 	"time"
+
+	"golang.org/x/time/rate"
 )
 
-// Limiter 基于令牌桶的限流器
-// 设计要点：
-// 1. 基于内存的令牌桶算法
-// 2. 支持按 IP 或用户 ID 限流
-// 3. 自动清理过期的限流记录
-type Limiter struct {
-	rate       float64       // 每秒生成的令牌数
-	burst      int           // 桶容量（最大令牌数）
-	buckets    map[string]*bucket
-	mu         sync.RWMutex
-	cleanupInterval time.Duration
-	stopChan   chan struct{}
-}
-
-// bucket 单个令牌桶
-type bucket struct {
-	tokens     float64
-	lastUpdate time.Time
-}
+// ============================================================================
+// 配置
+// ============================================================================
 
 // Config 限流器配置
 type Config struct {
-	Rate            float64       // 每秒请求数限制
-	Burst           int           // 突发请求数限制
-	CleanupInterval time.Duration // 清理间隔
+	Rate            float64       // 每秒允许的请求数
+	Burst           int           // 突发容量（桶大小）
+	CleanupInterval time.Duration // 过期限流器清理间隔
+	LimiterExpiry   time.Duration // 限流器过期时间（无请求后）
 }
 
-// DefaultConfig 默认配置
+// DefaultConfig 返回默认配置
 func DefaultConfig() Config {
 	return Config{
-		Rate:            100,           // 每秒 100 个请求
-		Burst:           200,           // 最多突发 200 个请求
+		Rate:            100,
+		Burst:           200,
 		CleanupInterval: 5 * time.Minute,
+		LimiterExpiry:   10 * time.Minute,
 	}
+}
+
+// ============================================================================
+// 限流器条目
+// ============================================================================
+
+// limiterEntry 单个限流器条目
+type limiterEntry struct {
+	limiter    *rate.Limiter
+	lastAccess time.Time
+}
+
+// ============================================================================
+// 限流器
+// ============================================================================
+
+// Limiter 多 Key 限流器
+type Limiter struct {
+	rate            rate.Limit
+	burst           int
+	cleanupInterval time.Duration
+	limiterExpiry   time.Duration
+
+	// 全局限流器
+	global *rate.Limiter
+
+	// 按 Key 限流器
+	limiters map[string]*limiterEntry
+	mu       sync.Mutex
+
+	// 生命周期管理
+	stopChan chan struct{}
+	stopped  atomic.Bool
 }
 
 // NewLimiter 创建限流器
-func NewLimiter(config Config) *Limiter {
-	if config.Rate <= 0 {
-		config.Rate = 100
+func NewLimiter(cfg Config) *Limiter {
+	if cfg.Rate <= 0 {
+		cfg.Rate = DefaultConfig().Rate
 	}
-	if config.Burst <= 0 {
-		config.Burst = int(config.Rate * 2)
+	if cfg.Burst <= 0 {
+		cfg.Burst = int(cfg.Rate * 2)
 	}
-	if config.CleanupInterval <= 0 {
-		config.CleanupInterval = 5 * time.Minute
+	if cfg.CleanupInterval <= 0 {
+		cfg.CleanupInterval = DefaultConfig().CleanupInterval
+	}
+	if cfg.LimiterExpiry <= 0 {
+		cfg.LimiterExpiry = DefaultConfig().LimiterExpiry
 	}
 
 	l := &Limiter{
-		rate:            config.Rate,
-		burst:           config.Burst,
-		buckets:         make(map[string]*bucket),
-		cleanupInterval: config.CleanupInterval,
+		rate:            rate.Limit(cfg.Rate),
+		burst:           cfg.Burst,
+		cleanupInterval: cfg.CleanupInterval,
+		limiterExpiry:   cfg.LimiterExpiry,
+		global:          rate.NewLimiter(rate.Limit(cfg.Rate), cfg.Burst),
+		limiters:        make(map[string]*limiterEntry),
 		stopChan:        make(chan struct{}),
 	}
 
-	// 启动清理协程
-	go l.cleanup()
-
+	go l.cleanupLoop()
 	return l
 }
 
-// Allow 检查是否允许请求（全局限流）
+// Allow 检查全局是否允许请求
 func (l *Limiter) Allow() bool {
-	return l.AllowKey("global")
+	if l.stopped.Load() {
+		return false
+	}
+	return l.global.Allow()
 }
 
-// AllowKey 检查指定 key 是否允许请求
+// AllowKey 检查指定 Key 是否允许请求
 func (l *Limiter) AllowKey(key string) bool {
-	l.mu.Lock()
-	defer l.mu.Unlock()
-
-	now := time.Now()
-	b, exists := l.buckets[key]
-	
-	if !exists {
-		// 创建新桶，初始满令牌
-		l.buckets[key] = &bucket{
-			tokens:     float64(l.burst) - 1, // 消耗一个令牌
-			lastUpdate: now,
-		}
-		return true
+	if l.stopped.Load() {
+		return false
 	}
-
-	// 计算自上次更新以来生成的令牌数
-	elapsed := now.Sub(b.lastUpdate).Seconds()
-	b.tokens += elapsed * l.rate
-	
-	// 令牌数不能超过桶容量
-	if b.tokens > float64(l.burst) {
-		b.tokens = float64(l.burst)
-	}
-	
-	b.lastUpdate = now
-
-	// 检查是否有可用令牌
-	if b.tokens >= 1 {
-		b.tokens--
-		return true
-	}
-
-	return false
+	return l.getLimiter(key).Allow()
 }
 
-// AllowN 检查是否允许 n 个请求
+// AllowN 检查指定 Key 是否允许 n 个请求
 func (l *Limiter) AllowN(key string, n int) bool {
+	if l.stopped.Load() {
+		return false
+	}
+	return l.getLimiter(key).AllowN(time.Now(), n)
+}
+
+// getLimiter 获取或创建指定 Key 的限流器
+func (l *Limiter) getLimiter(key string) *rate.Limiter {
 	l.mu.Lock()
 	defer l.mu.Unlock()
 
 	now := time.Now()
-	b, exists := l.buckets[key]
-	
-	if !exists {
-		if n > l.burst {
-			return false
-		}
-		l.buckets[key] = &bucket{
-			tokens:     float64(l.burst - n),
-			lastUpdate: now,
-		}
-		return true
+	entry, exists := l.limiters[key]
+
+	if exists {
+		entry.lastAccess = now
+		return entry.limiter
 	}
 
-	// 计算自上次更新以来生成的令牌数
-	elapsed := now.Sub(b.lastUpdate).Seconds()
-	b.tokens += elapsed * l.rate
-	
-	if b.tokens > float64(l.burst) {
-		b.tokens = float64(l.burst)
+	// 创建新的限流器
+	limiter := rate.NewLimiter(l.rate, l.burst)
+	l.limiters[key] = &limiterEntry{
+		limiter:    limiter,
+		lastAccess: now,
 	}
-	
-	b.lastUpdate = now
-
-	if b.tokens >= float64(n) {
-		b.tokens -= float64(n)
-		return true
-	}
-
-	return false
+	return limiter
 }
 
-// cleanup 定期清理过期的桶
-func (l *Limiter) cleanup() {
+// Stats 返回限流器统计信息
+func (l *Limiter) Stats() map[string]interface{} {
+	l.mu.Lock()
+	defer l.mu.Unlock()
+
+	return map[string]interface{}{
+		"rate":          float64(l.rate),
+		"burst":         l.burst,
+		"limiter_count": len(l.limiters),
+		"stopped":       l.stopped.Load(),
+	}
+}
+
+// Stop 停止限流器（幂等操作）
+func (l *Limiter) Stop() {
+	if l.stopped.Swap(true) {
+		return
+	}
+	close(l.stopChan)
+}
+
+// cleanupLoop 定期清理过期的限流器
+func (l *Limiter) cleanupLoop() {
 	ticker := time.NewTicker(l.cleanupInterval)
 	defer ticker.Stop()
 
@@ -156,39 +176,20 @@ func (l *Limiter) cleanup() {
 		case <-l.stopChan:
 			return
 		case <-ticker.C:
-			l.doCleanup()
+			l.cleanup()
 		}
 	}
 }
 
-// doCleanup 执行清理
-func (l *Limiter) doCleanup() {
+// cleanup 清理过期的限流器
+func (l *Limiter) cleanup() {
 	l.mu.Lock()
 	defer l.mu.Unlock()
 
-	now := time.Now()
-	expireThreshold := 10 * time.Minute // 10 分钟未使用的桶将被清理
-
-	for key, b := range l.buckets {
-		if now.Sub(b.lastUpdate) > expireThreshold {
-			delete(l.buckets, key)
+	threshold := time.Now().Add(-l.limiterExpiry)
+	for key, entry := range l.limiters {
+		if entry.lastAccess.Before(threshold) {
+			delete(l.limiters, key)
 		}
 	}
-}
-
-// Stats 获取限流器统计信息
-func (l *Limiter) Stats() map[string]interface{} {
-	l.mu.RLock()
-	defer l.mu.RUnlock()
-
-	return map[string]interface{}{
-		"rate":         l.rate,
-		"burst":        l.burst,
-		"bucket_count": len(l.buckets),
-	}
-}
-
-// Stop 停止限流器
-func (l *Limiter) Stop() {
-	close(l.stopChan)
 }

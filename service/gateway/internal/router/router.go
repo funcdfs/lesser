@@ -1,17 +1,34 @@
+// Package router 提供 gRPC 服务路由功能
+// 管理到各个后端服务的连接，支持健康检查
 package router
 
 import (
 	"context"
 	"fmt"
-	"log"
+	"sync"
 
+	"go.uber.org/zap"
 	"google.golang.org/grpc"
-	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/connectivity"
 	"google.golang.org/grpc/credentials/insecure"
-	"google.golang.org/grpc/status"
+
+	gwErr "github.com/funcdfs/lesser/gateway/internal/errors"
 )
 
-// ServiceConfig 服务配置
+// ServiceName 服务名称常量
+type ServiceName string
+
+const (
+	ServiceAuth         ServiceName = "auth"
+	ServiceUser         ServiceName = "user"
+	ServicePost         ServiceName = "post"
+	ServiceFeed         ServiceName = "feed"
+	ServiceChat         ServiceName = "chat"
+	ServiceSearch       ServiceName = "search"
+	ServiceNotification ServiceName = "notification"
+)
+
+// ServiceConfig 服务地址配置
 type ServiceConfig struct {
 	AuthAddr         string
 	UserAddr         string
@@ -22,213 +39,129 @@ type ServiceConfig struct {
 	NotificationAddr string
 }
 
-// Router gRPC 路由器
-// 设计要点：
-// 1. 管理到各个 Service 的连接
-// 2. 根据请求路径路由到对应 Service
-// 3. 支持连接池和健康检查
+// Router gRPC 服务路由器
 type Router struct {
-	config ServiceConfig
-
-	// Service 连接
-	authConn   *grpc.ClientConn
-	userConn   *grpc.ClientConn
-	postConn   *grpc.ClientConn
-	feedConn   *grpc.ClientConn
-	chatConn   *grpc.ClientConn
-	searchConn *grpc.ClientConn
-	notifConn  *grpc.ClientConn
+	mu    sync.RWMutex
+	conns map[ServiceName]*grpc.ClientConn
+	log   *zap.Logger
 }
 
-// NewRouter 创建路由器
-func NewRouter(config ServiceConfig) (*Router, error) {
-	r := &Router{config: config}
-
-	var err error
-
-	// 连接 Auth Service
-	if config.AuthAddr != "" {
-		r.authConn, err = grpc.NewClient(config.AuthAddr, grpc.WithTransportCredentials(insecure.NewCredentials()))
-		if err != nil {
-			return nil, fmt.Errorf("failed to connect to auth service: %w", err)
-		}
-		log.Printf("[Router] Connected to Auth Service: %s", config.AuthAddr)
+// NewRouter 创建路由器并建立所有服务连接
+func NewRouter(cfg ServiceConfig, log *zap.Logger) (*Router, error) {
+	if log == nil {
+		log = zap.NewNop()
 	}
 
-	// 连接 User Service
-	if config.UserAddr != "" {
-		r.userConn, err = grpc.NewClient(config.UserAddr, grpc.WithTransportCredentials(insecure.NewCredentials()))
-		if err != nil {
-			return nil, fmt.Errorf("failed to connect to user service: %w", err)
-		}
-		log.Printf("[Router] Connected to User Service: %s", config.UserAddr)
+	r := &Router{
+		conns: make(map[ServiceName]*grpc.ClientConn),
+		log:   log.Named("router"),
 	}
 
-	// 连接 Post Service
-	if config.PostAddr != "" {
-		r.postConn, err = grpc.NewClient(config.PostAddr, grpc.WithTransportCredentials(insecure.NewCredentials()))
-		if err != nil {
-			return nil, fmt.Errorf("failed to connect to post service: %w", err)
-		}
-		log.Printf("[Router] Connected to Post Service: %s", config.PostAddr)
+	// 服务地址映射
+	services := map[ServiceName]string{
+		ServiceAuth:         cfg.AuthAddr,
+		ServiceUser:         cfg.UserAddr,
+		ServicePost:         cfg.PostAddr,
+		ServiceFeed:         cfg.FeedAddr,
+		ServiceChat:         cfg.ChatAddr,
+		ServiceSearch:       cfg.SearchAddr,
+		ServiceNotification: cfg.NotificationAddr,
 	}
 
-	// 连接 Feed Service
-	if config.FeedAddr != "" {
-		r.feedConn, err = grpc.NewClient(config.FeedAddr, grpc.WithTransportCredentials(insecure.NewCredentials()))
-		if err != nil {
-			return nil, fmt.Errorf("failed to connect to feed service: %w", err)
+	// 建立连接
+	for name, addr := range services {
+		if addr == "" {
+			continue
 		}
-		log.Printf("[Router] Connected to Feed Service: %s", config.FeedAddr)
-	}
-
-	// 连接 Chat Service
-	if config.ChatAddr != "" {
-		r.chatConn, err = grpc.NewClient(config.ChatAddr, grpc.WithTransportCredentials(insecure.NewCredentials()))
+		conn, err := grpc.NewClient(addr, grpc.WithTransportCredentials(insecure.NewCredentials()))
 		if err != nil {
-			return nil, fmt.Errorf("failed to connect to chat service: %w", err)
+			r.Close() // 清理已建立的连接
+			return nil, fmt.Errorf("连接 %s 服务失败: %w", name, err)
 		}
-		log.Printf("[Router] Connected to Chat Service: %s", config.ChatAddr)
-	}
-
-	// 连接 Search Service
-	if config.SearchAddr != "" {
-		r.searchConn, err = grpc.NewClient(config.SearchAddr, grpc.WithTransportCredentials(insecure.NewCredentials()))
-		if err != nil {
-			return nil, fmt.Errorf("failed to connect to search service: %w", err)
-		}
-		log.Printf("[Router] Connected to Search Service: %s", config.SearchAddr)
-	}
-
-	// 连接 Notification Service
-	if config.NotificationAddr != "" {
-		r.notifConn, err = grpc.NewClient(config.NotificationAddr, grpc.WithTransportCredentials(insecure.NewCredentials()))
-		if err != nil {
-			return nil, fmt.Errorf("failed to connect to notification service: %w", err)
-		}
-		log.Printf("[Router] Connected to Notification Service: %s", config.NotificationAddr)
+		r.conns[name] = conn
+		r.log.Info("服务已连接", zap.String("service", string(name)), zap.String("addr", addr))
 	}
 
 	return r, nil
 }
 
+// GetConn 获取指定服务的连接
+func (r *Router) GetConn(name ServiceName) *grpc.ClientConn {
+	r.mu.RLock()
+	defer r.mu.RUnlock()
+	return r.conns[name]
+}
 
-// GetAuthConn 获取 Auth Service 连接
+// GetAuthConn 获取 Auth 服务连接
 func (r *Router) GetAuthConn() *grpc.ClientConn {
-	return r.authConn
+	return r.GetConn(ServiceAuth)
 }
 
-// GetUserConn 获取 User Service 连接
+// GetUserConn 获取 User 服务连接
 func (r *Router) GetUserConn() *grpc.ClientConn {
-	return r.userConn
+	return r.GetConn(ServiceUser)
 }
 
-// GetPostConn 获取 Post Service 连接
+// GetPostConn 获取 Post 服务连接
 func (r *Router) GetPostConn() *grpc.ClientConn {
-	return r.postConn
+	return r.GetConn(ServicePost)
 }
 
-// GetFeedConn 获取 Feed Service 连接
+// GetFeedConn 获取 Feed 服务连接
 func (r *Router) GetFeedConn() *grpc.ClientConn {
-	return r.feedConn
+	return r.GetConn(ServiceFeed)
 }
 
-// GetChatConn 获取 Chat Service 连接
+// GetChatConn 获取 Chat 服务连接
 func (r *Router) GetChatConn() *grpc.ClientConn {
-	return r.chatConn
+	return r.GetConn(ServiceChat)
 }
 
-// GetSearchConn 获取 Search Service 连接
+// GetSearchConn 获取 Search 服务连接
 func (r *Router) GetSearchConn() *grpc.ClientConn {
-	return r.searchConn
+	return r.GetConn(ServiceSearch)
 }
 
-// GetNotificationConn 获取 Notification Service 连接
+// GetNotificationConn 获取 Notification 服务连接
 func (r *Router) GetNotificationConn() *grpc.ClientConn {
-	return r.notifConn
+	return r.GetConn(ServiceNotification)
 }
 
-// RouteByService 根据服务名路由
-func (r *Router) RouteByService(serviceName string) (*grpc.ClientConn, error) {
-	switch serviceName {
-	case "auth":
-		if r.authConn == nil {
-			return nil, status.Error(codes.Unavailable, "auth service not available")
-		}
-		return r.authConn, nil
-	case "user":
-		if r.userConn == nil {
-			return nil, status.Error(codes.Unavailable, "user service not available")
-		}
-		return r.userConn, nil
-	case "post":
-		if r.postConn == nil {
-			return nil, status.Error(codes.Unavailable, "post service not available")
-		}
-		return r.postConn, nil
-	case "feed":
-		if r.feedConn == nil {
-			return nil, status.Error(codes.Unavailable, "feed service not available")
-		}
-		return r.feedConn, nil
-	case "chat":
-		if r.chatConn == nil {
-			return nil, status.Error(codes.Unavailable, "chat service not available")
-		}
-		return r.chatConn, nil
-	case "search":
-		if r.searchConn == nil {
-			return nil, status.Error(codes.Unavailable, "search service not available")
-		}
-		return r.searchConn, nil
-	case "notification":
-		if r.notifConn == nil {
-			return nil, status.Error(codes.Unavailable, "notification service not available")
-		}
-		return r.notifConn, nil
-	default:
-		return nil, status.Error(codes.NotFound, fmt.Sprintf("unknown service: %s", serviceName))
+// RouteByService 根据服务名路由，返回连接或错误
+func (r *Router) RouteByService(name string) (*grpc.ClientConn, error) {
+	serviceName := ServiceName(name)
+	conn := r.GetConn(serviceName)
+	if conn == nil {
+		return nil, gwErr.ServiceUnavailableError(name)
 	}
+	return conn, nil
 }
 
-// HealthCheck 检查所有服务健康状态
+// HealthCheck 检查所有服务的健康状态
 func (r *Router) HealthCheck(ctx context.Context) map[string]bool {
+	r.mu.RLock()
+	defer r.mu.RUnlock()
+
 	health := make(map[string]bool)
-
-	// 简单检查连接状态
-	health["auth"] = r.authConn != nil && r.authConn.GetState().String() != "SHUTDOWN"
-	health["user"] = r.userConn != nil && r.userConn.GetState().String() != "SHUTDOWN"
-	health["post"] = r.postConn != nil && r.postConn.GetState().String() != "SHUTDOWN"
-	health["feed"] = r.feedConn != nil && r.feedConn.GetState().String() != "SHUTDOWN"
-	health["chat"] = r.chatConn != nil && r.chatConn.GetState().String() != "SHUTDOWN"
-	health["search"] = r.searchConn != nil && r.searchConn.GetState().String() != "SHUTDOWN"
-	health["notification"] = r.notifConn != nil && r.notifConn.GetState().String() != "SHUTDOWN"
-
+	for name, conn := range r.conns {
+		healthy := conn != nil && conn.GetState() != connectivity.Shutdown
+		health[string(name)] = healthy
+	}
 	return health
 }
 
 // Close 关闭所有连接
 func (r *Router) Close() {
-	if r.authConn != nil {
-		r.authConn.Close()
+	r.mu.Lock()
+	defer r.mu.Unlock()
+
+	for name, conn := range r.conns {
+		if conn != nil {
+			if err := conn.Close(); err != nil {
+				r.log.Warn("关闭连接失败", zap.String("service", string(name)), zap.Error(err))
+			}
+		}
 	}
-	if r.userConn != nil {
-		r.userConn.Close()
-	}
-	if r.postConn != nil {
-		r.postConn.Close()
-	}
-	if r.feedConn != nil {
-		r.feedConn.Close()
-	}
-	if r.chatConn != nil {
-		r.chatConn.Close()
-	}
-	if r.searchConn != nil {
-		r.searchConn.Close()
-	}
-	if r.notifConn != nil {
-		r.notifConn.Close()
-	}
-	log.Println("[Router] All connections closed")
+	r.conns = make(map[ServiceName]*grpc.ClientConn)
+	r.log.Info("所有连接已关闭")
 }
