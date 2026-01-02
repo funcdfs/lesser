@@ -7,7 +7,7 @@
 package user
 
 import (
-	common "github.com/lesser/pkg/proto/common"
+	common "github.com/funcdfs/lesser/pkg/proto/common"
 	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
 	protoimpl "google.golang.org/protobuf/runtime/protoimpl"
 	reflect "reflect"
@@ -777,7 +777,7 @@ const file_user_user_proto_rawDesc = "" +
 	"\bUnfollow\x12\x15.user.UnfollowRequest\x1a\r.common.Empty\x12C\n" +
 	"\fGetFollowers\x12\x19.user.GetFollowersRequest\x1a\x18.user.FollowListResponse\x12C\n" +
 	"\fGetFollowing\x12\x19.user.GetFollowingRequest\x1a\x18.user.FollowListResponse\x12K\n" +
-	"\x0eCheckFollowing\x12\x1b.user.CheckFollowingRequest\x1a\x1c.user.CheckFollowingResponseB#Z!github.com/lesser/user/proto/userb\x06proto3"
+	"\x0eCheckFollowing\x12\x1b.user.CheckFollowingRequest\x1a\x1c.user.CheckFollowingResponseB#Z!github.com/funcdfs/lesser/user/proto/userb\x06proto3"
 
 var (
 	file_user_user_proto_rawDescOnce sync.Once

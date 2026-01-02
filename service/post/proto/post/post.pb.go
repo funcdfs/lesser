@@ -7,7 +7,7 @@
 package post
 
 import (
-	common "github.com/lesser/pkg/proto/common"
+	common "github.com/funcdfs/lesser/pkg/proto/common"
 	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
 	protoimpl "google.golang.org/protobuf/runtime/protoimpl"
 	reflect "reflect"
@@ -662,7 +662,7 @@ const file_post_post_proto_rawDesc = "" +
 	"\x04List\x12\x16.post.ListPostsRequest\x1a\x17.post.ListPostsResponse\x120\n" +
 	"\x06Delete\x12\x17.post.DeletePostRequest\x1a\r.common.Empty\x12-\n" +
 	"\x06Update\x12\x17.post.UpdatePostRequest\x1a\n" +
-	".post.PostB#Z!github.com/lesser/post/proto/postb\x06proto3"
+	".post.PostB#Z!github.com/funcdfs/lesser/post/proto/postb\x06proto3"
 
 var (
 	file_post_post_proto_rawDescOnce sync.Once

@@ -7,7 +7,7 @@
 package search
 
 import (
-	common "github.com/lesser/pkg/proto/common"
+	common "github.com/funcdfs/lesser/pkg/proto/common"
 	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
 	protoimpl "google.golang.org/protobuf/runtime/protoimpl"
 	reflect "reflect"
@@ -441,7 +441,7 @@ const file_search_search_proto_rawDesc = "" +
 	"pagination2\x9f\x01\n" +
 	"\rSearchService\x12F\n" +
 	"\vSearchPosts\x12\x1a.search.SearchPostsRequest\x1a\x1b.search.SearchPostsResponse\x12F\n" +
-	"\vSearchUsers\x12\x1a.search.SearchUsersRequest\x1a\x1b.search.SearchUsersResponseB'Z%github.com/lesser/search/proto/searchb\x06proto3"
+	"\vSearchUsers\x12\x1a.search.SearchUsersRequest\x1a\x1b.search.SearchUsersResponseB'Z%github.com/funcdfs/lesser/search/proto/searchb\x06proto3"
 
 var (
 	file_search_search_proto_rawDescOnce sync.Once

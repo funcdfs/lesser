@@ -7,7 +7,7 @@
 package auth
 
 import (
-	common "github.com/lesser/pkg/proto/common"
+	common "github.com/funcdfs/lesser/pkg/proto/common"
 	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
 	protoimpl "google.golang.org/protobuf/runtime/protoimpl"
 	reflect "reflect"
@@ -815,7 +815,7 @@ const file_auth_auth_proto_rawDesc = "" +
 	"\aBanUser\x12\x14.auth.BanUserRequest\x1a\x15.auth.BanUserResponse\x12B\n" +
 	"\vCheckBanned\x12\x18.auth.CheckBannedRequest\x1a\x19.auth.CheckBannedResponse\x12+\n" +
 	"\aGetUser\x12\x14.auth.GetUserRequest\x1a\n" +
-	".auth.UserB#Z!github.com/lesser/auth/proto/authb\x06proto3"
+	".auth.UserB#Z!github.com/funcdfs/lesser/auth/proto/authb\x06proto3"
 
 var (
 	file_auth_auth_proto_rawDescOnce sync.Once

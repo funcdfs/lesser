@@ -8,7 +8,7 @@ package post
 
 import (
 	context "context"
-	common "github.com/lesser/gateway/proto/common"
+	common "github.com/funcdfs/lesser/gateway/proto/common"
 	grpc "google.golang.org/grpc"
 	codes "google.golang.org/grpc/codes"
 	status "google.golang.org/grpc/status"

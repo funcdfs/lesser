@@ -272,7 +272,7 @@ const file_proto_auth_auth_proto_rawDesc = "" +
 	"\vAuthService\x12>\n" +
 	"\rValidateToken\x12\x15.auth.ValidateRequest\x1a\x16.auth.ValidateResponse\x12+\n" +
 	"\aGetUser\x12\x14.auth.GetUserRequest\x1a\n" +
-	".auth.UserB#Z!github.com/lesser/chat/proto/authb\x06proto3"
+	".auth.UserB#Z!github.com/funcdfs/lesser/chat/proto/authb\x06proto3"
 
 var (
 	file_proto_auth_auth_proto_rawDescOnce sync.Once

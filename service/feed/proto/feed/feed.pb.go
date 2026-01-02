@@ -7,7 +7,7 @@
 package feed
 
 import (
-	common "github.com/lesser/pkg/proto/common"
+	common "github.com/funcdfs/lesser/pkg/proto/common"
 	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
 	protoimpl "google.golang.org/protobuf/runtime/protoimpl"
 	reflect "reflect"
@@ -980,7 +980,7 @@ const file_feed_feed_proto_rawDesc = "" +
 	"\bBookmark\x12\x15.feed.BookmarkRequest\x1a\r.common.Empty\x124\n" +
 	"\n" +
 	"Unbookmark\x12\x17.feed.UnbookmarkRequest\x1a\r.common.Empty\x12H\n" +
-	"\rListBookmarks\x12\x1a.feed.ListBookmarksRequest\x1a\x1b.feed.ListBookmarksResponseB#Z!github.com/lesser/feed/proto/feedb\x06proto3"
+	"\rListBookmarks\x12\x1a.feed.ListBookmarksRequest\x1a\x1b.feed.ListBookmarksResponseB#Z!github.com/funcdfs/lesser/feed/proto/feedb\x06proto3"
 
 var (
 	file_feed_feed_proto_rawDescOnce sync.Once
