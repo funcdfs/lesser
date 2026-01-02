@@ -75,6 +75,47 @@ generate_go() {
         fi
     done
     
+    # Gateway 需要代理所有服务，生成额外的 proto
+    echo "  生成 Gateway 代理所需的 proto..."
+    GATEWAY_PROTO_OUT="$PROJECT_ROOT/service/gateway/proto"
+    
+    # Gateway 需要 user proto (用于 search 返回类型)
+    protoc \
+        --proto_path="$PROTO_DIR" \
+        --go_out="$GATEWAY_PROTO_OUT" \
+        --go_opt=paths=source_relative \
+        --go_opt=Mcommon/common.proto=github.com/lesser/gateway/proto/common \
+        --go-grpc_out="$GATEWAY_PROTO_OUT" \
+        --go-grpc_opt=paths=source_relative \
+        --go-grpc_opt=Mcommon/common.proto=github.com/lesser/gateway/proto/common \
+        "$PROTO_DIR/user/user.proto" 2>/dev/null || true
+    
+    # Gateway 需要 post proto (用于 search 返回类型)
+    protoc \
+        --proto_path="$PROTO_DIR" \
+        --go_out="$GATEWAY_PROTO_OUT" \
+        --go_opt=paths=source_relative \
+        --go_opt=Mcommon/common.proto=github.com/lesser/gateway/proto/common \
+        --go-grpc_out="$GATEWAY_PROTO_OUT" \
+        --go-grpc_opt=paths=source_relative \
+        --go-grpc_opt=Mcommon/common.proto=github.com/lesser/gateway/proto/common \
+        "$PROTO_DIR/post/post.proto" 2>/dev/null || true
+    
+    # Gateway 需要 search proto
+    protoc \
+        --proto_path="$PROTO_DIR" \
+        --go_out="$GATEWAY_PROTO_OUT" \
+        --go_opt=paths=source_relative \
+        --go_opt=Mcommon/common.proto=github.com/lesser/gateway/proto/common \
+        --go_opt=Muser/user.proto=github.com/lesser/gateway/proto/user \
+        --go_opt=Mpost/post.proto=github.com/lesser/gateway/proto/post \
+        --go-grpc_out="$GATEWAY_PROTO_OUT" \
+        --go-grpc_opt=paths=source_relative \
+        --go-grpc_opt=Mcommon/common.proto=github.com/lesser/gateway/proto/common \
+        --go-grpc_opt=Muser/user.proto=github.com/lesser/gateway/proto/user \
+        --go-grpc_opt=Mpost/post.proto=github.com/lesser/gateway/proto/post \
+        "$PROTO_DIR/search/search.proto" 2>/dev/null || true
+    
     echo "✅ Go 代码生成完成"
 }
 

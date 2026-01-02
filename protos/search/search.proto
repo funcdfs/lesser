@@ -4,8 +4,6 @@ package search;
 option go_package = "github.com/lesser/search/proto/search";
 
 import "common/common.proto";
-import "post/post.proto";
-import "user/user.proto";
 
 // SearchService 搜索服务
 service SearchService {
@@ -16,13 +14,22 @@ service SearchService {
 // SearchPostsRequest 搜索帖子请求
 message SearchPostsRequest {
   string query = 1;
-  post.PostType post_type = 2;  // 可选，按类型筛选
-  common.Pagination pagination = 3;
+  common.Pagination pagination = 2;
+}
+
+// PostResult 帖子搜索结果
+message PostResult {
+  string id = 1;
+  string author_id = 2;
+  string title = 3;
+  string content = 4;
+  repeated string media_urls = 5;
+  common.Timestamp created_at = 6;
 }
 
 // SearchPostsResponse 搜索帖子响应
 message SearchPostsResponse {
-  repeated post.Post posts = 1;
+  repeated PostResult posts = 1;
   common.Pagination pagination = 2;
 }
 
@@ -32,8 +39,17 @@ message SearchUsersRequest {
   common.Pagination pagination = 2;
 }
 
+// UserResult 用户搜索结果
+message UserResult {
+  string id = 1;
+  string username = 2;
+  string display_name = 3;
+  string avatar_url = 4;
+  string bio = 5;
+}
+
 // SearchUsersResponse 搜索用户响应
 message SearchUsersResponse {
-  repeated user.Profile users = 1;
+  repeated UserResult users = 1;
   common.Pagination pagination = 2;
 }
