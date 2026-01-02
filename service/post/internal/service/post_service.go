@@ -4,7 +4,7 @@ import (
 	"errors"
 	"time"
 
-	"github.com/lesser/post/internal/repository"
+	"github.com/funcdfs/lesser/post/internal/repository"
 )
 
 var ErrUnauthorized = errors.New("unauthorized")

@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/lesser/chat/pkg/logger"
+	"github.com/funcdfs/lesser/chat/pkg/logger"
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
 	gormlogger "gorm.io/gorm/logger"

@@ -11,11 +11,11 @@ import (
 	"sync"
 	"syscall"
 
-	"github.com/lesser/pkg/broker"
-	"github.com/lesser/pkg/cache"
-	"github.com/lesser/pkg/database"
-	"github.com/lesser/pkg/grpcclient"
-	"github.com/lesser/pkg/logger"
+	"github.com/funcdfs/lesser/pkg/broker"
+	"github.com/funcdfs/lesser/pkg/cache"
+	"github.com/funcdfs/lesser/pkg/database"
+	"github.com/funcdfs/lesser/pkg/grpcclient"
+	"github.com/funcdfs/lesser/pkg/logger"
 	"go.uber.org/zap"
 )
 

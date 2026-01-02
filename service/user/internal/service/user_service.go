@@ -3,7 +3,7 @@ package service
 import (
 	"errors"
 
-	"github.com/lesser/user/internal/repository"
+	"github.com/funcdfs/lesser/user/internal/repository"
 )
 
 var ErrCannotFollowSelf = errors.New("cannot follow yourself")

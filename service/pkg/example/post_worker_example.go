@@ -7,8 +7,8 @@ import (
 	"encoding/json"
 	"fmt"
 
-	"github.com/lesser/pkg/app"
-	"github.com/lesser/pkg/broker"
+	"github.com/funcdfs/lesser/pkg/app"
+	"github.com/funcdfs/lesser/pkg/broker"
 	"go.uber.org/zap"
 )
 

@@ -6,7 +6,7 @@ import (
 	"time"
 
 	"github.com/google/uuid"
-	"github.com/lesser/chat/pkg/cache"
+	"github.com/funcdfs/lesser/chat/pkg/cache"
 )
 
 type UserInfo struct {

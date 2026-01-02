@@ -7,14 +7,14 @@ import (
 	"os/signal"
 	"syscall"
 
-	"github.com/lesser/chat/internal/config"
-	"github.com/lesser/chat/internal/model"
-	"github.com/lesser/chat/internal/repository"
-	"github.com/lesser/chat/internal/server"
-	"github.com/lesser/chat/internal/service"
-	"github.com/lesser/chat/pkg/cache"
-	"github.com/lesser/chat/pkg/database"
-	"github.com/lesser/chat/pkg/logger"
+	"github.com/funcdfs/lesser/chat/internal/config"
+	"github.com/funcdfs/lesser/chat/internal/model"
+	"github.com/funcdfs/lesser/chat/internal/repository"
+	"github.com/funcdfs/lesser/chat/internal/server"
+	"github.com/funcdfs/lesser/chat/internal/service"
+	"github.com/funcdfs/lesser/chat/pkg/cache"
+	"github.com/funcdfs/lesser/chat/pkg/database"
+	"github.com/funcdfs/lesser/chat/pkg/logger"
 )
 
 func main() {

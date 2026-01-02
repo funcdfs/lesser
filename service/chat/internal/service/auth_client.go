@@ -7,7 +7,7 @@ import (
 	"time"
 
 	"github.com/google/uuid"
-	authpb "github.com/lesser/chat/proto/auth"
+	authpb "github.com/funcdfs/lesser/chat/proto/auth"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/backoff"
 	"google.golang.org/grpc/credentials/insecure"

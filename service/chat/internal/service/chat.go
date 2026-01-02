@@ -7,9 +7,9 @@ import (
 	"time"
 
 	"github.com/google/uuid"
-	"github.com/lesser/chat/internal/model"
-	"github.com/lesser/chat/internal/repository"
-	"github.com/lesser/chat/pkg/cache"
+	"github.com/funcdfs/lesser/chat/internal/model"
+	"github.com/funcdfs/lesser/chat/internal/repository"
+	"github.com/funcdfs/lesser/chat/pkg/cache"
 )
 
 type ChatService struct {

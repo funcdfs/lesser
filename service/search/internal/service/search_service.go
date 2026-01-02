@@ -1,6 +1,6 @@
 package service
 
-import "github.com/lesser/search/internal/repository"
+import "github.com/funcdfs/lesser/search/internal/repository"
 
 type SearchService struct {
 	searchRepo *repository.SearchRepository

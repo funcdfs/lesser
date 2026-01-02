@@ -11,7 +11,7 @@ import (
 
 	"github.com/golang-jwt/jwt/v5"
 	"github.com/google/uuid"
-	"github.com/lesser/auth/internal/repository"
+	"github.com/funcdfs/lesser/auth/internal/repository"
 	"golang.org/x/crypto/bcrypt"
 )
 

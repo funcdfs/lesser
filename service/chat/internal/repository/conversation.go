@@ -6,7 +6,7 @@ import (
 	"time"
 
 	"github.com/google/uuid"
-	"github.com/lesser/chat/internal/model"
+	"github.com/funcdfs/lesser/chat/internal/model"
 	"gorm.io/gorm"
 )
 

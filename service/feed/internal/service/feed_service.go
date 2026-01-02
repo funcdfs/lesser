@@ -1,7 +1,7 @@
 package service
 
 import (
-	"github.com/lesser/feed/internal/repository"
+	"github.com/funcdfs/lesser/feed/internal/repository"
 )
 
 type FeedService struct {

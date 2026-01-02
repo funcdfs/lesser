@@ -10,8 +10,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/lesser/pkg/grpcclient"
-	"github.com/lesser/pkg/logger"
+	"github.com/funcdfs/lesser/pkg/grpcclient"
+	"github.com/funcdfs/lesser/pkg/logger"
 	amqp "github.com/rabbitmq/amqp091-go"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"

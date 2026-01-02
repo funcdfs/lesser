@@ -8,9 +8,9 @@ import (
 	"time"
 
 	"github.com/google/uuid"
-	"github.com/lesser/chat/internal/auth"
-	grpchandler "github.com/lesser/chat/internal/handler/grpc"
-	"github.com/lesser/chat/internal/service"
+	"github.com/funcdfs/lesser/chat/internal/auth"
+	grpchandler "github.com/funcdfs/lesser/chat/internal/handler/grpc"
+	"github.com/funcdfs/lesser/chat/internal/service"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/keepalive"

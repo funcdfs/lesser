@@ -3,10 +3,10 @@ package handler
 import (
 	"context"
 
-	"github.com/lesser/feed/internal/repository"
-	"github.com/lesser/feed/internal/service"
-	"github.com/lesser/pkg/proto/common"
-	pb "github.com/lesser/feed/proto/feed"
+	"github.com/funcdfs/lesser/feed/internal/repository"
+	"github.com/funcdfs/lesser/feed/internal/service"
+	"github.com/funcdfs/lesser/pkg/proto/common"
+	pb "github.com/funcdfs/lesser/feed/proto/feed"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 )

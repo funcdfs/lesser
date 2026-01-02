@@ -1,6 +1,6 @@
 package service
 
-import "github.com/lesser/notification/internal/repository"
+import "github.com/funcdfs/lesser/notification/internal/repository"
 
 type NotificationService struct {
 	notifRepo *repository.NotificationRepository

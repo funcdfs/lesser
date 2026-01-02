@@ -8,11 +8,11 @@ import (
 	"os/signal"
 	"syscall"
 
-	"github.com/lesser/pkg/database"
-	"github.com/lesser/post/internal/handler"
-	"github.com/lesser/post/internal/repository"
-	"github.com/lesser/post/internal/service"
-	pb "github.com/lesser/post/proto/post"
+	"github.com/funcdfs/lesser/pkg/database"
+	"github.com/funcdfs/lesser/post/internal/handler"
+	"github.com/funcdfs/lesser/post/internal/repository"
+	"github.com/funcdfs/lesser/post/internal/service"
+	pb "github.com/funcdfs/lesser/post/proto/post"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/reflection"
 )

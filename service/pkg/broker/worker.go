@@ -12,7 +12,7 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/lesser/pkg/logger"
+	"github.com/funcdfs/lesser/pkg/logger"
 	amqp "github.com/rabbitmq/amqp091-go"
 	"go.uber.org/zap"
 )
