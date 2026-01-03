@@ -22,26 +22,25 @@ func NewBanRepository(db *sql.DB) *BanRepository {
 
 // Create 创建封禁记录
 func (r *BanRepository) Create(ctx context.Context, ban *repository.Ban) error {
+	// 先将该用户的旧封禁记录设为非活跃
+	deactivateQuery := `UPDATE user_bans SET is_active = false WHERE user_id = $1 AND is_active = true`
+	_, _ = r.db.ExecContext(ctx, deactivateQuery, ban.UserID)
+
 	query := `
-		INSERT INTO user_bans (id, user_id, reason, expires_at, created_at, created_by)
-		VALUES ($1, $2, $3, $4, $5, $6)
-		ON CONFLICT (user_id) DO UPDATE SET
-			reason = EXCLUDED.reason,
-			expires_at = EXCLUDED.expires_at,
-			created_at = EXCLUDED.created_at,
-			created_by = EXCLUDED.created_by
+		INSERT INTO user_bans (id, user_id, reason, expires_at, operator_id, is_active, created_at)
+		VALUES ($1, $2, $3, $4, $5, true, $6)
 	`
 	_, err := r.db.ExecContext(ctx, query,
-		ban.ID, ban.UserID, ban.Reason, ban.ExpiresAt, ban.CreatedAt, ban.CreatedBy,
+		ban.ID, ban.UserID, ban.Reason, ban.ExpiresAt, ban.CreatedBy, ban.CreatedAt,
 	)
 	return err
 }
 
-// GetByUserID 获取用户的封禁记录
+// GetByUserID 获取用户的活跃封禁记录
 func (r *BanRepository) GetByUserID(ctx context.Context, userID string) (*repository.Ban, error) {
 	query := `
-		SELECT id, user_id, reason, expires_at, created_at, COALESCE(created_by, '')
-		FROM user_bans WHERE user_id = $1
+		SELECT id, user_id, reason, expires_at, created_at, COALESCE(operator_id::text, '')
+		FROM user_bans WHERE user_id = $1 AND is_active = true
 	`
 
 	ban := &repository.Ban{}
@@ -65,9 +64,9 @@ func (r *BanRepository) GetByUserID(ctx context.Context, userID string) (*reposi
 	return ban, nil
 }
 
-// Delete 删除封禁记录（解封）
+// Delete 删除封禁记录（解封）- 将 is_active 设为 false
 func (r *BanRepository) Delete(ctx context.Context, userID string) error {
-	query := `DELETE FROM user_bans WHERE user_id = $1`
+	query := `UPDATE user_bans SET is_active = false, updated_at = NOW() WHERE user_id = $1 AND is_active = true`
 	_, err := r.db.ExecContext(ctx, query, userID)
 	return err
 }

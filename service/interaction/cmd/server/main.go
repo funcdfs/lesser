@@ -15,16 +15,20 @@ import (
 	"github.com/funcdfs/lesser/interaction/internal/repository"
 	"github.com/funcdfs/lesser/interaction/internal/service"
 	pb "github.com/funcdfs/lesser/interaction/proto/interaction"
+	"github.com/funcdfs/lesser/pkg/broker"
 	"github.com/funcdfs/lesser/pkg/database"
+	"github.com/funcdfs/lesser/pkg/logger"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/reflection"
 )
 
 func main() {
 	log := initLogger()
+	pkgLog := logger.New("interaction")
 
 	grpcPort := getEnv("GRPC_PORT", "50060")
 	contentServiceAddr := getEnv("CONTENT_SERVICE_ADDR", "content:50056")
+	rabbitmqURL := getEnv("RABBITMQ_URL", "amqp://superuser:superuser@rabbitmq:5672/")
 
 	// 数据库连接
 	dbConfig := database.Config{
@@ -53,12 +57,29 @@ func main() {
 	defer contentClient.Close()
 	log.Info("已连接 Content Service", slog.String("addr", contentServiceAddr))
 
+	// 初始化 RabbitMQ Publisher（可选，失败不影响主流程）
+	var publisher *broker.Publisher
+	publisher = broker.NewPublisher(rabbitmqURL, pkgLog)
+	if err := publisher.Connect(); err != nil {
+		log.Warn("RabbitMQ 连接失败，事件通知将被禁用", slog.Any("error", err))
+		publisher = nil
+	} else {
+		defer publisher.Close()
+		log.Info("RabbitMQ Publisher 已连接")
+	}
+
 	// 初始化各层
 	likeRepo := repository.NewLikeRepository(db)
 	bookmarkRepo := repository.NewBookmarkRepository(db)
 	repostRepo := repository.NewRepostRepository(db)
 
 	interactionSvc := service.NewInteractionService(likeRepo, bookmarkRepo, repostRepo, contentClient)
+
+	// 设置 Publisher（如果可用）
+	if publisher != nil {
+		interactionSvc.SetPublisher(publisher)
+	}
+
 	interactionHandler := handler.NewInteractionHandler(interactionSvc, log)
 
 	// 创建 gRPC 服务器

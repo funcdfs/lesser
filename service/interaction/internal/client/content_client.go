@@ -55,3 +55,18 @@ func (c *ContentServiceClient) CheckContentExists(ctx context.Context, contentID
 	}
 	return resp.Exists, resp.CommentsDisabled, nil
 }
+
+// GetContentAuthorID 获取内容作者 ID
+// 用于发送通知时获取内容作者
+func (c *ContentServiceClient) GetContentAuthorID(ctx context.Context, contentID string) (string, error) {
+	resp, err := c.client.GetContent(ctx, &contentpb.GetContentRequest{
+		ContentId: contentID,
+	})
+	if err != nil {
+		return "", err
+	}
+	if resp.Content == nil {
+		return "", nil
+	}
+	return resp.Content.AuthorId, nil
+}

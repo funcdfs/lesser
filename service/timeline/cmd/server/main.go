@@ -54,7 +54,7 @@ func main() {
 	log.Info("已连接 Interaction Service", slog.String("addr", interactionServiceAddr))
 
 	// 初始化各层
-	timelineRepo := repository.NewTimelineRepository(db)
+	timelineRepo := repository.NewTimelineRepository(db, log)
 	timelineSvc := service.NewTimelineService(timelineRepo, interactionClient)
 	timelineHandler := handler.NewTimelineHandler(timelineSvc, log)
 

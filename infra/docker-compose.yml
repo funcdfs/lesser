@@ -53,6 +53,7 @@ services:
       - ./database/init.sql:/docker-entrypoint-initdb.d/01-init.sql:ro
       - ./database/init-chat.sql:/docker-entrypoint-initdb.d/02-init-chat.sql:ro
       - ../scripts/database/docker-entrypoint-initdb.sh:/docker-entrypoint-initdb.d/03-create-chat-db.sh:ro
+      - ./database/init-superuser.sql:/docker-entrypoint-initdb.d/04-init-superuser.sql:ro
       - ./database/postgresql.conf:/etc/postgresql/postgresql.conf:ro
     ports:
       - "${EXTERNAL_POSTGRES_PORT:-5432}:5432"
@@ -91,12 +92,12 @@ services:
   # Message Broker - RabbitMQ (仅用于次要异步任务)
   # --------------------------------------------------------------------------
   rabbitmq:
-    image: rabbitmq:latest
+    image: rabbitmq:management
     container_name: rabbitmq
     restart: unless-stopped
     environment:
-      RABBITMQ_DEFAULT_USER: ${RABBITMQ_USER:-guest}
-      RABBITMQ_DEFAULT_PASS: ${RABBITMQ_PASSWORD:-guest}
+      RABBITMQ_DEFAULT_USER: ${RABBITMQ_USER:-superuser}
+      RABBITMQ_DEFAULT_PASS: ${RABBITMQ_PASSWORD:-superuser}
     volumes:
       - rabbitmq_data:/var/lib/rabbitmq
     ports:
@@ -135,7 +136,10 @@ services:
   gateway:
     build:
       context: ../service
-      dockerfile: gateway/Dockerfile.dev
+      dockerfile: Dockerfile.dev
+      args:
+        SERVICE_NAME: gateway
+        GRPC_PORT: 50053
     container_name: gateway
     restart: unless-stopped
     environment:
@@ -148,6 +152,7 @@ services:
       - TIMELINE_SERVICE_ADDR=timeline:50062
       - SEARCH_SERVICE_ADDR=search:50058
       - NOTIFICATION_SERVICE_ADDR=notification:50059
+      - CHAT_SERVICE_ADDR=chat:50052
       - REDIS_URL=redis://redis:6379/0
     volumes:
       - ../service:/app
@@ -172,7 +177,10 @@ services:
   auth:
     build:
       context: ../service
-      dockerfile: auth/Dockerfile.dev
+      dockerfile: Dockerfile.dev
+      args:
+        SERVICE_NAME: auth
+        GRPC_PORT: 50054
     container_name: auth
     restart: unless-stopped
     environment:
@@ -211,7 +219,10 @@ services:
   user:
     build:
       context: ../service
-      dockerfile: user/Dockerfile.dev
+      dockerfile: Dockerfile.dev
+      args:
+        SERVICE_NAME: user
+        GRPC_PORT: 50055
     container_name: user
     restart: unless-stopped
     environment:
@@ -222,7 +233,7 @@ services:
       - DB_PASSWORD=${POSTGRES_PASSWORD:-lesser_dev_password}
       - DB_NAME=${POSTGRES_DB:-lesser_db}
       - DB_SSLMODE=disable
-      - RABBITMQ_URL=amqp://${RABBITMQ_USER:-guest}:${RABBITMQ_PASSWORD:-guest}@rabbitmq:5672/
+      - RABBITMQ_URL=amqp://${RABBITMQ_USER:-superuser}:${RABBITMQ_PASSWORD:-superuser}@rabbitmq:5672/
     volumes:
       - ../service:/app
       - go_mod_cache:/go/pkg/mod
@@ -246,7 +257,10 @@ services:
   content:
     build:
       context: ../service
-      dockerfile: content/Dockerfile.dev
+      dockerfile: Dockerfile.dev
+      args:
+        SERVICE_NAME: content
+        GRPC_PORT: 50056
     container_name: content
     restart: unless-stopped
     environment:
@@ -257,7 +271,7 @@ services:
       - DB_PASSWORD=${POSTGRES_PASSWORD:-lesser_dev_password}
       - DB_NAME=${POSTGRES_DB:-lesser_db}
       - DB_SSLMODE=disable
-      - RABBITMQ_URL=amqp://${RABBITMQ_USER:-guest}:${RABBITMQ_PASSWORD:-guest}@rabbitmq:5672/
+      - RABBITMQ_URL=amqp://${RABBITMQ_USER:-superuser}:${RABBITMQ_PASSWORD:-superuser}@rabbitmq:5672/
     volumes:
       - ../service:/app
       - go_mod_cache:/go/pkg/mod
@@ -281,7 +295,10 @@ services:
   interaction:
     build:
       context: ../service
-      dockerfile: interaction/Dockerfile.dev
+      dockerfile: Dockerfile.dev
+      args:
+        SERVICE_NAME: interaction
+        GRPC_PORT: 50060
     container_name: interaction
     restart: unless-stopped
     environment:
@@ -293,7 +310,7 @@ services:
       - DB_NAME=${POSTGRES_DB:-lesser_db}
       - DB_SSLMODE=disable
       - CONTENT_SERVICE_ADDR=content:50056
-      - RABBITMQ_URL=amqp://${RABBITMQ_USER:-guest}:${RABBITMQ_PASSWORD:-guest}@rabbitmq:5672/
+      - RABBITMQ_URL=amqp://${RABBITMQ_USER:-superuser}:${RABBITMQ_PASSWORD:-superuser}@rabbitmq:5672/
     volumes:
       - ../service:/app
       - go_mod_cache:/go/pkg/mod
@@ -319,7 +336,10 @@ services:
   comment:
     build:
       context: ../service
-      dockerfile: comment/Dockerfile.dev
+      dockerfile: Dockerfile.dev
+      args:
+        SERVICE_NAME: comment
+        GRPC_PORT: 50061
     container_name: comment
     restart: unless-stopped
     environment:
@@ -331,7 +351,7 @@ services:
       - DB_NAME=${POSTGRES_DB:-lesser_db}
       - DB_SSLMODE=disable
       - CONTENT_SERVICE_ADDR=content:50056
-      - RABBITMQ_URL=amqp://${RABBITMQ_USER:-guest}:${RABBITMQ_PASSWORD:-guest}@rabbitmq:5672/
+      - RABBITMQ_URL=amqp://${RABBITMQ_USER:-superuser}:${RABBITMQ_PASSWORD:-superuser}@rabbitmq:5672/
     volumes:
       - ../service:/app
       - go_mod_cache:/go/pkg/mod
@@ -357,7 +377,10 @@ services:
   timeline:
     build:
       context: ../service
-      dockerfile: timeline/Dockerfile.dev
+      dockerfile: Dockerfile.dev
+      args:
+        SERVICE_NAME: timeline
+        GRPC_PORT: 50062
     container_name: timeline
     restart: unless-stopped
     environment:
@@ -392,7 +415,10 @@ services:
   search:
     build:
       context: ../service
-      dockerfile: search/Dockerfile.dev
+      dockerfile: Dockerfile.dev
+      args:
+        SERVICE_NAME: search
+        GRPC_PORT: 50058
     container_name: search
     restart: unless-stopped
     environment:
@@ -424,7 +450,10 @@ services:
   notification:
     build:
       context: ../service
-      dockerfile: notification/Dockerfile.dev
+      dockerfile: Dockerfile.dev
+      args:
+        SERVICE_NAME: notification
+        GRPC_PORT: 50059
     container_name: notification
     restart: unless-stopped
     environment:
@@ -435,7 +464,7 @@ services:
       - DB_PASSWORD=${POSTGRES_PASSWORD:-lesser_dev_password}
       - DB_NAME=${POSTGRES_DB:-lesser_db}
       - DB_SSLMODE=disable
-      - RABBITMQ_URL=amqp://${RABBITMQ_USER:-guest}:${RABBITMQ_PASSWORD:-guest}@rabbitmq:5672/
+      - RABBITMQ_URL=amqp://${RABBITMQ_USER:-superuser}:${RABBITMQ_PASSWORD:-superuser}@rabbitmq:5672/
     volumes:
       - ../service:/app
       - go_mod_cache:/go/pkg/mod
@@ -459,11 +488,14 @@ services:
   chat:
     build:
       context: ../service
-      dockerfile: chat/Dockerfile.dev
+      dockerfile: Dockerfile.dev
+      args:
+        SERVICE_NAME: chat
+        GRPC_PORT: 50052
     container_name: chat
     restart: unless-stopped
     environment:
-      - DATABASE_URL=${CHAT_DATABASE_URL:-postgres://lesser:lesser_dev_password@postgres:5432/lesser_chat_db?application_name=chat}
+      - DATABASE_URL=${CHAT_DATABASE_URL:-postgres://lesser:lesser_dev_password@postgres:5432/lesser_chat_db?sslmode=disable&application_name=chat}
       - REDIS_URL=redis://redis:6379/1
       - GRPC_PORT=${CHAT_GRPC_PORT:-50052}
       - AUTH_GRPC_ADDR=${AUTH_GRPC_ADDR:-auth:50054}
@@ -481,6 +513,52 @@ services:
       - app-network
     healthcheck:
       test: ["CMD", "nc", "-z", "localhost", "50052"]
+      interval: 30s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+
+  # --------------------------------------------------------------------------
+  # SuperUser Service (超级管理员服务 - 系统级管理)
+  # --------------------------------------------------------------------------
+  superuser:
+    build:
+      context: ../service
+      dockerfile: Dockerfile.dev
+      args:
+        SERVICE_NAME: superuser
+        GRPC_PORT: 50063
+    container_name: superuser
+    restart: unless-stopped
+    environment:
+      - GRPC_PORT=50063
+      - DB_HOST=postgres
+      - DB_PORT=5432
+      - DB_USER=${POSTGRES_USER:-lesser}
+      - DB_PASSWORD=${POSTGRES_PASSWORD:-lesser_dev_password}
+      - DB_NAME=${POSTGRES_DB:-lesser_db}
+      - DB_SSLMODE=disable
+      - REDIS_URL=redis://redis:6379/2
+      - RABBITMQ_URL=amqp://${RABBITMQ_USER:-superuser}:${RABBITMQ_PASSWORD:-superuser}@rabbitmq:5672/
+      - SUPERUSER_USERNAME=${SUPERUSER_USERNAME:-funcdfs}
+      - SUPERUSER_EMAIL=${SUPERUSER_EMAIL:-funcdfs@gmail.com}
+      - SUPERUSER_PASSWORD=${SUPERUSER_PASSWORD:-fw142857}
+      - SUPERUSER_DISPLAY_NAME=${SUPERUSER_DISPLAY_NAME:-funcdfs}
+      - SUPERUSER_JWT_SECRET=${SUPERUSER_JWT_SECRET:-superuser-secret-key-change-in-production}
+    volumes:
+      - ../service:/app
+      - go_mod_cache:/go/pkg/mod
+    ports:
+      - "50063:50063"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      - app-network
+    healthcheck:
+      test: ["CMD", "nc", "-z", "localhost", "50063"]
       interval: 30s
       timeout: 5s
       retries: 5

@@ -8,18 +8,18 @@
 
 ```mermaid
 graph TB
-    subgraph 客户端层
+    subgraph 客户端层["客户端层"]
         Flutter["Flutter Mobile/Web"]
     end
 
-    subgraph 网关层
-        Traefik["Traefik :80/:50050"]
+    subgraph 网关层["网关层"]
+        Traefik["Traefik<br/>(:80 HTTP / :50050 gRPC)"]
     end
 
-    subgraph 服务层
-        Gateway["Gateway :50053<br/>(JWT/限流/路由)"]
+    subgraph 服务层["服务层"]
+        Gateway["Gateway :50053<br/>(JWT验签/限流/路由)"]
         
-        subgraph ServiceCluster
+        subgraph ServiceCluster["Service Cluster"]
             Auth["Auth :50054"]
             User["User :50055"]
             Content["Content :50056"]
@@ -30,37 +30,181 @@ graph TB
             Notification["Notification :50059"]
         end
         
-        Chat["Chat :50052<br/>(双向流)"]
+        Chat["Chat :50052<br/>(gRPC 双向流)"]
     end
 
-    subgraph 数据层
-        Postgres["PostgreSQL"]
-        Redis["Redis"]
-        RabbitMQ["RabbitMQ"]
+    subgraph 数据层["数据层"]
+        Postgres["PostgreSQL<br/>(lesser_db + lesser_chat_db)"]
+        Redis["Redis<br/>(缓存/Pub-Sub)"]
+        RabbitMQ["RabbitMQ<br/>(异步事件)"]
     end
 
-    Flutter -->|gRPC| Traefik
+    Flutter -->|gRPC / gRPC-Web| Traefik
     Traefik --> Gateway
     Traefik --> Chat
     Gateway --> ServiceCluster
     ServiceCluster --> Postgres
     ServiceCluster --> Redis
-    ServiceCluster -.-> RabbitMQ
+    ServiceCluster -.->|异步事件| RabbitMQ
     Chat --> Postgres
     Chat --> Redis
 ```
 
-### 通信协议
+---
+
+## 服务间调用关系
+
+```mermaid
+graph LR
+    subgraph 客户端请求入口
+        Client["Flutter Client"]
+    end
+
+    subgraph 网关
+        GW["Gateway :50053"]
+    end
+
+    subgraph 业务服务
+        Auth["Auth"]
+        User["User"]
+        Content["Content"]
+        Interaction["Interaction"]
+        Comment["Comment"]
+        Timeline["Timeline"]
+        Search["Search"]
+        Notification["Notification"]
+    end
+
+    subgraph 实时服务
+        Chat["Chat (双向流)"]
+    end
+
+    subgraph 消息队列
+        MQ["RabbitMQ"]
+    end
+
+    Client --> GW
+    Client --> Chat
+
+    GW --> Auth
+    GW --> User
+    GW --> Content
+    GW --> Interaction
+    GW --> Comment
+    GW --> Timeline
+    GW --> Search
+    GW --> Notification
+
+    %% 服务间 gRPC 同步调用
+    Comment -->|UpdateCounter / CheckExists| Content
+    Interaction -->|UpdateCounter / CheckExists| Content
+    Timeline -->|BatchGetInteractionStatus| Interaction
+    Chat -->|GetUser| Auth
+
+    %% RabbitMQ 异步事件
+    Comment -.->|comment.created / comment.liked| MQ
+    MQ -.->|消费事件| Notification
+```
+
+---
+
+## 通信协议
 
 | 协议 | 用途 |
 |------|------|
-| gRPC | 所有 API 调用 |
-| gRPC 双向流 | Chat 实时消息 |
-| gRPC-Web | Web 客户端 |
+| gRPC | 所有 API 调用（客户端 → Gateway → 服务） |
+| gRPC 双向流 | Chat 实时消息（客户端 ↔ Chat Service） |
+| gRPC-Web | Web 客户端通过 Traefik 转换 |
+
+---
+
+## 服务间通信原则
+
+### 强一致性 vs 最终一致性
+
+| 场景 | 一致性要求 | 通信方式 | 说明 |
+|------|-----------|---------|------|
+| 计数更新 | 强一致性 | gRPC 同步 | 点赞/评论/转发计数需要立即反映 |
+| 权限检查 | 强一致性 | gRPC 同步 | 内容存在性、成员权限必须实时验证 |
+| 数据查询 | 强一致性 | gRPC 同步 | 用户资料、内容详情等 |
+| 通知推送 | 最终一致性 | RabbitMQ | 通知延迟几秒可接受 |
+| 搜索索引 | 最终一致性 | RabbitMQ | 搜索结果延迟可接受 |
+
+### gRPC 同步调用（强一致性）
+
+```
+┌─────────────────────────────────────────────────────────────────────────┐
+│                        服务间 gRPC 调用关系                              │
+└─────────────────────────────────────────────────────────────────────────┘
+
+Comment ──gRPC──► Content
+  │                 ├── UpdateCounter (评论计数 +1/-1)
+  │                 ├── CheckContentExists (验证内容存在)
+  │                 └── GetContentAuthorID (获取作者，用于通知)
+  │
+Interaction ──gRPC──► Content
+  │                    ├── UpdateCounter (点赞/收藏/转发计数)
+  │                    └── CheckContentExists
+  │
+Timeline ──gRPC──► Interaction
+  │                 └── BatchGetInteractionStatus (批量获取交互状态)
+  │
+Chat ──gRPC──► Auth
+                └── GetUser (获取用户信息，带 Redis 缓存)
+```
+
+### RabbitMQ 异步消息（最终一致性）
+
+```
+┌─────────────────────────────────────────────────────────────────────────┐
+│                        RabbitMQ 事件流                                   │
+└─────────────────────────────────────────────────────────────────────────┘
+
+事件生产者                    Exchange              事件消费者
+─────────────────────────────────────────────────────────────────────────
+Comment Service ──► [comment.created] ──► Notification Service
+                    [comment.liked]           └── 创建评论/点赞通知
+
+(待实现)
+Interaction Service ──► [content.liked] ──► Notification Service
+                        [content.reposted]       └── 创建点赞/转发通知
+
+User Service ──► [user.followed] ──► Notification Service
+                                        └── 创建关注通知
+
+Content Service ──► [content.created] ──► Search Service
+                    [content.updated]        └── 更新搜索索引
+                    [content.deleted]
+```
 
 ---
 
 ## 服务职责
+
+### Gateway (:50053)
+
+API 网关，统一入口：
+- JWT 验签（从 Redis 获取公钥）
+- 请求限流
+- 路由转发到后端服务
+- 代理所有业务服务的 gRPC 接口
+
+### Auth Service (:50054)
+
+认证服务：
+- 用户注册/登录
+- JWT Token 签发/刷新
+- 公钥分发（供 Gateway 验签）
+- 用户封禁管理
+
+### User Service (:50055)
+
+用户系统：
+- 用户资料 CRUD
+- 关注/取消关注
+- 屏蔽系统（不看他/不让他看我/拉黑）
+- 用户设置（隐私/通知）
+- 批量获取用户资料
 
 ### Content Service (:50056)
 
@@ -86,13 +230,16 @@ Interaction Service ──gRPC──► Content Service
 ### Comment Service (:50061)
 
 评论系统：
-- 评论 CRUD
-- 评论列表（支持嵌套回复）
-- 评论计数
+- 评论 CRUD（支持嵌套回复）
+- 评论列表（四种排序：最早/最新/最热/AI推荐）
+- 评论点赞/取消点赞
+- 发布 RabbitMQ 事件（comment.created / comment.liked）
 
 ```
 Comment Service ──gRPC──► Content Service
-                          (UpdateCounter, CheckContentExists)
+                          (UpdateCounter, CheckContentExists, GetContentAuthorID)
+                ──MQ──► Notification Service
+                        (异步通知)
 ```
 
 ### Timeline Service (:50062)
@@ -100,7 +247,7 @@ Comment Service ──gRPC──► Content Service
 Feed 流聚合：
 - 关注用户 Feed
 - 用户主页 Feed
-- 热门 Feed
+- 热门 Feed / 推荐 Feed
 - 内容详情（含交互状态）
 
 ```
@@ -108,27 +255,97 @@ Timeline Service ──gRPC──► Interaction Service
                            (BatchGetInteractionStatus)
 ```
 
-### 其他服务
+### Search Service (:50058)
 
-| 服务 | 端口 | 职责 |
-|------|------|------|
-| Auth | 50054 | 登录/注册/Token/JWT 密钥 |
-| User | 50055 | 用户资料/关注关系 |
-| Search | 50058 | 搜索 |
-| Notification | 50059 | 通知 |
-| Chat | 50052 | 实时聊天（双向流） |
+搜索服务：
+- 帖子搜索
+- 用户搜索
+- （待实现）消费 RabbitMQ 事件更新索引
+
+### Notification Service (:50059)
+
+通知系统：
+- 通知列表查询
+- 标记已读
+- 未读数统计
+- （待实现）消费 RabbitMQ 事件创建通知
+
+### Chat Service (:50052)
+
+实时聊天（gRPC 双向流）：
+- 会话管理（私聊/群聊）
+- 消息发送/接收
+- 实时推送（通过 Redis Pub/Sub）
+- 未读消息计数
+
+```
+Chat Service ──gRPC──► Auth Service
+                       (GetUser，获取用户信息)
+```
+
+### SuperUser Service (:50063)
+
+超级管理员服务（独立于普通用户系统）：
+- 独立认证体系（与普通用户完全隔离）
+- 用户管理（封禁/解封/删除/强制修改）
+- 内容管理（删除/批量删除）
+- 系统监控（数据库/Redis/RabbitMQ 状态）
+- 数据库操作（只读 SQL 查询、表结构查看）
+- 审计日志（所有操作记录）
+
+```
+SuperUser Service ──直连──► PostgreSQL (系统级访问)
+                  ──直连──► Redis (状态监控)
+                  ──直连──► RabbitMQ (状态监控)
+```
+
+**安全特性：**
+- 独立的 JWT 密钥和认证体系
+- 所有操作记录审计日志
+- SQL 查询仅允许 SELECT 语句
+- 与普通用户数据完全隔离
 
 ---
 
-## 数据库表归属
+## 数据库设计
 
-| 表 | 服务 |
-|------|------|
-| contents | Content |
-| likes, bookmarks, reposts | Interaction |
-| comments | Comment |
-| users, follows | User |
-| conversations, messages | Chat |
+### 数据库分离
+
+| 数据库 | 服务 | 说明 |
+|--------|------|------|
+| lesser_db | 主业务服务 | 用户、内容、交互、评论、通知等 |
+| lesser_chat_db | Chat 服务 | 会话、消息（独立数据库，便于扩展） |
+
+### 表归属
+
+**lesser_db:**
+
+| 表 | 服务 | 说明 |
+|------|------|------|
+| users | User | 用户基本信息 |
+| follows | User | 关注关系 |
+| blocks | User | 屏蔽关系 |
+| user_privacy_settings | User | 隐私设置 |
+| user_notification_settings | User | 通知设置 |
+| follow_requests | User | 关注请求（私密账户） |
+| contents | Content | 内容（Story/Short/Article） |
+| likes | Interaction | 点赞记录 |
+| bookmarks | Interaction | 收藏记录 |
+| reposts | Interaction | 转发记录 |
+| comments | Comment | 评论 |
+| comment_likes | Comment | 评论点赞 |
+
+| superusers | SuperUser | 超级管理员账户 |
+| superuser_audit_logs | SuperUser | 审计日志 |
+| superuser_sessions | SuperUser | 会话管理 |
+
+**lesser_chat_db:**
+
+| 表 | 服务 | 说明 |
+|------|------|------|
+| chat_conversations | Chat | 会话 |
+| chat_conversation_members | Chat | 会话成员 |
+| chat_messages | Chat | 消息（Telegram 风格） |
 
 ---
 
@@ -143,7 +360,7 @@ Timeline Service ──gRPC──► Interaction Service
    │<── Subscribed ─────────│
    │                        │
    │── SendMessage ────────>│
-   │<── NewMessage ─────────│  (广播)
+   │<── NewMessage ─────────│  (广播给所有订阅者)
    │                        │
    │── Typing ─────────────>│
    │<── TypingIndicator ────│
@@ -158,27 +375,70 @@ Timeline Service ──gRPC──► Interaction Service
 
 服务端事件：`NewMessage`, `MessageRead`, `TypingIndicator`, `Pong`, `Error`
 
-### Flutter 使用
-
-```dart
-// 订阅会话
-eventHandler.subscribeConversation(conversationId);
-
-// 监听新消息
-eventHandler.onNewMessage.listen((msg) => ...);
-
-// 发送消息
-await eventHandler.sendMessage(conversationId: id, content: text);
-
-// 取消订阅
-eventHandler.unsubscribeConversation(conversationId);
-```
-
 ### 重连机制
 
 - 指数退避：1s → 2s → 4s → ... → 30s（最大）
 - 重连后自动重新订阅之前的会话
 - 心跳间隔：30s，超时：10s
+
+---
+
+## RabbitMQ 事件定义
+
+### Exchange 配置
+
+| Exchange | Type | 说明 |
+|----------|------|------|
+| gateway.direct | direct | 主事件交换机 |
+
+### 事件路由键
+
+| 路由键 | 生产者 | 消费者 | 说明 |
+|--------|--------|--------|------|
+| comment.created | Comment | Notification | 评论创建通知 |
+| comment.liked | Comment | Notification | 评论点赞通知 |
+| content.created | Content | Search | 索引新内容 |
+| content.updated | Content | Search | 更新索引 |
+| content.deleted | Content | Search | 删除索引 |
+| content.liked | Interaction | Notification | 内容点赞通知 |
+| content.reposted | Interaction | Notification | 转发通知 |
+| user.followed | User | Notification | 关注通知 |
+| user.mentioned | Content/Comment | Notification | @提及通知 |
+
+### 事件数据结构
+
+```go
+// 评论创建事件
+type CommentCreatedEvent struct {
+    CommentID       string `json:"comment_id"`
+    AuthorID        string `json:"author_id"`
+    ContentID       string `json:"content_id"`
+    ContentAuthorID string `json:"content_author_id"`  // 通知接收者
+    ParentID        string `json:"parent_id"`          // 回复场景
+    ParentAuthorID  string `json:"parent_author_id"`   // 回复通知接收者
+    Text            string `json:"text"`               // 评论内容摘要
+}
+
+// 评论点赞事件
+type CommentLikedEvent struct {
+    CommentID       string `json:"comment_id"`
+    CommentAuthorID string `json:"comment_author_id"`  // 通知接收者
+    LikerID         string `json:"liker_id"`           // 点赞者
+}
+
+// 内容点赞事件
+type ContentLikedEvent struct {
+    ContentID       string `json:"content_id"`
+    ContentAuthorID string `json:"content_author_id"`  // 通知接收者
+    LikerID         string `json:"liker_id"`           // 点赞者
+}
+
+// 用户关注事件
+type UserFollowedEvent struct {
+    FollowerID  string `json:"follower_id"`   // 关注者
+    FollowingID string `json:"following_id"`  // 被关注者（通知接收者）
+}
+```
 
 ---
 
@@ -188,22 +448,32 @@ eventHandler.unsubscribeConversation(conversationId);
 
 ```
 service/
-├── gateway/           # API 网关
-├── auth/              # 认证
-├── user/              # 用户
-├── content/           # 内容
-├── interaction/       # 交互（点赞/收藏/转发）
-├── comment/           # 评论
-├── timeline/          # 时间线（Feed 流）
-├── search/            # 搜索
-├── notification/      # 通知
-├── chat/              # 聊天
-└── pkg/               # 公共库
-    ├── database/      # PostgreSQL
-    ├── cache/         # Redis
-    ├── broker/        # RabbitMQ
+├── gateway/           # API 网关（路由转发）
+├── auth/              # 认证服务
+├── user/              # 用户服务
+├── content/           # 内容服务
+├── interaction/       # 交互服务（点赞/收藏/转发）
+├── comment/           # 评论服务
+├── timeline/          # 时间线服务（Feed 流）
+├── search/            # 搜索服务
+├── notification/      # 通知服务
+├── chat/              # 聊天服务（gRPC 双向流）
+└── pkg/               # 共享公共库
+    ├── app/           # 应用生命周期
+    ├── auth/          # JWT 工具
+    ├── broker/        # RabbitMQ 封装
+    ├── cache/         # Redis 封装
+    ├── config/        # 配置管理
+    ├── database/      # PostgreSQL 封装
+    ├── errors/        # 错误处理
+    ├── grpcclient/    # gRPC 客户端工具
+    ├── grpcserver/    # gRPC 服务端工具
+    ├── health/        # 健康检查
+    ├── id/            # ID 生成
     ├── logger/        # slog 日志
-    └── grpcclient/    # gRPC 客户端
+    ├── middleware/    # 中间件
+    ├── pagination/    # 分页工具
+    └── validator/     # 参数校验
 ```
 
 ### Flutter 客户端
@@ -214,7 +484,7 @@ lib/
 │   ├── network/       # gRPC 客户端、双向流
 │   ├── di/            # 依赖注入
 │   └── router/        # 路由
-├── features/          # 功能模块
+├── features/          # 功能模块（Clean Architecture）
 │   ├── auth/
 │   ├── chat/
 │   ├── feeds/
@@ -228,41 +498,105 @@ lib/
 
 ### 服务端口
 
-| 服务 | 端口 |
-|------|------|
-| Traefik HTTP | 80 |
-| Traefik gRPC | 50050 |
-| Gateway | 50053 |
-| Auth | 50054 |
-| User | 50055 |
-| Content | 50056 |
-| Search | 50058 |
-| Notification | 50059 |
-| Interaction | 50060 |
-| Comment | 50061 |
-| Timeline | 50062 |
-| Chat | 50052 |
+| 服务 | 端口 | 说明 |
+|------|------|------|
+| Traefik HTTP | 80 | HTTP 入口 |
+| Traefik gRPC | 50050 | gRPC 统一入口 |
+| Gateway | 50053 | API 网关 |
+| Auth | 50054 | 认证服务 |
+| User | 50055 | 用户服务 |
+| Content | 50056 | 内容服务 |
+| Search | 50058 | 搜索服务 |
+| Notification | 50059 | 通知服务 |
+| Interaction | 50060 | 交互服务 |
+| Comment | 50061 | 评论服务 |
+| Timeline | 50062 | 时间线服务 |
+| Chat | 50052 | 聊天服务（双向流） |
+| SuperUser | 50063 | 超级管理员服务 |
 
 ### 环境变量
 
-| 变量 | 默认值 |
-|------|--------|
-| DB_HOST | postgres |
-| DB_PORT | 5432 |
-| DB_USER | lesser |
-| DB_NAME | lesser_db |
-| REDIS_URL | redis://redis:6379/0 |
-| CONTENT_SERVICE_ADDR | content:50056 |
-| INTERACTION_SERVICE_ADDR | interaction:50060 |
-| COMMENT_SERVICE_ADDR | comment:50061 |
-| TIMELINE_SERVICE_ADDR | timeline:50062 |
+| 变量 | 默认值 | 说明 |
+|------|--------|------|
+| DB_HOST | postgres | 数据库主机 |
+| DB_PORT | 5432 | 数据库端口 |
+| DB_USER | lesser | 数据库用户 |
+| DB_NAME | lesser_db | 数据库名 |
+| REDIS_URL | redis://redis:6379/0 | Redis 连接 |
+| RABBITMQ_URL | amqp://guest:guest@rabbitmq:5672/ | RabbitMQ 连接 |
+| CONTENT_SERVICE_ADDR | content:50056 | Content 服务地址 |
+| INTERACTION_SERVICE_ADDR | interaction:50060 | Interaction 服务地址 |
+| AUTH_GRPC_ADDR | auth:50054 | Auth 服务地址 |
 
 ---
 
 ## 新增路由流程
 
-1. `protos/<service>/<service>.proto` - 定义消息和 RPC
-2. `service/<service>/internal/handler/` - gRPC 处理器
-3. `service/<service>/internal/service/` - 业务逻辑
-4. `service/gateway/internal/router/` - Gateway 路由
-5. `client/mobile_flutter/lib/features/<module>/` - 客户端
+```
+┌─────────────────────────────────────────────────────────────────────────┐
+│                        新增路由修改流程                                   │
+└─────────────────────────────────────────────────────────────────────────┘
+
+1. Proto 定义
+   └── protos/<service>/<service>.proto
+       ├── 添加 message 定义
+       └── 添加 rpc 方法
+
+2. 后端服务实现
+   └── service/<service>/
+       ├── internal/handler/     # gRPC 处理器
+       ├── internal/service/     # 业务逻辑
+       └── internal/repository/  # 数据访问
+
+3. Gateway 代理
+   └── service/gateway/internal/server/service_proxy.go
+       └── 添加代理方法
+
+4. 客户端实现
+   └── client/mobile_flutter/lib/features/<module>/
+       ├── data/datasources/     # gRPC 数据源
+       ├── data/repositories/    # 仓库实现
+       ├── domain/usecases/      # 用例
+       └── presentation/         # UI 层
+```
+
+### 检查清单
+
+- [ ] Proto 定义已更新
+- [ ] 运行 `devlesser proto` 生成代码
+- [ ] Service gRPC 处理器已实现
+- [ ] Gateway 代理已添加
+- [ ] 客户端 gRPC 数据源已实现
+- [ ] 客户端 UI 已对接
+
+---
+
+## 客户端交互流程
+
+### 评论列表（含用户信息）
+
+```
+1. 请求评论列表
+   Flutter ──► Gateway ──► Comment Service
+                           └── ListComments(content_id, sort_by)
+                           └── 返回 [Comment{author_id, text, like_count, ...}]
+
+2. 提取 author_ids，批量获取用户信息
+   Flutter ──► Gateway ──► User Service
+                           └── BatchGetProfiles([author_id1, author_id2, ...])
+                           └── 返回 {author_id: Profile{username, avatar_url, ...}}
+
+3. 客户端合并数据显示
+```
+
+### 从 UserCard 发起私聊
+
+```
+1. 检查/创建私聊会话
+   Flutter ──► Chat Service
+               └── CreateConversation(type=PRIVATE, members=[me, target])
+               └── 如果已存在则返回现有会话
+
+2. 跳转到聊天界面
+   Navigator.push(ChatPage(conversationId))
+```

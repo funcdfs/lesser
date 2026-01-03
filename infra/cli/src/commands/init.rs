@@ -6,7 +6,7 @@ use crate::docker::DockerCompose;
 use crate::ui::{self, Spinner};
 
 /// 超级管理员配置
-const SUPERUSER: (&str, &str, &str, &str) = ("funcdfs", "funcdfs@lesser.dev", "fw142857", "Funcdfs");
+const SUPERUSER: (&str, &str, &str, &str) = ("funcdfs", "funcdfs@gmail.com", "fw142857", "funcdfs");
 
 /// 测试用户配置
 const TEST_USERS: &[(&str, &str, &str, &str)] = &[

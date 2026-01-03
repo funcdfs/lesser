@@ -42,7 +42,7 @@ generate_go() {
     fi
     
     # 服务列表
-    SERVICES=("gateway" "auth" "user" "content" "interaction" "comment" "timeline" "search" "notification" "chat")
+    SERVICES=("gateway" "auth" "user" "content" "interaction" "comment" "timeline" "search" "notification" "chat" "superuser")
     
     for service in "${SERVICES[@]}"; do
         SERVICE_DIR="$PROJECT_ROOT/service/$service"
@@ -146,6 +146,29 @@ generate_go() {
                         --go-grpc_opt=paths=source_relative \
                         --go-grpc_opt=Mcommon/common.proto=github.com/funcdfs/lesser/pkg/proto/common \
                         "$PROTO_DIR/$service/$service.proto"
+                # Chat 服务需要 auth proto 依赖
+                elif [ "$service" = "chat" ]; then
+                    # 先生成 auth proto
+                    protoc \
+                        --proto_path="$PROTO_DIR" \
+                        --go_out="$PROTO_OUT" \
+                        --go_opt=paths=source_relative \
+                        --go_opt=Mcommon/common.proto=github.com/funcdfs/lesser/chat/proto/common \
+                        --go-grpc_out="$PROTO_OUT" \
+                        --go-grpc_opt=paths=source_relative \
+                        --go-grpc_opt=Mcommon/common.proto=github.com/funcdfs/lesser/chat/proto/common \
+                        "$PROTO_DIR/auth/auth.proto"
+                    
+                    # 生成 chat proto
+                    protoc \
+                        --proto_path="$PROTO_DIR" \
+                        --go_out="$PROTO_OUT" \
+                        --go_opt=paths=source_relative \
+                        --go_opt=Mcommon/common.proto=github.com/funcdfs/lesser/chat/proto/common \
+                        --go-grpc_out="$PROTO_OUT" \
+                        --go-grpc_opt=paths=source_relative \
+                        --go-grpc_opt=Mcommon/common.proto=github.com/funcdfs/lesser/chat/proto/common \
+                        "$PROTO_DIR/$service/$service.proto"
                 else
                     protoc \
                         --proto_path="$PROTO_DIR" \
@@ -162,6 +185,17 @@ generate_go() {
     # Gateway 需要代理所有服务，生成额外的 proto
     echo "  生成 Gateway 代理所需的 proto..."
     GATEWAY_PROTO_OUT="$PROJECT_ROOT/service/gateway/proto"
+    
+    # Gateway 需要 auth proto (用于认证服务代理)
+    protoc \
+        --proto_path="$PROTO_DIR" \
+        --go_out="$GATEWAY_PROTO_OUT" \
+        --go_opt=paths=source_relative \
+        --go_opt=Mcommon/common.proto=github.com/funcdfs/lesser/gateway/proto/common \
+        --go-grpc_out="$GATEWAY_PROTO_OUT" \
+        --go-grpc_opt=paths=source_relative \
+        --go-grpc_opt=Mcommon/common.proto=github.com/funcdfs/lesser/gateway/proto/common \
+        "$PROTO_DIR/auth/auth.proto" 2>/dev/null || true
     
     # Gateway 需要 user proto (用于 search 返回类型)
     protoc \
@@ -184,19 +218,6 @@ generate_go() {
         --go-grpc_opt=paths=source_relative \
         --go-grpc_opt=Mcommon/common.proto=github.com/funcdfs/lesser/gateway/proto/common \
         "$PROTO_DIR/content/content.proto" 2>/dev/null || true
-    
-    # Gateway 需要 feed proto
-    protoc \
-        --proto_path="$PROTO_DIR" \
-        --go_out="$GATEWAY_PROTO_OUT" \
-        --go_opt=paths=source_relative \
-        --go_opt=Mcommon/common.proto=github.com/funcdfs/lesser/gateway/proto/common \
-        --go_opt=Mcontent/content.proto=github.com/funcdfs/lesser/gateway/proto/content \
-        --go-grpc_out="$GATEWAY_PROTO_OUT" \
-        --go-grpc_opt=paths=source_relative \
-        --go-grpc_opt=Mcommon/common.proto=github.com/funcdfs/lesser/gateway/proto/common \
-        --go-grpc_opt=Mcontent/content.proto=github.com/funcdfs/lesser/gateway/proto/content \
-        "$PROTO_DIR/feed/feed.proto" 2>/dev/null || true
     
     # Gateway 需要 search proto
     protoc \
@@ -248,6 +269,17 @@ generate_go() {
         --go-grpc_opt=Mcontent/content.proto=github.com/funcdfs/lesser/gateway/proto/content \
         "$PROTO_DIR/timeline/timeline.proto" 2>/dev/null || true
     
+    # Gateway 需要 notification proto
+    protoc \
+        --proto_path="$PROTO_DIR" \
+        --go_out="$GATEWAY_PROTO_OUT" \
+        --go_opt=paths=source_relative \
+        --go_opt=Mcommon/common.proto=github.com/funcdfs/lesser/gateway/proto/common \
+        --go-grpc_out="$GATEWAY_PROTO_OUT" \
+        --go-grpc_opt=paths=source_relative \
+        --go-grpc_opt=Mcommon/common.proto=github.com/funcdfs/lesser/gateway/proto/common \
+        "$PROTO_DIR/notification/notification.proto" 2>/dev/null || true
+    
     echo "✅ Go 代码生成完成"
 }
 
@@ -281,6 +313,7 @@ generate_dart() {
         "notification/notification.proto"
         "chat/chat.proto"
         "gateway/gateway.proto"
+        "superuser/superuser.proto"
     )
     
     for proto in "${PROTOS[@]}"; do

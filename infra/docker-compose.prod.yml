@@ -1,13 +1,18 @@
 # ============================================================================
 # Docker Compose - Production Environment
 # ============================================================================
-# Usage: docker compose -f infra/docker-compose.prod.yml --env-file infra/.env.prod up -d
+# gRPC 全面迁移后的配置 - 纯 gRPC 架构
+# Usage: docker compose -f infra/docker-compose.prod.yml --env-file infra/env/prod.env up -d
 # ============================================================================
 
 services:
   # ==========================================================================
-  # API Gateway - Traefik (Production with HTTPS)
+  # INFRA - Infrastructure Services
   # ==========================================================================
+
+  # --------------------------------------------------------------------------
+  # API Gateway - Traefik (Production with HTTPS)
+  # --------------------------------------------------------------------------
   traefik:
     image: traefik:v3.2
     container_name: traefik
@@ -20,9 +25,9 @@ services:
       - "--certificatesresolvers.letsencrypt.acme.email=${ACME_EMAIL}"
       - "--certificatesresolvers.letsencrypt.acme.storage=/letsencrypt/acme.json"
     ports:
-      - "${EXTERNAL_HTTP_PORT:-80}:80"
-      - "${EXTERNAL_HTTPS_PORT:-443}:443"
-      - "${EXTERNAL_GRPC_PORT:-50050}:50050"
+      - "${TRAEFIK_HTTP_PORT:-80}:80"
+      - "${TRAEFIK_HTTPS_PORT:-443}:443"
+      - "${TRAEFIK_GRPC_PORT:-50050}:50050"
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock:ro
       - ./gateway/traefik.yml:/etc/traefik/traefik.yml:ro
@@ -42,20 +47,24 @@ services:
           cpus: '0.5'
           memory: 256M
 
-  # ==========================================================================
+  # --------------------------------------------------------------------------
   # Database - PostgreSQL (Production)
-  # ==========================================================================
+  # --------------------------------------------------------------------------
   postgres:
     image: postgres:17-alpine
     container_name: postgres
     restart: always
+    command: postgres -c config_file=/etc/postgresql/postgresql.conf
     environment:
       POSTGRES_USER: ${POSTGRES_USER}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
       POSTGRES_DB: ${POSTGRES_DB}
     volumes:
       - postgres_data:/var/lib/postgresql/data
-      - ./database/init.sql:/docker-entrypoint-initdb.d/init.sql:ro
+      - ./database/init.sql:/docker-entrypoint-initdb.d/01-init.sql:ro
+      - ./database/init-chat.sql:/docker-entrypoint-initdb.d/02-init-chat.sql:ro
+      - ../scripts/database/docker-entrypoint-initdb.sh:/docker-entrypoint-initdb.d/03-create-chat-db.sh:ro
+      - ./database/postgresql.conf:/etc/postgresql/postgresql.conf:ro
     networks:
       - app-network
     healthcheck:
@@ -70,9 +79,9 @@ services:
           cpus: '2'
           memory: 2G
 
-  # ==========================================================================
+  # --------------------------------------------------------------------------
   # Cache - Redis (Production with Password)
-  # ==========================================================================
+  # --------------------------------------------------------------------------
   redis:
     image: redis:7.4-alpine
     container_name: redis
@@ -95,16 +104,16 @@ services:
           cpus: '1'
           memory: 512M
 
-  # ==========================================================================
+  # --------------------------------------------------------------------------
   # Message Broker - RabbitMQ (Production)
-  # ==========================================================================
+  # --------------------------------------------------------------------------
   rabbitmq:
     image: rabbitmq:3-management-alpine
     container_name: rabbitmq
     restart: always
     environment:
-      RABBITMQ_DEFAULT_USER: ${RABBITMQ_USER:-guest}
-      RABBITMQ_DEFAULT_PASS: ${RABBITMQ_PASSWORD:-guest}
+      RABBITMQ_DEFAULT_USER: ${RABBITMQ_USER:-superuser}
+      RABBITMQ_DEFAULT_PASS: ${RABBITMQ_PASSWORD}
     volumes:
       - rabbitmq_data:/var/lib/rabbitmq
     networks:
@@ -121,261 +130,79 @@ services:
           cpus: '1'
           memory: 512M
 
+
   # ==========================================================================
-  # Gateway Service (Production)
+  # SERVICES - gRPC Service Cluster
   # ==========================================================================
+
+  # --------------------------------------------------------------------------
+  # Gateway Service (统一 API 入口 - JWT 验签、限流、路由)
+  # --------------------------------------------------------------------------
   gateway:
     build:
-      context: ../service/gateway
-      dockerfile: Dockerfile.prod
+      context: ../service
+      dockerfile: Dockerfile
+      args:
+        SERVICE_NAME: gateway
+        GRPC_PORT: 50053
     container_name: gateway
     restart: always
     environment:
+      - ENV=production
       - GRPC_PORT=${GATEWAY_GRPC_PORT:-50053}
-      - RABBITMQ_URL=amqp://${RABBITMQ_USER:-guest}:${RABBITMQ_PASSWORD:-guest}@rabbitmq:5672/
-      - LOG_LEVEL=${LOG_LEVEL:-warning}
+      - AUTH_SERVICE_ADDR=auth:50054
+      - USER_SERVICE_ADDR=user:50055
+      - CONTENT_SERVICE_ADDR=content:50056
+      - INTERACTION_SERVICE_ADDR=interaction:50060
+      - COMMENT_SERVICE_ADDR=comment:50061
+      - TIMELINE_SERVICE_ADDR=timeline:50062
+      - SEARCH_SERVICE_ADDR=search:50058
+      - NOTIFICATION_SERVICE_ADDR=notification:50059
+      - CHAT_SERVICE_ADDR=chat:50052
+      - REDIS_URL=redis://:${REDIS_PASSWORD}@redis:6379/0
     expose:
       - "50053"
     depends_on:
-      rabbitmq:
+      redis:
         condition: service_healthy
     networks:
       - app-network
+    healthcheck:
+      test: ["CMD", "nc", "-z", "localhost", "50053"]
+      interval: 30s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
     deploy:
       resources:
         limits:
           cpus: '1'
           memory: 256M
 
-  # ==========================================================================
-  # Auth Worker (Production)
-  # ==========================================================================
-  auth-worker:
+  # --------------------------------------------------------------------------
+  # Auth Service (认证服务 - 登录/注册/Token管理)
+  # --------------------------------------------------------------------------
+  auth:
     build:
-      context: ../service/auth_worker
-      dockerfile: Dockerfile.prod
-    container_name: auth-worker
+      context: ../service
+      dockerfile: Dockerfile
+      args:
+        SERVICE_NAME: auth
+        GRPC_PORT: 50054
+    container_name: auth
     restart: always
     environment:
-      - RABBITMQ_URL=amqp://${RABBITMQ_USER:-guest}:${RABBITMQ_PASSWORD:-guest}@rabbitmq:5672/
+      - ENV=production
+      - GRPC_PORT=50054
       - DB_HOST=postgres
       - DB_PORT=5432
       - DB_USER=${POSTGRES_USER}
       - DB_PASSWORD=${POSTGRES_PASSWORD}
       - DB_NAME=${POSTGRES_DB}
-      - JWT_SECRET=${JWT_SECRET_KEY}
-      - LOG_LEVEL=${LOG_LEVEL:-warning}
-    depends_on:
-      postgres:
-        condition: service_healthy
-      rabbitmq:
-        condition: service_healthy
-    networks:
-      - app-network
-    deploy:
-      resources:
-        limits:
-          cpus: '0.5'
-          memory: 256M
-
-  # ==========================================================================
-  # Post Worker (Production)
-  # ==========================================================================
-  post-worker:
-    build:
-      context: ../service/post_worker
-      dockerfile: Dockerfile.prod
-    container_name: post-worker
-    restart: always
-    environment:
-      - RABBITMQ_URL=amqp://${RABBITMQ_USER:-guest}:${RABBITMQ_PASSWORD:-guest}@rabbitmq:5672/
-      - DB_HOST=postgres
-      - DB_PORT=5432
-      - DB_USER=${POSTGRES_USER}
-      - DB_PASSWORD=${POSTGRES_PASSWORD}
-      - DB_NAME=${POSTGRES_DB}
-      - LOG_LEVEL=${LOG_LEVEL:-warning}
-    depends_on:
-      postgres:
-        condition: service_healthy
-      rabbitmq:
-        condition: service_healthy
-    networks:
-      - app-network
-    deploy:
-      resources:
-        limits:
-          cpus: '0.5'
-          memory: 256M
-
-  # ==========================================================================
-  # Feed Worker (Production)
-  # ==========================================================================
-  feed-worker:
-    build:
-      context: ../service/feed_worker
-      dockerfile: Dockerfile.prod
-    container_name: feed-worker
-    restart: always
-    environment:
-      - RABBITMQ_URL=amqp://${RABBITMQ_USER:-guest}:${RABBITMQ_PASSWORD:-guest}@rabbitmq:5672/
-      - DB_HOST=postgres
-      - DB_PORT=5432
-      - DB_USER=${POSTGRES_USER}
-      - DB_PASSWORD=${POSTGRES_PASSWORD}
-      - DB_NAME=${POSTGRES_DB}
-      - LOG_LEVEL=${LOG_LEVEL:-warning}
-    depends_on:
-      postgres:
-        condition: service_healthy
-      rabbitmq:
-        condition: service_healthy
-    networks:
-      - app-network
-    deploy:
-      resources:
-        limits:
-          cpus: '0.5'
-          memory: 256M
-
-  # ==========================================================================
-  # Notification Worker (Production)
-  # ==========================================================================
-  notification-worker:
-    build:
-      context: ../service/notification_worker
-      dockerfile: Dockerfile.prod
-    container_name: notification-worker
-    restart: always
-    environment:
-      - RABBITMQ_URL=amqp://${RABBITMQ_USER:-guest}:${RABBITMQ_PASSWORD:-guest}@rabbitmq:5672/
-      - DB_HOST=postgres
-      - DB_PORT=5432
-      - DB_USER=${POSTGRES_USER}
-      - DB_PASSWORD=${POSTGRES_PASSWORD}
-      - DB_NAME=${POSTGRES_DB}
-      - LOG_LEVEL=${LOG_LEVEL:-warning}
-    depends_on:
-      postgres:
-        condition: service_healthy
-      rabbitmq:
-        condition: service_healthy
-    networks:
-      - app-network
-    deploy:
-      resources:
-        limits:
-          cpus: '0.5'
-          memory: 256M
-
-  # ==========================================================================
-  # User Worker (Production)
-  # ==========================================================================
-  user-worker:
-    build:
-      context: ../service/user_worker
-      dockerfile: Dockerfile.prod
-    container_name: user-worker
-    restart: always
-    environment:
-      - RABBITMQ_URL=amqp://${RABBITMQ_USER:-guest}:${RABBITMQ_PASSWORD:-guest}@rabbitmq:5672/
-      - DB_HOST=postgres
-      - DB_PORT=5432
-      - DB_USER=${POSTGRES_USER}
-      - DB_PASSWORD=${POSTGRES_PASSWORD}
-      - DB_NAME=${POSTGRES_DB}
-      - LOG_LEVEL=${LOG_LEVEL:-warning}
-    depends_on:
-      postgres:
-        condition: service_healthy
-      rabbitmq:
-        condition: service_healthy
-    networks:
-      - app-network
-    deploy:
-      resources:
-        limits:
-          cpus: '0.5'
-          memory: 256M
-
-  # ==========================================================================
-  # Search Worker (Production)
-  # ==========================================================================
-  search-worker:
-    build:
-      context: ../service/search_worker
-      dockerfile: Dockerfile.prod
-    container_name: search-worker
-    restart: always
-    environment:
-      - RABBITMQ_URL=amqp://${RABBITMQ_USER:-guest}:${RABBITMQ_PASSWORD:-guest}@rabbitmq:5672/
-      - DB_HOST=postgres
-      - DB_PORT=5432
-      - DB_USER=${POSTGRES_USER}
-      - DB_PASSWORD=${POSTGRES_PASSWORD}
-      - DB_NAME=${POSTGRES_DB}
-      - LOG_LEVEL=${LOG_LEVEL:-warning}
-    depends_on:
-      postgres:
-        condition: service_healthy
-      rabbitmq:
-        condition: service_healthy
-    networks:
-      - app-network
-    deploy:
-      resources:
-        limits:
-          cpus: '0.5'
-          memory: 256M
-
-  # ==========================================================================
-  # Chat Worker (Production)
-  # ==========================================================================
-  chat-worker:
-    build:
-      context: ../service/chat_worker
-      dockerfile: Dockerfile.prod
-    container_name: chat-worker
-    restart: always
-    environment:
-      - RABBITMQ_URL=amqp://${RABBITMQ_USER:-guest}:${RABBITMQ_PASSWORD:-guest}@rabbitmq:5672/
-      - DB_HOST=postgres
-      - DB_PORT=5432
-      - DB_USER=${POSTGRES_USER}
-      - DB_PASSWORD=${POSTGRES_PASSWORD}
-      - DB_NAME=${POSTGRES_CHAT_DB:-lesser_chat_db}
-      - LOG_LEVEL=${LOG_LEVEL:-warning}
-    depends_on:
-      postgres:
-        condition: service_healthy
-      rabbitmq:
-        condition: service_healthy
-    networks:
-      - app-network
-    deploy:
-      resources:
-        limits:
-          cpus: '0.5'
-          memory: 256M
-
-  # ==========================================================================
-  # Go Chat Service (Production)
-  # ==========================================================================
-  chat:
-    build:
-      context: ../service/chat_gin
-      dockerfile: Dockerfile.prod
-    container_name: chat
-    restart: always
-    environment:
-      - DATABASE_URL=${CHAT_DATABASE_URL:-postgres://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/lesser_chat_db}
-      - REDIS_URL=${REDIS_URL}
-      - HTTP_PORT=8080
-      - GRPC_PORT=50052
-      - LOG_LEVEL=${LOG_LEVEL:-warning}
+      - DB_SSLMODE=require
+      - REDIS_URL=redis://:${REDIS_PASSWORD}@redis:6379/0
     expose:
-      - "8080"
-      - "50052"
+      - "50054"
     depends_on:
       postgres:
         condition: service_healthy
@@ -383,18 +210,358 @@ services:
         condition: service_healthy
     networks:
       - app-network
-    labels:
-      - "traefik.enable=true"
-      - "traefik.http.routers.chat.rule=PathPrefix(`/api/v1/chat`) || PathPrefix(`/ws/chat`)"
-      - "traefik.http.routers.chat.entrypoints=websecure"
-      - "traefik.http.routers.chat.tls.certresolver=letsencrypt"
-      - "traefik.http.services.chat.loadbalancer.server.port=8080"
     healthcheck:
-      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:8080/health"]
-      interval: 60s
-      timeout: 10s
-      retries: 3
-      start_period: 20s
+      test: ["CMD", "nc", "-z", "localhost", "50054"]
+      interval: 30s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 256M
+
+  # --------------------------------------------------------------------------
+  # User Service (用户服务 - 资料/关注)
+  # --------------------------------------------------------------------------
+  user:
+    build:
+      context: ../service
+      dockerfile: Dockerfile
+      args:
+        SERVICE_NAME: user
+        GRPC_PORT: 50055
+    container_name: user
+    restart: always
+    environment:
+      - ENV=production
+      - GRPC_PORT=50055
+      - DB_HOST=postgres
+      - DB_PORT=5432
+      - DB_USER=${POSTGRES_USER}
+      - DB_PASSWORD=${POSTGRES_PASSWORD}
+      - DB_NAME=${POSTGRES_DB}
+      - DB_SSLMODE=require
+      - RABBITMQ_URL=amqp://${RABBITMQ_USER}:${RABBITMQ_PASSWORD}@rabbitmq:5672/
+    expose:
+      - "50055"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+    networks:
+      - app-network
+    healthcheck:
+      test: ["CMD", "nc", "-z", "localhost", "50055"]
+      interval: 30s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 256M
+
+  # --------------------------------------------------------------------------
+  # Content Service (内容服务 - Story/Short/Article CRUD)
+  # --------------------------------------------------------------------------
+  content:
+    build:
+      context: ../service
+      dockerfile: Dockerfile
+      args:
+        SERVICE_NAME: content
+        GRPC_PORT: 50056
+    container_name: content
+    restart: always
+    environment:
+      - ENV=production
+      - GRPC_PORT=50056
+      - DB_HOST=postgres
+      - DB_PORT=5432
+      - DB_USER=${POSTGRES_USER}
+      - DB_PASSWORD=${POSTGRES_PASSWORD}
+      - DB_NAME=${POSTGRES_DB}
+      - DB_SSLMODE=require
+      - RABBITMQ_URL=amqp://${RABBITMQ_USER}:${RABBITMQ_PASSWORD}@rabbitmq:5672/
+    expose:
+      - "50056"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+    networks:
+      - app-network
+    healthcheck:
+      test: ["CMD", "nc", "-z", "localhost", "50056"]
+      interval: 30s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 256M
+
+
+  # --------------------------------------------------------------------------
+  # Interaction Service (交互服务 - 点赞/收藏/转发)
+  # --------------------------------------------------------------------------
+  interaction:
+    build:
+      context: ../service
+      dockerfile: Dockerfile
+      args:
+        SERVICE_NAME: interaction
+        GRPC_PORT: 50060
+    container_name: interaction
+    restart: always
+    environment:
+      - ENV=production
+      - GRPC_PORT=50060
+      - DB_HOST=postgres
+      - DB_PORT=5432
+      - DB_USER=${POSTGRES_USER}
+      - DB_PASSWORD=${POSTGRES_PASSWORD}
+      - DB_NAME=${POSTGRES_DB}
+      - DB_SSLMODE=require
+      - CONTENT_SERVICE_ADDR=content:50056
+      - RABBITMQ_URL=amqp://${RABBITMQ_USER}:${RABBITMQ_PASSWORD}@rabbitmq:5672/
+    expose:
+      - "50060"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      content:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+    networks:
+      - app-network
+    healthcheck:
+      test: ["CMD", "nc", "-z", "localhost", "50060"]
+      interval: 30s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 256M
+
+  # --------------------------------------------------------------------------
+  # Comment Service (评论服务)
+  # --------------------------------------------------------------------------
+  comment:
+    build:
+      context: ../service
+      dockerfile: Dockerfile
+      args:
+        SERVICE_NAME: comment
+        GRPC_PORT: 50061
+    container_name: comment
+    restart: always
+    environment:
+      - ENV=production
+      - GRPC_PORT=50061
+      - DB_HOST=postgres
+      - DB_PORT=5432
+      - DB_USER=${POSTGRES_USER}
+      - DB_PASSWORD=${POSTGRES_PASSWORD}
+      - DB_NAME=${POSTGRES_DB}
+      - DB_SSLMODE=require
+      - CONTENT_SERVICE_ADDR=content:50056
+      - RABBITMQ_URL=amqp://${RABBITMQ_USER}:${RABBITMQ_PASSWORD}@rabbitmq:5672/
+    expose:
+      - "50061"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      content:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+    networks:
+      - app-network
+    healthcheck:
+      test: ["CMD", "nc", "-z", "localhost", "50061"]
+      interval: 30s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 256M
+
+  # --------------------------------------------------------------------------
+  # Timeline Service (时间线服务 - Feed 流聚合)
+  # --------------------------------------------------------------------------
+  timeline:
+    build:
+      context: ../service
+      dockerfile: Dockerfile
+      args:
+        SERVICE_NAME: timeline
+        GRPC_PORT: 50062
+    container_name: timeline
+    restart: always
+    environment:
+      - ENV=production
+      - GRPC_PORT=50062
+      - DB_HOST=postgres
+      - DB_PORT=5432
+      - DB_USER=${POSTGRES_USER}
+      - DB_PASSWORD=${POSTGRES_PASSWORD}
+      - DB_NAME=${POSTGRES_DB}
+      - DB_SSLMODE=require
+      - INTERACTION_SERVICE_ADDR=interaction:50060
+    expose:
+      - "50062"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      interaction:
+        condition: service_healthy
+    networks:
+      - app-network
+    healthcheck:
+      test: ["CMD", "nc", "-z", "localhost", "50062"]
+      interval: 30s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 256M
+
+  # --------------------------------------------------------------------------
+  # Search Service (搜索服务)
+  # --------------------------------------------------------------------------
+  search:
+    build:
+      context: ../service
+      dockerfile: Dockerfile
+      args:
+        SERVICE_NAME: search
+        GRPC_PORT: 50058
+    container_name: search
+    restart: always
+    environment:
+      - ENV=production
+      - GRPC_PORT=50058
+      - DB_HOST=postgres
+      - DB_PORT=5432
+      - DB_USER=${POSTGRES_USER}
+      - DB_PASSWORD=${POSTGRES_PASSWORD}
+      - DB_NAME=${POSTGRES_DB}
+      - DB_SSLMODE=require
+    expose:
+      - "50058"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - app-network
+    healthcheck:
+      test: ["CMD", "nc", "-z", "localhost", "50058"]
+      interval: 30s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 256M
+
+
+  # --------------------------------------------------------------------------
+  # Notification Service (通知服务)
+  # --------------------------------------------------------------------------
+  notification:
+    build:
+      context: ../service
+      dockerfile: Dockerfile
+      args:
+        SERVICE_NAME: notification
+        GRPC_PORT: 50059
+    container_name: notification
+    restart: always
+    environment:
+      - ENV=production
+      - GRPC_PORT=50059
+      - DB_HOST=postgres
+      - DB_PORT=5432
+      - DB_USER=${POSTGRES_USER}
+      - DB_PASSWORD=${POSTGRES_PASSWORD}
+      - DB_NAME=${POSTGRES_DB}
+      - DB_SSLMODE=require
+      - RABBITMQ_URL=amqp://${RABBITMQ_USER}:${RABBITMQ_PASSWORD}@rabbitmq:5672/
+    expose:
+      - "50059"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+    networks:
+      - app-network
+    healthcheck:
+      test: ["CMD", "nc", "-z", "localhost", "50059"]
+      interval: 30s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 256M
+
+  # --------------------------------------------------------------------------
+  # Chat Service (聊天服务 - gRPC 双向流)
+  # --------------------------------------------------------------------------
+  chat:
+    build:
+      context: ../service
+      dockerfile: Dockerfile
+      args:
+        SERVICE_NAME: chat
+        GRPC_PORT: 50052
+    restart: always
+    environment:
+      - ENV=production
+      - DATABASE_URL=${CHAT_DATABASE_URL}
+      - REDIS_URL=redis://:${REDIS_PASSWORD}@redis:6379/1
+      - GRPC_PORT=${CHAT_GRPC_PORT:-50052}
+      - AUTH_GRPC_ADDR=auth:50054
+    expose:
+      - "50052"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      auth:
+        condition: service_healthy
+    networks:
+      - app-network
+    healthcheck:
+      test: ["CMD", "nc", "-z", "localhost", "50052"]
+      interval: 30s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
     deploy:
       resources:
         limits:
@@ -402,30 +569,61 @@ services:
           memory: 512M
       replicas: 2
 
-  # ==========================================================================
-  # Dozzle - Docker Log Viewer
-  # ==========================================================================
-  dozzle:
-    image: amir20/dozzle:latest
-    container_name: dozzle
+  # --------------------------------------------------------------------------
+  # SuperUser Service (超级管理员服务 - 系统级管理)
+  # --------------------------------------------------------------------------
+  superuser:
+    build:
+      context: ../service
+      dockerfile: Dockerfile
+      args:
+        SERVICE_NAME: superuser
+        GRPC_PORT: 50063
+    container_name: superuser
     restart: always
-    volumes:
-      - /var/run/docker.sock:/var/run/docker.sock:ro
-    ports:
-      - "${DOZZLE_PORT:-9999}:8080"
+    environment:
+      - ENV=production
+      - GRPC_PORT=50063
+      - DB_HOST=postgres
+      - DB_PORT=5432
+      - DB_USER=${POSTGRES_USER}
+      - DB_PASSWORD=${POSTGRES_PASSWORD}
+      - DB_NAME=${POSTGRES_DB}
+      - DB_SSLMODE=require
+      - REDIS_URL=redis://:${REDIS_PASSWORD}@redis:6379/2
+      - RABBITMQ_URL=amqp://${RABBITMQ_USER}:${RABBITMQ_PASSWORD}@rabbitmq:5672/
+      - SUPERUSER_USERNAME=${SUPERUSER_USERNAME}
+      - SUPERUSER_EMAIL=${SUPERUSER_EMAIL}
+      - SUPERUSER_PASSWORD=${SUPERUSER_PASSWORD}
+      - SUPERUSER_DISPLAY_NAME=${SUPERUSER_DISPLAY_NAME}
+      - SUPERUSER_JWT_SECRET=${SUPERUSER_JWT_SECRET}
+    expose:
+      - "50063"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
     networks:
       - app-network
+    healthcheck:
+      test: ["CMD", "nc", "-z", "localhost", "50063"]
+      interval: 30s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
     deploy:
       resources:
         limits:
-          cpus: '0.25'
-          memory: 128M
+          cpus: '0.5'
+          memory: 256M
 
 # ============================================================================
 # Networks
 # ============================================================================
 networks:
   app-network:
+    name: app-network
     driver: bridge
 
 # ============================================================================

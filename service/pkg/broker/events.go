@@ -11,11 +11,12 @@ const (
 	EventCommentLiked   = "comment.liked"   // 评论点赞
 
 	// 内容相关事件
-	EventContentCreated  = "content.created"  // 内容创建
-	EventContentUpdated  = "content.updated"  // 内容更新
-	EventContentDeleted  = "content.deleted"  // 内容删除
-	EventContentLiked    = "content.liked"    // 内容点赞
-	EventContentReposted = "content.reposted" // 内容转发
+	EventContentCreated    = "content.created"    // 内容创建
+	EventContentUpdated    = "content.updated"    // 内容更新
+	EventContentDeleted    = "content.deleted"    // 内容删除
+	EventContentLiked      = "content.liked"      // 内容点赞
+	EventContentReposted   = "content.reposted"   // 内容转发
+	EventContentBookmarked = "content.bookmarked" // 内容收藏
 
 	// 用户相关事件
 	EventUserFollowed  = "user.followed"  // 用户关注
@@ -57,6 +58,13 @@ type ContentRepostedEvent struct {
 	ContentAuthorID string `json:"content_author_id"` // 内容作者（通知接收者）
 	ReposterID      string `json:"reposter_id"`       // 转发者
 	RepostID        string `json:"repost_id"`         // 转发记录 ID
+}
+
+// ContentBookmarkedEvent 内容收藏事件
+type ContentBookmarkedEvent struct {
+	ContentID       string `json:"content_id"`
+	ContentAuthorID string `json:"content_author_id"` // 内容作者（通知接收者）
+	BookmarkerID    string `json:"bookmarker_id"`     // 收藏者
 }
 
 // UserFollowedEvent 用户关注事件

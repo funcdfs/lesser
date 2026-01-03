@@ -14,8 +14,8 @@ import (
 	commentpb "github.com/funcdfs/lesser/gateway/proto/comment"
 	"github.com/funcdfs/lesser/gateway/proto/common"
 	contentpb "github.com/funcdfs/lesser/gateway/proto/content"
-	feedpb "github.com/funcdfs/lesser/gateway/proto/feed"
 	interactionpb "github.com/funcdfs/lesser/gateway/proto/interaction"
+	notificationpb "github.com/funcdfs/lesser/gateway/proto/notification"
 	searchpb "github.com/funcdfs/lesser/gateway/proto/search"
 	timelinepb "github.com/funcdfs/lesser/gateway/proto/timeline"
 	userpb "github.com/funcdfs/lesser/gateway/proto/user"
@@ -355,103 +355,57 @@ func RegisterContentProxyServer(s *grpc.Server, conn *grpc.ClientConn, log *slog
 }
 
 // ============================================================================
-// Feed 代理服务
+// Notification 代理服务
 // ============================================================================
 
-// FeedProxyServer 代理 Feed 服务请求
-type FeedProxyServer struct {
-	feedpb.UnimplementedFeedServiceServer
-	client feedpb.FeedServiceClient
+// NotificationProxyServer 代理 Notification 服务请求
+type NotificationProxyServer struct {
+	notificationpb.UnimplementedNotificationServiceServer
+	client notificationpb.NotificationServiceClient
 	log    *slog.Logger
 }
 
-// NewFeedProxyServer 创建 Feed 代理服务器
-func NewFeedProxyServer(conn *grpc.ClientConn, log *slog.Logger) *FeedProxyServer {
+// NewNotificationProxyServer 创建 Notification 代理服务器
+func NewNotificationProxyServer(conn *grpc.ClientConn, log *slog.Logger) *NotificationProxyServer {
 	if log == nil {
 		log = slog.Default()
 	}
-	return &FeedProxyServer{
-		client: feedpb.NewFeedServiceClient(conn),
-		log:    log.With(slog.String("component", "proxy.feed")),
+	return &NotificationProxyServer{
+		client: notificationpb.NewNotificationServiceClient(conn),
+		log:    log.With(slog.String("component", "proxy.notification")),
 	}
 }
 
-// ---- Feed 流 ----
-
-func (s *FeedProxyServer) GetFollowingFeed(ctx context.Context, req *feedpb.GetFollowingFeedRequest) (*feedpb.GetFollowingFeedResponse, error) {
-	s.log.Debug("获取关注 Feed", slog.String("user_id", req.UserId))
-	return s.client.GetFollowingFeed(ctx, req)
+// List 获取通知列表
+func (s *NotificationProxyServer) List(ctx context.Context, req *notificationpb.ListNotificationsRequest) (*notificationpb.ListNotificationsResponse, error) {
+	s.log.Debug("获取通知列表", slog.String("user_id", req.UserId), slog.Bool("unread_only", req.UnreadOnly))
+	return s.client.List(ctx, req)
 }
 
-func (s *FeedProxyServer) GetRecommendFeed(ctx context.Context, req *feedpb.GetRecommendFeedRequest) (*feedpb.GetRecommendFeedResponse, error) {
-	s.log.Debug("获取推荐 Feed", slog.String("user_id", req.UserId))
-	return s.client.GetRecommendFeed(ctx, req)
+// Read 标记单条通知已读
+func (s *NotificationProxyServer) Read(ctx context.Context, req *notificationpb.ReadNotificationRequest) (*common.Empty, error) {
+	s.log.Debug("标记通知已读", slog.String("notification_id", req.NotificationId), slog.String("user_id", req.UserId))
+	return s.client.Read(ctx, req)
 }
 
-func (s *FeedProxyServer) GetUserFeed(ctx context.Context, req *feedpb.GetUserFeedRequest) (*feedpb.GetUserFeedResponse, error) {
-	s.log.Debug("获取用户 Feed", slog.String("user_id", req.UserId), slog.String("viewer_id", req.ViewerId))
-	return s.client.GetUserFeed(ctx, req)
+// ReadAll 标记所有通知已读
+func (s *NotificationProxyServer) ReadAll(ctx context.Context, req *notificationpb.ReadAllNotificationsRequest) (*common.Empty, error) {
+	s.log.Debug("标记所有通知已读", slog.String("user_id", req.UserId))
+	return s.client.ReadAll(ctx, req)
 }
 
-// ---- 交互操作 ----
-
-func (s *FeedProxyServer) Like(ctx context.Context, req *feedpb.LikeRequest) (*common.Empty, error) {
-	s.log.Debug("点赞", slog.String("user_id", req.UserId), slog.String("post_id", req.PostId))
-	return s.client.Like(ctx, req)
+// GetUnreadCount 获取未读通知数量
+func (s *NotificationProxyServer) GetUnreadCount(ctx context.Context, req *notificationpb.GetUnreadCountRequest) (*notificationpb.UnreadCountResponse, error) {
+	s.log.Debug("获取未读通知数量", slog.String("user_id", req.UserId))
+	return s.client.GetUnreadCount(ctx, req)
 }
 
-func (s *FeedProxyServer) Unlike(ctx context.Context, req *feedpb.UnlikeRequest) (*common.Empty, error) {
-	s.log.Debug("取消点赞", slog.String("user_id", req.UserId), slog.String("post_id", req.PostId))
-	return s.client.Unlike(ctx, req)
+// RegisterNotificationProxyServer 注册 Notification 代理服务
+func RegisterNotificationProxyServer(s *grpc.Server, conn *grpc.ClientConn, log *slog.Logger) {
+	proxy := NewNotificationProxyServer(conn, log)
+	notificationpb.RegisterNotificationServiceServer(s, proxy)
+	log.With(slog.String("component", "proxy")).Info("Notification 代理服务已注册")
 }
-
-func (s *FeedProxyServer) CreateComment(ctx context.Context, req *feedpb.CreateCommentRequest) (*feedpb.Comment, error) {
-	s.log.Debug("创建评论", slog.String("author_id", req.AuthorId), slog.String("post_id", req.PostId))
-	return s.client.CreateComment(ctx, req)
-}
-
-func (s *FeedProxyServer) DeleteComment(ctx context.Context, req *feedpb.DeleteCommentRequest) (*common.Empty, error) {
-	s.log.Debug("删除评论", slog.String("comment_id", req.CommentId), slog.String("user_id", req.UserId))
-	return s.client.DeleteComment(ctx, req)
-}
-
-func (s *FeedProxyServer) ListComments(ctx context.Context, req *feedpb.ListCommentsRequest) (*feedpb.ListCommentsResponse, error) {
-	s.log.Debug("获取评论列表", slog.String("post_id", req.PostId))
-	return s.client.ListComments(ctx, req)
-}
-
-func (s *FeedProxyServer) CreateRepost(ctx context.Context, req *feedpb.RepostRequest) (*feedpb.Repost, error) {
-	s.log.Debug("转发", slog.String("user_id", req.UserId), slog.String("post_id", req.PostId))
-	return s.client.CreateRepost(ctx, req)
-}
-
-func (s *FeedProxyServer) Bookmark(ctx context.Context, req *feedpb.BookmarkRequest) (*common.Empty, error) {
-	s.log.Debug("收藏", slog.String("user_id", req.UserId), slog.String("post_id", req.PostId))
-	return s.client.Bookmark(ctx, req)
-}
-
-func (s *FeedProxyServer) Unbookmark(ctx context.Context, req *feedpb.UnbookmarkRequest) (*common.Empty, error) {
-	s.log.Debug("取消收藏", slog.String("user_id", req.UserId), slog.String("post_id", req.PostId))
-	return s.client.Unbookmark(ctx, req)
-}
-
-func (s *FeedProxyServer) ListBookmarks(ctx context.Context, req *feedpb.ListBookmarksRequest) (*feedpb.ListBookmarksResponse, error) {
-	s.log.Debug("获取收藏列表", slog.String("user_id", req.UserId))
-	return s.client.ListBookmarks(ctx, req)
-}
-
-// RegisterFeedProxyServer 注册 Feed 代理服务
-func RegisterFeedProxyServer(s *grpc.Server, conn *grpc.ClientConn, log *slog.Logger) {
-	proxy := NewFeedProxyServer(conn, log)
-	feedpb.RegisterFeedServiceServer(s, proxy)
-	log.With(slog.String("component", "proxy")).Info("Feed 代理服务已注册")
-}
-
-// ============================================================================
-// Notification 代理服务（占位）
-// ============================================================================
-
-// TODO: 实现 Notification 代理服务
 
 // ============================================================================
 // Chat 代理服务（占位）

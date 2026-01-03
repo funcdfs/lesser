@@ -4,7 +4,9 @@ package service
 import (
 	"context"
 	"database/sql"
+	"log/slog"
 
+	"github.com/funcdfs/lesser/pkg/broker"
 	"github.com/funcdfs/lesser/pkg/database"
 	"github.com/funcdfs/lesser/pkg/logger"
 	"github.com/funcdfs/lesser/user/internal/repository"
@@ -18,6 +20,7 @@ type UserService struct {
 	followRepo   *repository.FollowRepository
 	blockRepo    *repository.BlockRepository
 	settingsRepo *repository.SettingsRepository
+	publisher    *broker.Publisher // RabbitMQ 消息发布者（可选）
 }
 
 // NewUserService 创建用户服务实例
@@ -37,6 +40,12 @@ func NewUserService(
 		blockRepo:    blockRepo,
 		settingsRepo: settingsRepo,
 	}
+}
+
+// SetPublisher 设置 RabbitMQ 消息发布者
+// 用于发布用户关注等事件通知
+func (s *UserService) SetPublisher(publisher *broker.Publisher) {
+	s.publisher = publisher
 }
 
 // ============================================================================
@@ -168,7 +177,7 @@ func (s *UserService) Follow(ctx context.Context, followerID, followingID string
 	}
 
 	// 使用事务创建关注关系
-	return database.WithTransaction(ctx, s.db, func(tx *sql.Tx) error {
+	err = database.WithTransaction(ctx, s.db, func(tx *sql.Tx) error {
 		if err := s.followRepo.Create(ctx, followerID, followingID); err != nil {
 			return err
 		}
@@ -177,6 +186,33 @@ func (s *UserService) Follow(ctx context.Context, followerID, followingID string
 		}
 		return s.userRepo.IncrementFollowersCount(ctx, followingID)
 	})
+
+	if err != nil {
+		return err
+	}
+
+	// 发布关注事件到 RabbitMQ（异步，不阻塞主流程）
+	s.publishFollowEvent(ctx, followerID, followingID)
+
+	return nil
+}
+
+// publishFollowEvent 发布用户关注事件
+func (s *UserService) publishFollowEvent(ctx context.Context, followerID, followingID string) {
+	if s.publisher == nil {
+		return
+	}
+
+	event := broker.UserFollowedEvent{
+		FollowerID:  followerID,
+		FollowingID: followingID,
+	}
+
+	// 异步发布，不阻塞主流程
+	s.publisher.PublishAsync(ctx, broker.EventUserFollowed, event)
+	s.log.Debug("已发布用户关注事件",
+		slog.String("follower_id", followerID),
+		slog.String("following_id", followingID))
 }
 
 // Unfollow 取消关注

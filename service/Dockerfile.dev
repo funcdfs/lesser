@@ -1,0 +1,36 @@
+# ============================================================================
+# 通用开发环境 Dockerfile (热重载)
+# 使用方式: docker build --build-arg SERVICE_NAME=auth --build-arg GRPC_PORT=50054 .
+# ============================================================================
+
+FROM golang:1.25.5-alpine
+
+RUN apk add --no-cache git netcat-openbsd ca-certificates tzdata
+
+# 安装 air 用于热重载
+RUN go install github.com/air-verse/air@v1.61.7
+
+# 服务名称和端口参数
+ARG SERVICE_NAME
+ARG GRPC_PORT
+
+# 设置环境变量供运行时使用
+ENV SERVICE_NAME=${SERVICE_NAME}
+ENV GRPC_PORT=${GRPC_PORT}
+
+WORKDIR /app
+
+# 复制 go.mod 文件
+COPY ${SERVICE_NAME}/go.mod ./${SERVICE_NAME}/
+COPY pkg/go.mod ./pkg/
+
+# 下载依赖
+WORKDIR /app/${SERVICE_NAME}
+RUN go mod download || true
+
+WORKDIR /app/${SERVICE_NAME}
+
+EXPOSE ${GRPC_PORT}
+
+# 使用根目录的统一 .air.toml 配置
+CMD ["air", "-c", "/app/.air.toml"]

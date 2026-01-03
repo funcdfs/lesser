@@ -322,11 +322,22 @@ func (r *CommentRepository) LikeComment(ctx context.Context, userID, commentID s
 		return 0, ErrCommentNotFound
 	}
 
+	// 检查是否已经点赞
+	var alreadyLiked bool
+	err = tx.QueryRowContext(ctx, `
+		SELECT EXISTS(SELECT 1 FROM comment_likes WHERE user_id = $1 AND comment_id = $2)
+	`, userID, commentID).Scan(&alreadyLiked)
+	if err != nil {
+		return 0, err
+	}
+	if alreadyLiked {
+		return 0, ErrAlreadyLiked
+	}
+
 	// 插入点赞记录
 	_, err = tx.ExecContext(ctx, `
 		INSERT INTO comment_likes (id, user_id, comment_id, created_at)
 		VALUES ($1, $2, $3, $4)
-		ON CONFLICT (user_id, comment_id) DO NOTHING
 	`, uuid.New().String(), userID, commentID, time.Now())
 	if err != nil {
 		return 0, err

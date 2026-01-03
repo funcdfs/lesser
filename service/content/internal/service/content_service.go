@@ -313,3 +313,8 @@ func (s *ContentService) CheckContentExists(contentID string) (exists bool, comm
 	commentsDisabled, err = s.contentRepo.GetCommentsDisabled(contentID)
 	return exists, commentsDisabled, err
 }
+
+// GetAuthorID 获取内容作者 ID（用于通知服务）
+func (s *ContentService) GetAuthorID(contentID string) (string, error) {
+	return s.contentRepo.GetAuthorID(contentID)
+}

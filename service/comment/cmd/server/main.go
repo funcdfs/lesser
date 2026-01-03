@@ -28,7 +28,7 @@ func main() {
 
 	grpcPort := getEnv("GRPC_PORT", "50061")
 	contentServiceAddr := getEnv("CONTENT_SERVICE_ADDR", "content:50056")
-	rabbitmqURL := getEnv("RABBITMQ_URL", "")
+	rabbitmqURL := getEnv("RABBITMQ_URL", "amqp://superuser:superuser@rabbitmq:5672/")
 
 	// 数据库连接
 	dbConfig := database.Config{
@@ -62,16 +62,14 @@ func main() {
 	commentRepo := repository.NewCommentRepository(db)
 	commentSvc := service.NewCommentService(commentRepo, contentClient)
 
-	// 可选：初始化 RabbitMQ Publisher（用于发送通知事件）
-	if rabbitmqURL != "" {
-		publisher := broker.NewPublisher(rabbitmqURL, log)
-		if err := publisher.Connect(); err != nil {
-			log.Warn("RabbitMQ 连接失败，通知功能将不可用", slog.Any("error", err))
-		} else {
-			commentSvc.SetPublisher(publisher)
-			defer publisher.Close()
-			log.Info("RabbitMQ Publisher 已连接")
-		}
+	// 初始化 RabbitMQ Publisher（用于发送通知事件）
+	publisher := broker.NewPublisher(rabbitmqURL, log)
+	if err := publisher.Connect(); err != nil {
+		log.Warn("RabbitMQ 连接失败，通知功能将不可用", slog.Any("error", err))
+	} else {
+		commentSvc.SetPublisher(publisher)
+		defer publisher.Close()
+		log.Info("RabbitMQ Publisher 已连接")
 	}
 
 	commentHandler := handler.NewCommentHandler(commentSvc, log.Logger)

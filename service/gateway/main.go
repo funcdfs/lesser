@@ -168,6 +168,13 @@ func registerProxyServices(grpcServer *grpc.Server, gatewayServer *server.Gatewa
 	} else {
 		log.Warn("Search 服务不可用，代理未注册")
 	}
+
+	// 注册 Notification 代理
+	if notificationConn := router.GetNotificationConn(); notificationConn != nil {
+		server.RegisterNotificationProxyServer(grpcServer, notificationConn, log)
+	} else {
+		log.Warn("Notification 服务不可用，代理未注册")
+	}
 }
 
 // gracefulShutdown 优雅关闭

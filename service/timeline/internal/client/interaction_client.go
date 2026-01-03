@@ -3,6 +3,7 @@ package client
 
 import (
 	"context"
+	"log/slog"
 
 	"github.com/funcdfs/lesser/timeline/internal/service"
 	interactionpb "github.com/funcdfs/lesser/timeline/proto/interaction"
@@ -14,6 +15,7 @@ import (
 type InteractionServiceClient struct {
 	conn   *grpc.ClientConn
 	client interactionpb.InteractionServiceClient
+	log    *slog.Logger
 }
 
 // NewInteractionServiceClient 创建 Interaction 服务客户端
@@ -25,6 +27,7 @@ func NewInteractionServiceClient(addr string) (*InteractionServiceClient, error)
 	return &InteractionServiceClient{
 		conn:   conn,
 		client: interactionpb.NewInteractionServiceClient(conn),
+		log:    slog.Default().With(slog.String("component", "interaction_client")),
 	}, nil
 }
 
@@ -34,12 +37,18 @@ func (c *InteractionServiceClient) Close() error {
 }
 
 // BatchGetInteractionStatus 批量获取交互状态
+// 调用 Interaction Service 获取用户对多个内容的点赞、收藏、转发状态
 func (c *InteractionServiceClient) BatchGetInteractionStatus(ctx context.Context, userID string, contentIDs []string) ([]*service.InteractionStatus, error) {
+	if len(contentIDs) == 0 {
+		return nil, nil
+	}
+
 	resp, err := c.client.BatchGetInteractionStatus(ctx, &interactionpb.BatchGetInteractionStatusRequest{
 		UserId:     userID,
 		ContentIds: contentIDs,
 	})
 	if err != nil {
+		c.log.Error("批量获取交互状态失败", slog.String("user_id", userID), slog.Int("content_count", len(contentIDs)), slog.Any("error", err))
 		return nil, err
 	}
 
@@ -52,5 +61,7 @@ func (c *InteractionServiceClient) BatchGetInteractionStatus(ctx context.Context
 			IsReposted:   s.IsReposted,
 		}
 	}
+
+	c.log.Debug("批量获取交互状态成功", slog.String("user_id", userID), slog.Int("content_count", len(contentIDs)), slog.Int("result_count", len(result)))
 	return result, nil
 }

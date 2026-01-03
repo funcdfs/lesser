@@ -7,6 +7,7 @@ import (
 
 	"github.com/funcdfs/lesser/interaction/internal/repository"
 	contentpb "github.com/funcdfs/lesser/interaction/proto/content"
+	"github.com/funcdfs/lesser/pkg/broker"
 )
 
 // 业务错误定义
@@ -18,21 +19,29 @@ var (
 type ContentClient interface {
 	UpdateCounter(ctx context.Context, contentID string, counterType contentpb.CounterType, delta int32) (int32, error)
 	CheckContentExists(ctx context.Context, contentID string) (exists bool, commentsDisabled bool, err error)
+	// GetContentAuthorID 获取内容作者 ID（用于发送通知）
+	GetContentAuthorID(ctx context.Context, contentID string) (string, error)
+}
+
+// Publisher 消息发布者接口
+type Publisher interface {
+	PublishAsync(ctx context.Context, routingKey string, event interface{})
 }
 
 // InteractionService 交互服务
 type InteractionService struct {
-	likeRepo      *repository.LikeRepository
-	bookmarkRepo  *repository.BookmarkRepository
-	repostRepo    *repository.RepostRepository
+	likeRepo      repository.LikeRepositoryInterface
+	bookmarkRepo  repository.BookmarkRepositoryInterface
+	repostRepo    repository.RepostRepositoryInterface
 	contentClient ContentClient
+	publisher     Publisher // RabbitMQ 消息发布者（可选）
 }
 
 // NewInteractionService 创建交互服务实例
 func NewInteractionService(
-	likeRepo *repository.LikeRepository,
-	bookmarkRepo *repository.BookmarkRepository,
-	repostRepo *repository.RepostRepository,
+	likeRepo repository.LikeRepositoryInterface,
+	bookmarkRepo repository.BookmarkRepositoryInterface,
+	repostRepo repository.RepostRepositoryInterface,
 	contentClient ContentClient,
 ) *InteractionService {
 	return &InteractionService{
@@ -41,6 +50,11 @@ func NewInteractionService(
 		repostRepo:    repostRepo,
 		contentClient: contentClient,
 	}
+}
+
+// SetPublisher 设置消息发布者（可选依赖）
+func (s *InteractionService) SetPublisher(publisher Publisher) {
+	s.publisher = publisher
 }
 
 // ============================================================================
@@ -64,13 +78,42 @@ func (s *InteractionService) Like(ctx context.Context, userID, contentID string)
 		return 0, err
 	}
 
-	// 只有实际创建了新记录才更新计数
+	// 只有实际创建了新记录才更新计数和发布事件
 	if created {
-		return s.contentClient.UpdateCounter(ctx, contentID, contentpb.CounterType_COUNTER_LIKE, 1)
+		count, err := s.contentClient.UpdateCounter(ctx, contentID, contentpb.CounterType_COUNTER_LIKE, 1)
+		if err != nil {
+			return 0, err
+		}
+
+		// 异步发布点赞事件（用于通知）
+		s.publishLikeEvent(ctx, userID, contentID)
+
+		return count, nil
 	}
 
 	// 已经点赞过，返回当前计数（通过 delta=0 获取）
 	return s.contentClient.UpdateCounter(ctx, contentID, contentpb.CounterType_COUNTER_LIKE, 0)
+}
+
+// publishLikeEvent 发布点赞事件
+func (s *InteractionService) publishLikeEvent(ctx context.Context, userID, contentID string) {
+	if s.publisher == nil {
+		return
+	}
+
+	// 获取内容作者 ID
+	authorID, err := s.contentClient.GetContentAuthorID(ctx, contentID)
+	if err != nil || authorID == "" || authorID == userID {
+		// 获取失败、作者为空、或自己点赞自己的内容，不发送通知
+		return
+	}
+
+	event := broker.ContentLikedEvent{
+		ContentID:       contentID,
+		ContentAuthorID: authorID,
+		LikerID:         userID,
+	}
+	s.publisher.PublishAsync(ctx, broker.EventContentLiked, event)
 }
 
 // Unlike 取消点赞
@@ -116,10 +159,39 @@ func (s *InteractionService) Bookmark(ctx context.Context, userID, contentID str
 	}
 
 	if created {
-		return s.contentClient.UpdateCounter(ctx, contentID, contentpb.CounterType_COUNTER_BOOKMARK, 1)
+		count, err := s.contentClient.UpdateCounter(ctx, contentID, contentpb.CounterType_COUNTER_BOOKMARK, 1)
+		if err != nil {
+			return 0, err
+		}
+
+		// 异步发布收藏事件（用于通知）
+		s.publishBookmarkEvent(ctx, userID, contentID)
+
+		return count, nil
 	}
 
 	return s.contentClient.UpdateCounter(ctx, contentID, contentpb.CounterType_COUNTER_BOOKMARK, 0)
+}
+
+// publishBookmarkEvent 发布收藏事件
+func (s *InteractionService) publishBookmarkEvent(ctx context.Context, userID, contentID string) {
+	if s.publisher == nil {
+		return
+	}
+
+	// 获取内容作者 ID
+	authorID, err := s.contentClient.GetContentAuthorID(ctx, contentID)
+	if err != nil || authorID == "" || authorID == userID {
+		// 获取失败、作者为空、或自己收藏自己的内容，不发送通知
+		return
+	}
+
+	event := broker.ContentBookmarkedEvent{
+		ContentID:       contentID,
+		ContentAuthorID: authorID,
+		BookmarkerID:    userID,
+	}
+	s.publisher.PublishAsync(ctx, broker.EventContentBookmarked, event)
 }
 
 // Unbookmark 取消收藏
@@ -171,11 +243,36 @@ func (s *InteractionService) CreateRepost(ctx context.Context, userID, contentID
 	var count int32
 	if created {
 		count, _ = s.contentClient.UpdateCounter(ctx, contentID, contentpb.CounterType_COUNTER_REPOST, 1)
+
+		// 异步发布转发事件（用于通知）
+		s.publishRepostEvent(ctx, userID, contentID, repost.ID)
 	} else {
 		count, _ = s.contentClient.UpdateCounter(ctx, contentID, contentpb.CounterType_COUNTER_REPOST, 0)
 	}
 
 	return repost, count, nil
+}
+
+// publishRepostEvent 发布转发事件
+func (s *InteractionService) publishRepostEvent(ctx context.Context, userID, contentID, repostID string) {
+	if s.publisher == nil {
+		return
+	}
+
+	// 获取内容作者 ID
+	authorID, err := s.contentClient.GetContentAuthorID(ctx, contentID)
+	if err != nil || authorID == "" || authorID == userID {
+		// 获取失败、作者为空、或自己转发自己的内容，不发送通知
+		return
+	}
+
+	event := broker.ContentRepostedEvent{
+		ContentID:       contentID,
+		ContentAuthorID: authorID,
+		ReposterID:      userID,
+		RepostID:        repostID,
+	}
+	s.publisher.PublishAsync(ctx, broker.EventContentReposted, event)
 }
 
 // DeleteRepost 删除转发

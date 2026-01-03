@@ -454,3 +454,73 @@ BEGIN
     RAISE NOTICE 'Comments and Comment Likes tables created';
 END
 $;
+
+-- ============================================================================
+-- 17. Notifications 表 (Notification Service 使用)
+-- ============================================================================
+-- 通知类型: 1=LIKE, 2=COMMENT, 3=REPLY, 4=BOOKMARK, 5=MENTION, 6=FOLLOW, 7=REPOST
+CREATE TABLE IF NOT EXISTS notifications (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    type SMALLINT NOT NULL,
+    actor_id UUID REFERENCES users(id) ON DELETE SET NULL,
+    target_type VARCHAR(50),
+    target_id UUID,
+    message TEXT,
+    is_read BOOLEAN DEFAULT false,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+    
+    -- 约束
+    CONSTRAINT valid_notification_type CHECK (type IN (1, 2, 3, 4, 5, 6, 7))
+);
+
+-- Notifications 表索引
+CREATE INDEX IF NOT EXISTS idx_notifications_user_id ON notifications(user_id);
+CREATE INDEX IF NOT EXISTS idx_notifications_user_unread ON notifications(user_id, is_read) WHERE is_read = false;
+CREATE INDEX IF NOT EXISTS idx_notifications_created_at ON notifications(created_at DESC);
+CREATE INDEX IF NOT EXISTS idx_notifications_user_created ON notifications(user_id, created_at DESC);
+CREATE INDEX IF NOT EXISTS idx_notifications_actor_id ON notifications(actor_id) WHERE actor_id IS NOT NULL;
+
+GRANT ALL PRIVILEGES ON TABLE notifications TO lesser_app;
+
+DO $
+BEGIN
+    RAISE NOTICE 'Notifications table created';
+END
+$;
+
+-- ============================================================================
+-- 18. User Bans 表 (Auth Service 使用)
+-- ============================================================================
+CREATE TABLE IF NOT EXISTS user_bans (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    reason TEXT NOT NULL,
+    banned_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+    expires_at TIMESTAMP WITH TIME ZONE,
+    operator_id UUID REFERENCES users(id) ON DELETE SET NULL,
+    is_active BOOLEAN DEFAULT true,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+-- User Bans 表索引
+CREATE INDEX IF NOT EXISTS idx_user_bans_user_id ON user_bans(user_id);
+CREATE INDEX IF NOT EXISTS idx_user_bans_active ON user_bans(user_id, is_active) WHERE is_active = true;
+CREATE INDEX IF NOT EXISTS idx_user_bans_expires ON user_bans(expires_at) WHERE expires_at IS NOT NULL AND is_active = true;
+-- 唯一约束：每个用户只能有一条活跃的封禁记录
+CREATE UNIQUE INDEX IF NOT EXISTS idx_user_bans_user_active_unique ON user_bans(user_id) WHERE is_active = true;
+
+-- User Bans 表触发器
+DROP TRIGGER IF EXISTS update_user_bans_updated_at ON user_bans;
+CREATE TRIGGER update_user_bans_updated_at
+    BEFORE UPDATE ON user_bans
+    FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+
+GRANT ALL PRIVILEGES ON TABLE user_bans TO lesser_app;
+
+DO $
+BEGIN
+    RAISE NOTICE 'User Bans table created';
+END
+$;

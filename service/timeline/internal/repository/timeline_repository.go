@@ -5,6 +5,7 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
+	"log/slog"
 	"time"
 
 	"github.com/lib/pq"
@@ -46,15 +47,23 @@ type FeedItem struct {
 
 // TimelineRepository Feed 流数据仓库
 type TimelineRepository struct {
-	db *sql.DB
+	db  *sql.DB
+	log *slog.Logger
 }
 
 // NewTimelineRepository 创建 Feed 流仓库
-func NewTimelineRepository(db *sql.DB) *TimelineRepository {
-	return &TimelineRepository{db: db}
+func NewTimelineRepository(db *sql.DB, log *slog.Logger) *TimelineRepository {
+	if log == nil {
+		log = slog.Default()
+	}
+	return &TimelineRepository{
+		db:  db,
+		log: log.With(slog.String("component", "timeline_repository")),
+	}
 }
 
 // GetFollowingFeed 获取关注用户的 Feed 流
+// 使用 idx_contents_feed_timeline 索引优化查询性能
 func (r *TimelineRepository) GetFollowingFeed(ctx context.Context, userID string, limit, offset int) ([]*FeedItem, int, error) {
 	// 获取总数
 	var total int
@@ -67,10 +76,11 @@ func (r *TimelineRepository) GetFollowingFeed(ctx context.Context, userID string
 		  AND (c.expires_at IS NULL OR c.expires_at > NOW())
 	`, userID).Scan(&total)
 	if err != nil {
+		r.log.Error("统计关注 Feed 总数失败", slog.String("user_id", userID), slog.Any("error", err))
 		return nil, 0, fmt.Errorf("统计关注 Feed 总数失败: %w", err)
 	}
 
-	// 查询 Feed 列表
+	// 查询 Feed 列表，使用 idx_contents_feed_timeline 索引
 	rows, err := r.db.QueryContext(ctx, `
 		SELECT 
 			c.id, c.author_id, c.type, c.status, c.title, c.text, c.summary,
@@ -87,14 +97,23 @@ func (r *TimelineRepository) GetFollowingFeed(ctx context.Context, userID string
 		LIMIT $2 OFFSET $3
 	`, userID, limit, offset)
 	if err != nil {
+		r.log.Error("查询关注 Feed 失败", slog.String("user_id", userID), slog.Any("error", err))
 		return nil, 0, fmt.Errorf("查询关注 Feed 失败: %w", err)
 	}
 	defer rows.Close()
 
-	return scanFeedItems(rows), total, nil
+	items, err := scanFeedItems(rows)
+	if err != nil {
+		r.log.Error("扫描关注 Feed 结果失败", slog.String("user_id", userID), slog.Any("error", err))
+		return nil, 0, fmt.Errorf("扫描关注 Feed 结果失败: %w", err)
+	}
+
+	return items, total, nil
 }
 
 // GetUserFeed 获取指定用户的 Feed（用户主页）
+// 使用 idx_contents_user_feed 索引优化查询性能
+// 置顶内容优先显示，然后按发布时间降序排列
 func (r *TimelineRepository) GetUserFeed(ctx context.Context, targetUserID string, limit, offset int) ([]*FeedItem, int, error) {
 	// 获取总数
 	var total int
@@ -106,10 +125,12 @@ func (r *TimelineRepository) GetUserFeed(ctx context.Context, targetUserID strin
 		  AND (expires_at IS NULL OR expires_at > NOW())
 	`, targetUserID).Scan(&total)
 	if err != nil {
+		r.log.Error("统计用户 Feed 总数失败", slog.String("target_user_id", targetUserID), slog.Any("error", err))
 		return nil, 0, fmt.Errorf("统计用户 Feed 总数失败: %w", err)
 	}
 
-	// 查询 Feed 列表
+	// 查询 Feed 列表，使用 idx_contents_user_feed 索引
+	// 置顶内容优先（is_pinned DESC），然后按发布时间降序
 	rows, err := r.db.QueryContext(ctx, `
 		SELECT 
 			c.id, c.author_id, c.type, c.status, c.title, c.text, c.summary,
@@ -125,14 +146,22 @@ func (r *TimelineRepository) GetUserFeed(ctx context.Context, targetUserID strin
 		LIMIT $2 OFFSET $3
 	`, targetUserID, limit, offset)
 	if err != nil {
+		r.log.Error("查询用户 Feed 失败", slog.String("target_user_id", targetUserID), slog.Any("error", err))
 		return nil, 0, fmt.Errorf("查询用户 Feed 失败: %w", err)
 	}
 	defer rows.Close()
 
-	return scanFeedItems(rows), total, nil
+	items, err := scanFeedItems(rows)
+	if err != nil {
+		r.log.Error("扫描用户 Feed 结果失败", slog.String("target_user_id", targetUserID), slog.Any("error", err))
+		return nil, 0, fmt.Errorf("扫描用户 Feed 结果失败: %w", err)
+	}
+
+	return items, total, nil
 }
 
 // GetHotFeed 获取热门 Feed
+// 按互动量排序：like_count + comment_count*2 + repost_count*3
 func (r *TimelineRepository) GetHotFeed(ctx context.Context, timeRange string, limit, offset int) ([]*FeedItem, int, error) {
 	// 根据时间范围确定查询条件
 	var timeCondition string
@@ -156,9 +185,14 @@ func (r *TimelineRepository) GetHotFeed(ctx context.Context, timeRange string, l
 		  AND (c.expires_at IS NULL OR c.expires_at > NOW())
 		  %s
 	`, timeCondition)
-	r.db.QueryRowContext(ctx, countQuery).Scan(&total)
+	err := r.db.QueryRowContext(ctx, countQuery).Scan(&total)
+	if err != nil {
+		r.log.Error("统计热门 Feed 总数失败", slog.String("time_range", timeRange), slog.Any("error", err))
+		return nil, 0, fmt.Errorf("统计热门 Feed 总数失败: %w", err)
+	}
 
 	// 查询热门 Feed（按互动量排序）
+	// 互动量计算公式：like_count + comment_count*2 + repost_count*3
 	query := fmt.Sprintf(`
 		SELECT 
 			c.id, c.author_id, c.type, c.status, c.title, c.text, c.summary,
@@ -176,11 +210,18 @@ func (r *TimelineRepository) GetHotFeed(ctx context.Context, timeRange string, l
 
 	rows, err := r.db.QueryContext(ctx, query, limit, offset)
 	if err != nil {
+		r.log.Error("查询热门 Feed 失败", slog.String("time_range", timeRange), slog.Any("error", err))
 		return nil, 0, fmt.Errorf("查询热门 Feed 失败: %w", err)
 	}
 	defer rows.Close()
 
-	return scanFeedItems(rows), total, nil
+	items, err := scanFeedItems(rows)
+	if err != nil {
+		r.log.Error("扫描热门 Feed 结果失败", slog.String("time_range", timeRange), slog.Any("error", err))
+		return nil, 0, fmt.Errorf("扫描热门 Feed 结果失败: %w", err)
+	}
+
+	return items, total, nil
 }
 
 // GetContentByID 获取单个内容
@@ -214,7 +255,8 @@ func (r *TimelineRepository) GetContentByID(ctx context.Context, contentID strin
 		return nil, nil
 	}
 	if err != nil {
-		return nil, err
+		r.log.Error("查询内容详情失败", slog.String("content_id", contentID), slog.Any("error", err))
+		return nil, fmt.Errorf("查询内容详情失败: %w", err)
 	}
 
 	item.Title = title.String
@@ -242,7 +284,7 @@ func GetContentIDs(items []*FeedItem) []string {
 }
 
 // scanFeedItems 扫描 Feed 条目列表
-func scanFeedItems(rows *sql.Rows) []*FeedItem {
+func scanFeedItems(rows *sql.Rows) ([]*FeedItem, error) {
 	var items []*FeedItem
 	for rows.Next() {
 		item := &FeedItem{}
@@ -260,7 +302,7 @@ func scanFeedItems(rows *sql.Rows) []*FeedItem {
 			&item.IsPinned, &item.CommentsDisabled, &language,
 		)
 		if err != nil {
-			continue
+			return nil, fmt.Errorf("扫描 Feed 条目失败: %w", err)
 		}
 
 		item.Title = title.String
@@ -277,5 +319,11 @@ func scanFeedItems(rows *sql.Rows) []*FeedItem {
 
 		items = append(items, item)
 	}
-	return items
+
+	// 检查迭代过程中是否有错误
+	if err := rows.Err(); err != nil {
+		return nil, fmt.Errorf("迭代 Feed 结果集失败: %w", err)
+	}
+
+	return items, nil
 }

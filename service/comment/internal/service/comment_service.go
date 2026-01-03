@@ -50,15 +50,29 @@ type EventPublisher interface {
 	PublishAsync(ctx context.Context, routingKey string, event interface{})
 }
 
+// CommentRepository 评论仓库接口
+type CommentRepository interface {
+	Create(ctx context.Context, comment *repository.Comment) error
+	GetByID(ctx context.Context, id string) (*repository.Comment, error)
+	Delete(ctx context.Context, id string) (*repository.Comment, error)
+	List(ctx context.Context, contentID, parentID string, sortBy repository.SortBy, limit, offset int) ([]*repository.Comment, int, error)
+	GetCount(ctx context.Context, contentID string) (int32, error)
+	BatchGetCount(ctx context.Context, contentIDs []string) (map[string]int32, error)
+	LikeComment(ctx context.Context, userID, commentID string) (int32, error)
+	UnlikeComment(ctx context.Context, userID, commentID string) (int32, error)
+	CheckLiked(ctx context.Context, userID, commentID string) (bool, error)
+	BatchCheckLiked(ctx context.Context, userID string, commentIDs []string) (map[string]bool, error)
+}
+
 // CommentService 评论服务
 type CommentService struct {
-	commentRepo   *repository.CommentRepository
+	commentRepo   CommentRepository
 	contentClient ContentClient
 	publisher     EventPublisher // 可选，为 nil 时不发布事件
 }
 
 // NewCommentService 创建评论服务实例
-func NewCommentService(commentRepo *repository.CommentRepository, contentClient ContentClient) *CommentService {
+func NewCommentService(commentRepo CommentRepository, contentClient ContentClient) *CommentService {
 	return &CommentService{
 		commentRepo:   commentRepo,
 		contentClient: contentClient,

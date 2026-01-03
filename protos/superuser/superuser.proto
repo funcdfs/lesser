@@ -1,0 +1,385 @@
+syntax = "proto3";
+package superuser;
+
+option go_package = "github.com/funcdfs/lesser/superuser/proto/superuser";
+
+import "common/common.proto";
+
+// SuperUserService 超级管理员服务
+// 系统级管理员，拥有访问数据库、RabbitMQ、管理所有用户等上帝级权限
+// 与普通用户完全隔离，采用独立的认证和权限体系
+service SuperUserService {
+  // ========== 认证相关 ==========
+  // 超级管理员登录
+  rpc Login(SuperUserLoginRequest) returns (SuperUserLoginResponse);
+  // 登出
+  rpc Logout(SuperUserLogoutRequest) returns (common.Empty);
+  // 刷新 Token
+  rpc RefreshToken(SuperUserRefreshRequest) returns (SuperUserLoginResponse);
+  // 验证 Token（内部服务调用）
+  rpc ValidateToken(ValidateTokenRequest) returns (ValidateTokenResponse);
+
+  // ========== 用户管理 ==========
+  // 获取所有用户列表
+  rpc ListUsers(ListUsersRequest) returns (ListUsersResponse);
+  // 获取用户详情
+  rpc GetUser(GetUserRequest) returns (UserDetail);
+  // 封禁用户
+  rpc BanUser(BanUserRequest) returns (BanUserResponse);
+  // 解封用户
+  rpc UnbanUser(UnbanUserRequest) returns (UnbanUserResponse);
+  // 删除用户
+  rpc DeleteUser(DeleteUserRequest) returns (DeleteUserResponse);
+  // 强制修改用户信息
+  rpc UpdateUser(UpdateUserRequest) returns (UserDetail);
+
+  // ========== 内容管理 ==========
+  // 获取所有内容列表
+  rpc ListContents(ListContentsRequest) returns (ListContentsResponse);
+  // 删除内容
+  rpc DeleteContent(DeleteContentRequest) returns (DeleteContentResponse);
+  // 批量删除内容
+  rpc BatchDeleteContents(BatchDeleteContentsRequest) returns (BatchDeleteContentsResponse);
+
+  // ========== 系统监控 ==========
+  // 获取系统统计信息
+  rpc GetSystemStats(GetSystemStatsRequest) returns (SystemStats);
+  // 获取数据库状态
+  rpc GetDatabaseStatus(GetDatabaseStatusRequest) returns (DatabaseStatus);
+  // 获取 Redis 状态
+  rpc GetRedisStatus(GetRedisStatusRequest) returns (RedisStatus);
+  // 获取 RabbitMQ 状态
+  rpc GetRabbitMQStatus(GetRabbitMQStatusRequest) returns (RabbitMQStatus);
+
+  // ========== 数据库操作 ==========
+  // 执行只读 SQL 查询
+  rpc ExecuteQuery(ExecuteQueryRequest) returns (ExecuteQueryResponse);
+  // 获取表结构
+  rpc GetTableSchema(GetTableSchemaRequest) returns (TableSchema);
+  // 获取所有表列表
+  rpc ListTables(ListTablesRequest) returns (ListTablesResponse);
+
+  // ========== 审计日志 ==========
+  // 获取操作日志
+  rpc GetAuditLogs(GetAuditLogsRequest) returns (AuditLogsResponse);
+}
+
+// ========== 认证相关消息 ==========
+
+message SuperUserLoginRequest {
+  string username = 1;
+  string password = 2;
+}
+
+message SuperUserLoginResponse {
+  SuperUser superuser = 1;
+  string access_token = 2;
+  string refresh_token = 3;
+}
+
+message SuperUserLogoutRequest {
+  string access_token = 1;
+}
+
+message SuperUserRefreshRequest {
+  string refresh_token = 1;
+}
+
+message ValidateTokenRequest {
+  string access_token = 1;
+}
+
+message ValidateTokenResponse {
+  bool valid = 1;
+  string superuser_id = 2;
+  string username = 3;
+}
+
+// ========== 实体定义 ==========
+
+message SuperUser {
+  string id = 1;
+  string username = 2;
+  string email = 3;
+  string display_name = 4;
+  common.Timestamp created_at = 5;
+  common.Timestamp last_login_at = 6;
+}
+
+message UserDetail {
+  string id = 1;
+  string username = 2;
+  string email = 3;
+  string display_name = 4;
+  string bio = 5;
+  string avatar_url = 6;
+  bool is_active = 7;
+  bool is_banned = 8;
+  string ban_reason = 9;
+  common.Timestamp ban_expires_at = 10;
+  int32 followers_count = 11;
+  int32 following_count = 12;
+  int32 posts_count = 13;
+  common.Timestamp created_at = 14;
+  common.Timestamp updated_at = 15;
+}
+
+message ContentDetail {
+  string id = 1;
+  string author_id = 2;
+  string author_username = 3;
+  int32 type = 4;           // 1=STORY, 2=SHORT, 3=ARTICLE
+  int32 status = 5;         // 1=DRAFT, 2=PUBLISHED, 3=ARCHIVED, 4=DELETED
+  string title = 6;
+  string text = 7;
+  repeated string media_urls = 8;
+  repeated string tags = 9;
+  int32 like_count = 10;
+  int32 comment_count = 11;
+  int32 repost_count = 12;
+  int32 view_count = 13;
+  common.Timestamp created_at = 14;
+  common.Timestamp published_at = 15;
+}
+
+// ========== 用户管理消息 ==========
+
+message ListUsersRequest {
+  int32 page = 1;
+  int32 page_size = 2;
+  string search = 3;          // 搜索用户名或邮箱
+  string status = 4;          // all, active, banned
+  string sort_by = 5;         // created_at, followers_count, posts_count
+  string sort_order = 6;      // asc, desc
+}
+
+message ListUsersResponse {
+  repeated UserDetail users = 1;
+  int32 total = 2;
+  int32 page = 3;
+  int32 page_size = 4;
+}
+
+message GetUserRequest {
+  string user_id = 1;
+}
+
+message BanUserRequest {
+  string user_id = 1;
+  string reason = 2;
+  int64 duration_seconds = 3;  // 0 表示永久封禁
+}
+
+message BanUserResponse {
+  bool success = 1;
+  string message = 2;
+}
+
+message UnbanUserRequest {
+  string user_id = 1;
+}
+
+message UnbanUserResponse {
+  bool success = 1;
+  string message = 2;
+}
+
+message DeleteUserRequest {
+  string user_id = 1;
+  bool hard_delete = 2;       // true=物理删除, false=软删除
+}
+
+message DeleteUserResponse {
+  bool success = 1;
+  string message = 2;
+}
+
+message UpdateUserRequest {
+  string user_id = 1;
+  optional string username = 2;
+  optional string email = 3;
+  optional string display_name = 4;
+  optional string bio = 5;
+  optional bool is_active = 6;
+  optional bool is_verified = 7;
+}
+
+// ========== 内容管理消息 ==========
+
+message ListContentsRequest {
+  int32 page = 1;
+  int32 page_size = 2;
+  string author_id = 3;       // 按作者筛选
+  int32 type = 4;             // 按类型筛选
+  int32 status = 5;           // 按状态筛选
+  string search = 6;          // 搜索内容
+  string sort_by = 7;
+  string sort_order = 8;
+}
+
+message ListContentsResponse {
+  repeated ContentDetail contents = 1;
+  int32 total = 2;
+  int32 page = 3;
+  int32 page_size = 4;
+}
+
+message DeleteContentRequest {
+  string content_id = 1;
+  bool hard_delete = 2;
+}
+
+message DeleteContentResponse {
+  bool success = 1;
+  string message = 2;
+}
+
+message BatchDeleteContentsRequest {
+  repeated string content_ids = 1;
+  bool hard_delete = 2;
+}
+
+message BatchDeleteContentsResponse {
+  int32 deleted_count = 1;
+  repeated string failed_ids = 2;
+  string message = 3;
+}
+
+// ========== 系统监控消息 ==========
+
+message GetSystemStatsRequest {}
+
+message SystemStats {
+  int64 total_users = 1;
+  int64 active_users = 2;
+  int64 banned_users = 3;
+  int64 total_contents = 4;
+  int64 total_comments = 5;
+  int64 total_likes = 6;
+  int64 total_messages = 7;
+  common.Timestamp stats_at = 8;
+}
+
+message GetDatabaseStatusRequest {}
+
+message DatabaseStatus {
+  bool connected = 1;
+  string version = 2;
+  int64 active_connections = 3;
+  int64 max_connections = 4;
+  int64 database_size_bytes = 5;
+  repeated TableInfo tables = 6;
+}
+
+message TableInfo {
+  string name = 1;
+  int64 row_count = 2;
+  int64 size_bytes = 3;
+}
+
+message GetRedisStatusRequest {}
+
+message RedisStatus {
+  bool connected = 1;
+  string version = 2;
+  int64 used_memory_bytes = 3;
+  int64 total_keys = 4;
+  int64 connected_clients = 5;
+  double uptime_seconds = 6;
+}
+
+message GetRabbitMQStatusRequest {}
+
+message RabbitMQStatus {
+  bool connected = 1;
+  string version = 2;
+  int32 queue_count = 3;
+  int64 message_count = 4;
+  repeated QueueInfo queues = 5;
+}
+
+message QueueInfo {
+  string name = 1;
+  int64 message_count = 2;
+  int32 consumer_count = 3;
+}
+
+// ========== 数据库操作消息 ==========
+
+message ExecuteQueryRequest {
+  string query = 1;           // 只允许 SELECT 语句
+  int32 limit = 2;            // 最大返回行数，默认 100
+}
+
+message ExecuteQueryResponse {
+  repeated string columns = 1;
+  repeated QueryRow rows = 2;
+  int32 row_count = 3;
+  double execution_time_ms = 4;
+}
+
+message QueryRow {
+  repeated string values = 1;
+}
+
+message GetTableSchemaRequest {
+  string table_name = 1;
+}
+
+message TableSchema {
+  string table_name = 1;
+  repeated ColumnInfo columns = 2;
+  repeated IndexInfo indexes = 3;
+}
+
+message ColumnInfo {
+  string name = 1;
+  string type = 2;
+  bool nullable = 3;
+  string default_value = 4;
+  bool is_primary_key = 5;
+}
+
+message IndexInfo {
+  string name = 1;
+  repeated string columns = 2;
+  bool is_unique = 3;
+}
+
+message ListTablesRequest {
+  string schema = 1;          // 默认 public
+}
+
+message ListTablesResponse {
+  repeated string tables = 1;
+}
+
+// ========== 审计日志消息 ==========
+
+message GetAuditLogsRequest {
+  int32 page = 1;
+  int32 page_size = 2;
+  string superuser_id = 3;    // 按操作者筛选
+  string action = 4;          // 按操作类型筛选
+  common.Timestamp start_time = 5;
+  common.Timestamp end_time = 6;
+}
+
+message AuditLogsResponse {
+  repeated AuditLog logs = 1;
+  int32 total = 2;
+  int32 page = 3;
+  int32 page_size = 4;
+}
+
+message AuditLog {
+  string id = 1;
+  string superuser_id = 2;
+  string superuser_username = 3;
+  string action = 4;          // LOGIN, LOGOUT, BAN_USER, DELETE_USER, DELETE_CONTENT, EXECUTE_QUERY 等
+  string target_type = 5;     // USER, CONTENT, SYSTEM 等
+  string target_id = 6;
+  string details = 7;         // JSON 格式的详细信息
+  string ip_address = 8;
+  common.Timestamp created_at = 9;
+}

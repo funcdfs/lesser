@@ -417,8 +417,9 @@ const (
 	CounterTypeBookmark    CounterType = 4
 )
 
-// UpdateCounter 更新统计计数器
+// UpdateCounter 更新统计计数器（原子操作）
 // delta 为正数时增加，为负数时减少（最小为 0）
+// 使用 GREATEST 确保计数器不会变为负数
 func (r *ContentRepository) UpdateCounter(id string, counterType CounterType, delta int32) (int32, error) {
 	var column string
 	switch counterType {
@@ -435,14 +436,15 @@ func (r *ContentRepository) UpdateCounter(id string, counterType CounterType, de
 	}
 
 	var newCount int32
+	// 使用 GREATEST 确保计数器不会变为负数，原子更新
 	query := fmt.Sprintf(`
 		UPDATE contents 
 		SET %s = GREATEST(%s + $1, 0), updated_at = $2
-		WHERE id = $3
+		WHERE id = $3 AND status != $4
 		RETURNING %s
 	`, column, column, column)
 
-	err := r.db.QueryRow(query, delta, time.Now(), id).Scan(&newCount)
+	err := r.db.QueryRow(query, delta, time.Now(), id, ContentStatusDeleted).Scan(&newCount)
 	if err == sql.ErrNoRows {
 		return 0, ErrContentNotFound
 	}
@@ -468,6 +470,18 @@ func (r *ContentRepository) GetCommentsDisabled(id string) (bool, error) {
 		return false, ErrContentNotFound
 	}
 	return disabled, err
+}
+
+// GetAuthorID 获取内容作者 ID（用于通知服务）
+func (r *ContentRepository) GetAuthorID(id string) (string, error) {
+	var authorID string
+	err := r.db.QueryRow(`
+		SELECT author_id FROM contents WHERE id = $1 AND status != $2
+	`, id, ContentStatusDeleted).Scan(&authorID)
+	if err == sql.ErrNoRows {
+		return "", ErrContentNotFound
+	}
+	return authorID, err
 }
 
 // ============================================================================
