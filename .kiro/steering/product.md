@@ -38,8 +38,8 @@
 ┌─────────────────────────────────────────────────────────────┐
 │                    Service Cluster                           │
 │  ┌──────────┐ ┌──────────┐ ┌──────────┐ ┌──────────┐       │
-│  │Auth      │ │User      │ │Post      │ │Feed      │ ...   │
-│  │:50054    │ │:50055    │ │:50056    │ │:50057    │       │
+│  │Auth      │ │User      │ │Content   │ │Timeline  │ ...   │
+│  │:50054    │ │:50055    │ │:50056    │ │:50062    │       │
 │  └──────────┘ └──────────┘ └──────────┘ └──────────┘       │
 └───────────┬─────────────────────────────┬───────────────────┘
             │                             │
@@ -59,7 +59,7 @@
 | 客户端 | Flutter 3.x | 跨平台移动端 + Web |
 | 网关 | Traefik 3.x | 反向代理、负载均衡、gRPC 支持 |
 | API 网关 | Go + gRPC | JWT 验签、限流、路由转发 |
-| 业务服务 | Go + gRPC | Auth/User/Post/Feed/Search/Notification |
+| 业务服务 | Go + gRPC | Auth/User/Content/Interaction/Comment/Timeline/Search/Notification |
 | 聊天服务 | Go + gRPC 双向流 | 高性能实时聊天 |
 | 消息队列 | RabbitMQ | 仅用于次要异步任务 |
 | 数据库 | PostgreSQL 16 | 主数据存储 |
@@ -72,8 +72,10 @@
 ├── protos/                     # gRPC Proto 定义
 │   ├── auth/                   # 认证服务
 │   ├── chat/                   # 聊天服务
-│   ├── feed/                   # Feed 服务
-│   ├── post/                   # 帖子服务
+│   ├── content/                # 内容服务
+│   ├── interaction/            # 交互服务
+│   ├── comment/                # 评论服务
+│   ├── timeline/               # 时间线服务
 │   ├── user/                   # 用户服务
 │   ├── notification/           # 通知服务
 │   ├── search/                 # 搜索服务
@@ -90,8 +92,10 @@
 │   ├── gateway/                # Go API 网关
 │   ├── auth/                   # 认证服务
 │   ├── user/                   # 用户服务
-│   ├── post/                   # 帖子服务
-│   ├── feed/                   # Feed 服务
+│   ├── content/                # 内容服务 (Story/Short/Article)
+│   ├── interaction/            # 交互服务 (点赞/收藏/转发)
+│   ├── comment/                # 评论服务
+│   ├── timeline/               # 时间线服务 (Feed 流聚合)
 │   ├── search/                 # 搜索服务
 │   ├── notification/           # 通知服务
 │   ├── chat/                   # 聊天服务 (gRPC 双向流)
@@ -193,10 +197,12 @@ devlesser init
 | Gateway | 50053 | API 网关 (JWT验签/限流/路由) |
 | Auth | 50054 | 认证服务 |
 | User | 50055 | 用户服务 |
-| Post | 50056 | 帖子服务 |
-| Feed | 50057 | Feed 服务 |
+| Content | 50056 | 内容服务 (Story/Short/Article CRUD) |
 | Search | 50058 | 搜索服务 |
 | Notification | 50059 | 通知服务 |
+| Interaction | 50060 | 交互服务 (点赞/收藏/转发) |
+| Comment | 50061 | 评论服务 |
+| Timeline | 50062 | 时间线服务 (Feed 流聚合) |
 | Chat | 50052 | 聊天服务 (双向流) |
 
 ### Chat 双向流 API

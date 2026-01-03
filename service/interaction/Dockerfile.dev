@@ -1,0 +1,17 @@
+# Interaction Service - Development Dockerfile
+FROM golang:1.23-alpine
+
+WORKDIR /app/interaction
+
+# 安装必要工具
+RUN apk add --no-cache git curl
+
+# 安装 air 用于热重载
+RUN go install github.com/air-verse/air@latest
+
+# 设置 Go 环境
+ENV GO111MODULE=on
+ENV GOPROXY=https://goproxy.cn,direct
+
+# 启动命令
+CMD ["air", "-c", ".air.toml"]

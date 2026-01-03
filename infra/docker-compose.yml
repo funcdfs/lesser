@@ -142,8 +142,10 @@ services:
       - GRPC_PORT=${GATEWAY_GRPC_PORT:-50053}
       - AUTH_SERVICE_ADDR=auth:50054
       - USER_SERVICE_ADDR=user:50055
-      - POST_SERVICE_ADDR=post:50056
-      - FEED_SERVICE_ADDR=feed:50057
+      - CONTENT_SERVICE_ADDR=content:50056
+      - INTERACTION_SERVICE_ADDR=interaction:50060
+      - COMMENT_SERVICE_ADDR=comment:50061
+      - TIMELINE_SERVICE_ADDR=timeline:50062
       - SEARCH_SERVICE_ADDR=search:50058
       - NOTIFICATION_SERVICE_ADDR=notification:50059
       - REDIS_URL=redis://redis:6379/0
@@ -239,13 +241,13 @@ services:
       start_period: 30s
 
   # --------------------------------------------------------------------------
-  # Post Service (帖子服务 - CRUD)
+  # Content Service (内容服务 - Story/Short/Article CRUD)
   # --------------------------------------------------------------------------
-  post:
+  content:
     build:
       context: ../service
-      dockerfile: post/Dockerfile.dev
-    container_name: post
+      dockerfile: content/Dockerfile.dev
+    container_name: content
     restart: unless-stopped
     environment:
       - GRPC_PORT=50056
@@ -274,22 +276,23 @@ services:
       start_period: 30s
 
   # --------------------------------------------------------------------------
-  # Feed Service (信息流服务 - 点赞/评论/收藏)
+  # Interaction Service (交互服务 - 点赞/收藏/转发)
   # --------------------------------------------------------------------------
-  feed:
+  interaction:
     build:
       context: ../service
-      dockerfile: feed/Dockerfile.dev
-    container_name: feed
+      dockerfile: interaction/Dockerfile.dev
+    container_name: interaction
     restart: unless-stopped
     environment:
-      - GRPC_PORT=50057
+      - GRPC_PORT=50060
       - DB_HOST=postgres
       - DB_PORT=5432
       - DB_USER=${POSTGRES_USER:-lesser}
       - DB_PASSWORD=${POSTGRES_PASSWORD:-lesser_dev_password}
       - DB_NAME=${POSTGRES_DB:-lesser_db}
       - DB_SSLMODE=disable
+      - CONTENT_SERVICE_ADDR=content:50056
       - RABBITMQ_URL=amqp://${RABBITMQ_USER:-guest}:${RABBITMQ_PASSWORD:-guest}@rabbitmq:5672/
     volumes:
       - ../service:/app
@@ -297,12 +300,87 @@ services:
     depends_on:
       postgres:
         condition: service_healthy
+      content:
+        condition: service_healthy
       rabbitmq:
         condition: service_healthy
     networks:
       - app-network
     healthcheck:
-      test: ["CMD", "nc", "-z", "localhost", "50057"]
+      test: ["CMD", "nc", "-z", "localhost", "50060"]
+      interval: 30s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+
+  # --------------------------------------------------------------------------
+  # Comment Service (评论服务)
+  # --------------------------------------------------------------------------
+  comment:
+    build:
+      context: ../service
+      dockerfile: comment/Dockerfile.dev
+    container_name: comment
+    restart: unless-stopped
+    environment:
+      - GRPC_PORT=50061
+      - DB_HOST=postgres
+      - DB_PORT=5432
+      - DB_USER=${POSTGRES_USER:-lesser}
+      - DB_PASSWORD=${POSTGRES_PASSWORD:-lesser_dev_password}
+      - DB_NAME=${POSTGRES_DB:-lesser_db}
+      - DB_SSLMODE=disable
+      - CONTENT_SERVICE_ADDR=content:50056
+      - RABBITMQ_URL=amqp://${RABBITMQ_USER:-guest}:${RABBITMQ_PASSWORD:-guest}@rabbitmq:5672/
+    volumes:
+      - ../service:/app
+      - go_mod_cache:/go/pkg/mod
+    depends_on:
+      postgres:
+        condition: service_healthy
+      content:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+    networks:
+      - app-network
+    healthcheck:
+      test: ["CMD", "nc", "-z", "localhost", "50061"]
+      interval: 30s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+
+  # --------------------------------------------------------------------------
+  # Timeline Service (时间线服务 - Feed 流聚合)
+  # --------------------------------------------------------------------------
+  timeline:
+    build:
+      context: ../service
+      dockerfile: timeline/Dockerfile.dev
+    container_name: timeline
+    restart: unless-stopped
+    environment:
+      - GRPC_PORT=50062
+      - DB_HOST=postgres
+      - DB_PORT=5432
+      - DB_USER=${POSTGRES_USER:-lesser}
+      - DB_PASSWORD=${POSTGRES_PASSWORD:-lesser_dev_password}
+      - DB_NAME=${POSTGRES_DB:-lesser_db}
+      - DB_SSLMODE=disable
+      - INTERACTION_SERVICE_ADDR=interaction:50060
+    volumes:
+      - ../service:/app
+      - go_mod_cache:/go/pkg/mod
+    depends_on:
+      postgres:
+        condition: service_healthy
+      interaction:
+        condition: service_healthy
+    networks:
+      - app-network
+    healthcheck:
+      test: ["CMD", "nc", "-z", "localhost", "50062"]
       interval: 30s
       timeout: 5s
       retries: 5

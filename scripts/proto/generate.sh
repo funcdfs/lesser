@@ -42,7 +42,7 @@ generate_go() {
     fi
     
     # 服务列表
-    SERVICES=("gateway" "auth" "user" "post" "feed" "search" "notification" "chat")
+    SERVICES=("gateway" "auth" "user" "content" "interaction" "comment" "timeline" "search" "notification" "chat")
     
     for service in "${SERVICES[@]}"; do
         SERVICE_DIR="$PROJECT_ROOT/service/$service"
@@ -64,13 +64,97 @@ generate_go() {
             
             # 生成服务特定的 proto
             if [ -f "$PROTO_DIR/$service/$service.proto" ]; then
-                protoc \
-                    --proto_path="$PROTO_DIR" \
-                    --go_out="$PROTO_OUT" \
-                    --go_opt=paths=source_relative \
-                    --go-grpc_out="$PROTO_OUT" \
-                    --go-grpc_opt=paths=source_relative \
-                    "$PROTO_DIR/$service/$service.proto"
+                # Timeline 服务需要 content 和 interaction proto 依赖
+                if [ "$service" = "timeline" ]; then
+                    # 先生成 content proto
+                    protoc \
+                        --proto_path="$PROTO_DIR" \
+                        --go_out="$PROTO_OUT" \
+                        --go_opt=paths=source_relative \
+                        --go_opt=Mcommon/common.proto=github.com/funcdfs/lesser/pkg/proto/common \
+                        --go-grpc_out="$PROTO_OUT" \
+                        --go-grpc_opt=paths=source_relative \
+                        --go-grpc_opt=Mcommon/common.proto=github.com/funcdfs/lesser/pkg/proto/common \
+                        "$PROTO_DIR/content/content.proto"
+                    
+                    # 生成 interaction proto
+                    protoc \
+                        --proto_path="$PROTO_DIR" \
+                        --go_out="$PROTO_OUT" \
+                        --go_opt=paths=source_relative \
+                        --go_opt=Mcommon/common.proto=github.com/funcdfs/lesser/pkg/proto/common \
+                        --go-grpc_out="$PROTO_OUT" \
+                        --go-grpc_opt=paths=source_relative \
+                        --go-grpc_opt=Mcommon/common.proto=github.com/funcdfs/lesser/pkg/proto/common \
+                        "$PROTO_DIR/interaction/interaction.proto"
+                    
+                    # 生成 timeline proto
+                    protoc \
+                        --proto_path="$PROTO_DIR" \
+                        --go_out="$PROTO_OUT" \
+                        --go_opt=paths=source_relative \
+                        --go_opt=Mcommon/common.proto=github.com/funcdfs/lesser/pkg/proto/common \
+                        --go_opt=Mcontent/content.proto=github.com/funcdfs/lesser/timeline/proto/content \
+                        --go-grpc_out="$PROTO_OUT" \
+                        --go-grpc_opt=paths=source_relative \
+                        --go-grpc_opt=Mcommon/common.proto=github.com/funcdfs/lesser/pkg/proto/common \
+                        --go-grpc_opt=Mcontent/content.proto=github.com/funcdfs/lesser/timeline/proto/content \
+                        "$PROTO_DIR/$service/$service.proto"
+                # Interaction 服务需要 content proto 依赖
+                elif [ "$service" = "interaction" ]; then
+                    # 先生成 content proto
+                    protoc \
+                        --proto_path="$PROTO_DIR" \
+                        --go_out="$PROTO_OUT" \
+                        --go_opt=paths=source_relative \
+                        --go_opt=Mcommon/common.proto=github.com/funcdfs/lesser/pkg/proto/common \
+                        --go-grpc_out="$PROTO_OUT" \
+                        --go-grpc_opt=paths=source_relative \
+                        --go-grpc_opt=Mcommon/common.proto=github.com/funcdfs/lesser/pkg/proto/common \
+                        "$PROTO_DIR/content/content.proto"
+                    
+                    # 生成 interaction proto
+                    protoc \
+                        --proto_path="$PROTO_DIR" \
+                        --go_out="$PROTO_OUT" \
+                        --go_opt=paths=source_relative \
+                        --go_opt=Mcommon/common.proto=github.com/funcdfs/lesser/pkg/proto/common \
+                        --go-grpc_out="$PROTO_OUT" \
+                        --go-grpc_opt=paths=source_relative \
+                        --go-grpc_opt=Mcommon/common.proto=github.com/funcdfs/lesser/pkg/proto/common \
+                        "$PROTO_DIR/$service/$service.proto"
+                # Comment 服务需要 content proto 依赖
+                elif [ "$service" = "comment" ]; then
+                    # 先生成 content proto
+                    protoc \
+                        --proto_path="$PROTO_DIR" \
+                        --go_out="$PROTO_OUT" \
+                        --go_opt=paths=source_relative \
+                        --go_opt=Mcommon/common.proto=github.com/funcdfs/lesser/pkg/proto/common \
+                        --go-grpc_out="$PROTO_OUT" \
+                        --go-grpc_opt=paths=source_relative \
+                        --go-grpc_opt=Mcommon/common.proto=github.com/funcdfs/lesser/pkg/proto/common \
+                        "$PROTO_DIR/content/content.proto"
+                    
+                    # 生成 comment proto
+                    protoc \
+                        --proto_path="$PROTO_DIR" \
+                        --go_out="$PROTO_OUT" \
+                        --go_opt=paths=source_relative \
+                        --go_opt=Mcommon/common.proto=github.com/funcdfs/lesser/pkg/proto/common \
+                        --go-grpc_out="$PROTO_OUT" \
+                        --go-grpc_opt=paths=source_relative \
+                        --go-grpc_opt=Mcommon/common.proto=github.com/funcdfs/lesser/pkg/proto/common \
+                        "$PROTO_DIR/$service/$service.proto"
+                else
+                    protoc \
+                        --proto_path="$PROTO_DIR" \
+                        --go_out="$PROTO_OUT" \
+                        --go_opt=paths=source_relative \
+                        --go-grpc_out="$PROTO_OUT" \
+                        --go-grpc_opt=paths=source_relative \
+                        "$PROTO_DIR/$service/$service.proto"
+                fi
             fi
         fi
     done
@@ -90,7 +174,7 @@ generate_go() {
         --go-grpc_opt=Mcommon/common.proto=github.com/funcdfs/lesser/gateway/proto/common \
         "$PROTO_DIR/user/user.proto" 2>/dev/null || true
     
-    # Gateway 需要 post proto (用于 search 返回类型)
+    # Gateway 需要 content proto
     protoc \
         --proto_path="$PROTO_DIR" \
         --go_out="$GATEWAY_PROTO_OUT" \
@@ -99,7 +183,20 @@ generate_go() {
         --go-grpc_out="$GATEWAY_PROTO_OUT" \
         --go-grpc_opt=paths=source_relative \
         --go-grpc_opt=Mcommon/common.proto=github.com/funcdfs/lesser/gateway/proto/common \
-        "$PROTO_DIR/post/post.proto" 2>/dev/null || true
+        "$PROTO_DIR/content/content.proto" 2>/dev/null || true
+    
+    # Gateway 需要 feed proto
+    protoc \
+        --proto_path="$PROTO_DIR" \
+        --go_out="$GATEWAY_PROTO_OUT" \
+        --go_opt=paths=source_relative \
+        --go_opt=Mcommon/common.proto=github.com/funcdfs/lesser/gateway/proto/common \
+        --go_opt=Mcontent/content.proto=github.com/funcdfs/lesser/gateway/proto/content \
+        --go-grpc_out="$GATEWAY_PROTO_OUT" \
+        --go-grpc_opt=paths=source_relative \
+        --go-grpc_opt=Mcommon/common.proto=github.com/funcdfs/lesser/gateway/proto/common \
+        --go-grpc_opt=Mcontent/content.proto=github.com/funcdfs/lesser/gateway/proto/content \
+        "$PROTO_DIR/feed/feed.proto" 2>/dev/null || true
     
     # Gateway 需要 search proto
     protoc \
@@ -108,13 +205,48 @@ generate_go() {
         --go_opt=paths=source_relative \
         --go_opt=Mcommon/common.proto=github.com/funcdfs/lesser/gateway/proto/common \
         --go_opt=Muser/user.proto=github.com/funcdfs/lesser/gateway/proto/user \
-        --go_opt=Mpost/post.proto=github.com/funcdfs/lesser/gateway/proto/post \
+        --go_opt=Mcontent/content.proto=github.com/funcdfs/lesser/gateway/proto/content \
         --go-grpc_out="$GATEWAY_PROTO_OUT" \
         --go-grpc_opt=paths=source_relative \
         --go-grpc_opt=Mcommon/common.proto=github.com/funcdfs/lesser/gateway/proto/common \
         --go-grpc_opt=Muser/user.proto=github.com/funcdfs/lesser/gateway/proto/user \
-        --go-grpc_opt=Mpost/post.proto=github.com/funcdfs/lesser/gateway/proto/post \
+        --go-grpc_opt=Mcontent/content.proto=github.com/funcdfs/lesser/gateway/proto/content \
         "$PROTO_DIR/search/search.proto" 2>/dev/null || true
+    
+    # Gateway 需要 comment proto
+    protoc \
+        --proto_path="$PROTO_DIR" \
+        --go_out="$GATEWAY_PROTO_OUT" \
+        --go_opt=paths=source_relative \
+        --go_opt=Mcommon/common.proto=github.com/funcdfs/lesser/gateway/proto/common \
+        --go-grpc_out="$GATEWAY_PROTO_OUT" \
+        --go-grpc_opt=paths=source_relative \
+        --go-grpc_opt=Mcommon/common.proto=github.com/funcdfs/lesser/gateway/proto/common \
+        "$PROTO_DIR/comment/comment.proto" 2>/dev/null || true
+    
+    # Gateway 需要 interaction proto
+    protoc \
+        --proto_path="$PROTO_DIR" \
+        --go_out="$GATEWAY_PROTO_OUT" \
+        --go_opt=paths=source_relative \
+        --go_opt=Mcommon/common.proto=github.com/funcdfs/lesser/gateway/proto/common \
+        --go-grpc_out="$GATEWAY_PROTO_OUT" \
+        --go-grpc_opt=paths=source_relative \
+        --go-grpc_opt=Mcommon/common.proto=github.com/funcdfs/lesser/gateway/proto/common \
+        "$PROTO_DIR/interaction/interaction.proto" 2>/dev/null || true
+    
+    # Gateway 需要 timeline proto
+    protoc \
+        --proto_path="$PROTO_DIR" \
+        --go_out="$GATEWAY_PROTO_OUT" \
+        --go_opt=paths=source_relative \
+        --go_opt=Mcommon/common.proto=github.com/funcdfs/lesser/gateway/proto/common \
+        --go_opt=Mcontent/content.proto=github.com/funcdfs/lesser/gateway/proto/content \
+        --go-grpc_out="$GATEWAY_PROTO_OUT" \
+        --go-grpc_opt=paths=source_relative \
+        --go-grpc_opt=Mcommon/common.proto=github.com/funcdfs/lesser/gateway/proto/common \
+        --go-grpc_opt=Mcontent/content.proto=github.com/funcdfs/lesser/gateway/proto/content \
+        "$PROTO_DIR/timeline/timeline.proto" 2>/dev/null || true
     
     echo "✅ Go 代码生成完成"
 }
@@ -141,8 +273,10 @@ generate_dart() {
         "common/common.proto"
         "auth/auth.proto"
         "user/user.proto"
-        "post/post.proto"
-        "feed/feed.proto"
+        "content/content.proto"
+        "interaction/interaction.proto"
+        "comment/comment.proto"
+        "timeline/timeline.proto"
         "search/search.proto"
         "notification/notification.proto"
         "chat/chat.proto"

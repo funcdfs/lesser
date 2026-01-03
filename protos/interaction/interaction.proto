@@ -1,0 +1,183 @@
+syntax = "proto3";
+package interaction;
+
+option go_package = "github.com/funcdfs/lesser/interaction/proto/interaction";
+
+import "common/common.proto";
+
+// ============================================================================
+// 实体定义
+// ============================================================================
+
+// Repost 转发实体
+message Repost {
+  string id = 1;
+  string user_id = 2;
+  string content_id = 3;
+  string quote = 4;  // 转发时的引用文字
+  common.Timestamp created_at = 5;
+}
+
+// Bookmark 收藏实体
+message Bookmark {
+  string id = 1;
+  string user_id = 2;
+  string content_id = 3;
+  common.Timestamp created_at = 4;
+}
+
+// UserInteractionStatus 用户对内容的交互状态
+message UserInteractionStatus {
+  string content_id = 1;
+  bool is_liked = 2;
+  bool is_bookmarked = 3;
+  bool is_reposted = 4;
+}
+
+// ============================================================================
+// 点赞相关
+// ============================================================================
+
+// LikeRequest 点赞请求
+message LikeRequest {
+  string user_id = 1;
+  string content_id = 2;
+}
+
+// LikeResponse 点赞响应
+message LikeResponse {
+  bool success = 1;
+  int32 like_count = 2;  // 更新后的点赞数
+}
+
+// UnlikeRequest 取消点赞请求
+message UnlikeRequest {
+  string user_id = 1;
+  string content_id = 2;
+}
+
+// UnlikeResponse 取消点赞响应
+message UnlikeResponse {
+  bool success = 1;
+  int32 like_count = 2;
+}
+
+// CheckLikedRequest 检查是否已点赞
+message CheckLikedRequest {
+  string user_id = 1;
+  string content_id = 2;
+}
+
+// CheckLikedResponse 检查点赞响应
+message CheckLikedResponse {
+  bool is_liked = 1;
+}
+
+// ============================================================================
+// 收藏相关
+// ============================================================================
+
+// BookmarkRequest 收藏请求
+message BookmarkRequest {
+  string user_id = 1;
+  string content_id = 2;
+}
+
+// BookmarkResponse 收藏响应
+message BookmarkResponse {
+  bool success = 1;
+  int32 bookmark_count = 2;
+}
+
+// UnbookmarkRequest 取消收藏请求
+message UnbookmarkRequest {
+  string user_id = 1;
+  string content_id = 2;
+}
+
+// UnbookmarkResponse 取消收藏响应
+message UnbookmarkResponse {
+  bool success = 1;
+  int32 bookmark_count = 2;
+}
+
+// ListBookmarksRequest 获取收藏列表请求
+message ListBookmarksRequest {
+  string user_id = 1;
+  common.Pagination pagination = 2;
+}
+
+// ListBookmarksResponse 收藏列表响应
+message ListBookmarksResponse {
+  repeated Bookmark bookmarks = 1;
+  common.Pagination pagination = 2;
+}
+
+// ============================================================================
+// 转发相关
+// ============================================================================
+
+// CreateRepostRequest 创建转发请求
+message CreateRepostRequest {
+  string user_id = 1;
+  string content_id = 2;
+  string quote = 3;  // 可选引用文字
+}
+
+// CreateRepostResponse 创建转发响应
+message CreateRepostResponse {
+  Repost repost = 1;
+  int32 repost_count = 2;
+}
+
+// DeleteRepostRequest 删除转发请求
+message DeleteRepostRequest {
+  string user_id = 1;
+  string content_id = 2;
+}
+
+// DeleteRepostResponse 删除转发响应
+message DeleteRepostResponse {
+  bool success = 1;
+  int32 repost_count = 2;
+}
+
+// ============================================================================
+// 批量查询
+// ============================================================================
+
+// BatchGetInteractionStatusRequest 批量获取交互状态请求
+message BatchGetInteractionStatusRequest {
+  string user_id = 1;
+  repeated string content_ids = 2;
+}
+
+// BatchGetInteractionStatusResponse 批量获取交互状态响应
+message BatchGetInteractionStatusResponse {
+  repeated UserInteractionStatus statuses = 1;
+}
+
+// ============================================================================
+// 服务定义
+// ============================================================================
+
+// InteractionService 交互服务
+// 提供点赞、收藏、转发功能
+service InteractionService {
+  // ---- 点赞 ----
+  rpc Like(LikeRequest) returns (LikeResponse);
+  rpc Unlike(UnlikeRequest) returns (UnlikeResponse);
+  rpc CheckLiked(CheckLikedRequest) returns (CheckLikedResponse);
+  
+  // ---- 收藏 ----
+  rpc Bookmark(BookmarkRequest) returns (BookmarkResponse);
+  rpc Unbookmark(UnbookmarkRequest) returns (UnbookmarkResponse);
+  rpc ListBookmarks(ListBookmarksRequest) returns (ListBookmarksResponse);
+  
+  // ---- 转发 ----
+  rpc CreateRepost(CreateRepostRequest) returns (CreateRepostResponse);
+  rpc DeleteRepost(DeleteRepostRequest) returns (DeleteRepostResponse);
+  
+  // ---- 批量查询 ----
+  rpc BatchGetInteractionStatus(BatchGetInteractionStatusRequest) returns (BatchGetInteractionStatusResponse);
+}

@@ -1,0 +1,319 @@
+syntax = "proto3";
+package content;
+
+option go_package = "github.com/funcdfs/lesser/content/proto/content";
+
+import "common/common.proto";
+
+// ============================================================================
+// 内容类型枚举
+// ============================================================================
+
+// ContentType 内容类型
+enum ContentType {
+  CONTENT_TYPE_UNSPECIFIED = 0;
+  STORY = 1;    // 小瞬间，24h 自动过期
+  SHORT = 2;    // 短文本，类似 Twitter（280 字符限制）
+  ARTICLE = 3;  // 长文章/专栏，支持富文本
+}
+
+// ContentStatus 内容状态
+enum ContentStatus {
+  CONTENT_STATUS_UNSPECIFIED = 0;
+  DRAFT = 1;      // 草稿（仅 ARTICLE 支持）
+  PUBLISHED = 2;  // 已发布
+  ARCHIVED = 3;   // 已归档
+  DELETED = 4;    // 已删除
+}
+
+// MediaType 媒体类型
+enum MediaType {
+  MEDIA_TYPE_UNSPECIFIED = 0;
+  IMAGE = 1;
+  VIDEO = 2;
+  AUDIO = 3;
+  GIF = 4;
+}
+
+// ============================================================================
+// 实体定义
+// ============================================================================
+
+// Media 媒体附件
+message Media {
+  string id = 1;
+  MediaType type = 2;
+  string url = 3;
+  string thumbnail_url = 4;  // 缩略图 URL
+  int32 width = 5;
+  int32 height = 6;
+  int32 duration = 7;        // 视频/音频时长（秒）
+  string alt_text = 8;       // 无障碍描述
+}
+
+// Content 内容实体
+message Content {
+  string id = 1;
+  string author_id = 2;
+  ContentType type = 3;
+  ContentStatus status = 4;
+  
+  // 内容字段
+  string title = 5;           // 标题（ARTICLE 必填，其他可选）
+  string text = 6;            // 正文内容
+  string summary = 7;         // 摘要（ARTICLE 用于预览）
+  repeated Media media = 8;   // 媒体附件
+  repeated string tags = 9;   // 标签
+  
+  // 引用关系
+  string reply_to_id = 10;    // 回复的内容 ID（用于评论/回复）
+  string quote_id = 11;       // 引用的内容 ID（用于转发引用）
+  
+  // 统计数据
+  int32 like_count = 20;
+  int32 comment_count = 21;
+  int32 repost_count = 22;
+  int32 bookmark_count = 23;
+  int32 view_count = 24;
+  
+  // 时间戳
+  common.Timestamp created_at = 30;
+  common.Timestamp updated_at = 31;
+  common.Timestamp published_at = 32;  // 发布时间（草稿发布后设置）
+  common.Timestamp expires_at = 33;    // 过期时间（STORY 用）
+  
+  // 元数据
+  bool is_pinned = 40;        // 是否置顶
+  bool comments_disabled = 41; // 是否禁止评论
+  string language = 42;       // 内容语言
+}
+
+// ============================================================================
+// 请求/响应消息
+// ============================================================================
+
+// CreateContentRequest 创建内容请求
+message CreateContentRequest {
+  string author_id = 1;
+  ContentType type = 2;
+  string title = 3;
+  string text = 4;
+  string summary = 5;
+  repeated Media media = 6;
+  repeated string tags = 7;
+  string reply_to_id = 8;     // 回复某内容
+  string quote_id = 9;        // 引用某内容
+  bool is_draft = 10;         // 是否保存为草稿（仅 ARTICLE）
+  bool comments_disabled = 11;
+}
+
+// CreateContentResponse 创建内容响应
+message CreateContentResponse {
+  Content content = 1;
+}
+
+// GetContentRequest 获取内容请求
+message GetContentRequest {
+  string content_id = 1;
+  string viewer_id = 2;  // 查看者 ID，用于统计和权限检查
+}
+
+// GetContentResponse 获取内容响应
+message GetContentResponse {
+  Content content = 1;
+  bool is_liked = 2;      // 当前用户是否已点赞
+  bool is_bookmarked = 3; // 当前用户是否已收藏
+  bool is_reposted = 4;   // 当前用户是否已转发
+}
+
+// UpdateContentRequest 更新内容请求
+message UpdateContentRequest {
+  string content_id = 1;
+  string user_id = 2;     // 用于权限验证
+  string title = 3;
+  string text = 4;
+  string summary = 5;
+  repeated Media media = 6;
+  repeated string tags = 7;
+  bool comments_disabled = 8;
+}
+
+// UpdateContentResponse 更新内容响应
+message UpdateContentResponse {
+  Content content = 1;
+}
+
+// DeleteContentRequest 删除内容请求
+message DeleteContentRequest {
+  string content_id = 1;
+  string user_id = 2;  // 用于权限验证
+}
+
+// DeleteContentResponse 删除内容响应
+message DeleteContentResponse {
+  bool success = 1;
+}
+
+// PublishDraftRequest 发布草稿请求
+message PublishDraftRequest {
+  string content_id = 1;
+  string user_id = 2;
+}
+
+// PublishDraftResponse 发布草稿响应
+message PublishDraftResponse {
+  Content content = 1;
+}
+
+// ListContentsRequest 获取内容列表请求
+message ListContentsRequest {
+  // 筛选条件
+  string author_id = 1;       // 按作者筛选
+  ContentType type = 2;       // 按类型筛选
+  ContentStatus status = 3;   // 按状态筛选
+  repeated string tags = 4;   // 按标签筛选
+  
+  // 分页
+  common.Pagination pagination = 10;
+  
+  // 排序
+  string order_by = 11;       // created_at, updated_at, like_count 等
+  bool descending = 12;       // 是否降序
+}
+
+// ListContentsResponse 内容列表响应
+message ListContentsResponse {
+  repeated Content contents = 1;
+  common.Pagination pagination = 2;
+}
+
+// GetUserDraftsRequest 获取用户草稿列表请求
+message GetUserDraftsRequest {
+  string user_id = 1;
+  common.Pagination pagination = 2;
+}
+
+// GetUserDraftsResponse 用户草稿列表响应
+message GetUserDraftsResponse {
+  repeated Content drafts = 1;
+  common.Pagination pagination = 2;
+}
+
+// GetRepliesRequest 获取回复列表请求
+message GetRepliesRequest {
+  string content_id = 1;      // 获取该内容的回复
+  common.Pagination pagination = 2;
+}
+
+// GetRepliesResponse 回复列表响应
+message GetRepliesResponse {
+  repeated Content replies = 1;
+  common.Pagination pagination = 2;
+}
+
+// GetUserStoriesRequest 获取用户 Story 列表请求
+message GetUserStoriesRequest {
+  string user_id = 1;
+  string viewer_id = 2;  // 查看者 ID
+}
+
+// GetUserStoriesResponse 用户 Story 列表响应
+message GetUserStoriesResponse {
+  repeated Content stories = 1;
+  bool has_unseen = 2;  // 是否有未看过的 Story
+}
+
+// BatchGetContentsRequest 批量获取内容请求
+message BatchGetContentsRequest {
+  repeated string content_ids = 1;
+  string viewer_id = 2;
+}
+
+// BatchGetContentsResponse 批量获取内容响应
+message BatchGetContentsResponse {
+  repeated Content contents = 1;
+}
+
+// PinContentRequest 置顶内容请求
+message PinContentRequest {
+  string content_id = 1;
+  string user_id = 2;
+  bool pin = 3;  // true 置顶，false 取消置顶
+}
+
+// PinContentResponse 置顶内容响应
+message PinContentResponse {
+  bool success = 1;
+}
+
+// ============================================================================
+// 统计计数更新消息（供 Feed Service 内部调用）
+// ============================================================================
+
+// CounterType 计数器类型
+enum CounterType {
+  COUNTER_TYPE_UNSPECIFIED = 0;
+  COUNTER_LIKE = 1;
+  COUNTER_COMMENT = 2;
+  COUNTER_REPOST = 3;
+  COUNTER_BOOKMARK = 4;
+}
+
+// UpdateCounterRequest 更新计数器请求
+message UpdateCounterRequest {
+  string content_id = 1;
+  CounterType counter_type = 2;
+  int32 delta = 3;  // 增量，正数增加，负数减少
+}
+
+// UpdateCounterResponse 更新计数器响应
+message UpdateCounterResponse {
+  int32 new_count = 1;  // 更新后的计数值
+}
+
+// CheckContentExistsRequest 检查内容是否存在请求
+message CheckContentExistsRequest {
+  string content_id = 1;
+}
+
+// CheckContentExistsResponse 检查内容是否存在响应
+message CheckContentExistsResponse {
+  bool exists = 1;
+  bool comments_disabled = 2;  // 是否禁止评论
+}
+
+// ============================================================================
+// 服务定义
+// ============================================================================
+
+// ContentService 内容服务
+service ContentService {
+  // 基础 CRUD
+  rpc CreateContent(CreateContentRequest) returns (CreateContentResponse);
+  rpc GetContent(GetContentRequest) returns (GetContentResponse);
+  rpc UpdateContent(UpdateContentRequest) returns (UpdateContentResponse);
+  rpc DeleteContent(DeleteContentRequest) returns (DeleteContentResponse);
+  
+  // 列表查询
+  rpc ListContents(ListContentsRequest) returns (ListContentsResponse);
+  rpc BatchGetContents(BatchGetContentsRequest) returns (BatchGetContentsResponse);
+  
+  // 草稿管理
+  rpc GetUserDrafts(GetUserDraftsRequest) returns (GetUserDraftsResponse);
+  rpc PublishDraft(PublishDraftRequest) returns (PublishDraftResponse);
+  
+  // 回复/评论
+  rpc GetReplies(GetRepliesRequest) returns (GetRepliesResponse);
+  
+  // Story 专用
+  rpc GetUserStories(GetUserStoriesRequest) returns (GetUserStoriesResponse);
+  
+  // 置顶
+  rpc PinContent(PinContentRequest) returns (PinContentResponse);
+  
+  // ---- 内部 API（供 Feed Service 调用）----
+  // 更新统计计数
+  rpc UpdateCounter(UpdateCounterRequest) returns (UpdateCounterResponse);
+  // 检查内容是否存在
+  rpc CheckContentExists(CheckContentExistsRequest) returns (CheckContentExistsResponse);
+}

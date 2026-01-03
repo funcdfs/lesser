@@ -21,8 +21,10 @@ type ServiceName string
 const (
 	ServiceAuth         ServiceName = "auth"
 	ServiceUser         ServiceName = "user"
-	ServicePost         ServiceName = "post"
-	ServiceFeed         ServiceName = "feed"
+	ServiceContent      ServiceName = "content"
+	ServiceInteraction  ServiceName = "interaction"
+	ServiceComment      ServiceName = "comment"
+	ServiceTimeline     ServiceName = "timeline"
 	ServiceChat         ServiceName = "chat"
 	ServiceSearch       ServiceName = "search"
 	ServiceNotification ServiceName = "notification"
@@ -32,8 +34,10 @@ const (
 type ServiceConfig struct {
 	AuthAddr         string
 	UserAddr         string
-	PostAddr         string
-	FeedAddr         string
+	ContentAddr      string
+	InteractionAddr  string
+	CommentAddr      string
+	TimelineAddr     string
 	ChatAddr         string
 	SearchAddr       string
 	NotificationAddr string
@@ -61,8 +65,10 @@ func NewRouter(cfg ServiceConfig, log *slog.Logger) (*Router, error) {
 	services := map[ServiceName]string{
 		ServiceAuth:         cfg.AuthAddr,
 		ServiceUser:         cfg.UserAddr,
-		ServicePost:         cfg.PostAddr,
-		ServiceFeed:         cfg.FeedAddr,
+		ServiceContent:      cfg.ContentAddr,
+		ServiceInteraction:  cfg.InteractionAddr,
+		ServiceComment:      cfg.CommentAddr,
+		ServiceTimeline:     cfg.TimelineAddr,
 		ServiceChat:         cfg.ChatAddr,
 		ServiceSearch:       cfg.SearchAddr,
 		ServiceNotification: cfg.NotificationAddr,
@@ -102,14 +108,24 @@ func (r *Router) GetUserConn() *grpc.ClientConn {
 	return r.GetConn(ServiceUser)
 }
 
-// GetPostConn 获取 Post 服务连接
-func (r *Router) GetPostConn() *grpc.ClientConn {
-	return r.GetConn(ServicePost)
+// GetContentConn 获取 Content 服务连接
+func (r *Router) GetContentConn() *grpc.ClientConn {
+	return r.GetConn(ServiceContent)
 }
 
-// GetFeedConn 获取 Feed 服务连接
-func (r *Router) GetFeedConn() *grpc.ClientConn {
-	return r.GetConn(ServiceFeed)
+// GetInteractionConn 获取 Interaction 服务连接
+func (r *Router) GetInteractionConn() *grpc.ClientConn {
+	return r.GetConn(ServiceInteraction)
+}
+
+// GetCommentConn 获取 Comment 服务连接
+func (r *Router) GetCommentConn() *grpc.ClientConn {
+	return r.GetConn(ServiceComment)
+}
+
+// GetTimelineConn 获取 Timeline 服务连接
+func (r *Router) GetTimelineConn() *grpc.ClientConn {
+	return r.GetConn(ServiceTimeline)
 }
 
 // GetChatConn 获取 Chat 服务连接

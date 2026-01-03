@@ -31,8 +31,10 @@ type Config struct {
 	// 服务地址
 	AuthServiceAddr         string
 	UserServiceAddr         string
-	PostServiceAddr         string
-	FeedServiceAddr         string
+	ContentServiceAddr      string
+	InteractionServiceAddr  string
+	CommentServiceAddr      string
+	TimelineServiceAddr     string
 	ChatServiceAddr         string
 	SearchServiceAddr       string
 	NotificationServiceAddr string
@@ -77,8 +79,10 @@ func NewGatewayServer(cfg Config, log *slog.Logger) (*GatewayServer, error) {
 	r, err := router.NewRouter(router.ServiceConfig{
 		AuthAddr:         cfg.AuthServiceAddr,
 		UserAddr:         cfg.UserServiceAddr,
-		PostAddr:         cfg.PostServiceAddr,
-		FeedAddr:         cfg.FeedServiceAddr,
+		ContentAddr:      cfg.ContentServiceAddr,
+		InteractionAddr:  cfg.InteractionServiceAddr,
+		CommentAddr:      cfg.CommentServiceAddr,
+		TimelineAddr:     cfg.TimelineServiceAddr,
 		ChatAddr:         cfg.ChatServiceAddr,
 		SearchAddr:       cfg.SearchServiceAddr,
 		NotificationAddr: cfg.NotificationServiceAddr,

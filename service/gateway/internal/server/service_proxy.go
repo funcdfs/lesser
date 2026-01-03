@@ -11,8 +11,13 @@ import (
 	"google.golang.org/grpc"
 
 	authpb "github.com/funcdfs/lesser/gateway/proto/auth"
+	commentpb "github.com/funcdfs/lesser/gateway/proto/comment"
 	"github.com/funcdfs/lesser/gateway/proto/common"
+	contentpb "github.com/funcdfs/lesser/gateway/proto/content"
+	feedpb "github.com/funcdfs/lesser/gateway/proto/feed"
+	interactionpb "github.com/funcdfs/lesser/gateway/proto/interaction"
 	searchpb "github.com/funcdfs/lesser/gateway/proto/search"
+	timelinepb "github.com/funcdfs/lesser/gateway/proto/timeline"
 	userpb "github.com/funcdfs/lesser/gateway/proto/user"
 )
 
@@ -254,37 +259,199 @@ func RegisterUserProxyServer(s *grpc.Server, conn *grpc.ClientConn, log *slog.Lo
 }
 
 // ============================================================================
-// Post 代理服务（占位）
+// Content 代理服务
 // ============================================================================
 
-// TODO: 实现 Post 代理服务
-// PostProxyServer 代理 Post 服务请求
-// type PostProxyServer struct {
-// 	postpb.UnimplementedPostServiceServer
-// 	client postpb.PostServiceClient
-// }
+// ContentProxyServer 代理 Content 服务请求
+type ContentProxyServer struct {
+	contentpb.UnimplementedContentServiceServer
+	client contentpb.ContentServiceClient
+	log    *slog.Logger
+}
+
+// NewContentProxyServer 创建 Content 代理服务器
+func NewContentProxyServer(conn *grpc.ClientConn, log *slog.Logger) *ContentProxyServer {
+	if log == nil {
+		log = slog.Default()
+	}
+	return &ContentProxyServer{
+		client: contentpb.NewContentServiceClient(conn),
+		log:    log.With(slog.String("component", "proxy.content")),
+	}
+}
+
+// ---- 基础 CRUD ----
+
+func (s *ContentProxyServer) CreateContent(ctx context.Context, req *contentpb.CreateContentRequest) (*contentpb.CreateContentResponse, error) {
+	s.log.Debug("创建内容", slog.String("author_id", req.AuthorId), slog.String("type", req.Type.String()))
+	return s.client.CreateContent(ctx, req)
+}
+
+func (s *ContentProxyServer) GetContent(ctx context.Context, req *contentpb.GetContentRequest) (*contentpb.GetContentResponse, error) {
+	s.log.Debug("获取内容", slog.String("content_id", req.ContentId))
+	return s.client.GetContent(ctx, req)
+}
+
+func (s *ContentProxyServer) UpdateContent(ctx context.Context, req *contentpb.UpdateContentRequest) (*contentpb.UpdateContentResponse, error) {
+	s.log.Debug("更新内容", slog.String("content_id", req.ContentId), slog.String("user_id", req.UserId))
+	return s.client.UpdateContent(ctx, req)
+}
+
+func (s *ContentProxyServer) DeleteContent(ctx context.Context, req *contentpb.DeleteContentRequest) (*contentpb.DeleteContentResponse, error) {
+	s.log.Debug("删除内容", slog.String("content_id", req.ContentId), slog.String("user_id", req.UserId))
+	return s.client.DeleteContent(ctx, req)
+}
+
+// ---- 列表查询 ----
+
+func (s *ContentProxyServer) ListContents(ctx context.Context, req *contentpb.ListContentsRequest) (*contentpb.ListContentsResponse, error) {
+	s.log.Debug("列表查询", slog.String("author_id", req.AuthorId), slog.String("type", req.Type.String()))
+	return s.client.ListContents(ctx, req)
+}
+
+func (s *ContentProxyServer) BatchGetContents(ctx context.Context, req *contentpb.BatchGetContentsRequest) (*contentpb.BatchGetContentsResponse, error) {
+	s.log.Debug("批量获取内容", slog.Int("count", len(req.ContentIds)))
+	return s.client.BatchGetContents(ctx, req)
+}
+
+// ---- 草稿管理 ----
+
+func (s *ContentProxyServer) GetUserDrafts(ctx context.Context, req *contentpb.GetUserDraftsRequest) (*contentpb.GetUserDraftsResponse, error) {
+	s.log.Debug("获取用户草稿", slog.String("user_id", req.UserId))
+	return s.client.GetUserDrafts(ctx, req)
+}
+
+func (s *ContentProxyServer) PublishDraft(ctx context.Context, req *contentpb.PublishDraftRequest) (*contentpb.PublishDraftResponse, error) {
+	s.log.Debug("发布草稿", slog.String("content_id", req.ContentId), slog.String("user_id", req.UserId))
+	return s.client.PublishDraft(ctx, req)
+}
+
+// ---- 回复/评论 ----
+
+func (s *ContentProxyServer) GetReplies(ctx context.Context, req *contentpb.GetRepliesRequest) (*contentpb.GetRepliesResponse, error) {
+	s.log.Debug("获取回复列表", slog.String("content_id", req.ContentId))
+	return s.client.GetReplies(ctx, req)
+}
+
+// ---- Story 专用 ----
+
+func (s *ContentProxyServer) GetUserStories(ctx context.Context, req *contentpb.GetUserStoriesRequest) (*contentpb.GetUserStoriesResponse, error) {
+	s.log.Debug("获取用户 Story", slog.String("user_id", req.UserId))
+	return s.client.GetUserStories(ctx, req)
+}
+
+// ---- 置顶 ----
+
+func (s *ContentProxyServer) PinContent(ctx context.Context, req *contentpb.PinContentRequest) (*contentpb.PinContentResponse, error) {
+	s.log.Debug("置顶内容", slog.String("content_id", req.ContentId), slog.Bool("pin", req.Pin))
+	return s.client.PinContent(ctx, req)
+}
+
+// RegisterContentProxyServer 注册 Content 代理服务
+func RegisterContentProxyServer(s *grpc.Server, conn *grpc.ClientConn, log *slog.Logger) {
+	proxy := NewContentProxyServer(conn, log)
+	contentpb.RegisterContentServiceServer(s, proxy)
+	log.With(slog.String("component", "proxy")).Info("Content 代理服务已注册")
+}
 
 // ============================================================================
-// Feed 代理服务（占位）
+// Feed 代理服务
 // ============================================================================
 
-// TODO: 实现 Feed 代理服务
 // FeedProxyServer 代理 Feed 服务请求
-// type FeedProxyServer struct {
-// 	feedpb.UnimplementedFeedServiceServer
-// 	client feedpb.FeedServiceClient
-// }
+type FeedProxyServer struct {
+	feedpb.UnimplementedFeedServiceServer
+	client feedpb.FeedServiceClient
+	log    *slog.Logger
+}
+
+// NewFeedProxyServer 创建 Feed 代理服务器
+func NewFeedProxyServer(conn *grpc.ClientConn, log *slog.Logger) *FeedProxyServer {
+	if log == nil {
+		log = slog.Default()
+	}
+	return &FeedProxyServer{
+		client: feedpb.NewFeedServiceClient(conn),
+		log:    log.With(slog.String("component", "proxy.feed")),
+	}
+}
+
+// ---- Feed 流 ----
+
+func (s *FeedProxyServer) GetFollowingFeed(ctx context.Context, req *feedpb.GetFollowingFeedRequest) (*feedpb.GetFollowingFeedResponse, error) {
+	s.log.Debug("获取关注 Feed", slog.String("user_id", req.UserId))
+	return s.client.GetFollowingFeed(ctx, req)
+}
+
+func (s *FeedProxyServer) GetRecommendFeed(ctx context.Context, req *feedpb.GetRecommendFeedRequest) (*feedpb.GetRecommendFeedResponse, error) {
+	s.log.Debug("获取推荐 Feed", slog.String("user_id", req.UserId))
+	return s.client.GetRecommendFeed(ctx, req)
+}
+
+func (s *FeedProxyServer) GetUserFeed(ctx context.Context, req *feedpb.GetUserFeedRequest) (*feedpb.GetUserFeedResponse, error) {
+	s.log.Debug("获取用户 Feed", slog.String("user_id", req.UserId), slog.String("viewer_id", req.ViewerId))
+	return s.client.GetUserFeed(ctx, req)
+}
+
+// ---- 交互操作 ----
+
+func (s *FeedProxyServer) Like(ctx context.Context, req *feedpb.LikeRequest) (*common.Empty, error) {
+	s.log.Debug("点赞", slog.String("user_id", req.UserId), slog.String("post_id", req.PostId))
+	return s.client.Like(ctx, req)
+}
+
+func (s *FeedProxyServer) Unlike(ctx context.Context, req *feedpb.UnlikeRequest) (*common.Empty, error) {
+	s.log.Debug("取消点赞", slog.String("user_id", req.UserId), slog.String("post_id", req.PostId))
+	return s.client.Unlike(ctx, req)
+}
+
+func (s *FeedProxyServer) CreateComment(ctx context.Context, req *feedpb.CreateCommentRequest) (*feedpb.Comment, error) {
+	s.log.Debug("创建评论", slog.String("author_id", req.AuthorId), slog.String("post_id", req.PostId))
+	return s.client.CreateComment(ctx, req)
+}
+
+func (s *FeedProxyServer) DeleteComment(ctx context.Context, req *feedpb.DeleteCommentRequest) (*common.Empty, error) {
+	s.log.Debug("删除评论", slog.String("comment_id", req.CommentId), slog.String("user_id", req.UserId))
+	return s.client.DeleteComment(ctx, req)
+}
+
+func (s *FeedProxyServer) ListComments(ctx context.Context, req *feedpb.ListCommentsRequest) (*feedpb.ListCommentsResponse, error) {
+	s.log.Debug("获取评论列表", slog.String("post_id", req.PostId))
+	return s.client.ListComments(ctx, req)
+}
+
+func (s *FeedProxyServer) CreateRepost(ctx context.Context, req *feedpb.RepostRequest) (*feedpb.Repost, error) {
+	s.log.Debug("转发", slog.String("user_id", req.UserId), slog.String("post_id", req.PostId))
+	return s.client.CreateRepost(ctx, req)
+}
+
+func (s *FeedProxyServer) Bookmark(ctx context.Context, req *feedpb.BookmarkRequest) (*common.Empty, error) {
+	s.log.Debug("收藏", slog.String("user_id", req.UserId), slog.String("post_id", req.PostId))
+	return s.client.Bookmark(ctx, req)
+}
+
+func (s *FeedProxyServer) Unbookmark(ctx context.Context, req *feedpb.UnbookmarkRequest) (*common.Empty, error) {
+	s.log.Debug("取消收藏", slog.String("user_id", req.UserId), slog.String("post_id", req.PostId))
+	return s.client.Unbookmark(ctx, req)
+}
+
+func (s *FeedProxyServer) ListBookmarks(ctx context.Context, req *feedpb.ListBookmarksRequest) (*feedpb.ListBookmarksResponse, error) {
+	s.log.Debug("获取收藏列表", slog.String("user_id", req.UserId))
+	return s.client.ListBookmarks(ctx, req)
+}
+
+// RegisterFeedProxyServer 注册 Feed 代理服务
+func RegisterFeedProxyServer(s *grpc.Server, conn *grpc.ClientConn, log *slog.Logger) {
+	proxy := NewFeedProxyServer(conn, log)
+	feedpb.RegisterFeedServiceServer(s, proxy)
+	log.With(slog.String("component", "proxy")).Info("Feed 代理服务已注册")
+}
 
 // ============================================================================
 // Notification 代理服务（占位）
 // ============================================================================
 
 // TODO: 实现 Notification 代理服务
-// NotificationProxyServer 代理 Notification 服务请求
-// type NotificationProxyServer struct {
-// 	notificationpb.UnimplementedNotificationServiceServer
-// 	client notificationpb.NotificationServiceClient
-// }
 
 // ============================================================================
 // Chat 代理服务（占位）
@@ -292,3 +459,219 @@ func RegisterUserProxyServer(s *grpc.Server, conn *grpc.ClientConn, log *slog.Lo
 
 // TODO: Chat 服务使用双向流，通过 streaming.Proxy 代理
 // 参见 internal/streaming/stream.go
+
+// ============================================================================
+// Interaction 代理服务
+// ============================================================================
+
+// InteractionProxyServer 代理 Interaction 服务请求
+type InteractionProxyServer struct {
+	interactionpb.UnimplementedInteractionServiceServer
+	client interactionpb.InteractionServiceClient
+	log    *slog.Logger
+}
+
+// NewInteractionProxyServer 创建 Interaction 代理服务器
+func NewInteractionProxyServer(conn *grpc.ClientConn, log *slog.Logger) *InteractionProxyServer {
+	if log == nil {
+		log = slog.Default()
+	}
+	return &InteractionProxyServer{
+		client: interactionpb.NewInteractionServiceClient(conn),
+		log:    log.With(slog.String("component", "proxy.interaction")),
+	}
+}
+
+// ---- 点赞 ----
+
+func (s *InteractionProxyServer) Like(ctx context.Context, req *interactionpb.LikeRequest) (*interactionpb.LikeResponse, error) {
+	s.log.Debug("点赞", slog.String("user_id", req.UserId), slog.String("content_id", req.ContentId))
+	return s.client.Like(ctx, req)
+}
+
+func (s *InteractionProxyServer) Unlike(ctx context.Context, req *interactionpb.UnlikeRequest) (*interactionpb.UnlikeResponse, error) {
+	s.log.Debug("取消点赞", slog.String("user_id", req.UserId), slog.String("content_id", req.ContentId))
+	return s.client.Unlike(ctx, req)
+}
+
+func (s *InteractionProxyServer) CheckLiked(ctx context.Context, req *interactionpb.CheckLikedRequest) (*interactionpb.CheckLikedResponse, error) {
+	s.log.Debug("检查点赞状态", slog.String("user_id", req.UserId), slog.String("content_id", req.ContentId))
+	return s.client.CheckLiked(ctx, req)
+}
+
+// ---- 收藏 ----
+
+func (s *InteractionProxyServer) Bookmark(ctx context.Context, req *interactionpb.BookmarkRequest) (*interactionpb.BookmarkResponse, error) {
+	s.log.Debug("收藏", slog.String("user_id", req.UserId), slog.String("content_id", req.ContentId))
+	return s.client.Bookmark(ctx, req)
+}
+
+func (s *InteractionProxyServer) Unbookmark(ctx context.Context, req *interactionpb.UnbookmarkRequest) (*interactionpb.UnbookmarkResponse, error) {
+	s.log.Debug("取消收藏", slog.String("user_id", req.UserId), slog.String("content_id", req.ContentId))
+	return s.client.Unbookmark(ctx, req)
+}
+
+func (s *InteractionProxyServer) ListBookmarks(ctx context.Context, req *interactionpb.ListBookmarksRequest) (*interactionpb.ListBookmarksResponse, error) {
+	s.log.Debug("获取收藏列表", slog.String("user_id", req.UserId))
+	return s.client.ListBookmarks(ctx, req)
+}
+
+// ---- 转发 ----
+
+func (s *InteractionProxyServer) CreateRepost(ctx context.Context, req *interactionpb.CreateRepostRequest) (*interactionpb.CreateRepostResponse, error) {
+	s.log.Debug("创建转发", slog.String("user_id", req.UserId), slog.String("content_id", req.ContentId))
+	return s.client.CreateRepost(ctx, req)
+}
+
+func (s *InteractionProxyServer) DeleteRepost(ctx context.Context, req *interactionpb.DeleteRepostRequest) (*interactionpb.DeleteRepostResponse, error) {
+	s.log.Debug("删除转发", slog.String("user_id", req.UserId), slog.String("content_id", req.ContentId))
+	return s.client.DeleteRepost(ctx, req)
+}
+
+// ---- 批量查询 ----
+
+func (s *InteractionProxyServer) BatchGetInteractionStatus(ctx context.Context, req *interactionpb.BatchGetInteractionStatusRequest) (*interactionpb.BatchGetInteractionStatusResponse, error) {
+	s.log.Debug("批量获取交互状态", slog.String("user_id", req.UserId), slog.Int("count", len(req.ContentIds)))
+	return s.client.BatchGetInteractionStatus(ctx, req)
+}
+
+// RegisterInteractionProxyServer 注册 Interaction 代理服务
+func RegisterInteractionProxyServer(s *grpc.Server, conn *grpc.ClientConn, log *slog.Logger) {
+	proxy := NewInteractionProxyServer(conn, log)
+	interactionpb.RegisterInteractionServiceServer(s, proxy)
+	log.With(slog.String("component", "proxy")).Info("Interaction 代理服务已注册")
+}
+
+// ============================================================================
+// Comment 代理服务
+// ============================================================================
+
+// CommentProxyServer 代理 Comment 服务请求
+type CommentProxyServer struct {
+	commentpb.UnimplementedCommentServiceServer
+	client commentpb.CommentServiceClient
+	log    *slog.Logger
+}
+
+// NewCommentProxyServer 创建 Comment 代理服务器
+func NewCommentProxyServer(conn *grpc.ClientConn, log *slog.Logger) *CommentProxyServer {
+	if log == nil {
+		log = slog.Default()
+	}
+	return &CommentProxyServer{
+		client: commentpb.NewCommentServiceClient(conn),
+		log:    log.With(slog.String("component", "proxy.comment")),
+	}
+}
+
+// CreateComment 创建评论
+func (s *CommentProxyServer) CreateComment(ctx context.Context, req *commentpb.CreateCommentRequest) (*commentpb.CreateCommentResponse, error) {
+	s.log.Debug("创建评论", slog.String("author_id", req.AuthorId), slog.String("content_id", req.ContentId))
+	return s.client.CreateComment(ctx, req)
+}
+
+// GetComment 获取单条评论
+func (s *CommentProxyServer) GetComment(ctx context.Context, req *commentpb.GetCommentRequest) (*commentpb.GetCommentResponse, error) {
+	s.log.Debug("获取评论", slog.String("comment_id", req.CommentId))
+	return s.client.GetComment(ctx, req)
+}
+
+// DeleteComment 删除评论
+func (s *CommentProxyServer) DeleteComment(ctx context.Context, req *commentpb.DeleteCommentRequest) (*commentpb.DeleteCommentResponse, error) {
+	s.log.Debug("删除评论", slog.String("comment_id", req.CommentId), slog.String("user_id", req.UserId))
+	return s.client.DeleteComment(ctx, req)
+}
+
+// ListComments 获取评论列表
+func (s *CommentProxyServer) ListComments(ctx context.Context, req *commentpb.ListCommentsRequest) (*commentpb.ListCommentsResponse, error) {
+	s.log.Debug("获取评论列表",
+		slog.String("content_id", req.ContentId),
+		slog.String("parent_id", req.ParentId),
+		slog.String("sort_by", req.SortBy.String()))
+	return s.client.ListComments(ctx, req)
+}
+
+// GetCommentCount 获取评论数量
+func (s *CommentProxyServer) GetCommentCount(ctx context.Context, req *commentpb.GetCommentCountRequest) (*commentpb.GetCommentCountResponse, error) {
+	s.log.Debug("获取评论数量", slog.String("content_id", req.ContentId))
+	return s.client.GetCommentCount(ctx, req)
+}
+
+// BatchGetCommentCount 批量获取评论数量
+func (s *CommentProxyServer) BatchGetCommentCount(ctx context.Context, req *commentpb.BatchGetCommentCountRequest) (*commentpb.BatchGetCommentCountResponse, error) {
+	s.log.Debug("批量获取评论数量", slog.Int("count", len(req.ContentIds)))
+	return s.client.BatchGetCommentCount(ctx, req)
+}
+
+// LikeComment 点赞评论
+func (s *CommentProxyServer) LikeComment(ctx context.Context, req *commentpb.LikeCommentRequest) (*commentpb.LikeCommentResponse, error) {
+	s.log.Debug("点赞评论", slog.String("user_id", req.UserId), slog.String("comment_id", req.CommentId))
+	return s.client.LikeComment(ctx, req)
+}
+
+// UnlikeComment 取消点赞评论
+func (s *CommentProxyServer) UnlikeComment(ctx context.Context, req *commentpb.UnlikeCommentRequest) (*commentpb.UnlikeCommentResponse, error) {
+	s.log.Debug("取消点赞评论", slog.String("user_id", req.UserId), slog.String("comment_id", req.CommentId))
+	return s.client.UnlikeComment(ctx, req)
+}
+
+// RegisterCommentProxyServer 注册 Comment 代理服务
+func RegisterCommentProxyServer(s *grpc.Server, conn *grpc.ClientConn, log *slog.Logger) {
+	proxy := NewCommentProxyServer(conn, log)
+	commentpb.RegisterCommentServiceServer(s, proxy)
+	log.With(slog.String("component", "proxy")).Info("Comment 代理服务已注册")
+}
+
+// ============================================================================
+// Timeline 代理服务
+// ============================================================================
+
+// TimelineProxyServer 代理 Timeline 服务请求
+type TimelineProxyServer struct {
+	timelinepb.UnimplementedTimelineServiceServer
+	client timelinepb.TimelineServiceClient
+	log    *slog.Logger
+}
+
+// NewTimelineProxyServer 创建 Timeline 代理服务器
+func NewTimelineProxyServer(conn *grpc.ClientConn, log *slog.Logger) *TimelineProxyServer {
+	if log == nil {
+		log = slog.Default()
+	}
+	return &TimelineProxyServer{
+		client: timelinepb.NewTimelineServiceClient(conn),
+		log:    log.With(slog.String("component", "proxy.timeline")),
+	}
+}
+
+func (s *TimelineProxyServer) GetFollowingFeed(ctx context.Context, req *timelinepb.GetFollowingFeedRequest) (*timelinepb.GetFollowingFeedResponse, error) {
+	s.log.Debug("获取关注 Feed", slog.String("user_id", req.UserId))
+	return s.client.GetFollowingFeed(ctx, req)
+}
+
+func (s *TimelineProxyServer) GetRecommendFeed(ctx context.Context, req *timelinepb.GetRecommendFeedRequest) (*timelinepb.GetRecommendFeedResponse, error) {
+	s.log.Debug("获取推荐 Feed", slog.String("user_id", req.UserId))
+	return s.client.GetRecommendFeed(ctx, req)
+}
+
+func (s *TimelineProxyServer) GetUserFeed(ctx context.Context, req *timelinepb.GetUserFeedRequest) (*timelinepb.GetUserFeedResponse, error) {
+	s.log.Debug("获取用户 Feed", slog.String("user_id", req.UserId), slog.String("viewer_id", req.ViewerId))
+	return s.client.GetUserFeed(ctx, req)
+}
+
+func (s *TimelineProxyServer) GetHotFeed(ctx context.Context, req *timelinepb.GetHotFeedRequest) (*timelinepb.GetHotFeedResponse, error) {
+	s.log.Debug("获取热门 Feed", slog.String("user_id", req.UserId), slog.String("time_range", req.TimeRange))
+	return s.client.GetHotFeed(ctx, req)
+}
+
+func (s *TimelineProxyServer) GetContentDetail(ctx context.Context, req *timelinepb.GetContentDetailRequest) (*timelinepb.GetContentDetailResponse, error) {
+	s.log.Debug("获取内容详情", slog.String("content_id", req.ContentId), slog.String("viewer_id", req.ViewerId))
+	return s.client.GetContentDetail(ctx, req)
+}
+
+// RegisterTimelineProxyServer 注册 Timeline 代理服务
+func RegisterTimelineProxyServer(s *grpc.Server, conn *grpc.ClientConn, log *slog.Logger) {
+	proxy := NewTimelineProxyServer(conn, log)
+	timelinepb.RegisterTimelineServiceServer(s, proxy)
+	log.With(slog.String("component", "proxy")).Info("Timeline 代理服务已注册")
+}

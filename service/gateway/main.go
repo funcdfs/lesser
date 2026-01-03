@@ -66,8 +66,10 @@ func main() {
 		slog.String("port", grpcPort),
 		slog.String("auth", cfg.AuthServiceAddr),
 		slog.String("user", cfg.UserServiceAddr),
-		slog.String("post", cfg.PostServiceAddr),
-		slog.String("feed", cfg.FeedServiceAddr),
+		slog.String("content", cfg.ContentServiceAddr),
+		slog.String("interaction", cfg.InteractionServiceAddr),
+		slog.String("comment", cfg.CommentServiceAddr),
+		slog.String("timeline", cfg.TimelineServiceAddr),
 		slog.String("chat", cfg.ChatServiceAddr),
 		slog.String("search", cfg.SearchServiceAddr),
 		slog.String("notification", cfg.NotificationServiceAddr))
@@ -102,8 +104,10 @@ func loadConfig() server.Config {
 	return server.Config{
 		AuthServiceAddr:         getEnv("AUTH_SERVICE_ADDR", "auth:50054"),
 		UserServiceAddr:         getEnv("USER_SERVICE_ADDR", "user:50055"),
-		PostServiceAddr:         getEnv("POST_SERVICE_ADDR", "post:50056"),
-		FeedServiceAddr:         getEnv("FEED_SERVICE_ADDR", "feed:50057"),
+		ContentServiceAddr:      getEnv("CONTENT_SERVICE_ADDR", "content:50056"),
+		InteractionServiceAddr:  getEnv("INTERACTION_SERVICE_ADDR", "interaction:50060"),
+		CommentServiceAddr:      getEnv("COMMENT_SERVICE_ADDR", "comment:50061"),
+		TimelineServiceAddr:     getEnv("TIMELINE_SERVICE_ADDR", "timeline:50062"),
 		ChatServiceAddr:         getEnv("CHAT_SERVICE_ADDR", "chat:50052"),
 		SearchServiceAddr:       getEnv("SEARCH_SERVICE_ADDR", "search:50058"),
 		NotificationServiceAddr: getEnv("NOTIFICATION_SERVICE_ADDR", "notification:50059"),
@@ -128,6 +132,34 @@ func registerProxyServices(grpcServer *grpc.Server, gatewayServer *server.Gatewa
 		server.RegisterUserProxyServer(grpcServer, userConn, log)
 	} else {
 		log.Warn("User 服务不可用，代理未注册")
+	}
+
+	// 注册 Content 代理
+	if contentConn := router.GetContentConn(); contentConn != nil {
+		server.RegisterContentProxyServer(grpcServer, contentConn, log)
+	} else {
+		log.Warn("Content 服务不可用，代理未注册")
+	}
+
+	// 注册 Interaction 代理
+	if interactionConn := router.GetInteractionConn(); interactionConn != nil {
+		server.RegisterInteractionProxyServer(grpcServer, interactionConn, log)
+	} else {
+		log.Warn("Interaction 服务不可用，代理未注册")
+	}
+
+	// 注册 Comment 代理
+	if commentConn := router.GetCommentConn(); commentConn != nil {
+		server.RegisterCommentProxyServer(grpcServer, commentConn, log)
+	} else {
+		log.Warn("Comment 服务不可用，代理未注册")
+	}
+
+	// 注册 Timeline 代理
+	if timelineConn := router.GetTimelineConn(); timelineConn != nil {
+		server.RegisterTimelineProxyServer(grpcServer, timelineConn, log)
+	} else {
+		log.Warn("Timeline 服务不可用，代理未注册")
 	}
 
 	// 注册 Search 代理

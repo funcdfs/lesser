@@ -246,10 +246,211 @@ CREATE TRIGGER update_follow_requests_updated_at
     FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 
 -- ============================================================================
+-- 10. Contents 表 (Content Service 使用)
+-- ============================================================================
+-- 内容类型: 1=STORY(24h过期), 2=SHORT(短文本), 3=ARTICLE(长文章)
+-- 内容状态: 1=DRAFT(草稿), 2=PUBLISHED(已发布), 3=ARCHIVED(已归档), 4=DELETED(已删除)
+CREATE TABLE IF NOT EXISTS contents (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    author_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    type SMALLINT NOT NULL DEFAULT 2,
+    status SMALLINT NOT NULL DEFAULT 2,
+    
+    -- 内容字段
+    title VARCHAR(500),
+    text TEXT NOT NULL DEFAULT '',
+    summary TEXT,
+    media_urls TEXT[] DEFAULT '{}',
+    tags TEXT[] DEFAULT '{}',
+    
+    -- 引用关系
+    reply_to_id UUID REFERENCES contents(id) ON DELETE SET NULL,
+    quote_id UUID REFERENCES contents(id) ON DELETE SET NULL,
+    
+    -- 统计数据
+    like_count INTEGER DEFAULT 0,
+    comment_count INTEGER DEFAULT 0,
+    repost_count INTEGER DEFAULT 0,
+    bookmark_count INTEGER DEFAULT 0,
+    view_count INTEGER DEFAULT 0,
+    
+    -- 时间戳
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+    published_at TIMESTAMP WITH TIME ZONE,
+    expires_at TIMESTAMP WITH TIME ZONE,
+    
+    -- 元数据
+    is_pinned BOOLEAN DEFAULT false,
+    comments_disabled BOOLEAN DEFAULT false,
+    language VARCHAR(10),
+    
+    -- 约束
+    CONSTRAINT valid_content_type CHECK (type IN (1, 2, 3)),
+    CONSTRAINT valid_content_status CHECK (status IN (1, 2, 3, 4))
+);
+
+-- Contents 表索引
+CREATE INDEX IF NOT EXISTS idx_contents_author_id ON contents(author_id);
+CREATE INDEX IF NOT EXISTS idx_contents_type ON contents(type);
+CREATE INDEX IF NOT EXISTS idx_contents_status ON contents(status);
+CREATE INDEX IF NOT EXISTS idx_contents_created_at ON contents(created_at DESC);
+CREATE INDEX IF NOT EXISTS idx_contents_published_at ON contents(published_at DESC);
+CREATE INDEX IF NOT EXISTS idx_contents_expires_at ON contents(expires_at) WHERE expires_at IS NOT NULL;
+CREATE INDEX IF NOT EXISTS idx_contents_reply_to_id ON contents(reply_to_id) WHERE reply_to_id IS NOT NULL;
+CREATE INDEX IF NOT EXISTS idx_contents_quote_id ON contents(quote_id) WHERE quote_id IS NOT NULL;
+CREATE INDEX IF NOT EXISTS idx_contents_tags ON contents USING GIN(tags);
+CREATE INDEX IF NOT EXISTS idx_contents_author_type ON contents(author_id, type);
+CREATE INDEX IF NOT EXISTS idx_contents_author_status ON contents(author_id, status);
+CREATE INDEX IF NOT EXISTS idx_contents_pinned ON contents(author_id, is_pinned) WHERE is_pinned = true;
+
+-- Contents 表触发器
+DROP TRIGGER IF EXISTS update_contents_updated_at ON contents;
+CREATE TRIGGER update_contents_updated_at
+    BEFORE UPDATE ON contents
+    FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+
+GRANT ALL PRIVILEGES ON TABLE contents TO lesser_app;
+
+-- ============================================================================
+-- 11. Likes 表 (Feed Service 使用)
+-- ============================================================================
+CREATE TABLE IF NOT EXISTS likes (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    content_id UUID NOT NULL REFERENCES contents(id) ON DELETE CASCADE,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+    
+    CONSTRAINT unique_like UNIQUE (user_id, content_id)
+);
+
+CREATE INDEX IF NOT EXISTS idx_likes_user_id ON likes(user_id);
+CREATE INDEX IF NOT EXISTS idx_likes_content_id ON likes(content_id);
+CREATE INDEX IF NOT EXISTS idx_likes_created_at ON likes(created_at DESC);
+
+GRANT ALL PRIVILEGES ON TABLE likes TO lesser_app;
+
+-- ============================================================================
+-- 12. Bookmarks 表 (Feed Service 使用)
+-- ============================================================================
+CREATE TABLE IF NOT EXISTS bookmarks (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    content_id UUID NOT NULL REFERENCES contents(id) ON DELETE CASCADE,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+    
+    CONSTRAINT unique_bookmark UNIQUE (user_id, content_id)
+);
+
+CREATE INDEX IF NOT EXISTS idx_bookmarks_user_id ON bookmarks(user_id);
+CREATE INDEX IF NOT EXISTS idx_bookmarks_content_id ON bookmarks(content_id);
+CREATE INDEX IF NOT EXISTS idx_bookmarks_created_at ON bookmarks(created_at DESC);
+
+GRANT ALL PRIVILEGES ON TABLE bookmarks TO lesser_app;
+
+-- ============================================================================
+-- 13. Reposts 表 (Feed Service 使用)
+-- ============================================================================
+CREATE TABLE IF NOT EXISTS reposts (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    content_id UUID NOT NULL REFERENCES contents(id) ON DELETE CASCADE,
+    quote TEXT,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+    
+    CONSTRAINT unique_repost UNIQUE (user_id, content_id)
+);
+
+CREATE INDEX IF NOT EXISTS idx_reposts_user_id ON reposts(user_id);
+CREATE INDEX IF NOT EXISTS idx_reposts_content_id ON reposts(content_id);
+CREATE INDEX IF NOT EXISTS idx_reposts_created_at ON reposts(created_at DESC);
+
+GRANT ALL PRIVILEGES ON TABLE reposts TO lesser_app;
+
+-- ============================================================================
 -- 日志
 -- ============================================================================
 DO $
 BEGIN
     RAISE NOTICE 'User service tables initialization completed';
+    RAISE NOTICE 'Content service tables initialization completed';
+    RAISE NOTICE 'Feed service tables initialization completed';
+END
+$;
+
+-- ============================================================================
+-- 14. Feed 流优化索引
+-- ============================================================================
+-- 优化关注用户 Feed 流查询：按作者和发布时间排序
+CREATE INDEX IF NOT EXISTS idx_contents_feed_timeline 
+    ON contents(author_id, published_at DESC NULLS LAST, created_at DESC) 
+    WHERE status = 2 AND (expires_at IS NULL OR expires_at > NOW());
+
+-- 优化用户主页 Feed 查询：置顶优先，然后按发布时间
+CREATE INDEX IF NOT EXISTS idx_contents_user_feed 
+    ON contents(author_id, is_pinned DESC, published_at DESC NULLS LAST) 
+    WHERE status = 2;
+
+DO $
+BEGIN
+    RAISE NOTICE 'Feed timeline indexes created';
+END
+$;
+
+-- ============================================================================
+-- 15. Comments 表 (Comment Service 使用)
+-- ============================================================================
+CREATE TABLE IF NOT EXISTS comments (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    author_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    post_id UUID NOT NULL REFERENCES contents(id) ON DELETE CASCADE,
+    parent_id UUID REFERENCES comments(id) ON DELETE CASCADE,
+    content TEXT NOT NULL,
+    is_deleted BOOLEAN DEFAULT false,
+    reply_count INTEGER DEFAULT 0,
+    like_count INTEGER DEFAULT 0,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+-- Comments 表索引
+CREATE INDEX IF NOT EXISTS idx_comments_post_id ON comments(post_id);
+CREATE INDEX IF NOT EXISTS idx_comments_author_id ON comments(author_id);
+CREATE INDEX IF NOT EXISTS idx_comments_parent_id ON comments(parent_id) WHERE parent_id IS NOT NULL;
+CREATE INDEX IF NOT EXISTS idx_comments_created_at ON comments(created_at DESC);
+CREATE INDEX IF NOT EXISTS idx_comments_like_count ON comments(like_count DESC);
+CREATE INDEX IF NOT EXISTS idx_comments_post_parent ON comments(post_id, parent_id) WHERE is_deleted = false;
+-- 复合索引：支持热门排序
+CREATE INDEX IF NOT EXISTS idx_comments_post_hot ON comments(post_id, like_count DESC, created_at DESC) WHERE is_deleted = false AND parent_id IS NULL;
+
+-- Comments 表触发器
+DROP TRIGGER IF EXISTS update_comments_updated_at ON comments;
+CREATE TRIGGER update_comments_updated_at
+    BEFORE UPDATE ON comments
+    FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+
+GRANT ALL PRIVILEGES ON TABLE comments TO lesser_app;
+
+-- ============================================================================
+-- 16. Comment Likes 表 (评论点赞)
+-- ============================================================================
+CREATE TABLE IF NOT EXISTS comment_likes (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    comment_id UUID NOT NULL REFERENCES comments(id) ON DELETE CASCADE,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+    
+    CONSTRAINT unique_comment_like UNIQUE (user_id, comment_id)
+);
+
+CREATE INDEX IF NOT EXISTS idx_comment_likes_user_id ON comment_likes(user_id);
+CREATE INDEX IF NOT EXISTS idx_comment_likes_comment_id ON comment_likes(comment_id);
+CREATE INDEX IF NOT EXISTS idx_comment_likes_created_at ON comment_likes(created_at DESC);
+
+GRANT ALL PRIVILEGES ON TABLE comment_likes TO lesser_app;
+
+DO $
+BEGIN
+    RAISE NOTICE 'Comments and Comment Likes tables created';
 END
 $;
