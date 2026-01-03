@@ -2,10 +2,10 @@ package grpcclient
 
 import (
 	"context"
+	"log/slog"
 	"time"
 
 	"github.com/funcdfs/lesser/pkg/logger"
-	"go.uber.org/zap"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/metadata"
@@ -39,16 +39,15 @@ func LoggingInterceptor(log *logger.Logger) grpc.UnaryClientInterceptor {
 		err := invoker(ctx, method, req, reply, cc, opts...)
 		duration := time.Since(start)
 
-		fields := []zap.Field{
-			zap.String("method", method),
-			zap.Duration("duration", duration),
-		}
-
 		if err != nil {
-			fields = append(fields, zap.Error(err))
-			log.WithContext(ctx).Error("grpc call failed", fields...)
+			log.WithContext(ctx).Error("grpc call failed",
+				slog.String("method", method),
+				slog.Duration("duration", duration),
+				slog.Any("error", err))
 		} else {
-			log.WithContext(ctx).Debug("grpc call completed", fields...)
+			log.WithContext(ctx).Debug("grpc call completed",
+				slog.String("method", method),
+				slog.Duration("duration", duration))
 		}
 
 		return err

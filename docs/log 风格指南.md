@@ -1,5 +1,7 @@
 # 日志风格指南
 
+> 基于 Go 1.25.5 标准库 `log/slog`
+
 ## 核心原则
 
 1. **结构化日志**: 使用 JSON 格式，便于日志聚合和查询
@@ -27,7 +29,7 @@
 
 ```json
 {
-  "timestamp": "2026-01-02T10:30:00.123Z",
+  "time": "2026-01-02T10:30:00.123Z",
   "level": "INFO",
   "service": "chat",
   "msg": "消息发送成功"
@@ -58,7 +60,7 @@
 ```json
 {
   "error": "connection refused",
-  "stack": "..."
+  "source": "service/chat/internal/service/chat.go:123"
 }
 ```
 
@@ -80,18 +82,18 @@ defer log.Sync()
 
 ```go
 // 简单日志
-log.Info("服务启动", zap.Int("port", 50052))
+log.Info("服务启动", slog.Int("port", 50052))
 
 // 带上下文的日志（自动注入 trace_id, user_id）
 log.WithContext(ctx).Info("消息发送成功",
-    zap.String("conversation_id", convID),
-    zap.String("message_id", msgID),
+    slog.String("conversation_id", convID),
+    slog.String("message_id", msgID),
 )
 
 // 错误日志
 log.WithContext(ctx).Error("发送消息失败",
-    zap.Error(err),
-    zap.String("conversation_id", convID),
+    slog.Any("error", err),
+    slog.String("conversation_id", convID),
 )
 ```
 
@@ -100,22 +102,22 @@ log.WithContext(ctx).Error("发送消息失败",
 ```go
 // 请求开始
 log.WithContext(ctx).Debug("处理请求",
-    zap.String("method", "SendMessage"),
+    slog.String("method", "SendMessage"),
 )
 
 // 请求完成
 log.WithContext(ctx).Info("请求完成",
-    zap.String("method", "SendMessage"),
-    zap.Duration("latency", time.Since(start)),
-    zap.String("status", "OK"),
+    slog.String("method", "SendMessage"),
+    slog.Duration("latency", time.Since(start)),
+    slog.String("status", "OK"),
 )
 
 // 请求失败
 log.WithContext(ctx).Warn("请求失败",
-    zap.String("method", "SendMessage"),
-    zap.Duration("latency", time.Since(start)),
-    zap.String("status", "INVALID_ARGUMENT"),
-    zap.Error(err),
+    slog.String("method", "SendMessage"),
+    slog.Duration("latency", time.Since(start)),
+    slog.String("status", "INVALID_ARGUMENT"),
+    slog.Any("error", err),
 )
 ```
 
@@ -124,16 +126,57 @@ log.WithContext(ctx).Warn("请求失败",
 ```go
 // 慢查询警告（超过 100ms）
 log.WithContext(ctx).Warn("慢查询",
-    zap.String("sql", "SELECT * FROM messages WHERE..."),
-    zap.Duration("latency", duration),
-    zap.Int64("rows", rowsAffected),
+    slog.String("sql", "SELECT * FROM messages WHERE..."),
+    slog.Duration("latency", duration),
+    slog.Int64("rows", rowsAffected),
 )
 
 // 查询错误
 log.WithContext(ctx).Error("数据库查询失败",
-    zap.Error(err),
-    zap.String("table", "messages"),
+    slog.Any("error", err),
+    slog.String("table", "messages"),
 )
+```
+
+### 使用 LogAttrs 提升性能
+
+```go
+// 高频日志场景使用 LogAttrs 避免内存分配
+log.WithContext(ctx).LogAttrs(ctx, slog.LevelInfo, "消息发送成功",
+    slog.String("conversation_id", convID),
+    slog.String("message_id", msgID),
+)
+```
+
+### 使用 DiscardHandler 禁用日志
+
+```go
+// Go 1.25+ 提供 slog.DiscardHandler，用于测试或禁用日志
+import "log/slog"
+
+// 测试环境禁用日志输出
+testLogger := slog.New(slog.DiscardHandler)
+
+// DiscardHandler.Enabled() 对所有级别返回 false
+// 可用于性能测试或不需要日志的场景
+```
+
+### 使用 GroupAttrs 组织相关字段
+
+```go
+// 使用 GroupAttrs 将相关属性分组（比 Group 更高效）
+log.Info("请求完成",
+    slog.GroupAttrs("request",
+        slog.String("method", method),
+        slog.String("path", path),
+    ),
+    slog.GroupAttrs("response",
+        slog.Int("status", statusCode),
+        slog.Duration("latency", duration),
+    ),
+)
+
+// 输出: {"request":{"method":"POST","path":"/api"},"response":{"status":200,"latency":"15ms"}}
 ```
 
 ---
@@ -197,21 +240,31 @@ log.e('gRPC 错误', {
 ```go
 // 使用结构化字段，不要拼接字符串
 log.Info("用户登录",
-    zap.String("user_id", userID),
-    zap.String("ip", clientIP),
+    slog.String("user_id", userID),
+    slog.String("ip", clientIP),
 )
 
 // 错误日志包含上下文
 log.Error("创建会话失败",
-    zap.Error(err),
-    zap.String("creator_id", creatorID),
-    zap.Strings("member_ids", memberIDs),
+    slog.Any("error", err),
+    slog.String("creator_id", creatorID),
+    slog.Any("member_ids", memberIDs),
 )
 
 // 敏感信息脱敏
 log.Info("用户注册",
-    zap.String("email", maskEmail(email)),  // t***@example.com
+    slog.String("email", maskEmail(email)),  // t***@example.com
 )
+
+// 使用 LogValuer 延迟计算昂贵的值
+type expensiveValue struct { arg int }
+
+func (e expensiveValue) LogValue() slog.Value {
+    return slog.StringValue(computeExpensive(e.arg))
+}
+
+// 只有日志级别启用时才会调用 computeExpensive
+log.Debug("调试信息", slog.Any("value", expensiveValue{arg: 42}))
 ```
 
 ### ❌ 避免
@@ -221,17 +274,17 @@ log.Info("用户注册",
 log.Info(fmt.Sprintf("用户 %s 登录", userID))  // ❌
 
 // 不要记录敏感信息
-log.Info("登录", zap.String("password", password))  // ❌
+log.Info("登录", slog.String("password", password))  // ❌
 
 // 不要记录大量数据
-log.Debug("消息列表", zap.Any("messages", messages))  // ❌ 可能很大
+log.Debug("消息列表", slog.Any("messages", messages))  // ❌ 可能很大
 
 // 不要在循环中频繁打日志
 for _, msg := range messages {
-    log.Debug("处理消息", zap.String("id", msg.ID))  // ❌
+    log.Debug("处理消息", slog.String("id", msg.ID))  // ❌
 }
 // 应该批量记录
-log.Debug("批量处理消息", zap.Int("count", len(messages)))  // ✅
+log.Debug("批量处理消息", slog.Int("count", len(messages)))  // ✅
 ```
 
 ---
@@ -280,11 +333,11 @@ resp, err := client.SomeMethod(ctx, req)
 
 ### 开发环境
 
-控制台彩色输出，便于阅读：
+Text 格式输出，便于阅读：
 
 ```
-10:30:00.123  INFO   chat  消息发送成功  {"trace_id":"abc123","conversation_id":"conv_001"}
-10:30:00.456  ERROR  chat  发送失败      {"trace_id":"abc123","error":"connection refused"}
+time=2026-01-02T10:30:00.123+08:00 level=INFO service=chat msg="消息发送成功" trace_id=abc123 conversation_id=conv_001
+time=2026-01-02T10:30:00.456+08:00 level=ERROR service=chat msg="发送失败" trace_id=abc123 error="connection refused"
 ```
 
 ### 生产环境
@@ -292,7 +345,7 @@ resp, err := client.SomeMethod(ctx, req)
 JSON 格式输出到 stdout，由日志收集系统处理：
 
 ```json
-{"timestamp":"2026-01-02T10:30:00.123Z","level":"INFO","service":"chat","msg":"消息发送成功","trace_id":"abc123","conversation_id":"conv_001"}
+{"time":"2026-01-02T10:30:00.123Z","level":"INFO","service":"chat","msg":"消息发送成功","trace_id":"abc123","conversation_id":"conv_001"}
 ```
 
 ### 查看日志
@@ -326,3 +379,23 @@ trace_id:abc123
 # 排除健康检查
 NOT method:/health
 ```
+
+---
+
+## slog 常用 API 速查
+
+| 函数 | 说明 |
+|------|------|
+| `slog.String(key, value)` | 字符串属性 |
+| `slog.Int(key, value)` | 整数属性 |
+| `slog.Int64(key, value)` | int64 属性 |
+| `slog.Uint64(key, value)` | uint64 属性 |
+| `slog.Float64(key, value)` | 浮点数属性 |
+| `slog.Bool(key, value)` | 布尔属性 |
+| `slog.Time(key, value)` | 时间属性 |
+| `slog.Duration(key, value)` | 时长属性 |
+| `slog.Any(key, value)` | 任意类型属性 |
+| `slog.Group(key, attrs...)` | 属性分组 |
+| `slog.GroupAttrs(key, attrs...)` | 属性分组（仅接受 Attr） |
+| `slog.DiscardHandler` | 丢弃所有日志的 Handler |
+| `slog.SetLogLoggerLevel(level)` | 设置 log 包的日志级别 |

@@ -6,6 +6,7 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
+	"log/slog"
 	"os"
 	"os/signal"
 	"sync"
@@ -16,7 +17,6 @@ import (
 	"github.com/funcdfs/lesser/pkg/database"
 	"github.com/funcdfs/lesser/pkg/grpcclient"
 	"github.com/funcdfs/lesser/pkg/logger"
-	"go.uber.org/zap"
 )
 
 // Component 可管理的组件接口
@@ -105,7 +105,7 @@ func New(cfg Config) (*App, error) {
 		redisClient, err := cache.NewClient(cfg.Redis)
 		if err != nil {
 			// Redis 连接失败不阻止应用启动，只记录警告
-			log.Warn("failed to connect to Redis, cache disabled", zap.Error(err))
+			log.Warn("failed to connect to Redis, cache disabled", slog.Any("error", err))
 		} else {
 			app.cache = redisClient
 			log.Info("connected to Redis")
@@ -151,7 +151,7 @@ func (a *App) Register(components ...Component) {
 func (a *App) Run(ctx context.Context, brokerConfigs ...broker.Config) error {
 	// 启动所有注册的组件
 	for _, c := range a.components {
-		a.log.Info("starting component", zap.String("component", c.Name()))
+		a.log.Info("starting component", slog.String("component", c.Name()))
 		if err := c.Start(ctx); err != nil {
 			return fmt.Errorf("failed to start component %s: %w", c.Name(), err)
 		}
@@ -172,7 +172,7 @@ func (a *App) Run(ctx context.Context, brokerConfigs ...broker.Config) error {
 	case <-ctx.Done():
 		a.log.Info("context cancelled")
 	case sig := <-sigCh:
-		a.log.Info("received signal", zap.String("signal", sig.String()))
+		a.log.Info("received signal", slog.String("signal", sig.String()))
 	}
 
 	a.Shutdown()
@@ -186,11 +186,11 @@ func (a *App) Shutdown() {
 	// 逆序关闭组件
 	for i := len(a.components) - 1; i >= 0; i-- {
 		c := a.components[i]
-		a.log.Info("stopping component", zap.String("component", c.Name()))
+		a.log.Info("stopping component", slog.String("component", c.Name()))
 		if err := c.Stop(); err != nil {
 			a.log.Error("failed to stop component",
-				zap.String("component", c.Name()),
-				zap.Error(err))
+				slog.String("component", c.Name()),
+				slog.Any("error", err))
 		}
 	}
 

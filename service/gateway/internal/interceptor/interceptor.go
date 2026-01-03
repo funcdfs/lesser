@@ -4,9 +4,9 @@ package interceptor
 
 import (
 	"context"
+	"log/slog"
 	"strings"
 
-	"go.uber.org/zap"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/metadata"
 
@@ -33,7 +33,7 @@ var publicMethods = map[string]bool{
 }
 
 // AuthInterceptor 创建认证拦截器
-func AuthInterceptor(validator *auth.JWTValidator, limiter *ratelimit.Limiter, log *zap.Logger) grpc.UnaryServerInterceptor {
+func AuthInterceptor(validator *auth.JWTValidator, limiter *ratelimit.Limiter, log *slog.Logger) grpc.UnaryServerInterceptor {
 	return func(ctx context.Context, req interface{}, info *grpc.UnaryServerInfo, handler grpc.UnaryHandler) (interface{}, error) {
 		// 公开方法跳过认证
 		if publicMethods[info.FullMethod] {
@@ -42,7 +42,7 @@ func AuthInterceptor(validator *auth.JWTValidator, limiter *ratelimit.Limiter, l
 
 		// 限流检查
 		if !limiter.Allow() {
-			log.Warn("请求被限流", zap.String("method", info.FullMethod))
+			log.Warn("请求被限流", slog.String("method", info.FullMethod))
 			return nil, gwErr.ErrRateLimitExceeded
 		}
 
@@ -54,7 +54,7 @@ func AuthInterceptor(validator *auth.JWTValidator, limiter *ratelimit.Limiter, l
 
 		claims, err := validator.ValidateToken(token)
 		if err != nil {
-			log.Debug("令牌验证失败", zap.Error(err), zap.String("method", info.FullMethod))
+			log.Debug("令牌验证失败", slog.Any("error", err), slog.String("method", info.FullMethod))
 			return nil, gwErr.ErrInvalidToken
 		}
 
@@ -71,7 +71,7 @@ func AuthInterceptor(validator *auth.JWTValidator, limiter *ratelimit.Limiter, l
 }
 
 // StreamAuthInterceptor 创建流式认证拦截器
-func StreamAuthInterceptor(validator *auth.JWTValidator, limiter *ratelimit.Limiter, log *zap.Logger) grpc.StreamServerInterceptor {
+func StreamAuthInterceptor(validator *auth.JWTValidator, limiter *ratelimit.Limiter, log *slog.Logger) grpc.StreamServerInterceptor {
 	return func(srv interface{}, ss grpc.ServerStream, info *grpc.StreamServerInfo, handler grpc.StreamHandler) error {
 		// 公开方法跳过认证
 		if publicMethods[info.FullMethod] {
@@ -80,7 +80,7 @@ func StreamAuthInterceptor(validator *auth.JWTValidator, limiter *ratelimit.Limi
 
 		// 限流检查
 		if !limiter.Allow() {
-			log.Warn("流请求被限流", zap.String("method", info.FullMethod))
+			log.Warn("流请求被限流", slog.String("method", info.FullMethod))
 			return gwErr.ErrRateLimitExceeded
 		}
 
@@ -92,7 +92,7 @@ func StreamAuthInterceptor(validator *auth.JWTValidator, limiter *ratelimit.Limi
 
 		claims, err := validator.ValidateToken(token)
 		if err != nil {
-			log.Debug("流令牌验证失败", zap.Error(err), zap.String("method", info.FullMethod))
+			log.Debug("流令牌验证失败", slog.Any("error", err), slog.String("method", info.FullMethod))
 			return gwErr.ErrInvalidToken
 		}
 

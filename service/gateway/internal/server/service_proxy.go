@@ -6,8 +6,8 @@ package server
 
 import (
 	"context"
+	"log/slog"
 
-	"go.uber.org/zap"
 	"google.golang.org/grpc"
 
 	authpb "github.com/funcdfs/lesser/gateway/proto/auth"
@@ -23,27 +23,27 @@ import (
 type AuthProxyServer struct {
 	authpb.UnimplementedAuthServiceServer
 	client authpb.AuthServiceClient
-	log    *zap.Logger
+	log    *slog.Logger
 }
 
 // NewAuthProxyServer 创建 Auth 代理服务器
-func NewAuthProxyServer(conn *grpc.ClientConn, log *zap.Logger) *AuthProxyServer {
+func NewAuthProxyServer(conn *grpc.ClientConn, log *slog.Logger) *AuthProxyServer {
 	if log == nil {
-		log = zap.NewNop()
+		log = slog.Default()
 	}
 	return &AuthProxyServer{
 		client: authpb.NewAuthServiceClient(conn),
-		log:    log.Named("proxy.auth"),
+		log:    log.With(slog.String("component", "proxy.auth")),
 	}
 }
 
 func (s *AuthProxyServer) Register(ctx context.Context, req *authpb.RegisterRequest) (*authpb.AuthResponse, error) {
-	s.log.Debug("注册请求", zap.String("username", req.Username), zap.String("email", req.Email))
+	s.log.Debug("注册请求", slog.String("username", req.Username), slog.String("email", req.Email))
 	return s.client.Register(ctx, req)
 }
 
 func (s *AuthProxyServer) Login(ctx context.Context, req *authpb.LoginRequest) (*authpb.AuthResponse, error) {
-	s.log.Debug("登录请求", zap.String("email", req.Email))
+	s.log.Debug("登录请求", slog.String("email", req.Email))
 	return s.client.Login(ctx, req)
 }
 
@@ -63,25 +63,25 @@ func (s *AuthProxyServer) GetPublicKey(ctx context.Context, req *authpb.GetPubli
 }
 
 func (s *AuthProxyServer) BanUser(ctx context.Context, req *authpb.BanUserRequest) (*authpb.BanUserResponse, error) {
-	s.log.Debug("封禁用户请求", zap.String("user_id", req.UserId))
+	s.log.Debug("封禁用户请求", slog.String("user_id", req.UserId))
 	return s.client.BanUser(ctx, req)
 }
 
 func (s *AuthProxyServer) CheckBanned(ctx context.Context, req *authpb.CheckBannedRequest) (*authpb.CheckBannedResponse, error) {
-	s.log.Debug("检查封禁状态请求", zap.String("user_id", req.UserId))
+	s.log.Debug("检查封禁状态请求", slog.String("user_id", req.UserId))
 	return s.client.CheckBanned(ctx, req)
 }
 
 func (s *AuthProxyServer) GetUser(ctx context.Context, req *authpb.GetUserRequest) (*authpb.User, error) {
-	s.log.Debug("获取用户请求", zap.String("user_id", req.UserId))
+	s.log.Debug("获取用户请求", slog.String("user_id", req.UserId))
 	return s.client.GetUser(ctx, req)
 }
 
 // RegisterAuthProxyServer 注册 Auth 代理服务
-func RegisterAuthProxyServer(s *grpc.Server, conn *grpc.ClientConn, log *zap.Logger) {
+func RegisterAuthProxyServer(s *grpc.Server, conn *grpc.ClientConn, log *slog.Logger) {
 	proxy := NewAuthProxyServer(conn, log)
 	authpb.RegisterAuthServiceServer(s, proxy)
-	log.Named("proxy").Info("Auth 代理服务已注册")
+	log.With(slog.String("component", "proxy")).Info("Auth 代理服务已注册")
 }
 
 // ============================================================================
@@ -92,35 +92,35 @@ func RegisterAuthProxyServer(s *grpc.Server, conn *grpc.ClientConn, log *zap.Log
 type SearchProxyServer struct {
 	searchpb.UnimplementedSearchServiceServer
 	client searchpb.SearchServiceClient
-	log    *zap.Logger
+	log    *slog.Logger
 }
 
 // NewSearchProxyServer 创建 Search 代理服务器
-func NewSearchProxyServer(conn *grpc.ClientConn, log *zap.Logger) *SearchProxyServer {
+func NewSearchProxyServer(conn *grpc.ClientConn, log *slog.Logger) *SearchProxyServer {
 	if log == nil {
-		log = zap.NewNop()
+		log = slog.Default()
 	}
 	return &SearchProxyServer{
 		client: searchpb.NewSearchServiceClient(conn),
-		log:    log.Named("proxy.search"),
+		log:    log.With(slog.String("component", "proxy.search")),
 	}
 }
 
 func (s *SearchProxyServer) SearchPosts(ctx context.Context, req *searchpb.SearchPostsRequest) (*searchpb.SearchPostsResponse, error) {
-	s.log.Debug("搜索帖子请求", zap.String("query", req.Query))
+	s.log.Debug("搜索帖子请求", slog.String("query", req.Query))
 	return s.client.SearchPosts(ctx, req)
 }
 
 func (s *SearchProxyServer) SearchUsers(ctx context.Context, req *searchpb.SearchUsersRequest) (*searchpb.SearchUsersResponse, error) {
-	s.log.Debug("搜索用户请求", zap.String("query", req.Query))
+	s.log.Debug("搜索用户请求", slog.String("query", req.Query))
 	return s.client.SearchUsers(ctx, req)
 }
 
 // RegisterSearchProxyServer 注册 Search 代理服务
-func RegisterSearchProxyServer(s *grpc.Server, conn *grpc.ClientConn, log *zap.Logger) {
+func RegisterSearchProxyServer(s *grpc.Server, conn *grpc.ClientConn, log *slog.Logger) {
 	proxy := NewSearchProxyServer(conn, log)
 	searchpb.RegisterSearchServiceServer(s, proxy)
-	log.Named("proxy").Info("Search 代理服务已注册")
+	log.With(slog.String("component", "proxy")).Info("Search 代理服务已注册")
 }
 
 // ============================================================================
@@ -132,7 +132,6 @@ func RegisterSearchProxyServer(s *grpc.Server, conn *grpc.ClientConn, log *zap.L
 // type UserProxyServer struct {
 // 	userpb.UnimplementedUserServiceServer
 // 	client userpb.UserServiceClient
-// 	log    *zap.Logger
 // }
 
 // ============================================================================
@@ -144,7 +143,6 @@ func RegisterSearchProxyServer(s *grpc.Server, conn *grpc.ClientConn, log *zap.L
 // type PostProxyServer struct {
 // 	postpb.UnimplementedPostServiceServer
 // 	client postpb.PostServiceClient
-// 	log    *zap.Logger
 // }
 
 // ============================================================================
@@ -156,7 +154,6 @@ func RegisterSearchProxyServer(s *grpc.Server, conn *grpc.ClientConn, log *zap.L
 // type FeedProxyServer struct {
 // 	feedpb.UnimplementedFeedServiceServer
 // 	client feedpb.FeedServiceClient
-// 	log    *zap.Logger
 // }
 
 // ============================================================================
@@ -168,7 +165,6 @@ func RegisterSearchProxyServer(s *grpc.Server, conn *grpc.ClientConn, log *zap.L
 // type NotificationProxyServer struct {
 // 	notificationpb.UnimplementedNotificationServiceServer
 // 	client notificationpb.NotificationServiceClient
-// 	log    *zap.Logger
 // }
 
 // ============================================================================

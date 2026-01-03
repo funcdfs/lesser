@@ -5,6 +5,7 @@ package broker
 import (
 	"context"
 	"fmt"
+	"log/slog"
 	"math"
 	"os"
 	"os/signal"
@@ -14,7 +15,6 @@ import (
 
 	"github.com/funcdfs/lesser/pkg/logger"
 	amqp "github.com/rabbitmq/amqp091-go"
-	"go.uber.org/zap"
 )
 
 // Handler 消息处理函数类型
@@ -87,7 +87,7 @@ func (w *Worker) Start(ctx context.Context, configs ...Config) error {
 	case <-ctx.Done():
 		w.log.Info("context cancelled, shutting down")
 	case sig := <-sigCh:
-		w.log.Info("received signal, shutting down", zap.String("signal", sig.String()))
+		w.log.Info("received signal, shutting down", slog.String("signal", sig.String()))
 	}
 
 	w.Stop()
@@ -165,13 +165,13 @@ func (w *Worker) reconnect() {
 		}
 
 		w.log.Warn("attempting to reconnect",
-			zap.Int("attempt", i+1),
-			zap.Duration("delay", delay))
+			slog.Int("attempt", i+1),
+			slog.Duration("delay", delay))
 
 		time.Sleep(delay)
 
 		if err := w.connect(); err != nil {
-			w.log.Error("reconnection failed", zap.Error(err))
+			w.log.Error("reconnection failed", slog.Any("error", err))
 			continue
 		}
 
@@ -180,8 +180,8 @@ func (w *Worker) reconnect() {
 		for _, cfg := range w.configs {
 			if err := w.startConsumer(ctx, cfg); err != nil {
 				w.log.Error("failed to restart consumer",
-					zap.String("queue", cfg.Queue),
-					zap.Error(err))
+					slog.String("queue", cfg.Queue),
+					slog.Any("error", err))
 			}
 		}
 
@@ -239,7 +239,7 @@ func (w *Worker) startConsumer(ctx context.Context, cfg Config) error {
 	w.wg.Add(1)
 	go w.consume(ctx, cfg.Queue, msgs, cfg.Handler, cfg.AutoAck)
 
-	w.log.Info("consumer started", zap.String("queue", cfg.Queue))
+	w.log.Info("consumer started", slog.String("queue", cfg.Queue))
 	return nil
 }
 
@@ -270,8 +270,8 @@ func (w *Worker) consume(ctx context.Context, queue string, msgs <-chan amqp.Del
 			// 处理消息
 			if err := handler(msgCtx, msg.Body); err != nil {
 				w.log.WithContext(msgCtx).Error("message handling failed",
-					zap.String("queue", queue),
-					zap.Error(err))
+					slog.String("queue", queue),
+					slog.Any("error", err))
 				if !autoAck {
 					msg.Nack(false, true) // 重新入队
 				}

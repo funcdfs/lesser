@@ -1,10 +1,12 @@
 // Package database 提供统一的数据库连接封装
-// 支持连接池配置和健康检查
+// 支持连接池配置、健康检查、事务管理
 package database
 
 import (
+	"context"
 	"database/sql"
 	"fmt"
+	"os"
 	"time"
 
 	_ "github.com/lib/pq"
@@ -42,6 +44,32 @@ func DefaultConfig() Config {
 		ConnMaxLifetime: time.Hour,
 		ConnMaxIdleTime: 5 * time.Minute,
 	}
+}
+
+// ConfigFromEnv 从环境变量读取配置
+func ConfigFromEnv() Config {
+	cfg := DefaultConfig()
+
+	if host := os.Getenv("DB_HOST"); host != "" {
+		cfg.Host = host
+	}
+	if port := os.Getenv("DB_PORT"); port != "" {
+		cfg.Port = port
+	}
+	if user := os.Getenv("DB_USER"); user != "" {
+		cfg.User = user
+	}
+	if password := os.Getenv("DB_PASSWORD"); password != "" {
+		cfg.Password = password
+	}
+	if dbName := os.Getenv("DB_NAME"); dbName != "" {
+		cfg.DBName = dbName
+	}
+	if sslMode := os.Getenv("DB_SSLMODE"); sslMode != "" {
+		cfg.SSLMode = sslMode
+	}
+
+	return cfg
 }
 
 // NewConnection 创建新的 PostgreSQL 连接
@@ -102,4 +130,263 @@ func buildDSN(cfg Config) string {
 // HealthCheck 检查数据库连接健康状态
 func HealthCheck(db *sql.DB) error {
 	return db.Ping()
+}
+
+// HealthCheckWithTimeout 带超时的健康检查
+func HealthCheckWithTimeout(ctx context.Context, db *sql.DB, timeout time.Duration) error {
+	ctx, cancel := context.WithTimeout(ctx, timeout)
+	defer cancel()
+	return db.PingContext(ctx)
+}
+
+// ---- 事务管理 ----
+
+// TxFunc 事务函数类型
+type TxFunc func(tx *sql.Tx) error
+
+// WithTransaction 在事务中执行函数
+func WithTransaction(ctx context.Context, db *sql.DB, fn TxFunc) error {
+	tx, err := db.BeginTx(ctx, nil)
+	if err != nil {
+		return fmt.Errorf("开始事务失败: %w", err)
+	}
+
+	defer func() {
+		if p := recover(); p != nil {
+			tx.Rollback()
+			panic(p)
+		}
+	}()
+
+	if err := fn(tx); err != nil {
+		if rbErr := tx.Rollback(); rbErr != nil {
+			return fmt.Errorf("回滚事务失败: %v, 原始错误: %w", rbErr, err)
+		}
+		return err
+	}
+
+	if err := tx.Commit(); err != nil {
+		return fmt.Errorf("提交事务失败: %w", err)
+	}
+
+	return nil
+}
+
+// WithTransactionOptions 带选项的事务执行
+func WithTransactionOptions(ctx context.Context, db *sql.DB, opts *sql.TxOptions, fn TxFunc) error {
+	tx, err := db.BeginTx(ctx, opts)
+	if err != nil {
+		return fmt.Errorf("开始事务失败: %w", err)
+	}
+
+	defer func() {
+		if p := recover(); p != nil {
+			tx.Rollback()
+			panic(p)
+		}
+	}()
+
+	if err := fn(tx); err != nil {
+		if rbErr := tx.Rollback(); rbErr != nil {
+			return fmt.Errorf("回滚事务失败: %v, 原始错误: %w", rbErr, err)
+		}
+		return err
+	}
+
+	if err := tx.Commit(); err != nil {
+		return fmt.Errorf("提交事务失败: %w", err)
+	}
+
+	return nil
+}
+
+// ---- 查询辅助 ----
+
+// Querier 查询接口（支持 *sql.DB 和 *sql.Tx）
+type Querier interface {
+	QueryContext(ctx context.Context, query string, args ...interface{}) (*sql.Rows, error)
+	QueryRowContext(ctx context.Context, query string, args ...interface{}) *sql.Row
+	ExecContext(ctx context.Context, query string, args ...interface{}) (sql.Result, error)
+}
+
+// NullString 创建可空字符串
+func NullString(s string) sql.NullString {
+	if s == "" {
+		return sql.NullString{}
+	}
+	return sql.NullString{String: s, Valid: true}
+}
+
+// NullInt64 创建可空 int64
+func NullInt64(i int64) sql.NullInt64 {
+	if i == 0 {
+		return sql.NullInt64{}
+	}
+	return sql.NullInt64{Int64: i, Valid: true}
+}
+
+// NullFloat64 创建可空 float64
+func NullFloat64(f float64) sql.NullFloat64 {
+	if f == 0 {
+		return sql.NullFloat64{}
+	}
+	return sql.NullFloat64{Float64: f, Valid: true}
+}
+
+// NullBool 创建可空 bool
+func NullBool(b bool) sql.NullBool {
+	return sql.NullBool{Bool: b, Valid: true}
+}
+
+// NullTime 创建可空时间
+func NullTime(t time.Time) sql.NullTime {
+	if t.IsZero() {
+		return sql.NullTime{}
+	}
+	return sql.NullTime{Time: t, Valid: true}
+}
+
+// StringFromNull 从可空字符串获取值
+func StringFromNull(ns sql.NullString) string {
+	if ns.Valid {
+		return ns.String
+	}
+	return ""
+}
+
+// Int64FromNull 从可空 int64 获取值
+func Int64FromNull(ni sql.NullInt64) int64 {
+	if ni.Valid {
+		return ni.Int64
+	}
+	return 0
+}
+
+// Float64FromNull 从可空 float64 获取值
+func Float64FromNull(nf sql.NullFloat64) float64 {
+	if nf.Valid {
+		return nf.Float64
+	}
+	return 0
+}
+
+// BoolFromNull 从可空 bool 获取值
+func BoolFromNull(nb sql.NullBool) bool {
+	if nb.Valid {
+		return nb.Bool
+	}
+	return false
+}
+
+// TimeFromNull 从可空时间获取值
+func TimeFromNull(nt sql.NullTime) time.Time {
+	if nt.Valid {
+		return nt.Time
+	}
+	return time.Time{}
+}
+
+// ---- 批量操作辅助 ----
+
+// BatchInsertBuilder 批量插入构建器
+type BatchInsertBuilder struct {
+	table   string
+	columns []string
+	values  [][]interface{}
+}
+
+// NewBatchInsert 创建批量插入构建器
+func NewBatchInsert(table string, columns ...string) *BatchInsertBuilder {
+	return &BatchInsertBuilder{
+		table:   table,
+		columns: columns,
+		values:  make([][]interface{}, 0),
+	}
+}
+
+// Add 添加一行数据
+func (b *BatchInsertBuilder) Add(values ...interface{}) *BatchInsertBuilder {
+	if len(values) == len(b.columns) {
+		b.values = append(b.values, values)
+	}
+	return b
+}
+
+// Build 构建 SQL 语句和参数
+func (b *BatchInsertBuilder) Build() (string, []interface{}) {
+	if len(b.values) == 0 {
+		return "", nil
+	}
+
+	// 构建列名部分
+	query := fmt.Sprintf("INSERT INTO %s (", b.table)
+	for i, col := range b.columns {
+		if i > 0 {
+			query += ", "
+		}
+		query += col
+	}
+	query += ") VALUES "
+
+	// 构建值占位符
+	args := make([]interface{}, 0, len(b.values)*len(b.columns))
+	paramIndex := 1
+
+	for i, row := range b.values {
+		if i > 0 {
+			query += ", "
+		}
+		query += "("
+		for j := range row {
+			if j > 0 {
+				query += ", "
+			}
+			query += fmt.Sprintf("$%d", paramIndex)
+			paramIndex++
+		}
+		query += ")"
+		args = append(args, row...)
+	}
+
+	return query, args
+}
+
+// Execute 执行批量插入
+func (b *BatchInsertBuilder) Execute(ctx context.Context, q Querier) (sql.Result, error) {
+	query, args := b.Build()
+	if query == "" {
+		return nil, nil
+	}
+	return q.ExecContext(ctx, query, args...)
+}
+
+// ---- 连接池统计 ----
+
+// PoolStats 连接池统计信息
+type PoolStats struct {
+	MaxOpenConnections int           // 最大打开连接数
+	OpenConnections    int           // 当前打开连接数
+	InUse              int           // 使用中的连接数
+	Idle               int           // 空闲连接数
+	WaitCount          int64         // 等待连接的总次数
+	WaitDuration       time.Duration // 等待连接的总时间
+	MaxIdleClosed      int64         // 因超过最大空闲数而关闭的连接数
+	MaxIdleTimeClosed  int64         // 因空闲超时而关闭的连接数
+	MaxLifetimeClosed  int64         // 因生命周期超时而关闭的连接数
+}
+
+// GetPoolStats 获取连接池统计信息
+func GetPoolStats(db *sql.DB) PoolStats {
+	stats := db.Stats()
+	return PoolStats{
+		MaxOpenConnections: stats.MaxOpenConnections,
+		OpenConnections:    stats.OpenConnections,
+		InUse:              stats.InUse,
+		Idle:               stats.Idle,
+		WaitCount:          stats.WaitCount,
+		WaitDuration:       stats.WaitDuration,
+		MaxIdleClosed:      stats.MaxIdleClosed,
+		MaxIdleTimeClosed:  stats.MaxIdleTimeClosed,
+		MaxLifetimeClosed:  stats.MaxLifetimeClosed,
+	}
 }

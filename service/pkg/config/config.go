@@ -59,3 +59,23 @@ func MustGetEnv(key string) string {
 func LookupEnv(key string) (string, bool) {
 	return os.LookupEnv(key)
 }
+
+// GetEnvUint32 获取 uint32 类型的环境变量
+func GetEnvUint32(key string, defaultValue uint32) uint32 {
+	if value := os.Getenv(key); value != "" {
+		if i, err := strconv.ParseUint(value, 10, 32); err == nil {
+			return uint32(i)
+		}
+	}
+	return defaultValue
+}
+
+// GetEnvInt64 获取 int64 类型的环境变量
+func GetEnvInt64(key string, defaultValue int64) int64 {
+	if value := os.Getenv(key); value != "" {
+		if i, err := strconv.ParseInt(value, 10, 64); err == nil {
+			return i
+		}
+	}
+	return defaultValue
+}

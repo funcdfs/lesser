@@ -9,8 +9,8 @@ package server
 
 import (
 	"context"
+	"log/slog"
 
-	"go.uber.org/zap"
 	"google.golang.org/grpc"
 
 	"github.com/funcdfs/lesser/gateway/internal/auth"
@@ -51,21 +51,21 @@ type GatewayServer struct {
 	pb.UnimplementedGatewayServiceServer
 
 	// 核心组件
-	jwtValidator  *auth.JWTValidator
-	rateLimiter   *ratelimit.Limiter
-	router        *router.Router
+	jwtValidator   *auth.JWTValidator
+	rateLimiter    *ratelimit.Limiter
+	router         *router.Router
 	streamingProxy *streaming.Proxy
 
 	// 日志
-	log *zap.Logger
+	log *slog.Logger
 }
 
 // NewGatewayServer 创建 Gateway 服务器
-func NewGatewayServer(cfg Config, log *zap.Logger) (*GatewayServer, error) {
+func NewGatewayServer(cfg Config, log *slog.Logger) (*GatewayServer, error) {
 	if log == nil {
-		log = zap.NewNop()
+		log = slog.Default()
 	}
-	log = log.Named("gateway")
+	log = log.With(slog.String("component", "gateway"))
 
 	// 创建限流器
 	rateLimiter := ratelimit.NewLimiter(ratelimit.Config{
@@ -116,7 +116,7 @@ func (s *GatewayServer) Start(ctx context.Context) error {
 
 	// 启动 JWT 验签器
 	if err := s.jwtValidator.Start(ctx, adapter); err != nil {
-		s.log.Warn("JWT 验签器启动失败", zap.Error(err))
+		s.log.Warn("JWT 验签器启动失败", slog.Any("error", err))
 		return nil
 	}
 

@@ -11,12 +11,12 @@ package streaming
 import (
 	"context"
 	"io"
+	"log/slog"
 	"strings"
 	"sync"
 	"sync/atomic"
 	"time"
 
-	"go.uber.org/zap"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/metadata"
 
@@ -49,21 +49,21 @@ func DefaultProxyConfig() ProxyConfig {
 type Proxy struct {
 	jwtValidator *auth.JWTValidator
 	config       ProxyConfig
-	log          *zap.Logger
+	log          *slog.Logger
 
 	// 统计信息
 	activeStreams atomic.Int64
 }
 
 // NewProxy 创建流代理
-func NewProxy(jwtValidator *auth.JWTValidator, config ProxyConfig, log *zap.Logger) *Proxy {
+func NewProxy(jwtValidator *auth.JWTValidator, config ProxyConfig, log *slog.Logger) *Proxy {
 	if log == nil {
-		log = zap.NewNop()
+		log = slog.Default()
 	}
 	return &Proxy{
 		jwtValidator: jwtValidator,
 		config:       config,
-		log:          log.Named("streaming"),
+		log:          log.With(slog.String("component", "streaming")),
 	}
 }
 
@@ -95,7 +95,7 @@ func (p *Proxy) ProxyBidirectional(
 		return err
 	}
 
-	p.log.Debug("流认证成功", zap.String("user_id", userID))
+	p.log.Debug("流认证成功", slog.String("user_id", userID))
 
 	// 2. 创建下游 context，注入 user_id 和 request_id
 	serverCtx := p.createServerContext(ctx, userID)
@@ -103,7 +103,7 @@ func (p *Proxy) ProxyBidirectional(
 	// 3. 创建到下游服务的双向流
 	serverStream, err := createServerStream(serverCtx)
 	if err != nil {
-		p.log.Error("创建下游流失败", zap.Error(err))
+		p.log.Error("创建下游流失败", slog.Any("error", err))
 		return gwErr.ErrServiceUnavailable
 	}
 
@@ -119,13 +119,13 @@ func (p *Proxy) ProxyBidirectional(
 func (p *Proxy) authenticateStream(ctx context.Context) (string, error) {
 	token, err := extractTokenFromContext(ctx)
 	if err != nil {
-		p.log.Debug("提取令牌失败", zap.Error(err))
+		p.log.Debug("提取令牌失败", slog.Any("error", err))
 		return "", err
 	}
 
 	claims, err := p.jwtValidator.ValidateToken(token)
 	if err != nil {
-		p.log.Debug("令牌验证失败", zap.Error(err))
+		p.log.Debug("令牌验证失败", slog.Any("error", err))
 		return "", gwErr.ErrInvalidToken
 	}
 
@@ -194,6 +194,7 @@ func (p *Proxy) bidirectionalForward(
 }
 
 // forwardMessages 单向转发消息
+// 使用 grpc.RawCodec 模式转发原始字节，避免反序列化
 func (p *Proxy) forwardMessages(
 	ctx context.Context,
 	src interface{ RecvMsg(interface{}) error },
@@ -211,25 +212,55 @@ func (p *Proxy) forwardMessages(
 		default:
 		}
 
-		// 接收消息
-		var msg interface{}
-		if err := src.RecvMsg(&msg); err != nil {
+		// 使用 frame 接收原始字节
+		frame := &rawFrame{}
+		if err := src.RecvMsg(frame); err != nil {
 			if err != io.EOF {
 				p.log.Debug("接收消息失败",
-					zap.String("direction", direction),
-					zap.Error(err))
+					slog.String("direction", direction),
+					slog.Any("error", err))
 			}
 			return err
 		}
 
-		// 发送消息
-		if err := dst.SendMsg(msg); err != nil {
+		// 发送原始字节
+		if err := dst.SendMsg(frame); err != nil {
 			p.log.Debug("发送消息失败",
-				zap.String("direction", direction),
-				zap.Error(err))
+				slog.String("direction", direction),
+				slog.Any("error", err))
 			return err
 		}
 	}
+}
+
+// rawFrame 用于透明转发 gRPC 消息的原始字节
+// 实现 proto.Message 接口以便与 gRPC 流配合使用
+type rawFrame struct {
+	payload []byte
+}
+
+// Reset 实现 proto.Message 接口
+func (f *rawFrame) Reset() {
+	f.payload = nil
+}
+
+// String 实现 proto.Message 接口
+func (f *rawFrame) String() string {
+	return string(f.payload)
+}
+
+// ProtoMessage 实现 proto.Message 接口
+func (f *rawFrame) ProtoMessage() {}
+
+// Marshal 序列化（返回原始字节）
+func (f *rawFrame) Marshal() ([]byte, error) {
+	return f.payload, nil
+}
+
+// Unmarshal 反序列化（存储原始字节）
+func (f *rawFrame) Unmarshal(data []byte) error {
+	f.payload = data
+	return nil
 }
 
 // ============================================================================

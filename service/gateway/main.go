@@ -4,13 +4,13 @@ package main
 
 import (
 	"context"
+	"log/slog"
 	"net"
 	"os"
 	"os/signal"
 	"strconv"
 	"syscall"
 
-	"go.uber.org/zap"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/reflection"
 
@@ -20,7 +20,6 @@ import (
 func main() {
 	// 初始化日志
 	log := initLogger()
-	defer log.Sync()
 
 	// 加载配置
 	cfg := loadConfig()
@@ -28,7 +27,8 @@ func main() {
 	// 创建 Gateway 服务器
 	gatewayServer, err := server.NewGatewayServer(cfg, log)
 	if err != nil {
-		log.Fatal("创建 Gateway 服务器失败", zap.Error(err))
+		log.Error("创建 Gateway 服务器失败", slog.Any("error", err))
+		os.Exit(1)
 	}
 
 	// 启动 Gateway
@@ -36,7 +36,8 @@ func main() {
 	defer cancel()
 
 	if err := gatewayServer.Start(ctx); err != nil {
-		log.Fatal("启动 Gateway 失败", zap.Error(err))
+		log.Error("启动 Gateway 失败", slog.Any("error", err))
+		os.Exit(1)
 	}
 
 	// 创建 gRPC 服务器
@@ -54,42 +55,46 @@ func main() {
 	grpcPort := getEnv("GRPC_PORT", "50053")
 	lis, err := net.Listen("tcp", ":"+grpcPort)
 	if err != nil {
-		log.Fatal("监听端口失败", zap.String("port", grpcPort), zap.Error(err))
+		log.Error("监听端口失败", slog.String("port", grpcPort), slog.Any("error", err))
+		os.Exit(1)
 	}
 
 	// 优雅关闭
 	go gracefulShutdown(cancel, grpcServer, gatewayServer, log)
 
 	log.Info("Gateway 服务已启动",
-		zap.String("port", grpcPort),
-		zap.String("auth", cfg.AuthServiceAddr),
-		zap.String("user", cfg.UserServiceAddr),
-		zap.String("post", cfg.PostServiceAddr),
-		zap.String("feed", cfg.FeedServiceAddr),
-		zap.String("chat", cfg.ChatServiceAddr),
-		zap.String("search", cfg.SearchServiceAddr),
-		zap.String("notification", cfg.NotificationServiceAddr))
+		slog.String("port", grpcPort),
+		slog.String("auth", cfg.AuthServiceAddr),
+		slog.String("user", cfg.UserServiceAddr),
+		slog.String("post", cfg.PostServiceAddr),
+		slog.String("feed", cfg.FeedServiceAddr),
+		slog.String("chat", cfg.ChatServiceAddr),
+		slog.String("search", cfg.SearchServiceAddr),
+		slog.String("notification", cfg.NotificationServiceAddr))
 
 	if err := grpcServer.Serve(lis); err != nil {
-		log.Fatal("gRPC 服务异常退出", zap.Error(err))
+		log.Error("gRPC 服务异常退出", slog.Any("error", err))
+		os.Exit(1)
 	}
 }
 
 // initLogger 初始化日志
-func initLogger() *zap.Logger {
-	var log *zap.Logger
-	var err error
+func initLogger() *slog.Logger {
+	var handler slog.Handler
 
 	if os.Getenv("ENV") == "production" {
-		log, err = zap.NewProduction()
+		handler = slog.NewJSONHandler(os.Stdout, &slog.HandlerOptions{
+			Level:     slog.LevelInfo,
+			AddSource: true,
+		})
 	} else {
-		log, err = zap.NewDevelopment()
+		handler = slog.NewTextHandler(os.Stdout, &slog.HandlerOptions{
+			Level:     slog.LevelDebug,
+			AddSource: true,
+		})
 	}
 
-	if err != nil {
-		panic("初始化日志失败: " + err.Error())
-	}
-	return log.Named("gateway")
+	return slog.New(handler).With(slog.String("service", "gateway"))
 }
 
 // loadConfig 加载配置
@@ -108,7 +113,7 @@ func loadConfig() server.Config {
 }
 
 // registerProxyServices 注册代理服务
-func registerProxyServices(grpcServer *grpc.Server, gatewayServer *server.GatewayServer, log *zap.Logger) {
+func registerProxyServices(grpcServer *grpc.Server, gatewayServer *server.GatewayServer, log *slog.Logger) {
 	router := gatewayServer.GetRouter()
 
 	// 注册 Auth 代理
@@ -127,7 +132,7 @@ func registerProxyServices(grpcServer *grpc.Server, gatewayServer *server.Gatewa
 }
 
 // gracefulShutdown 优雅关闭
-func gracefulShutdown(cancel context.CancelFunc, grpcServer *grpc.Server, gatewayServer *server.GatewayServer, log *zap.Logger) {
+func gracefulShutdown(cancel context.CancelFunc, grpcServer *grpc.Server, gatewayServer *server.GatewayServer, log *slog.Logger) {
 	sigCh := make(chan os.Signal, 1)
 	signal.Notify(sigCh, syscall.SIGINT, syscall.SIGTERM)
 	<-sigCh
@@ -138,7 +143,8 @@ func gracefulShutdown(cancel context.CancelFunc, grpcServer *grpc.Server, gatewa
 	gatewayServer.Stop()
 }
 
-// 环境变量辅助函数
+// ---- 环境变量辅助函数 ----
+
 func getEnv(key, defaultValue string) string {
 	if value := os.Getenv(key); value != "" {
 		return value

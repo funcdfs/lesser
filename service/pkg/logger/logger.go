@@ -1,14 +1,15 @@
-// Package logger 提供统一的日志封装，基于 Zap
-// 支持生产环境（JSON）和开发环境（Console）的日志格式
+// Package logger 提供统一的日志封装，基于 Go 标准库 slog
+// 支持生产环境（JSON）和开发环境（Text）的日志格式
 // 自动注入 trace_id 到日志上下文中
 package logger
 
 import (
 	"context"
+	"io"
+	"log/slog"
 	"os"
-
-	"go.uber.org/zap"
-	"go.uber.org/zap/zapcore"
+	"runtime"
+	"time"
 )
 
 // 上下文键类型
@@ -19,30 +20,29 @@ const (
 	TraceIDKey ctxKey = "trace_id"
 	// UserIDKey 用于从 context 中获取 user_id
 	UserIDKey ctxKey = "user_id"
+	// RequestIDKey 用于从 context 中获取 request_id
+	RequestIDKey ctxKey = "request_id"
 )
 
-// Logger 封装 zap.Logger，提供带上下文的日志方法
+// Logger 封装 slog.Logger，提供带上下文的日志方法
 type Logger struct {
-	*zap.Logger
+	*slog.Logger
 	service string
 }
 
 // New 创建新的 Logger 实例
 // service: 服务名称，会自动注入到每条日志中
 func New(service string) *Logger {
-	var config zap.Config
+	var handler slog.Handler
 
 	// 根据环境选择配置
 	if os.Getenv("ENV") == "production" || os.Getenv("GIN_MODE") == "release" {
-		config = newProductionConfig()
+		handler = newProductionHandler(os.Stdout)
 	} else {
-		config = newDevelopmentConfig()
+		handler = newDevelopmentHandler(os.Stdout)
 	}
 
-	logger, err := config.Build(zap.AddCaller(), zap.AddCallerSkip(1))
-	if err != nil {
-		panic(err)
-	}
+	logger := slog.New(handler).With(slog.String("service", service))
 
 	return &Logger{
 		Logger:  logger,
@@ -50,89 +50,74 @@ func New(service string) *Logger {
 	}
 }
 
-// newProductionConfig 生产环境配置（JSON 格式）
-func newProductionConfig() zap.Config {
-	encoderConfig := zap.NewProductionEncoderConfig()
-	encoderConfig.TimeKey = "timestamp"
-	encoderConfig.EncodeTime = zapcore.ISO8601TimeEncoder
-	encoderConfig.MessageKey = "msg"
-	encoderConfig.LevelKey = "level"
-	encoderConfig.EncodeLevel = zapcore.CapitalLevelEncoder
-	encoderConfig.CallerKey = "caller"
-	encoderConfig.StacktraceKey = "stacktrace"
-
-	return zap.Config{
-		Level:             zap.NewAtomicLevelAt(zap.InfoLevel),
-		Development:       false,
-		Encoding:          "json",
-		EncoderConfig:     encoderConfig,
-		OutputPaths:       []string{"stdout"},
-		ErrorOutputPaths:  []string{"stderr"},
-		DisableStacktrace: false,
-	}
+// newProductionHandler 生产环境处理器（JSON 格式）
+func newProductionHandler(w io.Writer) slog.Handler {
+	return slog.NewJSONHandler(w, &slog.HandlerOptions{
+		Level:     slog.LevelInfo,
+		AddSource: true,
+	})
 }
 
-// newDevelopmentConfig 开发环境配置（Console 格式，带颜色）
-func newDevelopmentConfig() zap.Config {
-	encoderConfig := zap.NewDevelopmentEncoderConfig()
-	encoderConfig.EncodeLevel = zapcore.CapitalColorLevelEncoder
-	encoderConfig.EncodeTime = zapcore.TimeEncoderOfLayout("15:04:05.000")
-
-	return zap.Config{
-		Level:            zap.NewAtomicLevelAt(zap.DebugLevel),
-		Development:      true,
-		Encoding:         "console",
-		EncoderConfig:    encoderConfig,
-		OutputPaths:      []string{"stdout"},
-		ErrorOutputPaths: []string{"stderr"},
-	}
+// newDevelopmentHandler 开发环境处理器（Text 格式）
+func newDevelopmentHandler(w io.Writer) slog.Handler {
+	return slog.NewTextHandler(w, &slog.HandlerOptions{
+		Level:     slog.LevelDebug,
+		AddSource: true,
+	})
 }
 
 // WithContext 从 context 中提取 trace_id 和 user_id，返回带字段的 Logger
-func (l *Logger) WithContext(ctx context.Context) *zap.Logger {
-	fields := []zap.Field{
-		zap.String("service", l.service),
-	}
+func (l *Logger) WithContext(ctx context.Context) *slog.Logger {
+	logger := l.Logger
 
 	if traceID, ok := ctx.Value(TraceIDKey).(string); ok && traceID != "" {
-		fields = append(fields, zap.String("trace_id", traceID))
+		logger = logger.With(slog.String("trace_id", traceID))
 	}
 
 	if userID, ok := ctx.Value(UserIDKey).(string); ok && userID != "" {
-		fields = append(fields, zap.String("user_id", userID))
+		logger = logger.With(slog.String("user_id", userID))
 	}
 
-	return l.Logger.With(fields...)
+	return logger
 }
 
-// Info 记录 Info 级别日志（带 service 字段）
-func (l *Logger) Info(msg string, fields ...zap.Field) {
-	l.Logger.Info(msg, append(fields, zap.String("service", l.service))...)
+// With 返回带有额外属性的新 Logger
+func (l *Logger) With(args ...any) *Logger {
+	return &Logger{
+		Logger:  l.Logger.With(args...),
+		service: l.service,
+	}
 }
 
-// Error 记录 Error 级别日志（带 service 字段）
-func (l *Logger) Error(msg string, fields ...zap.Field) {
-	l.Logger.Error(msg, append(fields, zap.String("service", l.service))...)
+// Info 记录 Info 级别日志
+func (l *Logger) Info(msg string, args ...any) {
+	l.Logger.Info(msg, args...)
 }
 
-// Warn 记录 Warn 级别日志（带 service 字段）
-func (l *Logger) Warn(msg string, fields ...zap.Field) {
-	l.Logger.Warn(msg, append(fields, zap.String("service", l.service))...)
+// Error 记录 Error 级别日志
+func (l *Logger) Error(msg string, args ...any) {
+	l.Logger.Error(msg, args...)
 }
 
-// Debug 记录 Debug 级别日志（带 service 字段）
-func (l *Logger) Debug(msg string, fields ...zap.Field) {
-	l.Logger.Debug(msg, append(fields, zap.String("service", l.service))...)
+// Warn 记录 Warn 级别日志
+func (l *Logger) Warn(msg string, args ...any) {
+	l.Logger.Warn(msg, args...)
 }
 
-// Fatal 记录 Fatal 级别日志并退出程序
-func (l *Logger) Fatal(msg string, fields ...zap.Field) {
-	l.Logger.Fatal(msg, append(fields, zap.String("service", l.service))...)
+// Debug 记录 Debug 级别日志
+func (l *Logger) Debug(msg string, args ...any) {
+	l.Logger.Debug(msg, args...)
 }
 
-// Sync 刷新日志缓冲区
+// Fatal 记录 Error 级别日志并退出程序
+func (l *Logger) Fatal(msg string, args ...any) {
+	l.Logger.Error(msg, args...)
+	os.Exit(1)
+}
+
+// Sync 刷新日志缓冲区（slog 不需要，保留接口兼容）
 func (l *Logger) Sync() error {
-	return l.Logger.Sync()
+	return nil
 }
 
 // ContextWithTraceID 将 trace_id 注入到 context 中
@@ -151,4 +136,144 @@ func TraceIDFromContext(ctx context.Context) string {
 		return traceID
 	}
 	return ""
+}
+
+// Attr 创建日志属性的便捷函数
+func String(key, value string) slog.Attr {
+	return slog.String(key, value)
+}
+
+func Int(key string, value int) slog.Attr {
+	return slog.Int(key, value)
+}
+
+func Int64(key string, value int64) slog.Attr {
+	return slog.Int64(key, value)
+}
+
+func Bool(key string, value bool) slog.Attr {
+	return slog.Bool(key, value)
+}
+
+func Any(key string, value any) slog.Attr {
+	return slog.Any(key, value)
+}
+
+func Err(err error) slog.Attr {
+	return slog.Any("error", err)
+}
+
+func Duration(key string, value any) slog.Attr {
+	return slog.Any(key, value)
+}
+
+// ---- 额外的上下文函数 ----
+
+// ContextWithRequestID 将 request_id 注入到 context 中
+func ContextWithRequestID(ctx context.Context, requestID string) context.Context {
+	return context.WithValue(ctx, RequestIDKey, requestID)
+}
+
+// RequestIDFromContext 从 context 中获取 request_id
+func RequestIDFromContext(ctx context.Context) string {
+	if requestID, ok := ctx.Value(RequestIDKey).(string); ok {
+		return requestID
+	}
+	return ""
+}
+
+// UserIDFromContext 从 context 中获取 user_id
+func UserIDFromContext(ctx context.Context) string {
+	if userID, ok := ctx.Value(UserIDKey).(string); ok {
+		return userID
+	}
+	return ""
+}
+
+// ---- 结构化日志辅助 ----
+
+// Fields 日志字段集合
+type Fields map[string]any
+
+// ToAttrs 转换为 slog.Attr 切片
+func (f Fields) ToAttrs() []any {
+	attrs := make([]any, 0, len(f)*2)
+	for k, v := range f {
+		attrs = append(attrs, k, v)
+	}
+	return attrs
+}
+
+// LogOperation 记录操作日志
+func (l *Logger) LogOperation(ctx context.Context, operation string, fields Fields) {
+	attrs := []any{slog.String("operation", operation)}
+	attrs = append(attrs, fields.ToAttrs()...)
+	l.WithContext(ctx).Info("operation", attrs...)
+}
+
+// LogError 记录错误日志
+func (l *Logger) LogError(ctx context.Context, operation string, err error, fields Fields) {
+	attrs := []any{
+		slog.String("operation", operation),
+		slog.Any("error", err),
+	}
+	attrs = append(attrs, fields.ToAttrs()...)
+	l.WithContext(ctx).Error("operation failed", attrs...)
+}
+
+// LogDuration 记录耗时日志
+func (l *Logger) LogDuration(ctx context.Context, operation string, start time.Time, fields Fields) {
+	duration := time.Since(start)
+	attrs := []any{
+		slog.String("operation", operation),
+		slog.Duration("duration", duration),
+	}
+	attrs = append(attrs, fields.ToAttrs()...)
+	l.WithContext(ctx).Info("operation completed", attrs...)
+}
+
+// LogPanic 记录 panic 日志
+func (l *Logger) LogPanic(ctx context.Context, recovered any) {
+	buf := make([]byte, 4096)
+	n := runtime.Stack(buf, false)
+	l.WithContext(ctx).Error("panic recovered",
+		slog.Any("panic", recovered),
+		slog.String("stack", string(buf[:n])))
+}
+
+// ---- 全局 Logger ----
+
+var globalLogger *Logger
+
+// SetGlobal 设置全局 Logger
+func SetGlobal(l *Logger) {
+	globalLogger = l
+}
+
+// Global 获取全局 Logger
+func Global() *Logger {
+	if globalLogger == nil {
+		globalLogger = New("app")
+	}
+	return globalLogger
+}
+
+// Info 使用全局 Logger 记录 Info 日志
+func Info(msg string, args ...any) {
+	Global().Info(msg, args...)
+}
+
+// Error 使用全局 Logger 记录 Error 日志
+func Error(msg string, args ...any) {
+	Global().Error(msg, args...)
+}
+
+// Warn 使用全局 Logger 记录 Warn 日志
+func Warn(msg string, args ...any) {
+	Global().Warn(msg, args...)
+}
+
+// Debug 使用全局 Logger 记录 Debug 日志
+func Debug(msg string, args ...any) {
+	Global().Debug(msg, args...)
 }

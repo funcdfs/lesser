@@ -15,8 +15,8 @@ func NewPostgres(databaseURL string) (*gorm.DB, error) {
 		return nil, fmt.Errorf("database URL is required")
 	}
 
-	zapLogger := logger.Get()
-	gormLogger := NewZapGormLogger(zapLogger)
+	slogLogger := logger.Get()
+	gormLogger := NewSlogGormLogger(slogLogger)
 	gormLogger.LogLevel = gormlogger.Warn
 	gormLogger.SlowThreshold = time.Second
 	gormLogger.IgnoreRecordNotFoundError = true

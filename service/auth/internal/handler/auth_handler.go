@@ -1,39 +1,51 @@
+// Package handler 提供 gRPC 处理器实现
 package handler
 
 import (
 	"context"
+	"log/slog"
+	"time"
 
-	"github.com/funcdfs/lesser/auth/internal/repository"
-	"github.com/funcdfs/lesser/auth/internal/service"
-	pb "github.com/funcdfs/lesser/auth/proto/auth"
-	"github.com/funcdfs/lesser/pkg/proto/common"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
+
+	pb "github.com/funcdfs/lesser/auth/proto/auth"
+	"github.com/funcdfs/lesser/auth/internal/repository"
+	"github.com/funcdfs/lesser/auth/internal/service"
+	"github.com/funcdfs/lesser/pkg/proto/common"
 )
 
-// AuthHandler gRPC 处理器
+// AuthHandler gRPC 认证处理器
 type AuthHandler struct {
 	pb.UnimplementedAuthServiceServer
-	authService *service.AuthService
+	authService service.AuthService
+	log         *slog.Logger
 }
 
-// NewAuthHandler 创建处理器
-func NewAuthHandler(authService *service.AuthService) *AuthHandler {
-	return &AuthHandler{authService: authService}
+// NewAuthHandler 创建认证处理器
+func NewAuthHandler(authService service.AuthService, log *slog.Logger) *AuthHandler {
+	return &AuthHandler{
+		authService: authService,
+		log:         log.With(slog.String("component", "handler")),
+	}
 }
 
 // Register 用户注册
 func (h *AuthHandler) Register(ctx context.Context, req *pb.RegisterRequest) (*pb.AuthResponse, error) {
-	if req.Username == "" || req.Email == "" || req.Password == "" {
-		return nil, status.Error(codes.InvalidArgument, "username, email and password are required")
+	// 参数验证
+	if req.Username == "" {
+		return nil, status.Error(codes.InvalidArgument, "用户名不能为空")
+	}
+	if req.Email == "" {
+		return nil, status.Error(codes.InvalidArgument, "邮箱不能为空")
+	}
+	if req.Password == "" {
+		return nil, status.Error(codes.InvalidArgument, "密码不能为空")
 	}
 
-	result, err := h.authService.Register(req.Username, req.Email, req.Password, req.DisplayName)
+	result, err := h.authService.Register(ctx, req.Username, req.Email, req.Password, req.DisplayName)
 	if err != nil {
-		if err == repository.ErrUserExists {
-			return nil, status.Error(codes.AlreadyExists, "user already exists")
-		}
-		return nil, status.Error(codes.Internal, err.Error())
+		return nil, h.handleError(err, "注册失败")
 	}
 
 	return &pb.AuthResponse{
@@ -45,19 +57,17 @@ func (h *AuthHandler) Register(ctx context.Context, req *pb.RegisterRequest) (*p
 
 // Login 用户登录
 func (h *AuthHandler) Login(ctx context.Context, req *pb.LoginRequest) (*pb.AuthResponse, error) {
-	if req.Email == "" || req.Password == "" {
-		return nil, status.Error(codes.InvalidArgument, "email and password are required")
+	// 参数验证
+	if req.Email == "" {
+		return nil, status.Error(codes.InvalidArgument, "邮箱不能为空")
+	}
+	if req.Password == "" {
+		return nil, status.Error(codes.InvalidArgument, "密码不能为空")
 	}
 
-	result, err := h.authService.Login(req.Email, req.Password)
+	result, err := h.authService.Login(ctx, req.Email, req.Password)
 	if err != nil {
-		if err == service.ErrInvalidCredentials {
-			return nil, status.Error(codes.Unauthenticated, "invalid email or password")
-		}
-		if err == service.ErrUserBanned {
-			return nil, status.Error(codes.PermissionDenied, "user is banned")
-		}
-		return nil, status.Error(codes.Internal, err.Error())
+		return nil, h.handleError(err, "登录失败")
 	}
 
 	return &pb.AuthResponse{
@@ -69,25 +79,27 @@ func (h *AuthHandler) Login(ctx context.Context, req *pb.LoginRequest) (*pb.Auth
 
 // Logout 用户登出
 func (h *AuthHandler) Logout(ctx context.Context, req *pb.LogoutRequest) (*common.Empty, error) {
-	// TODO: 将 token 加入黑名单（可选实现）
+	if req.AccessToken == "" {
+		return nil, status.Error(codes.InvalidArgument, "access_token 不能为空")
+	}
+
+	if err := h.authService.Logout(ctx, req.AccessToken); err != nil {
+		h.log.Warn("登出处理失败", slog.Any("error", err))
+		// 登出失败不返回错误，允许客户端继续
+	}
+
 	return &common.Empty{}, nil
 }
 
 // RefreshToken 刷新 Token
 func (h *AuthHandler) RefreshToken(ctx context.Context, req *pb.RefreshRequest) (*pb.AuthResponse, error) {
 	if req.RefreshToken == "" {
-		return nil, status.Error(codes.InvalidArgument, "refresh_token is required")
+		return nil, status.Error(codes.InvalidArgument, "refresh_token 不能为空")
 	}
 
-	result, err := h.authService.RefreshToken(req.RefreshToken)
+	result, err := h.authService.RefreshToken(ctx, req.RefreshToken)
 	if err != nil {
-		if err == service.ErrInvalidToken || err == service.ErrTokenExpired {
-			return nil, status.Error(codes.Unauthenticated, "invalid or expired refresh token")
-		}
-		if err == service.ErrUserBanned {
-			return nil, status.Error(codes.PermissionDenied, "user is banned")
-		}
-		return nil, status.Error(codes.Internal, err.Error())
+		return nil, h.handleError(err, "刷新 Token 失败")
 	}
 
 	return &pb.AuthResponse{
@@ -100,6 +112,10 @@ func (h *AuthHandler) RefreshToken(ctx context.Context, req *pb.RefreshRequest) 
 // GetPublicKey 获取公钥
 func (h *AuthHandler) GetPublicKey(ctx context.Context, req *pb.GetPublicKeyRequest) (*pb.GetPublicKeyResponse, error) {
 	info := h.authService.GetPublicKey()
+	if info == nil {
+		return nil, status.Error(codes.Internal, "公钥未初始化")
+	}
+
 	return &pb.GetPublicKeyResponse{
 		PublicKey: info.PublicKey,
 		KeyId:     info.KeyID,
@@ -111,12 +127,19 @@ func (h *AuthHandler) GetPublicKey(ctx context.Context, req *pb.GetPublicKeyRequ
 // BanUser 封禁用户
 func (h *AuthHandler) BanUser(ctx context.Context, req *pb.BanUserRequest) (*pb.BanUserResponse, error) {
 	if req.UserId == "" {
-		return nil, status.Error(codes.InvalidArgument, "user_id is required")
+		return nil, status.Error(codes.InvalidArgument, "user_id 不能为空")
 	}
 
-	err := h.authService.BanUser(req.UserId, req.Reason, req.DurationSeconds)
-	if err != nil {
-		return nil, status.Error(codes.Internal, err.Error())
+	var duration time.Duration
+	if req.DurationSeconds > 0 {
+		duration = time.Duration(req.DurationSeconds) * time.Second
+	}
+
+	// TODO: 从 context 获取操作者 ID
+	operatorID := ""
+
+	if err := h.authService.BanUser(ctx, req.UserId, req.Reason, duration, operatorID); err != nil {
+		return nil, h.handleError(err, "封禁用户失败")
 	}
 
 	return &pb.BanUserResponse{Success: true}, nil
@@ -125,36 +148,67 @@ func (h *AuthHandler) BanUser(ctx context.Context, req *pb.BanUserRequest) (*pb.
 // CheckBanned 检查封禁状态
 func (h *AuthHandler) CheckBanned(ctx context.Context, req *pb.CheckBannedRequest) (*pb.CheckBannedResponse, error) {
 	if req.UserId == "" {
-		return nil, status.Error(codes.InvalidArgument, "user_id is required")
+		return nil, status.Error(codes.InvalidArgument, "user_id 不能为空")
 	}
 
-	banned, reason, expiresAt := h.authService.CheckBanned(req.UserId)
+	info, err := h.authService.CheckBanned(ctx, req.UserId)
+	if err != nil {
+		return nil, h.handleError(err, "检查封禁状态失败")
+	}
+
 	return &pb.CheckBannedResponse{
-		Banned:    banned,
-		Reason:    reason,
-		ExpiresAt: expiresAt,
+		Banned:    info.Banned,
+		Reason:    info.Reason,
+		ExpiresAt: info.ExpiresAt,
 	}, nil
 }
 
 // GetUser 获取用户信息
 func (h *AuthHandler) GetUser(ctx context.Context, req *pb.GetUserRequest) (*pb.User, error) {
 	if req.UserId == "" {
-		return nil, status.Error(codes.InvalidArgument, "user_id is required")
+		return nil, status.Error(codes.InvalidArgument, "user_id 不能为空")
 	}
 
-	user, err := h.authService.GetUser(req.UserId)
+	user, err := h.authService.GetUser(ctx, req.UserId)
 	if err != nil {
-		if err == repository.ErrUserNotFound {
-			return nil, status.Error(codes.NotFound, "user not found")
-		}
-		return nil, status.Error(codes.Internal, err.Error())
+		return nil, h.handleError(err, "获取用户失败")
 	}
 
 	return userToProto(user), nil
 }
 
+// handleError 统一错误处理
+func (h *AuthHandler) handleError(err error, msg string) error {
+	switch err {
+	case repository.ErrUserExists:
+		return status.Error(codes.AlreadyExists, "用户已存在")
+	case repository.ErrUserNotFound:
+		return status.Error(codes.NotFound, "用户不存在")
+	case service.ErrInvalidCredentials:
+		return status.Error(codes.Unauthenticated, "邮箱或密码错误")
+	case service.ErrUserBanned:
+		return status.Error(codes.PermissionDenied, "用户已被封禁")
+	case service.ErrAccountLocked:
+		return status.Error(codes.ResourceExhausted, "账户已被锁定，请稍后再试")
+	case service.ErrInvalidToken:
+		return status.Error(codes.Unauthenticated, "无效的令牌")
+	case service.ErrTokenExpired:
+		return status.Error(codes.Unauthenticated, "令牌已过期")
+	case service.ErrPasswordTooWeak:
+		return status.Error(codes.InvalidArgument, err.Error())
+	case service.ErrUserNotActive:
+		return status.Error(codes.PermissionDenied, "用户账户未激活")
+	default:
+		h.log.Error(msg, slog.Any("error", err))
+		return status.Error(codes.Internal, msg)
+	}
+}
+
 // userToProto 转换用户实体为 proto
 func userToProto(user *repository.User) *pb.User {
+	if user == nil {
+		return nil
+	}
 	return &pb.User{
 		Id:          user.ID,
 		Username:    user.Username,

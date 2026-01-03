@@ -5,9 +5,9 @@ package router
 import (
 	"context"
 	"fmt"
+	"log/slog"
 	"sync"
 
-	"go.uber.org/zap"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/connectivity"
 	"google.golang.org/grpc/credentials/insecure"
@@ -43,18 +43,18 @@ type ServiceConfig struct {
 type Router struct {
 	mu    sync.RWMutex
 	conns map[ServiceName]*grpc.ClientConn
-	log   *zap.Logger
+	log   *slog.Logger
 }
 
 // NewRouter 创建路由器并建立所有服务连接
-func NewRouter(cfg ServiceConfig, log *zap.Logger) (*Router, error) {
+func NewRouter(cfg ServiceConfig, log *slog.Logger) (*Router, error) {
 	if log == nil {
-		log = zap.NewNop()
+		log = slog.Default()
 	}
 
 	r := &Router{
 		conns: make(map[ServiceName]*grpc.ClientConn),
-		log:   log.Named("router"),
+		log:   log.With(slog.String("component", "router")),
 	}
 
 	// 服务地址映射
@@ -79,7 +79,7 @@ func NewRouter(cfg ServiceConfig, log *zap.Logger) (*Router, error) {
 			return nil, fmt.Errorf("连接 %s 服务失败: %w", name, err)
 		}
 		r.conns[name] = conn
-		r.log.Info("服务已连接", zap.String("service", string(name)), zap.String("addr", addr))
+		r.log.Info("服务已连接", slog.String("service", string(name)), slog.String("addr", addr))
 	}
 
 	return r, nil
@@ -158,7 +158,7 @@ func (r *Router) Close() {
 	for name, conn := range r.conns {
 		if conn != nil {
 			if err := conn.Close(); err != nil {
-				r.log.Warn("关闭连接失败", zap.String("service", string(name)), zap.Error(err))
+				r.log.Warn("关闭连接失败", slog.String("service", string(name)), slog.Any("error", err))
 			}
 		}
 	}

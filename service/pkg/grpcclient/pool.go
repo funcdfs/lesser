@@ -3,10 +3,10 @@ package grpcclient
 import (
 	"context"
 	"fmt"
+	"log/slog"
 	"sync"
 
 	"github.com/funcdfs/lesser/pkg/logger"
-	"go.uber.org/zap"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
 )
@@ -78,7 +78,7 @@ func (p *ClientPool) GetConn(ctx context.Context, name string) (*grpc.ClientConn
 	}
 
 	p.conns[name] = conn
-	p.log.Info("grpc connection established", zap.String("service", name), zap.String("target", cfg.Target))
+	p.log.Info("grpc connection established", slog.String("service", name), slog.String("target", cfg.Target))
 
 	return conn, nil
 }
@@ -114,8 +114,8 @@ func (p *ClientPool) Close() error {
 		if conn != nil {
 			if err := conn.Close(); err != nil {
 				p.log.Error("failed to close grpc connection",
-					zap.String("service", name),
-					zap.Error(err))
+					slog.String("service", name),
+					slog.Any("error", err))
 				lastErr = err
 			}
 		}

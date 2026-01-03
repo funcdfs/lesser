@@ -334,10 +334,10 @@ service/
     ├── app/                   # 应用生命周期管理
     ├── broker/                # RabbitMQ 客户端
     ├── cache/                 # Redis 客户端封装
-    ├── config/                # 环境变量配置
+    ├── config/                # 环境变量配置s
     ├── database/              # PostgreSQL 连接封装
     ├── grpcclient/            # gRPC 客户端连接池
-    └── logger/                # Zap 日志封装
+    └── logger/                # slog 日志封装
 ```
 
 ### Chat 服务架构
