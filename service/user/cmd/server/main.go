@@ -1,74 +1,99 @@
+// Package main 用户服务入口
 package main
 
 import (
 	"context"
-	"log"
-	"net"
+	"log/slog"
 	"os"
 	"os/signal"
 	"syscall"
 
+	"github.com/funcdfs/lesser/pkg/config"
 	"github.com/funcdfs/lesser/pkg/database"
+	"github.com/funcdfs/lesser/pkg/grpcserver"
+	"github.com/funcdfs/lesser/pkg/logger"
 	"github.com/funcdfs/lesser/user/internal/handler"
 	"github.com/funcdfs/lesser/user/internal/repository"
 	"github.com/funcdfs/lesser/user/internal/service"
 	pb "github.com/funcdfs/lesser/user/proto/user"
 	"google.golang.org/grpc"
-	"google.golang.org/grpc/reflection"
 )
 
 func main() {
-	grpcPort := getEnv("GRPC_PORT", "50055")
+	// 初始化日志
+	log := logger.New("user-service")
+	log.Info("用户服务启动中...")
 
-	dbConfig := database.Config{
-		Host:     getEnv("DB_HOST", "localhost"),
-		Port:     getEnv("DB_PORT", "5432"),
-		User:     getEnv("DB_USER", "postgres"),
-		Password: getEnv("DB_PASSWORD", "postgres"),
-		DBName:   getEnv("DB_NAME", "lesser"),
-		SSLMode:  getEnv("DB_SSLMODE", "disable"),
-	}
+	// 读取配置
+	grpcPort := config.GetEnvInt("GRPC_PORT", 50055)
 
+	// 初始化数据库连接
+	dbConfig := database.ConfigFromEnv()
 	db, err := database.NewConnection(dbConfig)
 	if err != nil {
-		log.Fatalf("Failed to connect to database: %v", err)
+		log.Error("数据库连接失败", slog.Any("error", err))
+		os.Exit(1)
 	}
 	defer db.Close()
-	log.Println("Connected to PostgreSQL")
+	log.Info("数据库连接成功", slog.String("host", dbConfig.Host))
 
+	// 初始化仓库层
 	userRepo := repository.NewUserRepository(db)
 	followRepo := repository.NewFollowRepository(db)
-	userSvc := service.NewUserService(userRepo, followRepo)
-	userHandler := handler.NewUserHandler(userSvc)
+	blockRepo := repository.NewBlockRepository(db)
+	settingsRepo := repository.NewSettingsRepository(db)
 
-	grpcServer := grpc.NewServer()
-	pb.RegisterUserServiceServer(grpcServer, userHandler)
-	reflection.Register(grpcServer)
+	// 初始化服务层
+	userSvc := service.NewUserService(db, log, userRepo, followRepo, blockRepo, settingsRepo)
 
-	lis, err := net.Listen("tcp", ":"+grpcPort)
-	if err != nil {
-		log.Fatalf("Failed to listen: %v", err)
+	// 初始化处理器
+	userHandler := handler.NewUserHandler(userSvc, log)
+
+	// 创建 gRPC 服务器
+	serverConfig := grpcserver.Config{
+		Port:              grpcPort,
+		EnableReflection:  true,
+		EnableHealthCheck: true,
 	}
+	server := grpcserver.New(log, grpcserver.WithConfig(serverConfig))
 
-	ctx, cancel := context.WithCancel(context.Background())
+	// 构建服务器（添加默认拦截器）
+	grpcServer := server.Build(nil, nil)
+
+	// 注册服务
+	pb.RegisterUserServiceServer(grpcServer, userHandler)
+
+	// 启动服务器
 	go func() {
-		sigCh := make(chan os.Signal, 1)
-		signal.Notify(sigCh, syscall.SIGINT, syscall.SIGTERM)
-		<-sigCh
-		log.Println("Shutting down...")
-		cancel()
-		grpcServer.GracefulStop()
+		log.Info("gRPC 服务器启动", slog.Int("port", grpcPort))
+		if err := server.Start(); err != nil {
+			log.Error("gRPC 服务器启动失败", slog.Any("error", err))
+			os.Exit(1)
+		}
 	}()
 
-	log.Printf("User Service listening on :%s", grpcPort)
-	if err := grpcServer.Serve(lis); err != nil && ctx.Err() == nil {
-		log.Fatalf("Failed to serve: %v", err)
-	}
+	// 优雅关闭
+	quit := make(chan os.Signal, 1)
+	signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM)
+	<-quit
+
+	log.Info("正在关闭服务...")
+	server.Stop()
+	log.Info("服务已关闭")
 }
 
-func getEnv(key, defaultValue string) string {
-	if value := os.Getenv(key); value != "" {
-		return value
-	}
-	return defaultValue
+// registerService 注册服务到 gRPC 服务器
+func registerService(grpcServer *grpc.Server, userHandler *handler.UserHandler) {
+	pb.RegisterUserServiceServer(grpcServer, userHandler)
+}
+
+// gracefulShutdown 优雅关闭
+func gracefulShutdown(ctx context.Context, server *grpcserver.Server, log *logger.Logger) {
+	quit := make(chan os.Signal, 1)
+	signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM)
+	<-quit
+
+	log.Info("正在关闭服务...")
+	server.Stop()
+	log.Info("服务已关闭")
 }

@@ -13,6 +13,7 @@ import (
 	authpb "github.com/funcdfs/lesser/gateway/proto/auth"
 	"github.com/funcdfs/lesser/gateway/proto/common"
 	searchpb "github.com/funcdfs/lesser/gateway/proto/search"
+	userpb "github.com/funcdfs/lesser/gateway/proto/user"
 )
 
 // ============================================================================
@@ -124,15 +125,133 @@ func RegisterSearchProxyServer(s *grpc.Server, conn *grpc.ClientConn, log *slog.
 }
 
 // ============================================================================
-// User 代理服务（占位）
+// User 代理服务
 // ============================================================================
 
-// TODO: 实现 User 代理服务
 // UserProxyServer 代理 User 服务请求
-// type UserProxyServer struct {
-// 	userpb.UnimplementedUserServiceServer
-// 	client userpb.UserServiceClient
-// }
+type UserProxyServer struct {
+	userpb.UnimplementedUserServiceServer
+	client userpb.UserServiceClient
+	log    *slog.Logger
+}
+
+// NewUserProxyServer 创建 User 代理服务器
+func NewUserProxyServer(conn *grpc.ClientConn, log *slog.Logger) *UserProxyServer {
+	if log == nil {
+		log = slog.Default()
+	}
+	return &UserProxyServer{
+		client: userpb.NewUserServiceClient(conn),
+		log:    log.With(slog.String("component", "proxy.user")),
+	}
+}
+
+// ---- 用户资料 ----
+
+func (s *UserProxyServer) GetProfile(ctx context.Context, req *userpb.GetProfileRequest) (*userpb.Profile, error) {
+	s.log.Debug("获取用户资料", slog.String("user_id", req.UserId))
+	return s.client.GetProfile(ctx, req)
+}
+
+func (s *UserProxyServer) GetProfileByUsername(ctx context.Context, req *userpb.GetProfileByUsernameRequest) (*userpb.Profile, error) {
+	s.log.Debug("通过用户名获取资料", slog.String("username", req.Username))
+	return s.client.GetProfileByUsername(ctx, req)
+}
+
+func (s *UserProxyServer) UpdateProfile(ctx context.Context, req *userpb.UpdateProfileRequest) (*userpb.Profile, error) {
+	s.log.Debug("更新用户资料", slog.String("user_id", req.UserId))
+	return s.client.UpdateProfile(ctx, req)
+}
+
+func (s *UserProxyServer) BatchGetProfiles(ctx context.Context, req *userpb.BatchGetProfilesRequest) (*userpb.BatchGetProfilesResponse, error) {
+	s.log.Debug("批量获取用户资料", slog.Int("count", len(req.UserIds)))
+	return s.client.BatchGetProfiles(ctx, req)
+}
+
+// ---- 关注系统 ----
+
+func (s *UserProxyServer) Follow(ctx context.Context, req *userpb.FollowRequest) (*common.Empty, error) {
+	s.log.Debug("关注用户", slog.String("follower_id", req.FollowerId), slog.String("following_id", req.FollowingId))
+	return s.client.Follow(ctx, req)
+}
+
+func (s *UserProxyServer) Unfollow(ctx context.Context, req *userpb.UnfollowRequest) (*common.Empty, error) {
+	s.log.Debug("取消关注", slog.String("follower_id", req.FollowerId), slog.String("following_id", req.FollowingId))
+	return s.client.Unfollow(ctx, req)
+}
+
+func (s *UserProxyServer) GetFollowers(ctx context.Context, req *userpb.GetFollowersRequest) (*userpb.FollowListResponse, error) {
+	s.log.Debug("获取粉丝列表", slog.String("user_id", req.UserId))
+	return s.client.GetFollowers(ctx, req)
+}
+
+func (s *UserProxyServer) GetFollowing(ctx context.Context, req *userpb.GetFollowingRequest) (*userpb.FollowListResponse, error) {
+	s.log.Debug("获取关注列表", slog.String("user_id", req.UserId))
+	return s.client.GetFollowing(ctx, req)
+}
+
+func (s *UserProxyServer) CheckFollowing(ctx context.Context, req *userpb.CheckFollowingRequest) (*userpb.CheckFollowingResponse, error) {
+	s.log.Debug("检查关注状态", slog.String("follower_id", req.FollowerId), slog.String("following_id", req.FollowingId))
+	return s.client.CheckFollowing(ctx, req)
+}
+
+func (s *UserProxyServer) GetRelationship(ctx context.Context, req *userpb.GetRelationshipRequest) (*userpb.GetRelationshipResponse, error) {
+	s.log.Debug("获取用户关系", slog.String("user_id", req.UserId), slog.String("target_id", req.TargetId))
+	return s.client.GetRelationship(ctx, req)
+}
+
+func (s *UserProxyServer) GetMutualFollowers(ctx context.Context, req *userpb.GetMutualFollowersRequest) (*userpb.FollowListResponse, error) {
+	s.log.Debug("获取共同关注", slog.String("user_id", req.UserId), slog.String("target_id", req.TargetId))
+	return s.client.GetMutualFollowers(ctx, req)
+}
+
+// ---- 屏蔽系统 ----
+
+func (s *UserProxyServer) Block(ctx context.Context, req *userpb.BlockRequest) (*common.Empty, error) {
+	s.log.Debug("屏蔽用户", slog.String("blocker_id", req.BlockerId), slog.String("blocked_id", req.BlockedId))
+	return s.client.Block(ctx, req)
+}
+
+func (s *UserProxyServer) Unblock(ctx context.Context, req *userpb.UnblockRequest) (*common.Empty, error) {
+	s.log.Debug("取消屏蔽", slog.String("blocker_id", req.BlockerId), slog.String("blocked_id", req.BlockedId))
+	return s.client.Unblock(ctx, req)
+}
+
+func (s *UserProxyServer) GetBlockList(ctx context.Context, req *userpb.GetBlockListRequest) (*userpb.BlockListResponse, error) {
+	s.log.Debug("获取屏蔽列表", slog.String("user_id", req.UserId))
+	return s.client.GetBlockList(ctx, req)
+}
+
+func (s *UserProxyServer) CheckBlocked(ctx context.Context, req *userpb.CheckBlockedRequest) (*userpb.CheckBlockedResponse, error) {
+	s.log.Debug("检查屏蔽状态", slog.String("user_id", req.UserId), slog.String("target_id", req.TargetId))
+	return s.client.CheckBlocked(ctx, req)
+}
+
+// ---- 用户设置 ----
+
+func (s *UserProxyServer) GetUserSettings(ctx context.Context, req *userpb.GetUserSettingsRequest) (*userpb.UserSettings, error) {
+	s.log.Debug("获取用户设置", slog.String("user_id", req.UserId))
+	return s.client.GetUserSettings(ctx, req)
+}
+
+func (s *UserProxyServer) UpdateUserSettings(ctx context.Context, req *userpb.UpdateUserSettingsRequest) (*userpb.UserSettings, error) {
+	s.log.Debug("更新用户设置", slog.String("user_id", req.UserId))
+	return s.client.UpdateUserSettings(ctx, req)
+}
+
+// ---- 用户搜索 ----
+
+func (s *UserProxyServer) SearchUsers(ctx context.Context, req *userpb.SearchUsersRequest) (*userpb.SearchUsersResponse, error) {
+	s.log.Debug("搜索用户", slog.String("query", req.Query))
+	return s.client.SearchUsers(ctx, req)
+}
+
+// RegisterUserProxyServer 注册 User 代理服务
+func RegisterUserProxyServer(s *grpc.Server, conn *grpc.ClientConn, log *slog.Logger) {
+	proxy := NewUserProxyServer(conn, log)
+	userpb.RegisterUserServiceServer(s, proxy)
+	log.With(slog.String("component", "proxy")).Info("User 代理服务已注册")
+}
 
 // ============================================================================
 // Post 代理服务（占位）

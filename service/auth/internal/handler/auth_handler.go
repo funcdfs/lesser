@@ -3,15 +3,16 @@ package handler
 
 import (
 	"context"
+	"errors"
 	"log/slog"
 	"time"
 
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 
-	pb "github.com/funcdfs/lesser/auth/proto/auth"
 	"github.com/funcdfs/lesser/auth/internal/repository"
 	"github.com/funcdfs/lesser/auth/internal/service"
+	pb "github.com/funcdfs/lesser/auth/proto/auth"
 	"github.com/funcdfs/lesser/pkg/proto/common"
 )
 
@@ -179,24 +180,24 @@ func (h *AuthHandler) GetUser(ctx context.Context, req *pb.GetUserRequest) (*pb.
 
 // handleError 统一错误处理
 func (h *AuthHandler) handleError(err error, msg string) error {
-	switch err {
-	case repository.ErrUserExists:
+	switch {
+	case errors.Is(err, repository.ErrUserExists):
 		return status.Error(codes.AlreadyExists, "用户已存在")
-	case repository.ErrUserNotFound:
+	case errors.Is(err, repository.ErrUserNotFound):
 		return status.Error(codes.NotFound, "用户不存在")
-	case service.ErrInvalidCredentials:
+	case errors.Is(err, service.ErrInvalidCredentials):
 		return status.Error(codes.Unauthenticated, "邮箱或密码错误")
-	case service.ErrUserBanned:
+	case errors.Is(err, service.ErrUserBanned):
 		return status.Error(codes.PermissionDenied, "用户已被封禁")
-	case service.ErrAccountLocked:
+	case errors.Is(err, service.ErrAccountLocked):
 		return status.Error(codes.ResourceExhausted, "账户已被锁定，请稍后再试")
-	case service.ErrInvalidToken:
+	case errors.Is(err, service.ErrInvalidToken):
 		return status.Error(codes.Unauthenticated, "无效的令牌")
-	case service.ErrTokenExpired:
+	case errors.Is(err, service.ErrTokenExpired):
 		return status.Error(codes.Unauthenticated, "令牌已过期")
-	case service.ErrPasswordTooWeak:
+	case errors.Is(err, service.ErrPasswordTooWeak):
 		return status.Error(codes.InvalidArgument, err.Error())
-	case service.ErrUserNotActive:
+	case errors.Is(err, service.ErrUserNotActive):
 		return status.Error(codes.PermissionDenied, "用户账户未激活")
 	default:
 		h.log.Error(msg, slog.Any("error", err))

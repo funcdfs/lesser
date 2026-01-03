@@ -2439,7 +2439,7 @@ const file_chat_chat_proto_rawDesc = "" +
 	"MarkAsRead\x12\x17.chat.MarkAsReadRequest\x1a\x11.chat.ReadReceipt\x12U\n" +
 	"\x16MarkConversationAsRead\x12#.chat.MarkConversationAsReadRequest\x1a\x16.chat.BatchReadReceipt\x12N\n" +
 	"\x0fGetUnreadCounts\x12\x1c.chat.GetUnreadCountsRequest\x1a\x1d.chat.GetUnreadCountsResponse\x128\n" +
-	"\fStreamEvents\x12\x11.chat.ClientEvent\x1a\x11.chat.ServerEvent(\x010\x01B#Z!github.com/funcdfs/lesser/chat/proto/chatb\x06proto3"
+	"\fStreamEvents\x12\x11.chat.ClientEvent\x1a\x11.chat.ServerEvent(\x010\x01B+Z)github.com/funcdfs/lesser/chat/proto/chatb\x06proto3"
 
 var (
 	file_chat_chat_proto_rawDescOnce sync.Once

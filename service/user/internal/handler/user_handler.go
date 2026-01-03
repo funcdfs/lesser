@@ -1,9 +1,13 @@
+// Package handler 提供用户服务的 gRPC 处理器
 package handler
 
 import (
 	"context"
 
+	"github.com/funcdfs/lesser/pkg/logger"
+	"github.com/funcdfs/lesser/pkg/pagination"
 	"github.com/funcdfs/lesser/pkg/proto/common"
+	"github.com/funcdfs/lesser/pkg/validator"
 	"github.com/funcdfs/lesser/user/internal/repository"
 	"github.com/funcdfs/lesser/user/internal/service"
 	pb "github.com/funcdfs/lesser/user/proto/user"
@@ -11,164 +15,425 @@ import (
 	"google.golang.org/grpc/status"
 )
 
+// UserHandler 用户服务 gRPC 处理器
 type UserHandler struct {
 	pb.UnimplementedUserServiceServer
 	userService *service.UserService
+	log         *logger.Logger
 }
 
-func NewUserHandler(userService *service.UserService) *UserHandler {
-	return &UserHandler{userService: userService}
+// NewUserHandler 创建用户处理器实例
+func NewUserHandler(userService *service.UserService, log *logger.Logger) *UserHandler {
+	return &UserHandler{
+		userService: userService,
+		log:         log,
+	}
 }
 
+// ============================================================================
+// 用户资料
+// ============================================================================
+
+// GetProfile 获取用户资料
 func (h *UserHandler) GetProfile(ctx context.Context, req *pb.GetProfileRequest) (*pb.Profile, error) {
-	if req.UserId == "" {
-		return nil, status.Error(codes.InvalidArgument, "user_id is required")
+	// 参数验证
+	if err := validator.ValidateUUID("user_id", req.UserId); err != nil {
+		return nil, err
 	}
 
-	user, err := h.userService.GetProfile(req.UserId)
+	user, relationship, err := h.userService.GetProfileWithRelationship(ctx, req.UserId, req.ViewerId)
 	if err != nil {
-		if err == repository.ErrUserNotFound {
-			return nil, status.Error(codes.NotFound, "user not found")
-		}
-		return nil, status.Error(codes.Internal, err.Error())
+		return nil, h.handleError(err)
 	}
 
-	return userToProto(user), nil
+	return userToProto(user, relationship), nil
 }
 
+// GetProfileByUsername 通过用户名获取资料
+func (h *UserHandler) GetProfileByUsername(ctx context.Context, req *pb.GetProfileByUsernameRequest) (*pb.Profile, error) {
+	// 参数验证
+	if err := validator.ValidateRequired("username", req.Username); err != nil {
+		return nil, err
+	}
+
+	user, err := h.userService.GetProfileByUsername(ctx, req.Username)
+	if err != nil {
+		return nil, h.handleError(err)
+	}
+
+	// 如果有查看者，获取关系状态
+	var relationship *repository.RelationshipStatus
+	if req.ViewerId != "" && req.ViewerId != user.ID {
+		relationship, _ = h.userService.GetRelationship(ctx, req.ViewerId, user.ID)
+	}
+
+	return userToProto(user, relationship), nil
+}
+
+// UpdateProfile 更新用户资料
 func (h *UserHandler) UpdateProfile(ctx context.Context, req *pb.UpdateProfileRequest) (*pb.Profile, error) {
-	if req.UserId == "" {
-		return nil, status.Error(codes.InvalidArgument, "user_id is required")
+	// 参数验证
+	if err := validator.ValidateUUID("user_id", req.UserId); err != nil {
+		return nil, err
 	}
 
-	user, err := h.userService.UpdateProfile(req.UserId, req.DisplayName, req.AvatarUrl, req.Bio)
+	// 构建更新字段
+	updates := make(map[string]interface{})
+	if req.DisplayName != nil {
+		updates["display_name"] = *req.DisplayName
+	}
+	if req.AvatarUrl != nil {
+		updates["avatar_url"] = *req.AvatarUrl
+	}
+	if req.Bio != nil {
+		updates["bio"] = *req.Bio
+	}
+	if req.Location != nil {
+		updates["location"] = *req.Location
+	}
+	if req.Website != nil {
+		updates["website"] = *req.Website
+	}
+	if req.IsPrivate != nil {
+		updates["is_private"] = *req.IsPrivate
+	}
+
+	user, err := h.userService.UpdateProfile(ctx, req.UserId, updates)
 	if err != nil {
-		if err == repository.ErrUserNotFound {
-			return nil, status.Error(codes.NotFound, "user not found")
-		}
-		return nil, status.Error(codes.Internal, err.Error())
+		return nil, h.handleError(err)
 	}
 
-	return userToProto(user), nil
+	return userToProto(user, nil), nil
 }
 
+// BatchGetProfiles 批量获取用户资料
+func (h *UserHandler) BatchGetProfiles(ctx context.Context, req *pb.BatchGetProfilesRequest) (*pb.BatchGetProfilesResponse, error) {
+	if len(req.UserIds) == 0 {
+		return &pb.BatchGetProfilesResponse{Profiles: make(map[string]*pb.Profile)}, nil
+	}
+
+	users, err := h.userService.BatchGetProfiles(ctx, req.UserIds)
+	if err != nil {
+		return nil, h.handleError(err)
+	}
+
+	profiles := make(map[string]*pb.Profile)
+	for id, user := range users {
+		profiles[id] = userToProto(user, nil)
+	}
+
+	return &pb.BatchGetProfilesResponse{Profiles: profiles}, nil
+}
+
+// ============================================================================
+// 关注系统
+// ============================================================================
+
+// Follow 关注用户
 func (h *UserHandler) Follow(ctx context.Context, req *pb.FollowRequest) (*common.Empty, error) {
-	if req.FollowerId == "" || req.FollowingId == "" {
-		return nil, status.Error(codes.InvalidArgument, "follower_id and following_id are required")
+	// 参数验证
+	v := validator.New()
+	v.Required("follower_id", req.FollowerId).UUID("follower_id", req.FollowerId)
+	v.Required("following_id", req.FollowingId).UUID("following_id", req.FollowingId)
+	if err := v.ToGRPCError(); err != nil {
+		return nil, err
 	}
 
-	if err := h.userService.Follow(req.FollowerId, req.FollowingId); err != nil {
-		if err == service.ErrCannotFollowSelf {
-			return nil, status.Error(codes.InvalidArgument, "cannot follow yourself")
-		}
-		return nil, status.Error(codes.Internal, err.Error())
+	if err := h.userService.Follow(ctx, req.FollowerId, req.FollowingId); err != nil {
+		return nil, h.handleError(err)
 	}
 
 	return &common.Empty{}, nil
 }
 
+// Unfollow 取消关注
 func (h *UserHandler) Unfollow(ctx context.Context, req *pb.UnfollowRequest) (*common.Empty, error) {
-	if req.FollowerId == "" || req.FollowingId == "" {
-		return nil, status.Error(codes.InvalidArgument, "follower_id and following_id are required")
+	// 参数验证
+	v := validator.New()
+	v.Required("follower_id", req.FollowerId).UUID("follower_id", req.FollowerId)
+	v.Required("following_id", req.FollowingId).UUID("following_id", req.FollowingId)
+	if err := v.ToGRPCError(); err != nil {
+		return nil, err
 	}
 
-	if err := h.userService.Unfollow(req.FollowerId, req.FollowingId); err != nil {
-		return nil, status.Error(codes.Internal, err.Error())
+	if err := h.userService.Unfollow(ctx, req.FollowerId, req.FollowingId); err != nil {
+		return nil, h.handleError(err)
 	}
 
 	return &common.Empty{}, nil
 }
 
+// GetFollowers 获取粉丝列表
 func (h *UserHandler) GetFollowers(ctx context.Context, req *pb.GetFollowersRequest) (*pb.FollowListResponse, error) {
-	if req.UserId == "" {
-		return nil, status.Error(codes.InvalidArgument, "user_id is required")
+	// 参数验证
+	if err := validator.ValidateUUID("user_id", req.UserId); err != nil {
+		return nil, err
 	}
 
-	page, pageSize := int32(1), int32(20)
-	if req.Pagination != nil {
-		if req.Pagination.Page > 0 {
-			page = req.Pagination.Page
-		}
-		if req.Pagination.PageSize > 0 {
-			pageSize = req.Pagination.PageSize
-		}
-	}
-	limit := int(pageSize)
-	offset := int((page - 1) * pageSize)
+	page, pageSize := getPagination(req.Pagination)
+	limit, offset := pagination.BuildLimitOffset(page, pageSize)
 
-	users, total, err := h.userService.GetFollowers(req.UserId, limit, offset)
+	users, total, err := h.userService.GetFollowers(ctx, req.UserId, int(limit), int(offset))
 	if err != nil {
-		return nil, status.Error(codes.Internal, err.Error())
+		return nil, h.handleError(err)
 	}
 
 	return &pb.FollowListResponse{
-		Users:      usersToProto(users),
+		Users:      usersToProto(users, req.ViewerId, h.userService),
 		Pagination: &common.Pagination{Page: page, PageSize: pageSize, Total: int32(total)},
 	}, nil
 }
 
+// GetFollowing 获取关注列表
 func (h *UserHandler) GetFollowing(ctx context.Context, req *pb.GetFollowingRequest) (*pb.FollowListResponse, error) {
-	if req.UserId == "" {
-		return nil, status.Error(codes.InvalidArgument, "user_id is required")
+	// 参数验证
+	if err := validator.ValidateUUID("user_id", req.UserId); err != nil {
+		return nil, err
 	}
 
-	page, pageSize := int32(1), int32(20)
-	if req.Pagination != nil {
-		if req.Pagination.Page > 0 {
-			page = req.Pagination.Page
-		}
-		if req.Pagination.PageSize > 0 {
-			pageSize = req.Pagination.PageSize
-		}
-	}
-	limit := int(pageSize)
-	offset := int((page - 1) * pageSize)
+	page, pageSize := getPagination(req.Pagination)
+	limit, offset := pagination.BuildLimitOffset(page, pageSize)
 
-	users, total, err := h.userService.GetFollowing(req.UserId, limit, offset)
+	users, total, err := h.userService.GetFollowing(ctx, req.UserId, int(limit), int(offset))
 	if err != nil {
-		return nil, status.Error(codes.Internal, err.Error())
+		return nil, h.handleError(err)
 	}
 
 	return &pb.FollowListResponse{
-		Users:      usersToProto(users),
+		Users:      usersToProto(users, req.ViewerId, h.userService),
 		Pagination: &common.Pagination{Page: page, PageSize: pageSize, Total: int32(total)},
 	}, nil
 }
 
+// CheckFollowing 检查是否关注
 func (h *UserHandler) CheckFollowing(ctx context.Context, req *pb.CheckFollowingRequest) (*pb.CheckFollowingResponse, error) {
-	if req.FollowerId == "" || req.FollowingId == "" {
-		return nil, status.Error(codes.InvalidArgument, "follower_id and following_id are required")
+	// 参数验证
+	v := validator.New()
+	v.Required("follower_id", req.FollowerId).UUID("follower_id", req.FollowerId)
+	v.Required("following_id", req.FollowingId).UUID("following_id", req.FollowingId)
+	if err := v.ToGRPCError(); err != nil {
+		return nil, err
 	}
 
-	isFollowing, err := h.userService.CheckFollowing(req.FollowerId, req.FollowingId)
+	isFollowing, err := h.userService.CheckFollowing(ctx, req.FollowerId, req.FollowingId)
 	if err != nil {
-		return nil, status.Error(codes.Internal, err.Error())
+		return nil, h.handleError(err)
 	}
 
 	return &pb.CheckFollowingResponse{IsFollowing: isFollowing}, nil
 }
 
-func userToProto(user *repository.User) *pb.Profile {
-	return &pb.Profile{
-		Id:             user.ID,
-		Username:       user.Username,
-		Email:          user.Email,
-		DisplayName:    user.DisplayName,
-		AvatarUrl:      user.AvatarURL,
-		Bio:            user.Bio,
-		IsVerified:     user.IsVerified,
-		FollowersCount: user.FollowersCount,
-		FollowingCount: user.FollowingCount,
-		PostsCount:     user.PostsCount,
-		CreatedAt:      &common.Timestamp{Seconds: user.CreatedAt.Unix()},
-		UpdatedAt:      &common.Timestamp{Seconds: user.UpdatedAt.Unix()},
+// GetRelationship 获取两用户间关系
+func (h *UserHandler) GetRelationship(ctx context.Context, req *pb.GetRelationshipRequest) (*pb.GetRelationshipResponse, error) {
+	// 参数验证
+	v := validator.New()
+	v.Required("user_id", req.UserId).UUID("user_id", req.UserId)
+	v.Required("target_id", req.TargetId).UUID("target_id", req.TargetId)
+	if err := v.ToGRPCError(); err != nil {
+		return nil, err
 	}
+
+	relationship, err := h.userService.GetRelationship(ctx, req.UserId, req.TargetId)
+	if err != nil {
+		return nil, h.handleError(err)
+	}
+
+	return &pb.GetRelationshipResponse{
+		Relationship: relationshipToProto(relationship),
+	}, nil
 }
 
-func usersToProto(users []*repository.User) []*pb.Profile {
-	result := make([]*pb.Profile, len(users))
-	for i, u := range users {
-		result[i] = userToProto(u)
+// GetMutualFollowers 获取共同关注
+func (h *UserHandler) GetMutualFollowers(ctx context.Context, req *pb.GetMutualFollowersRequest) (*pb.FollowListResponse, error) {
+	// 参数验证
+	v := validator.New()
+	v.Required("user_id", req.UserId).UUID("user_id", req.UserId)
+	v.Required("target_id", req.TargetId).UUID("target_id", req.TargetId)
+	if err := v.ToGRPCError(); err != nil {
+		return nil, err
 	}
-	return result
+
+	page, pageSize := getPagination(req.Pagination)
+	limit, offset := pagination.BuildLimitOffset(page, pageSize)
+
+	users, total, err := h.userService.GetMutualFollowers(ctx, req.UserId, req.TargetId, int(limit), int(offset))
+	if err != nil {
+		return nil, h.handleError(err)
+	}
+
+	return &pb.FollowListResponse{
+		Users:      usersToProto(users, req.UserId, h.userService),
+		Pagination: &common.Pagination{Page: page, PageSize: pageSize, Total: int32(total)},
+	}, nil
+}
+
+// ============================================================================
+// 屏蔽系统
+// ============================================================================
+
+// Block 屏蔽用户
+func (h *UserHandler) Block(ctx context.Context, req *pb.BlockRequest) (*common.Empty, error) {
+	// 参数验证
+	v := validator.New()
+	v.Required("blocker_id", req.BlockerId).UUID("blocker_id", req.BlockerId)
+	v.Required("blocked_id", req.BlockedId).UUID("blocked_id", req.BlockedId)
+	if err := v.ToGRPCError(); err != nil {
+		return nil, err
+	}
+
+	blockType := protoToBlockType(req.BlockType)
+	if blockType == repository.BlockTypeUnspecified {
+		return nil, status.Error(codes.InvalidArgument, "block_type 不能为空")
+	}
+
+	if err := h.userService.Block(ctx, req.BlockerId, req.BlockedId, blockType); err != nil {
+		return nil, h.handleError(err)
+	}
+
+	return &common.Empty{}, nil
+}
+
+// Unblock 取消屏蔽
+func (h *UserHandler) Unblock(ctx context.Context, req *pb.UnblockRequest) (*common.Empty, error) {
+	// 参数验证
+	v := validator.New()
+	v.Required("blocker_id", req.BlockerId).UUID("blocker_id", req.BlockerId)
+	v.Required("blocked_id", req.BlockedId).UUID("blocked_id", req.BlockedId)
+	if err := v.ToGRPCError(); err != nil {
+		return nil, err
+	}
+
+	blockType := protoToBlockType(req.BlockType)
+	if blockType == repository.BlockTypeUnspecified {
+		blockType = repository.BlockTypeBlock // 默认取消全部
+	}
+
+	if err := h.userService.Unblock(ctx, req.BlockerId, req.BlockedId, blockType); err != nil {
+		return nil, h.handleError(err)
+	}
+
+	return &common.Empty{}, nil
+}
+
+// GetBlockList 获取屏蔽列表
+func (h *UserHandler) GetBlockList(ctx context.Context, req *pb.GetBlockListRequest) (*pb.BlockListResponse, error) {
+	// 参数验证
+	if err := validator.ValidateUUID("user_id", req.UserId); err != nil {
+		return nil, err
+	}
+
+	page, pageSize := getPagination(req.Pagination)
+	limit, offset := pagination.BuildLimitOffset(page, pageSize)
+
+	blockType := protoToBlockType(req.BlockType)
+	blockedUsers, total, err := h.userService.GetBlockList(ctx, req.UserId, blockType, int(limit), int(offset))
+	if err != nil {
+		return nil, h.handleError(err)
+	}
+
+	return &pb.BlockListResponse{
+		Users:      blockedUsersToProto(blockedUsers),
+		Pagination: &common.Pagination{Page: page, PageSize: pageSize, Total: int32(total)},
+	}, nil
+}
+
+// CheckBlocked 检查屏蔽状态
+func (h *UserHandler) CheckBlocked(ctx context.Context, req *pb.CheckBlockedRequest) (*pb.CheckBlockedResponse, error) {
+	// 参数验证
+	v := validator.New()
+	v.Required("user_id", req.UserId).UUID("user_id", req.UserId)
+	v.Required("target_id", req.TargetId).UUID("target_id", req.TargetId)
+	if err := v.ToGRPCError(); err != nil {
+		return nil, err
+	}
+
+	relationship, err := h.userService.CheckBlocked(ctx, req.UserId, req.TargetId)
+	if err != nil {
+		return nil, h.handleError(err)
+	}
+
+	return &pb.CheckBlockedResponse{
+		IsBlocking:     relationship.IsBlocking,
+		IsBlockedBy:    relationship.IsBlockedBy,
+		MyBlockType:    blockTypeToProto(relationship.MyBlockType),
+		TheirBlockType: blockTypeToProto(relationship.TheirBlockType),
+		CanViewProfile: relationship.CanViewProfile(),
+		CanBeViewed:    relationship.CanBeViewed(),
+	}, nil
+}
+
+// ============================================================================
+// 用户设置
+// ============================================================================
+
+// GetUserSettings 获取用户设置
+func (h *UserHandler) GetUserSettings(ctx context.Context, req *pb.GetUserSettingsRequest) (*pb.UserSettings, error) {
+	// 参数验证
+	if err := validator.ValidateUUID("user_id", req.UserId); err != nil {
+		return nil, err
+	}
+
+	settings, err := h.userService.GetUserSettings(ctx, req.UserId)
+	if err != nil {
+		return nil, h.handleError(err)
+	}
+
+	return settingsToProto(settings), nil
+}
+
+// UpdateUserSettings 更新用户设置
+func (h *UserHandler) UpdateUserSettings(ctx context.Context, req *pb.UpdateUserSettingsRequest) (*pb.UserSettings, error) {
+	// 参数验证
+	if err := validator.ValidateUUID("user_id", req.UserId); err != nil {
+		return nil, err
+	}
+
+	// 更新隐私设置
+	if req.Privacy != nil {
+		privacySettings := protoToPrivacySettings(req.UserId, req.Privacy)
+		if err := h.userService.UpdatePrivacySettings(ctx, req.UserId, privacySettings); err != nil {
+			return nil, h.handleError(err)
+		}
+	}
+
+	// 更新通知设置
+	if req.Notification != nil {
+		notificationSettings := protoToNotificationSettings(req.UserId, req.Notification)
+		if err := h.userService.UpdateNotificationSettings(ctx, req.UserId, notificationSettings); err != nil {
+			return nil, h.handleError(err)
+		}
+	}
+
+	// 返回更新后的设置
+	settings, err := h.userService.GetUserSettings(ctx, req.UserId)
+	if err != nil {
+		return nil, h.handleError(err)
+	}
+
+	return settingsToProto(settings), nil
+}
+
+// ============================================================================
+// 用户搜索
+// ============================================================================
+
+// SearchUsers 搜索用户
+func (h *UserHandler) SearchUsers(ctx context.Context, req *pb.SearchUsersRequest) (*pb.SearchUsersResponse, error) {
+	// 参数验证
+	if err := validator.ValidateRequired("query", req.Query); err != nil {
+		return nil, err
+	}
+
+	page, pageSize := getPagination(req.Pagination)
+	limit, offset := pagination.BuildLimitOffset(page, pageSize)
+
+	users, total, err := h.userService.SearchUsers(ctx, req.Query, int(limit), int(offset))
+	if err != nil {
+		return nil, h.handleError(err)
+	}
+
+	return &pb.SearchUsersResponse{
+		Users:      usersToProto(users, req.ViewerId, h.userService),
+		Pagination: &common.Pagination{Page: page, PageSize: pageSize, Total: int32(total)},
+	}, nil
 }

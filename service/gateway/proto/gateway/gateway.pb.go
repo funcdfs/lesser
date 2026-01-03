@@ -190,7 +190,7 @@ const file_gateway_gateway_proto_rawDesc = "" +
 	"\n" +
 	"latency_ms\x18\x03 \x01(\x03R\tlatencyMs2K\n" +
 	"\x0eGatewayService\x129\n" +
-	"\x06Health\x12\x16.gateway.HealthRequest\x1a\x17.gateway.HealthResponseB)Z'github.com/funcdfs/lesser/gateway/proto/gatewayb\x06proto3"
+	"\x06Health\x12\x16.gateway.HealthRequest\x1a\x17.gateway.HealthResponseB1Z/github.com/funcdfs/lesser/gateway/proto/gatewayb\x06proto3"
 
 var (
 	file_gateway_gateway_proto_rawDescOnce sync.Once

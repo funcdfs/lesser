@@ -123,6 +123,13 @@ func registerProxyServices(grpcServer *grpc.Server, gatewayServer *server.Gatewa
 		log.Warn("Auth 服务不可用，代理未注册")
 	}
 
+	// 注册 User 代理
+	if userConn := router.GetUserConn(); userConn != nil {
+		server.RegisterUserProxyServer(grpcServer, userConn, log)
+	} else {
+		log.Warn("User 服务不可用，代理未注册")
+	}
+
 	// 注册 Search 代理
 	if searchConn := router.GetSearchConn(); searchConn != nil {
 		server.RegisterSearchProxyServer(grpcServer, searchConn, log)

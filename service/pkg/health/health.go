@@ -29,8 +29,8 @@ type ComponentHealth struct {
 	Latency time.Duration `json:"latency_ms"`
 }
 
-// HealthReport 健康报告
-type HealthReport struct {
+// Report 健康报告
+type Report struct {
 	Status     Status            `json:"status"`
 	Components []ComponentHealth `json:"components"`
 	Timestamp  time.Time         `json:"timestamp"`
@@ -62,15 +62,14 @@ func (c *Checker) Register(name string, fn func(ctx context.Context) error) {
 	c.checks = append(c.checks, Check{Name: name, Fn: fn})
 }
 
-
 // Check 执行健康检查
-func (c *Checker) Check(ctx context.Context) *HealthReport {
+func (c *Checker) Check(ctx context.Context) *Report {
 	c.mu.RLock()
 	checks := make([]Check, len(c.checks))
 	copy(checks, c.checks)
 	c.mu.RUnlock()
 
-	report := &HealthReport{
+	report := &Report{
 		Status:     StatusHealthy,
 		Components: make([]ComponentHealth, 0, len(checks)),
 		Timestamp:  time.Now(),
@@ -129,7 +128,7 @@ func (c *Checker) IsHealthy(ctx context.Context) bool {
 }
 
 // ToJSON 转换为 JSON
-func (r *HealthReport) ToJSON() ([]byte, error) {
+func (r *Report) ToJSON() ([]byte, error) {
 	return json.Marshal(r)
 }
 
@@ -175,7 +174,7 @@ func RegisterGlobal(name string, fn func(ctx context.Context) error) {
 }
 
 // CheckGlobal 执行全局健康检查
-func CheckGlobal(ctx context.Context) *HealthReport {
+func CheckGlobal(ctx context.Context) *Report {
 	return globalChecker.Check(ctx)
 }
 
