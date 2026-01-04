@@ -1,6 +1,10 @@
 package logic
 
-import "github.com/funcdfs/lesser/search/internal/data_access"
+import (
+	"context"
+
+	"github.com/funcdfs/lesser/search/internal/data_access"
+)
 
 // SearchService 搜索服务
 type SearchService struct {
@@ -73,4 +77,18 @@ func (s *SearchService) UpsertCommentEmbedding(commentID string, embedding []flo
 // UpsertUserEmbedding 更新用户向量
 func (s *SearchService) UpsertUserEmbedding(userID string, embedding []float32, text string) error {
 	return s.searchRepo.UpsertUserEmbedding(userID, embedding, text)
+}
+
+// ============================================================================
+// 索引管理（供 MQ 消费者调用）
+// ============================================================================
+
+// IndexContent 索引内容（用于搜索）
+func (s *SearchService) IndexContent(ctx context.Context, contentID, authorID, title, text, contentType string) error {
+	return s.searchRepo.IndexContent(ctx, contentID, authorID, title, text, contentType)
+}
+
+// DeleteContentIndex 删除内容索引
+func (s *SearchService) DeleteContentIndex(ctx context.Context, contentID string) error {
+	return s.searchRepo.DeleteContentIndex(ctx, contentID)
 }

@@ -53,6 +53,7 @@ message CreateCommentRequest {
   string content_id = 2;
   string parent_id = 3;  // 可选，回复评论时使用
   string text = 4;
+  repeated string mentioned_user_ids = 5;  // @ 提及的用户 ID 列表
 }
 
 // CreateCommentResponse 创建评论响应

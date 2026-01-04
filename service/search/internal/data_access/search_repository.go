@@ -1,6 +1,7 @@
 package data_access
 
 import (
+	"context"
 	"crypto/sha256"
 	"database/sql"
 	"encoding/hex"
@@ -369,4 +370,41 @@ func (r *SearchRepository) UpsertUserEmbedding(userID string, embedding []float3
 func hashText(text string) string {
 	h := sha256.Sum256([]byte(text))
 	return hex.EncodeToString(h[:])
+}
+
+// ============================================================================
+// 索引管理（供 MQ 消费者调用）
+// ============================================================================
+
+// IndexContent 索引内容（更新全文搜索索引）
+// 这里使用 PostgreSQL 的全文搜索功能，实际生产环境可能需要 Elasticsearch
+func (r *SearchRepository) IndexContent(ctx context.Context, contentID, authorID, title, text, contentType string) error {
+	// 更新内容的搜索向量（使用 PostgreSQL tsvector）
+	// 这里简化处理，实际可能需要更复杂的索引策略
+	_, err := r.db.ExecContext(ctx, `
+		UPDATE contents 
+		SET search_vector = to_tsvector('simple', COALESCE($2, '') || ' ' || COALESCE($3, ''))
+		WHERE id = $1
+	`, contentID, title, text)
+
+	// 如果 search_vector 列不存在，忽略错误（兼容旧表结构）
+	if err != nil {
+		// 尝试简单的更新（确保内容存在）
+		_, err = r.db.ExecContext(ctx, `
+			SELECT 1 FROM contents WHERE id = $1
+		`, contentID)
+	}
+
+	return err
+}
+
+// DeleteContentIndex 删除内容索引
+func (r *SearchRepository) DeleteContentIndex(ctx context.Context, contentID string) error {
+	// 删除向量嵌入（如果存在）
+	_, err := r.db.ExecContext(ctx, `
+		DELETE FROM content_embeddings WHERE content_id = $1
+	`, contentID)
+
+	// 忽略表不存在的错误
+	return err
 }

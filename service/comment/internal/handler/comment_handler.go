@@ -48,7 +48,7 @@ func (h *CommentHandler) CreateComment(ctx context.Context, req *pb.CreateCommen
 		slog.String("content_id", req.ContentId),
 	)
 
-	comment, count, err := h.svc.CreateComment(ctx, req.AuthorId, req.ContentId, req.ParentId, req.Text)
+	comment, count, err := h.svc.CreateComment(ctx, req.AuthorId, req.ContentId, req.ParentId, req.Text, req.MentionedUserIds)
 	if err != nil {
 		return nil, mapError(err)
 	}

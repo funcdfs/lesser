@@ -50,12 +50,14 @@ func (h *ContentHandler) CreateContent(ctx context.Context, req *pb.CreateConten
 	mediaURLs := extractMediaURLs(req.Media)
 
 	content, err := h.contentService.Create(
+		ctx,
 		req.AuthorId,
 		data_access.ContentType(req.Type),
 		req.Title, req.Text, req.Summary,
 		mediaURLs, req.Tags,
 		req.ReplyToId, req.QuoteId,
 		req.IsDraft, req.CommentsDisabled,
+		req.MentionedUserIds,
 	)
 	if err != nil {
 		return nil, mapError(err)
@@ -98,10 +100,12 @@ func (h *ContentHandler) UpdateContent(ctx context.Context, req *pb.UpdateConten
 	mediaURLs := extractMediaURLs(req.Media)
 
 	content, err := h.contentService.Update(
+		ctx,
 		req.ContentId, req.UserId,
 		req.Title, req.Text, req.Summary,
 		mediaURLs, req.Tags,
 		req.CommentsDisabled,
+		req.MentionedUserIds,
 	)
 	if err != nil {
 		return nil, mapError(err)
@@ -121,7 +125,7 @@ func (h *ContentHandler) DeleteContent(ctx context.Context, req *pb.DeleteConten
 		slog.String("user_id", req.UserId),
 	)
 
-	if err := h.contentService.Delete(req.ContentId, req.UserId); err != nil {
+	if err := h.contentService.Delete(ctx, req.ContentId, req.UserId); err != nil {
 		return nil, mapError(err)
 	}
 
@@ -213,7 +217,7 @@ func (h *ContentHandler) PublishDraft(ctx context.Context, req *pb.PublishDraftR
 		slog.String("user_id", req.UserId),
 	)
 
-	content, err := h.contentService.PublishDraft(req.ContentId, req.UserId)
+	content, err := h.contentService.PublishDraft(ctx, req.ContentId, req.UserId)
 	if err != nil {
 		return nil, mapError(err)
 	}

@@ -51,3 +51,18 @@ func (p *EventPublisher) PublishCommentLiked(ctx context.Context, commentID, com
 	}
 	p.publisher.PublishAsync(ctx, broker.EventCommentLiked, event)
 }
+
+// PublishUserMentioned 发布用户被 @ 事件（评论中的 @）
+func (p *EventPublisher) PublishUserMentioned(ctx context.Context, mentionedUserID, mentionerID, commentID string) {
+	if p.publisher == nil {
+		return
+	}
+
+	event := broker.UserMentionedEvent{
+		MentionedUserID: mentionedUserID,
+		MentionerID:     mentionerID,
+		ContentID:       commentID,
+		ContentType:     "comment",
+	}
+	p.publisher.PublishAsync(ctx, broker.EventUserMentioned, event)
+}

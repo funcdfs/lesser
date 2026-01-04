@@ -27,6 +27,20 @@ const (
 	ContentTypeArticle     ContentType = 3 // 长文章
 )
 
+// String 返回内容类型的字符串表示
+func (t ContentType) String() string {
+	switch t {
+	case ContentTypeStory:
+		return "story"
+	case ContentTypeShort:
+		return "short"
+	case ContentTypeArticle:
+		return "article"
+	default:
+		return "unspecified"
+	}
+}
+
 // ContentStatus 内容状态
 type ContentStatus int32
 

@@ -10,20 +10,24 @@ import (
 	"os/signal"
 	"syscall"
 
-	"github.com/funcdfs/lesser/content/internal/handler"
 	"github.com/funcdfs/lesser/content/internal/data_access"
+	"github.com/funcdfs/lesser/content/internal/handler"
 	"github.com/funcdfs/lesser/content/internal/logic"
+	"github.com/funcdfs/lesser/content/internal/messaging"
 	pb "github.com/funcdfs/lesser/content/gen_protos/content"
+	"github.com/funcdfs/lesser/pkg/broker"
 	"github.com/funcdfs/lesser/pkg/database"
+	"github.com/funcdfs/lesser/pkg/logger"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/reflection"
 )
 
 func main() {
 	// 初始化日志
-	log := initLogger()
+	log := logger.New("content")
 
 	grpcPort := getEnv("GRPC_PORT", "50056")
+	rabbitmqURL := getEnv("RABBITMQ_URL", "amqp://superuser:superuser@rabbitmq:5672/")
 
 	// 数据库连接
 	dbConfig := database.Config{
@@ -43,10 +47,28 @@ func main() {
 	defer db.Close()
 	log.Info("数据库连接成功", slog.String("db", dbConfig.DBName))
 
+	// 初始化 RabbitMQ Publisher（用于发送搜索索引事件和 @ 提及事件）
+	var publisher *broker.Publisher
+	publisher = broker.NewPublisher(rabbitmqURL, log)
+	if err := publisher.Connect(); err != nil {
+		log.Warn("RabbitMQ 连接失败，搜索索引和通知功能将不可用", slog.Any("error", err))
+		publisher = nil
+	} else {
+		defer publisher.Close()
+		log.Info("RabbitMQ Publisher 已连接")
+	}
+
 	// 初始化各层
 	contentRepo := data_access.NewContentRepository(db)
 	contentSvc := logic.NewContentService(contentRepo)
-	contentHandler := handler.NewContentHandler(contentSvc, log)
+
+	// 初始化 messaging 层并注入
+	if publisher != nil {
+		eventPublisher := messaging.NewEventPublisher(publisher)
+		contentSvc.SetPublisher(eventPublisher)
+	}
+
+	contentHandler := handler.NewContentHandler(contentSvc, log.Logger)
 
 	// 创建 gRPC 服务器
 	grpcServer := grpc.NewServer()
@@ -76,23 +98,6 @@ func main() {
 		log.Error("gRPC 服务异常退出", slog.Any("error", err))
 		os.Exit(1)
 	}
-}
-
-// initLogger 初始化日志
-func initLogger() *slog.Logger {
-	var h slog.Handler
-	if os.Getenv("ENV") == "production" {
-		h = slog.NewJSONHandler(os.Stdout, &slog.HandlerOptions{
-			Level:     slog.LevelInfo,
-			AddSource: true,
-		})
-	} else {
-		h = slog.NewTextHandler(os.Stdout, &slog.HandlerOptions{
-			Level:     slog.LevelDebug,
-			AddSource: true,
-		})
-	}
-	return slog.New(h).With(slog.String("service", "content"))
 }
 
 func getEnv(key, defaultValue string) string {

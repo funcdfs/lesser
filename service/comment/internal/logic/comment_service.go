@@ -49,6 +49,7 @@ type ContentClient interface {
 type EventPublisher interface {
 	PublishCommentCreated(ctx context.Context, commentID, authorID, contentID, contentAuthorID, parentID, parentAuthorID, text string)
 	PublishCommentLiked(ctx context.Context, commentID, commentAuthorID, likerID string)
+	PublishUserMentioned(ctx context.Context, mentionedUserID, mentionerID, commentID string)
 }
 
 // CommentRepository 评论仓库接口
@@ -87,7 +88,7 @@ func (s *CommentService) SetPublisher(publisher EventPublisher) {
 
 
 // CreateComment 创建评论
-func (s *CommentService) CreateComment(ctx context.Context, authorID, contentID, parentID, text string) (*data_access.Comment, int32, error) {
+func (s *CommentService) CreateComment(ctx context.Context, authorID, contentID, parentID, text string, mentionedUserIDs []string) (*data_access.Comment, int32, error) {
 	if text == "" {
 		return nil, 0, ErrEmptyText
 	}
@@ -141,6 +142,13 @@ func (s *CommentService) CreateComment(ctx context.Context, authorID, contentID,
 		// 获取内容作者 ID
 		contentAuthorID, _ := s.contentClient.GetContentAuthorID(ctx, contentID)
 		s.publisher.PublishCommentCreated(ctx, createdComment.ID, authorID, contentID, contentAuthorID, parentID, parentAuthorID, truncateText(text, 100))
+
+		// 发布 @ 提及事件
+		for _, mentionedUserID := range mentionedUserIDs {
+			if mentionedUserID != authorID { // 不给自己发通知
+				s.publisher.PublishUserMentioned(ctx, mentionedUserID, authorID, createdComment.ID)
+			}
+		}
 	}
 
 	return createdComment, count, nil

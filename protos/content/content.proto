@@ -105,6 +105,7 @@ message CreateContentRequest {
   string quote_id = 9;        // 引用某内容
   bool is_draft = 10;         // 是否保存为草稿（仅 ARTICLE）
   bool comments_disabled = 11;
+  repeated string mentioned_user_ids = 12;  // @ 提及的用户 ID 列表
 }
 
 // CreateContentResponse 创建内容响应
@@ -136,6 +137,7 @@ message UpdateContentRequest {
   repeated Media media = 6;
   repeated string tags = 7;
   bool comments_disabled = 8;
+  repeated string mentioned_user_ids = 9;  // @ 提及的用户 ID 列表（新增的）
 }
 
 // UpdateContentResponse 更新内容响应
