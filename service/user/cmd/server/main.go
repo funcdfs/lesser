@@ -2,20 +2,23 @@
 package main
 
 import (
+	"context"
 	"log/slog"
+	"net"
 	"os"
 	"os/signal"
+	"strconv"
 	"syscall"
 
 	"github.com/funcdfs/lesser/pkg/broker"
-	"github.com/funcdfs/lesser/pkg/config"
 	"github.com/funcdfs/lesser/pkg/database"
-	"github.com/funcdfs/lesser/pkg/grpcserver"
 	"github.com/funcdfs/lesser/pkg/logger"
 	"github.com/funcdfs/lesser/user/internal/handler"
 	"github.com/funcdfs/lesser/user/internal/repository"
 	"github.com/funcdfs/lesser/user/internal/service"
 	pb "github.com/funcdfs/lesser/user/proto/user"
+	"google.golang.org/grpc"
+	"google.golang.org/grpc/reflection"
 )
 
 func main() {
@@ -24,8 +27,8 @@ func main() {
 	log.Info("用户服务启动中...")
 
 	// 读取配置
-	grpcPort := config.GetEnvInt("GRPC_PORT", 50055)
-	rabbitMQURL := config.GetEnv("RABBITMQ_URL", "amqp://superuser:superuser@rabbitmq:5672/")
+	grpcPort := getEnvInt("GRPC_PORT", 50055)
+	rabbitMQURL := getEnv("RABBITMQ_URL", "amqp://superuser:superuser@rabbitmq:5672/")
 
 	// 初始化数据库连接
 	dbConfig := database.ConfigFromEnv()
@@ -65,35 +68,51 @@ func main() {
 	// 初始化处理器
 	userHandler := handler.NewUserHandler(userSvc, log)
 
-	// 创建 gRPC 服务器
-	serverConfig := grpcserver.Config{
-		Port:              grpcPort,
-		EnableReflection:  true,
-		EnableHealthCheck: true,
-	}
-	server := grpcserver.New(log, grpcserver.WithConfig(serverConfig))
-
-	// 构建服务器（添加默认拦截器）
-	grpcServer := server.Build(nil, nil)
-
-	// 注册服务
+	// 创建 gRPC 服务器（简化版，不使用 pkg/grpcserver）
+	grpcServer := grpc.NewServer()
 	pb.RegisterUserServiceServer(grpcServer, userHandler)
+	reflection.Register(grpcServer)
 
-	// 启动服务器
-	go func() {
-		log.Info("gRPC 服务器启动", slog.Int("port", grpcPort))
-		if err := server.Start(); err != nil {
-			log.Error("gRPC 服务器启动失败", slog.Any("error", err))
-			os.Exit(1)
-		}
-	}()
+	// 监听端口
+	addr := ":" + strconv.Itoa(grpcPort)
+	lis, err := net.Listen("tcp", addr)
+	if err != nil {
+		log.Error("端口监听失败", slog.Int("port", grpcPort), slog.Any("error", err))
+		os.Exit(1)
+	}
 
 	// 优雅关闭
-	quit := make(chan os.Signal, 1)
-	signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM)
-	<-quit
+	ctx, cancel := context.WithCancel(context.Background())
+	go func() {
+		sigCh := make(chan os.Signal, 1)
+		signal.Notify(sigCh, syscall.SIGINT, syscall.SIGTERM)
+		<-sigCh
+		log.Info("收到关闭信号，开始关闭...")
+		cancel()
+		grpcServer.GracefulStop()
+	}()
 
-	log.Info("正在关闭服务...")
-	server.Stop()
-	log.Info("服务已关闭")
+	log.Info("User 服务已启动", slog.Int("port", grpcPort))
+	if err := grpcServer.Serve(lis); err != nil && ctx.Err() == nil {
+		log.Error("gRPC 服务异常退出", slog.Any("error", err))
+		os.Exit(1)
+	}
+}
+
+// getEnv 获取环境变量，如果不存在则返回默认值
+func getEnv(key, defaultValue string) string {
+	if value := os.Getenv(key); value != "" {
+		return value
+	}
+	return defaultValue
+}
+
+// getEnvInt 获取整数环境变量
+func getEnvInt(key string, defaultValue int) int {
+	if value := os.Getenv(key); value != "" {
+		if i, err := strconv.Atoi(value); err == nil {
+			return i
+		}
+	}
+	return defaultValue
 }

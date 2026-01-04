@@ -74,12 +74,14 @@ func NewRouter(cfg ServiceConfig, log *slog.Logger) (*Router, error) {
 		ServiceNotification: cfg.NotificationAddr,
 	}
 
-	// 建立连接
+	// 建立连接（暂时移除 keepalive 配置以排查问题）
 	for name, addr := range services {
 		if addr == "" {
 			continue
 		}
-		conn, err := grpc.NewClient(addr, grpc.WithTransportCredentials(insecure.NewCredentials()))
+		conn, err := grpc.NewClient(addr,
+			grpc.WithTransportCredentials(insecure.NewCredentials()),
+		)
 		if err != nil {
 			r.Close() // 清理已建立的连接
 			return nil, fmt.Errorf("连接 %s 服务失败: %w", name, err)

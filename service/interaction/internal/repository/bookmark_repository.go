@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/google/uuid"
+	"github.com/lib/pq"
 )
 
 // Bookmark 收藏实体
@@ -66,10 +67,11 @@ func (r *BookmarkRepository) BatchExists(userID string, contentIDs []string) (ma
 		return result, nil
 	}
 
+	// 使用 pq.Array 转换 []string 为 PostgreSQL 数组类型
 	rows, err := r.db.Query(`
 		SELECT content_id FROM bookmarks 
 		WHERE user_id = $1 AND content_id = ANY($2)
-	`, userID, contentIDs)
+	`, userID, pq.Array(contentIDs))
 	if err != nil {
 		return nil, err
 	}

@@ -18,8 +18,9 @@ import (
 	pb "github.com/funcdfs/lesser/comment/proto/comment"
 	"github.com/funcdfs/lesser/pkg/broker"
 	"github.com/funcdfs/lesser/pkg/database"
-	"github.com/funcdfs/lesser/pkg/grpcserver"
 	"github.com/funcdfs/lesser/pkg/logger"
+	"google.golang.org/grpc"
+	"google.golang.org/grpc/reflection"
 )
 
 func main() {
@@ -74,17 +75,10 @@ func main() {
 
 	commentHandler := handler.NewCommentHandler(commentSvc, log.Logger)
 
-	// 创建 gRPC 服务器（使用 pkg/grpcserver）
-	serverConfig := grpcserver.Config{
-		Port:              50061,
-		EnableReflection:  true,
-		EnableHealthCheck: true,
-	}
-	server := grpcserver.New(log, grpcserver.WithConfig(serverConfig))
-	grpcServer := server.Build(nil, nil)
-
-	// 注册服务
+	// 创建 gRPC 服务器（简化版，不使用 pkg/grpcserver）
+	grpcServer := grpc.NewServer()
 	pb.RegisterCommentServiceServer(grpcServer, commentHandler)
+	reflection.Register(grpcServer)
 
 	// 监听端口
 	lis, err := net.Listen("tcp", ":"+grpcPort)
@@ -100,7 +94,7 @@ func main() {
 		<-sigCh
 		log.Info("收到关闭信号，开始关闭...")
 		cancel()
-		server.StopWithTimeout(10 * time.Second)
+		grpcServer.GracefulStop()
 	}()
 
 	log.Info("Comment 服务已启动", slog.String("port", grpcPort))

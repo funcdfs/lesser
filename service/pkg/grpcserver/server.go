@@ -97,7 +97,7 @@ func (s *Server) Build(unaryInterceptors []grpc.UnaryServerInterceptor, streamIn
 	allUnary := append(defaultUnary, unaryInterceptors...)
 	allStream := append(defaultStream, streamInterceptors...)
 
-	// 服务器选项
+	// 服务器选项（暂时移除 keepalive 配置以排查问题）
 	serverOpts := []grpc.ServerOption{
 		grpc.ChainUnaryInterceptor(allUnary...),
 		grpc.ChainStreamInterceptor(allStream...),

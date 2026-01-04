@@ -32,11 +32,27 @@ var publicMethods = map[string]bool{
 	"/auth.AuthService/RefreshToken": true,
 }
 
+// 公开方法前缀（不需要认证）
+var publicMethodPrefixes = []string{
+	"/grpc.reflection.",  // gRPC 反射服务（用于 grpcurl 调试）
+	"/grpc.health.",      // gRPC 健康检查
+}
+
+// isPublicMethodPrefix 检查方法是否匹配公开前缀
+func isPublicMethodPrefix(method string) bool {
+	for _, prefix := range publicMethodPrefixes {
+		if strings.HasPrefix(method, prefix) {
+			return true
+		}
+	}
+	return false
+}
+
 // AuthInterceptor 创建认证拦截器
 func AuthInterceptor(validator *auth.JWTValidator, limiter *ratelimit.Limiter, log *slog.Logger) grpc.UnaryServerInterceptor {
 	return func(ctx context.Context, req interface{}, info *grpc.UnaryServerInfo, handler grpc.UnaryHandler) (interface{}, error) {
 		// 公开方法跳过认证
-		if publicMethods[info.FullMethod] {
+		if publicMethods[info.FullMethod] || isPublicMethodPrefix(info.FullMethod) {
 			return handler(ctx, req)
 		}
 
@@ -74,7 +90,7 @@ func AuthInterceptor(validator *auth.JWTValidator, limiter *ratelimit.Limiter, l
 func StreamAuthInterceptor(validator *auth.JWTValidator, limiter *ratelimit.Limiter, log *slog.Logger) grpc.StreamServerInterceptor {
 	return func(srv interface{}, ss grpc.ServerStream, info *grpc.StreamServerInfo, handler grpc.StreamHandler) error {
 		// 公开方法跳过认证
-		if publicMethods[info.FullMethod] {
+		if publicMethods[info.FullMethod] || isPublicMethodPrefix(info.FullMethod) {
 			return handler(srv, ss)
 		}
 

@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/google/uuid"
+	"github.com/lib/pq"
 )
 
 // Repost 转发实体
@@ -81,10 +82,11 @@ func (r *RepostRepository) BatchExists(userID string, contentIDs []string) (map[
 		return result, nil
 	}
 
+	// 使用 pq.Array 转换 []string 为 PostgreSQL 数组类型
 	rows, err := r.db.Query(`
 		SELECT content_id FROM reposts 
 		WHERE user_id = $1 AND content_id = ANY($2)
-	`, userID, contentIDs)
+	`, userID, pq.Array(contentIDs))
 	if err != nil {
 		return nil, err
 	}

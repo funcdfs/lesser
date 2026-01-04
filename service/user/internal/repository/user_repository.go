@@ -9,6 +9,7 @@ import (
 
 	"github.com/funcdfs/lesser/pkg/database"
 	"github.com/google/uuid"
+	"github.com/lib/pq"
 )
 
 // UserRepository 用户数据仓库
@@ -97,14 +98,6 @@ func (r *UserRepository) BatchGetByIDs(ctx context.Context, ids []string) (map[s
 		return make(map[string]*User), nil
 	}
 
-	// 构建 IN 查询
-	placeholders := make([]string, len(ids))
-	args := make([]interface{}, len(ids))
-	for i, id := range ids {
-		placeholders[i] = "$" + string(rune('1'+i))
-		args[i] = id
-	}
-
 	query := `
 		SELECT id, username, email, display_name, avatar_url, bio,
 		       location, website, birthday, is_verified, is_private, is_active,
@@ -112,7 +105,8 @@ func (r *UserRepository) BatchGetByIDs(ctx context.Context, ids []string) (map[s
 		FROM users WHERE id = ANY($1) AND is_active = true
 	`
 
-	rows, err := r.db.QueryContext(ctx, query, ids)
+	// 使用 pq.Array 转换 []string 为 PostgreSQL 数组类型
+	rows, err := r.db.QueryContext(ctx, query, pq.Array(ids))
 	if err != nil {
 		return nil, err
 	}

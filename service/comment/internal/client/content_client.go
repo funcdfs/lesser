@@ -3,7 +3,6 @@ package client
 
 import (
 	"context"
-	"time"
 
 	contentpb "github.com/funcdfs/lesser/comment/proto/content"
 	"google.golang.org/grpc"
@@ -17,14 +16,11 @@ type ContentServiceClient struct {
 }
 
 // NewContentServiceClient 创建 Content 服务客户端
+// 使用懒连接模式，不阻塞启动
 func NewContentServiceClient(addr string) (*ContentServiceClient, error) {
-	// 设置连接超时
-	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
-	defer cancel()
-
-	conn, err := grpc.DialContext(ctx, addr,
+	// 使用 grpc.NewClient（非阻塞），连接会在首次 RPC 调用时建立
+	conn, err := grpc.NewClient(addr,
 		grpc.WithTransportCredentials(insecure.NewCredentials()),
-		grpc.WithBlock(),
 	)
 	if err != nil {
 		return nil, err
