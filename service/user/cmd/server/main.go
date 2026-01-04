@@ -28,7 +28,7 @@ func main() {
 	log.Info("用户服务启动中...")
 
 	// 读取配置
-	grpcPort := getEnvInt("GRPC_PORT", 50055)
+	grpcPort := getEnvInt("GRPC_PORT", 50053)
 	rabbitMQURL := getEnv("RABBITMQ_URL", "amqp://superuser:superuser@rabbitmq:5672/")
 
 	// 初始化数据库连接

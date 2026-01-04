@@ -23,8 +23,8 @@ import (
 func main() {
 	log := initLogger()
 
-	grpcPort := getEnv("GRPC_PORT", "50062")
-	interactionServiceAddr := getEnv("INTERACTION_SERVICE_ADDR", "interaction:50060")
+	grpcPort := getEnv("GRPC_PORT", "50057")
+	interactionServiceAddr := getEnv("INTERACTION_SERVICE_ADDR", "interaction:50056")
 
 	// 数据库连接
 	dbConfig := database.Config{

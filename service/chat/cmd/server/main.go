@@ -29,7 +29,7 @@ func main() {
 	log := logger.New("chat")
 	logger.SetGlobal(log)
 
-	grpcPort := getEnv("GRPC_PORT", "50052")
+	grpcPort := getEnv("GRPC_PORT", "50060")
 
 	// 数据库连接（Chat 使用独立数据库 lesser_chat_db）
 	dbConfig := database.Config{

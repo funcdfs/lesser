@@ -52,7 +52,7 @@ func main() {
 	reflection.Register(grpcServer)
 
 	// 监听端口
-	grpcPort := getEnv("GRPC_PORT", "50053")
+	grpcPort := getEnv("GRPC_PORT", "50051")
 	lis, err := net.Listen("tcp", ":"+grpcPort)
 	if err != nil {
 		log.Error("监听端口失败", slog.String("port", grpcPort), slog.Any("error", err))
@@ -102,15 +102,15 @@ func initLogger() *slog.Logger {
 // loadConfig 加载配置
 func loadConfig() server.Config {
 	return server.Config{
-		AuthServiceAddr:         getEnv("AUTH_SERVICE_ADDR", "auth:50054"),
-		UserServiceAddr:         getEnv("USER_SERVICE_ADDR", "user:50055"),
-		ContentServiceAddr:      getEnv("CONTENT_SERVICE_ADDR", "content:50056"),
-		InteractionServiceAddr:  getEnv("INTERACTION_SERVICE_ADDR", "interaction:50060"),
-		CommentServiceAddr:      getEnv("COMMENT_SERVICE_ADDR", "comment:50061"),
-		TimelineServiceAddr:     getEnv("TIMELINE_SERVICE_ADDR", "timeline:50062"),
-		ChatServiceAddr:         getEnv("CHAT_SERVICE_ADDR", "chat:50052"),
+		AuthServiceAddr:         getEnv("AUTH_SERVICE_ADDR", "auth:50052"),
+		UserServiceAddr:         getEnv("USER_SERVICE_ADDR", "user:50053"),
+		ContentServiceAddr:      getEnv("CONTENT_SERVICE_ADDR", "content:50054"),
+		CommentServiceAddr:      getEnv("COMMENT_SERVICE_ADDR", "comment:50055"),
+		InteractionServiceAddr:  getEnv("INTERACTION_SERVICE_ADDR", "interaction:50056"),
+		TimelineServiceAddr:     getEnv("TIMELINE_SERVICE_ADDR", "timeline:50057"),
 		SearchServiceAddr:       getEnv("SEARCH_SERVICE_ADDR", "search:50058"),
 		NotificationServiceAddr: getEnv("NOTIFICATION_SERVICE_ADDR", "notification:50059"),
+		ChatServiceAddr:         getEnv("CHAT_SERVICE_ADDR", "chat:50060"),
 		RateLimitRate:           getEnvFloat("RATE_LIMIT_RATE", 100),
 		RateLimitBurst:          getEnvInt("RATE_LIMIT_BURST", 200),
 	}

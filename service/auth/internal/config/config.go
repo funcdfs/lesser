@@ -66,7 +66,7 @@ func LoadFromEnv() *Config {
 	return &Config{
 		// 服务配置
 		ServiceName: "auth",
-		GRPCPort:    pkgConfig.GetEnv("GRPC_PORT", "50054"),
+		GRPCPort:    pkgConfig.GetEnv("GRPC_PORT", "50052"),
 
 		// 数据库配置
 		DBHost:     pkgConfig.GetEnv("DB_HOST", "localhost"),

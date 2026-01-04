@@ -55,7 +55,7 @@ func LoadFromEnv() *Config {
 	return &Config{
 		// 服务配置
 		ServiceName: getEnv("SERVICE_NAME", "superuser"),
-		GRPCPort:    getEnv("GRPC_PORT", "50063"),
+		GRPCPort:    getEnv("GRPC_PORT", "50061"),
 
 		// 数据库配置
 		DBHost:     getEnv("DB_HOST", "postgres"),

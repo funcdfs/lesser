@@ -26,7 +26,7 @@ func main() {
 	// 初始化日志
 	log := logger.New("content")
 
-	grpcPort := getEnv("GRPC_PORT", "50056")
+	grpcPort := getEnv("GRPC_PORT", "50054")
 	rabbitmqURL := getEnv("RABBITMQ_URL", "amqp://superuser:superuser@rabbitmq:5672/")
 
 	// 数据库连接

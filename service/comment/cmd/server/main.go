@@ -28,8 +28,8 @@ func main() {
 	// 初始化日志
 	log := logger.New("comment")
 
-	grpcPort := getEnv("GRPC_PORT", "50061")
-	contentServiceAddr := getEnv("CONTENT_SERVICE_ADDR", "content:50056")
+	grpcPort := getEnv("GRPC_PORT", "50055")
+	contentServiceAddr := getEnv("CONTENT_SERVICE_ADDR", "content:50054")
 	rabbitmqURL := getEnv("RABBITMQ_URL", "amqp://superuser:superuser@rabbitmq:5672/")
 
 	// 数据库连接

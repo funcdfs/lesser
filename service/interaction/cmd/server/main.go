@@ -27,8 +27,8 @@ func main() {
 	log := initLogger()
 	pkgLog := logger.New("interaction")
 
-	grpcPort := getEnv("GRPC_PORT", "50060")
-	contentServiceAddr := getEnv("CONTENT_SERVICE_ADDR", "content:50056")
+	grpcPort := getEnv("GRPC_PORT", "50056")
+	contentServiceAddr := getEnv("CONTENT_SERVICE_ADDR", "content:50054")
 	rabbitmqURL := getEnv("RABBITMQ_URL", "amqp://superuser:superuser@rabbitmq:5672/")
 
 	// 数据库连接

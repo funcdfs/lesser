@@ -163,7 +163,7 @@ func TestGRPCServiceCommunication(t *testing.T) {
 	// 获取 Gateway gRPC 地址
 	gatewayAddr := os.Getenv("GATEWAY_GRPC_ADDR")
 	if gatewayAddr == "" {
-		gatewayAddr = "localhost:50053"
+		gatewayAddr = "localhost:50051"
 	}
 
 	// 创建 gRPC 连接
@@ -197,7 +197,7 @@ func TestGRPCClientPool(t *testing.T) {
 	// 获取 Gateway 地址
 	gatewayAddr := os.Getenv("GATEWAY_GRPC_ADDR")
 	if gatewayAddr == "" {
-		gatewayAddr = "localhost:50053"
+		gatewayAddr = "localhost:50051"
 	}
 
 	// 注册测试服务配置
@@ -333,7 +333,7 @@ func TestChatServiceGRPCConnection(t *testing.T) {
 
 	chatAddr := os.Getenv("CHAT_GRPC_ADDR")
 	if chatAddr == "" {
-		chatAddr = "localhost:50052"
+		chatAddr = "localhost:50060"
 	}
 
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)

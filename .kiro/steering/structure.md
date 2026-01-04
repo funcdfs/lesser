@@ -10,23 +10,23 @@ graph TB
 
     subgraph Gateway["网关层"]
         Traefik["Traefik :80/:50050"]
-        GW["Gateway :50053<br/>JWT/限流/路由"]
+        GW["Gateway :50051<br/>JWT/限流/路由"]
     end
 
     subgraph Services["业务服务"]
-        Auth["Auth :50054"]
-        User["User :50055"]
-        Content["Content :50056"]
-        Interaction["Interaction :50060"]
-        Comment["Comment :50061"]
-        Timeline["Timeline :50062"]
+        Auth["Auth :50052"]
+        User["User :50053"]
+        Content["Content :50054"]
+        Comment["Comment :50055"]
+        Interaction["Interaction :50056"]
+        Timeline["Timeline :50057"]
         Search["Search :50058"]
         Notification["Notification :50059"]
-        SuperUser["SuperUser :50063"]
+        SuperUser["SuperUser :50061"]
     end
 
     subgraph Realtime["实时服务"]
-        Chat["Chat :50052<br/>gRPC 双向流"]
+        Chat["Chat :50060<br/>gRPC 双向流"]
     end
 
     subgraph Data["数据层"]
@@ -41,8 +41,8 @@ graph TB
     GW --> Auth
     GW --> User
     GW --> Content
-    GW --> Interaction
     GW --> Comment
+    GW --> Interaction
     GW --> Timeline
     GW --> Search
     GW --> Notification
@@ -121,8 +121,8 @@ graph TB
     end
 
     subgraph Backend["后端"]
-        GW["Gateway :50053"]
-        ChatSvc["Chat :50052"]
+        GW["Gateway :50051"]
+        ChatSvc["Chat :50060"]
     end
 
     AuthPage --> AuthHandler
@@ -161,21 +161,21 @@ graph TB
 
 ## 服务端口
 
-| 服务 | 端口 |
-|------|------|
-| Traefik HTTP | 80 |
-| Traefik gRPC | 50050 |
-| Gateway | 50053 |
-| Chat | 50052 |
-| Auth | 50054 |
-| User | 50055 |
-| Content | 50056 |
-| Search | 50058 |
-| Notification | 50059 |
-| Interaction | 50060 |
-| Comment | 50061 |
-| Timeline | 50062 |
-| SuperUser | 50063 |
+| 服务 | 端口 | 说明 |
+|------|------|------|
+| Traefik HTTP | 80 | HTTP 入口 |
+| Traefik gRPC | 50050 | gRPC 统一入口 |
+| Gateway | 50051 | API 网关 (JWT/限流/路由) |
+| Auth | 50052 | 认证服务 |
+| User | 50053 | 用户服务 |
+| Content | 50054 | 内容服务 |
+| Comment | 50055 | 评论服务 |
+| Interaction | 50056 | 交互服务 |
+| Timeline | 50057 | 时间线服务 |
+| Search | 50058 | 搜索服务 |
+| Notification | 50059 | 通知服务 |
+| Chat | 50060 | 聊天服务 (gRPC 双向流) |
+| SuperUser | 50061 | 超级用户服务 |
 
 ## 目录结构
 
@@ -183,14 +183,17 @@ graph TB
 
 ```
 service/<name>/
+├── cmd/                # 入口
+│   └── main.go
 ├── internal/
 │   ├── handler/        # gRPC 处理器（协议对接、参数转换）
 │   ├── logic/          # 核心业务规则（权限判断、缓存策略）
 │   ├── remote/         # 外部服务调用（跨服务 gRPC 调用）
 │   ├── data_access/    # 数据库存取（SQL/NoSQL 操作）
 │   └── messaging/      # 异步消息发布/订阅（RabbitMQ）
-├── gen_protos/         # 生成的 proto 代码
-└── main.go
+├── gen_protos/         # 生成的 proto 代码【禁止手动修改】
+├── go.mod
+└── go.sum
 
 service/pkg/            # 共享公共库
 ```
@@ -199,7 +202,7 @@ service/pkg/            # 共享公共库
 
 ```
 lib/
-├── gen_protos/         # protoc 生成代码
+├── gen_protos/         # protoc 生成代码【禁止手动修改】
 ├── pkg/
 │   ├── constants/
 │   ├── network/
@@ -256,24 +259,22 @@ Go:       handler → logic → data_access → PostgreSQL/Redis
 
 ```
 service/<name>/internal/messaging/
-├── publisher.go   # 实现 logic 层的发布接口（发送消息）
-├── consumer.go    # 启动监听，管理 RabbitMQ 连接（可选）
-└── handler.go     # 收到消息后的处理逻辑（可选）
+├── publisher.go     # 实现 logic 层的发布接口（发送消息）
+├── event_worker.go  # 启动监听，管理 RabbitMQ 连接（消费者）
 ```
 
 ### 消息发布者（Publisher）
-
-以下服务包含 `messaging/publisher.go`：
 
 | 服务 | 发布事件 |
 |------|---------|
 | user | UserFollowed（关注） |
 | interaction | ContentLiked, ContentBookmarked, ContentReposted（点赞/收藏/转发） |
 | comment | CommentCreated, CommentLiked（评论/评论点赞） |
+| content | ContentCreated/Updated/Deleted（搜索索引） |
 
 ### 消息消费者（Consumer）
 
-`notification` 服务包含 `messaging/event_worker.go`，订阅以下事件：
+`notification` 服务订阅以下事件：
 
 - `content.liked` - 内容点赞通知
 - `content.bookmarked` - 内容收藏通知
@@ -282,6 +283,12 @@ service/<name>/internal/messaging/
 - `comment.liked` - 评论点赞通知
 - `user.followed` - 关注通知
 - `user.mentioned` - @ 提及通知
+
+`search` 服务订阅以下事件：
+
+- `content.created` - 索引新内容
+- `content.updated` - 更新内容索引
+- `content.deleted` - 删除内容索引
 
 ### 接口定义示例
 
