@@ -8,10 +8,10 @@ import (
 	"time"
 
 	"github.com/google/uuid"
-	"github.com/funcdfs/lesser/chat/internal/repository"
-	"github.com/funcdfs/lesser/chat/internal/service"
-	pb "github.com/funcdfs/lesser/chat/proto/chat"
-	"github.com/funcdfs/lesser/chat/proto/common"
+	"github.com/funcdfs/lesser/chat/internal/data_access"
+	"github.com/funcdfs/lesser/chat/internal/logic"
+	pb "github.com/funcdfs/lesser/chat/gen_protos/chat"
+	"github.com/funcdfs/lesser/chat/gen_protos/common"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/metadata"
 	"google.golang.org/grpc/status"
@@ -21,7 +21,7 @@ import (
 type StreamManager struct {
 	clients map[string]*StreamClient // userID -> client
 	mu      sync.RWMutex
-	chatSvc *service.ChatService
+	chatSvc *logic.ChatService
 }
 
 // StreamClient 表示单个用户的流连接
@@ -34,7 +34,7 @@ type StreamClient struct {
 }
 
 // NewStreamManager 创建流管理器
-func NewStreamManager(chatSvc *service.ChatService) *StreamManager {
+func NewStreamManager(chatSvc *logic.ChatService) *StreamManager {
 	return &StreamManager{
 		clients: make(map[string]*StreamClient),
 		chatSvc: chatSvc,
@@ -171,7 +171,7 @@ func (m *StreamManager) handleSendMessage(client *StreamClient, req *pb.SendMess
 	}
 
 	// 调用 ChatService 发送消息
-	msg, err := m.chatSvc.SendMessage(ctx, service.SendMessageRequest{
+	msg, err := m.chatSvc.SendMessage(ctx, logic.SendMessageRequest{
 		ConversationID: convID,
 		SenderID:       userID,
 		Content:        req.Content,
@@ -213,7 +213,7 @@ func (m *StreamManager) handleTyping(client *StreamClient, req *pb.TypingEvent) 
 
 // BroadcastNewMessage 广播新消息给会话成员
 // 使用读锁保护并发访问，发送操作在锁外执行避免阻塞
-func (m *StreamManager) BroadcastNewMessage(conversationID string, msg *repository.Message, excludeUserID string) {
+func (m *StreamManager) BroadcastNewMessage(conversationID string, msg *data_access.Message, excludeUserID string) {
 	m.mu.RLock()
 	// 复制需要发送的客户端列表，避免长时间持有锁
 	var targets []*StreamClient
@@ -251,18 +251,18 @@ func (m *StreamManager) BroadcastNewMessage(conversationID string, msg *reposito
 }
 
 // BroadcastToConversation 广播消息给会话中的所有订阅者（用于 SendMessage RPC）
-func (m *StreamManager) BroadcastToConversation(conversationID uuid.UUID, msg *repository.Message) {
+func (m *StreamManager) BroadcastToConversation(conversationID uuid.UUID, msg *data_access.Message) {
 	m.BroadcastNewMessage(conversationID.String(), msg, msg.SenderID.String())
 }
 
 // NotifyReadReceipt 通知单条消息已读
-func (m *StreamManager) NotifyReadReceipt(receipt *repository.ReadReceipt) {
+func (m *StreamManager) NotifyReadReceipt(receipt *data_access.ReadReceipt) {
 	messageIDs := []string{receipt.MessageID.String()}
 	m.BroadcastMessageRead(receipt.ConversationID.String(), receipt.ReaderID.String(), messageIDs)
 }
 
 // NotifyBatchReadReceipt 通知批量消息已读
-func (m *StreamManager) NotifyBatchReadReceipt(receipt *repository.BatchReadReceipt) {
+func (m *StreamManager) NotifyBatchReadReceipt(receipt *data_access.BatchReadReceipt) {
 	messageIDs := make([]string, len(receipt.MessageIDs))
 	for i, id := range receipt.MessageIDs {
 		messageIDs[i] = id.String()

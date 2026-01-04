@@ -10,9 +10,9 @@ import (
 
 	"github.com/funcdfs/lesser/pkg/database"
 	"github.com/funcdfs/lesser/search/internal/handler"
-	"github.com/funcdfs/lesser/search/internal/repository"
-	"github.com/funcdfs/lesser/search/internal/service"
-	pb "github.com/funcdfs/lesser/search/proto/search"
+	"github.com/funcdfs/lesser/search/internal/data_access"
+	"github.com/funcdfs/lesser/search/internal/logic"
+	pb "github.com/funcdfs/lesser/search/gen_protos/search"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/reflection"
 )
@@ -36,8 +36,8 @@ func main() {
 	defer db.Close()
 	log.Println("Connected to PostgreSQL")
 
-	searchRepo := repository.NewSearchRepository(db)
-	searchSvc := service.NewSearchService(searchRepo)
+	searchRepo := data_access.NewSearchRepository(db)
+	searchSvc := logic.NewSearchService(searchRepo)
 	searchHandler := handler.NewSearchHandler(searchSvc)
 
 	grpcServer := grpc.NewServer()

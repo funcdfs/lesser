@@ -6,7 +6,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/funcdfs/lesser/chat/internal/service"
+	"github.com/funcdfs/lesser/chat/internal/remote"
 	"github.com/funcdfs/lesser/pkg/auth"
 	"github.com/funcdfs/lesser/pkg/logger"
 	"google.golang.org/grpc"
@@ -16,7 +16,7 @@ import (
 )
 
 // authUnaryInterceptor 认证拦截器
-func authUnaryInterceptor(authClient *service.AuthClient) grpc.UnaryServerInterceptor {
+func authUnaryInterceptor(authClient *remote.AuthClient) grpc.UnaryServerInterceptor {
 	return func(ctx context.Context, req interface{}, info *grpc.UnaryServerInfo, handler grpc.UnaryHandler) (interface{}, error) {
 		md, ok := metadata.FromIncomingContext(ctx)
 		if !ok {

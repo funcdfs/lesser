@@ -12,9 +12,10 @@ import (
 	"time"
 
 	"github.com/funcdfs/lesser/chat/internal/handler"
-	"github.com/funcdfs/lesser/chat/internal/repository"
-	"github.com/funcdfs/lesser/chat/internal/service"
-	pb "github.com/funcdfs/lesser/chat/proto/chat"
+	"github.com/funcdfs/lesser/chat/internal/data_access"
+	"github.com/funcdfs/lesser/chat/internal/logic"
+	"github.com/funcdfs/lesser/chat/internal/remote"
+	pb "github.com/funcdfs/lesser/chat/gen_protos/chat"
 	"github.com/funcdfs/lesser/pkg/cache"
 	"github.com/funcdfs/lesser/pkg/database"
 	"github.com/funcdfs/lesser/pkg/logger"
@@ -60,12 +61,12 @@ func main() {
 	}
 
 	// 初始化仓库层
-	conversationRepo := repository.NewConversationRepository(db)
-	messageRepo := repository.NewMessageRepository(db)
+	conversationRepo := data_access.NewConversationRepository(db)
+	messageRepo := data_access.NewMessageRepository(db)
 
 	// 初始化 Auth gRPC 客户端
 	authGRPCAddr := getEnv("AUTH_GRPC_ADDR", "gateway:50053")
-	authClient, err := service.NewAuthClient(authGRPCAddr)
+	authClient, err := remote.NewAuthClient(authGRPCAddr)
 	if err != nil {
 		log.Warn("Auth gRPC 服务连接失败", slog.Any("error", err))
 	} else {
@@ -73,16 +74,16 @@ func main() {
 	}
 
 	// 初始化用户客户端（带缓存）
-	userClient := service.NewUserClient(authClient, redisClient)
+	userClient := remote.NewUserClient(authClient, redisClient)
 
 	// 初始化未读数缓存服务
-	var unreadCacheService *service.UnreadCacheService
+	var unreadCacheService *logic.UnreadCacheService
 	if redisClient != nil {
-		unreadCacheService = service.NewUnreadCacheService(redisClient, messageRepo)
+		unreadCacheService = logic.NewUnreadCacheService(redisClient, messageRepo)
 	}
 
 	// 初始化业务服务
-	chatService := service.NewChatService(conversationRepo, messageRepo, redisClient, userClient, unreadCacheService)
+	chatService := logic.NewChatService(conversationRepo, messageRepo, redisClient, userClient, unreadCacheService)
 
 	// 初始化 Handler
 	chatHandler := handler.NewChatHandler(chatService, log)
@@ -133,7 +134,7 @@ func main() {
 }
 
 // newGRPCServer 创建 gRPC 服务器
-func newGRPCServer(authClient *service.AuthClient, log *logger.Logger) *grpc.Server {
+func newGRPCServer(authClient *remote.AuthClient, log *logger.Logger) *grpc.Server {
 	keepalivePolicy := keepalive.EnforcementPolicy{
 		MinTime:             10 * time.Second,
 		PermitWithoutStream: true,

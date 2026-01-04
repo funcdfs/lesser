@@ -10,11 +10,12 @@ import (
 	"os/signal"
 	"syscall"
 
-	"github.com/funcdfs/lesser/interaction/internal/client"
+	"github.com/funcdfs/lesser/interaction/internal/remote"
 	"github.com/funcdfs/lesser/interaction/internal/handler"
-	"github.com/funcdfs/lesser/interaction/internal/repository"
-	"github.com/funcdfs/lesser/interaction/internal/service"
-	pb "github.com/funcdfs/lesser/interaction/proto/interaction"
+	"github.com/funcdfs/lesser/interaction/internal/data_access"
+	"github.com/funcdfs/lesser/interaction/internal/logic"
+	"github.com/funcdfs/lesser/interaction/internal/messaging"
+	pb "github.com/funcdfs/lesser/interaction/gen_protos/interaction"
 	"github.com/funcdfs/lesser/pkg/broker"
 	"github.com/funcdfs/lesser/pkg/database"
 	"github.com/funcdfs/lesser/pkg/logger"
@@ -49,7 +50,7 @@ func main() {
 	log.Info("数据库连接成功", slog.String("db", dbConfig.DBName))
 
 	// 初始化 Content Service 客户端
-	contentClient, err := client.NewContentServiceClient(contentServiceAddr)
+	contentClient, err := remote.NewContentServiceClient(contentServiceAddr)
 	if err != nil {
 		log.Error("连接 Content Service 失败", slog.Any("error", err))
 		os.Exit(1)
@@ -69,15 +70,16 @@ func main() {
 	}
 
 	// 初始化各层
-	likeRepo := repository.NewLikeRepository(db)
-	bookmarkRepo := repository.NewBookmarkRepository(db)
-	repostRepo := repository.NewRepostRepository(db)
+	likeRepo := data_access.NewLikeRepository(db)
+	bookmarkRepo := data_access.NewBookmarkRepository(db)
+	repostRepo := data_access.NewRepostRepository(db)
 
-	interactionSvc := service.NewInteractionService(likeRepo, bookmarkRepo, repostRepo, contentClient)
+	interactionSvc := logic.NewInteractionService(likeRepo, bookmarkRepo, repostRepo, contentClient)
 
-	// 设置 Publisher（如果可用）
+	// 初始化 messaging 层并注入
 	if publisher != nil {
-		interactionSvc.SetPublisher(publisher)
+		eventPublisher := messaging.NewEventPublisher(publisher)
+		interactionSvc.SetPublisher(eventPublisher)
 	}
 
 	interactionHandler := handler.NewInteractionHandler(interactionSvc, log)

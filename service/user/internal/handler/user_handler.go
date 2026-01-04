@@ -6,11 +6,11 @@ import (
 
 	"github.com/funcdfs/lesser/pkg/logger"
 	"github.com/funcdfs/lesser/pkg/pagination"
-	"github.com/funcdfs/lesser/pkg/proto/common"
+	"github.com/funcdfs/lesser/pkg/gen_protos/common"
 	"github.com/funcdfs/lesser/pkg/validator"
-	"github.com/funcdfs/lesser/user/internal/repository"
-	"github.com/funcdfs/lesser/user/internal/service"
-	pb "github.com/funcdfs/lesser/user/proto/user"
+	"github.com/funcdfs/lesser/user/internal/data_access"
+	"github.com/funcdfs/lesser/user/internal/logic"
+	pb "github.com/funcdfs/lesser/user/gen_protos/user"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 )
@@ -18,12 +18,12 @@ import (
 // UserHandler 用户服务 gRPC 处理器
 type UserHandler struct {
 	pb.UnimplementedUserServiceServer
-	userService *service.UserService
+	userService *logic.UserService
 	log         *logger.Logger
 }
 
 // NewUserHandler 创建用户处理器实例
-func NewUserHandler(userService *service.UserService, log *logger.Logger) *UserHandler {
+func NewUserHandler(userService *logic.UserService, log *logger.Logger) *UserHandler {
 	return &UserHandler{
 		userService: userService,
 		log:         log,
@@ -62,7 +62,7 @@ func (h *UserHandler) GetProfileByUsername(ctx context.Context, req *pb.GetProfi
 	}
 
 	// 如果有查看者，获取关系状态
-	var relationship *repository.RelationshipStatus
+	var relationship *data_access.RelationshipStatus
 	if req.ViewerId != "" && req.ViewerId != user.ID {
 		relationship, _ = h.userService.GetRelationship(ctx, req.ViewerId, user.ID)
 	}
@@ -282,7 +282,7 @@ func (h *UserHandler) Block(ctx context.Context, req *pb.BlockRequest) (*common.
 	}
 
 	blockType := protoToBlockType(req.BlockType)
-	if blockType == repository.BlockTypeUnspecified {
+	if blockType == data_access.BlockTypeUnspecified {
 		return nil, status.Error(codes.InvalidArgument, "block_type 不能为空")
 	}
 
@@ -304,8 +304,8 @@ func (h *UserHandler) Unblock(ctx context.Context, req *pb.UnblockRequest) (*com
 	}
 
 	blockType := protoToBlockType(req.BlockType)
-	if blockType == repository.BlockTypeUnspecified {
-		blockType = repository.BlockTypeBlock // 默认取消全部
+	if blockType == data_access.BlockTypeUnspecified {
+		blockType = data_access.BlockTypeBlock // 默认取消全部
 	}
 
 	if err := h.userService.Unblock(ctx, req.BlockerId, req.BlockedId, blockType); err != nil {

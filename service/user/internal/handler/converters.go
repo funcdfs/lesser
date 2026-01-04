@@ -5,10 +5,10 @@ import (
 	"context"
 
 	"github.com/funcdfs/lesser/pkg/errors"
-	"github.com/funcdfs/lesser/pkg/proto/common"
-	"github.com/funcdfs/lesser/user/internal/repository"
-	"github.com/funcdfs/lesser/user/internal/service"
-	pb "github.com/funcdfs/lesser/user/proto/user"
+	"github.com/funcdfs/lesser/pkg/gen_protos/common"
+	"github.com/funcdfs/lesser/user/internal/data_access"
+	"github.com/funcdfs/lesser/user/internal/logic"
+	pb "github.com/funcdfs/lesser/user/gen_protos/user"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 )
@@ -18,7 +18,7 @@ import (
 // ============================================================================
 
 // userToProto 将用户模型转换为 Proto
-func userToProto(user *repository.User, relationship *repository.RelationshipStatus) *pb.Profile {
+func userToProto(user *data_access.User, relationship *data_access.RelationshipStatus) *pb.Profile {
 	if user == nil {
 		return nil
 	}
@@ -55,10 +55,10 @@ func userToProto(user *repository.User, relationship *repository.RelationshipSta
 }
 
 // usersToProto 批量转换用户列表
-func usersToProto(users []*repository.User, viewerID string, svc *service.UserService) []*pb.Profile {
+func usersToProto(users []*data_access.User, viewerID string, svc *logic.UserService) []*pb.Profile {
 	result := make([]*pb.Profile, len(users))
 	for i, u := range users {
-		var relationship *repository.RelationshipStatus
+		var relationship *data_access.RelationshipStatus
 		if viewerID != "" && viewerID != u.ID {
 			relationship, _ = svc.GetRelationship(context.Background(), viewerID, u.ID)
 		}
@@ -68,7 +68,7 @@ func usersToProto(users []*repository.User, viewerID string, svc *service.UserSe
 }
 
 // relationshipToProto 将关系状态转换为 Proto
-func relationshipToProto(r *repository.RelationshipStatus) *pb.RelationshipStatus {
+func relationshipToProto(r *data_access.RelationshipStatus) *pb.RelationshipStatus {
 	if r == nil {
 		return nil
 	}
@@ -84,7 +84,7 @@ func relationshipToProto(r *repository.RelationshipStatus) *pb.RelationshipStatu
 }
 
 // blockedUsersToProto 转换屏蔽用户列表
-func blockedUsersToProto(blockedUsers []*repository.BlockedUser) []*pb.BlockedUser {
+func blockedUsersToProto(blockedUsers []*data_access.BlockedUser) []*pb.BlockedUser {
 	result := make([]*pb.BlockedUser, len(blockedUsers))
 	for i, bu := range blockedUsers {
 		result[i] = &pb.BlockedUser{
@@ -97,7 +97,7 @@ func blockedUsersToProto(blockedUsers []*repository.BlockedUser) []*pb.BlockedUs
 }
 
 // settingsToProto 将设置转换为 Proto
-func settingsToProto(settings *repository.UserSettings) *pb.UserSettings {
+func settingsToProto(settings *data_access.UserSettings) *pb.UserSettings {
 	if settings == nil {
 		return nil
 	}
@@ -109,7 +109,7 @@ func settingsToProto(settings *repository.UserSettings) *pb.UserSettings {
 }
 
 // privacySettingsToProto 转换隐私设置
-func privacySettingsToProto(p *repository.PrivacySettings) *pb.PrivacySettings {
+func privacySettingsToProto(p *data_access.PrivacySettings) *pb.PrivacySettings {
 	if p == nil {
 		return nil
 	}
@@ -124,7 +124,7 @@ func privacySettingsToProto(p *repository.PrivacySettings) *pb.PrivacySettings {
 }
 
 // notificationSettingsToProto 转换通知设置
-func notificationSettingsToProto(n *repository.NotificationSettings) *pb.NotificationSettings {
+func notificationSettingsToProto(n *data_access.NotificationSettings) *pb.NotificationSettings {
 	if n == nil {
 		return nil
 	}
@@ -145,11 +145,11 @@ func notificationSettingsToProto(n *repository.NotificationSettings) *pb.Notific
 // ============================================================================
 
 // protoToPrivacySettings 从 Proto 转换隐私设置
-func protoToPrivacySettings(userID string, p *pb.PrivacySettings) *repository.PrivacySettings {
+func protoToPrivacySettings(userID string, p *pb.PrivacySettings) *data_access.PrivacySettings {
 	if p == nil {
 		return nil
 	}
-	return &repository.PrivacySettings{
+	return &data_access.PrivacySettings{
 		UserID:                  userID,
 		IsPrivateAccount:        p.IsPrivateAccount,
 		AllowMessageFromAnyone:  p.AllowMessageFromAnyone,
@@ -161,11 +161,11 @@ func protoToPrivacySettings(userID string, p *pb.PrivacySettings) *repository.Pr
 }
 
 // protoToNotificationSettings 从 Proto 转换通知设置
-func protoToNotificationSettings(userID string, n *pb.NotificationSettings) *repository.NotificationSettings {
+func protoToNotificationSettings(userID string, n *pb.NotificationSettings) *data_access.NotificationSettings {
 	if n == nil {
 		return nil
 	}
-	return &repository.NotificationSettings{
+	return &data_access.NotificationSettings{
 		UserID:            userID,
 		PushEnabled:       n.PushEnabled,
 		EmailEnabled:      n.EmailEnabled,
@@ -183,13 +183,13 @@ func protoToNotificationSettings(userID string, n *pb.NotificationSettings) *rep
 // ============================================================================
 
 // blockTypeToProto 将屏蔽类型转换为 Proto
-func blockTypeToProto(bt repository.BlockType) pb.BlockType {
+func blockTypeToProto(bt data_access.BlockType) pb.BlockType {
 	switch bt {
-	case repository.BlockTypeHidePosts:
+	case data_access.BlockTypeHidePosts:
 		return pb.BlockType_BLOCK_TYPE_HIDE_POSTS
-	case repository.BlockTypeHideMe:
+	case data_access.BlockTypeHideMe:
 		return pb.BlockType_BLOCK_TYPE_HIDE_ME
-	case repository.BlockTypeBlock:
+	case data_access.BlockTypeBlock:
 		return pb.BlockType_BLOCK_TYPE_BLOCK
 	default:
 		return pb.BlockType_BLOCK_TYPE_UNSPECIFIED
@@ -197,16 +197,16 @@ func blockTypeToProto(bt repository.BlockType) pb.BlockType {
 }
 
 // protoToBlockType 从 Proto 转换屏蔽类型
-func protoToBlockType(bt pb.BlockType) repository.BlockType {
+func protoToBlockType(bt pb.BlockType) data_access.BlockType {
 	switch bt {
 	case pb.BlockType_BLOCK_TYPE_HIDE_POSTS:
-		return repository.BlockTypeHidePosts
+		return data_access.BlockTypeHidePosts
 	case pb.BlockType_BLOCK_TYPE_HIDE_ME:
-		return repository.BlockTypeHideMe
+		return data_access.BlockTypeHideMe
 	case pb.BlockType_BLOCK_TYPE_BLOCK:
-		return repository.BlockTypeBlock
+		return data_access.BlockTypeBlock
 	default:
-		return repository.BlockTypeUnspecified
+		return data_access.BlockTypeUnspecified
 	}
 }
 
@@ -239,15 +239,15 @@ func (h *UserHandler) handleError(err error) error {
 
 	// 检查是否为预定义错误
 	switch err {
-	case repository.ErrUserNotFound, repository.ErrUsernameNotFound:
+	case data_access.ErrUserNotFound, data_access.ErrUsernameNotFound:
 		return status.Error(codes.NotFound, err.Error())
-	case repository.ErrCannotFollowSelf, repository.ErrCannotBlockSelf, repository.ErrInvalidBlockType:
+	case data_access.ErrCannotFollowSelf, data_access.ErrCannotBlockSelf, data_access.ErrInvalidBlockType:
 		return status.Error(codes.InvalidArgument, err.Error())
-	case repository.ErrAlreadyFollowing, repository.ErrAlreadyBlocked, repository.ErrFollowRequestExists:
+	case data_access.ErrAlreadyFollowing, data_access.ErrAlreadyBlocked, data_access.ErrFollowRequestExists:
 		return status.Error(codes.AlreadyExists, err.Error())
-	case repository.ErrNotFollowing, repository.ErrNotBlocked:
+	case data_access.ErrNotFollowing, data_access.ErrNotBlocked:
 		return status.Error(codes.NotFound, err.Error())
-	case repository.ErrFollowBlocked:
+	case data_access.ErrFollowBlocked:
 		return status.Error(codes.PermissionDenied, err.Error())
 	}
 

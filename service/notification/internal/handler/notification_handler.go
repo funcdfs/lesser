@@ -4,10 +4,10 @@ package handler
 import (
 	"context"
 
-	"github.com/funcdfs/lesser/notification/internal/repository"
-	"github.com/funcdfs/lesser/notification/internal/service"
-	"github.com/funcdfs/lesser/pkg/proto/common"
-	pb "github.com/funcdfs/lesser/notification/proto/notification"
+	"github.com/funcdfs/lesser/notification/internal/data_access"
+	"github.com/funcdfs/lesser/notification/internal/logic"
+	"github.com/funcdfs/lesser/pkg/gen_protos/common"
+	pb "github.com/funcdfs/lesser/notification/gen_protos/notification"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 )
@@ -15,11 +15,11 @@ import (
 // NotificationHandler 通知服务 gRPC 处理器
 type NotificationHandler struct {
 	pb.UnimplementedNotificationServiceServer
-	notifService *service.NotificationService
+	notifService *logic.NotificationService
 }
 
 // NewNotificationHandler 创建通知处理器实例
-func NewNotificationHandler(notifService *service.NotificationService) *NotificationHandler {
+func NewNotificationHandler(notifService *logic.NotificationService) *NotificationHandler {
 	return &NotificationHandler{notifService: notifService}
 }
 
@@ -62,7 +62,7 @@ func (h *NotificationHandler) Read(ctx context.Context, req *pb.ReadNotification
 	}
 
 	if err := h.notifService.MarkAsRead(ctx, req.NotificationId, req.UserId); err != nil {
-		if err == repository.ErrNotificationNotFound {
+		if err == data_access.ErrNotificationNotFound {
 			return nil, status.Error(codes.NotFound, "通知不存在")
 		}
 		return nil, status.Error(codes.Internal, err.Error())
@@ -97,7 +97,7 @@ func (h *NotificationHandler) GetUnreadCount(ctx context.Context, req *pb.GetUnr
 }
 
 // notificationsToProto 将通知实体转换为 Proto 消息
-func notificationsToProto(notifications []*repository.Notification) []*pb.Notification {
+func notificationsToProto(notifications []*data_access.Notification) []*pb.Notification {
 	result := make([]*pb.Notification, len(notifications))
 	for i, n := range notifications {
 		result[i] = &pb.Notification{

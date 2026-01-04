@@ -5,10 +5,10 @@ import (
 	"context"
 	"log/slog"
 
-	"github.com/funcdfs/lesser/pkg/proto/common"
-	"github.com/funcdfs/lesser/timeline/internal/service"
-	contentpb "github.com/funcdfs/lesser/timeline/proto/content"
-	pb "github.com/funcdfs/lesser/timeline/proto/timeline"
+	"github.com/funcdfs/lesser/pkg/gen_protos/common"
+	"github.com/funcdfs/lesser/timeline/internal/logic"
+	contentpb "github.com/funcdfs/lesser/timeline/gen_protos/content"
+	pb "github.com/funcdfs/lesser/timeline/gen_protos/timeline"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 )
@@ -16,12 +16,12 @@ import (
 // TimelineHandler gRPC 处理器
 type TimelineHandler struct {
 	pb.UnimplementedTimelineServiceServer
-	svc *service.TimelineService
+	svc *logic.TimelineService
 	log *slog.Logger
 }
 
 // NewTimelineHandler 创建处理器
-func NewTimelineHandler(svc *service.TimelineService, log *slog.Logger) *TimelineHandler {
+func NewTimelineHandler(svc *logic.TimelineService, log *slog.Logger) *TimelineHandler {
 	if log == nil {
 		log = slog.Default()
 	}
@@ -126,7 +126,7 @@ func (h *TimelineHandler) GetContentDetail(ctx context.Context, req *pb.GetConte
 
 	item, err := h.svc.GetContentDetail(ctx, req.ContentId, req.ViewerId)
 	if err != nil {
-		if err == service.ErrContentNotFound {
+		if err == logic.ErrContentNotFound {
 			return nil, status.Error(codes.NotFound, "内容不存在")
 		}
 		return nil, status.Errorf(codes.Internal, "获取内容详情失败: %v", err)
@@ -141,7 +141,7 @@ func (h *TimelineHandler) GetContentDetail(ctx context.Context, req *pb.GetConte
 // 转换函数
 // ============================================================================
 
-func feedItemsToProto(items []*service.FeedItemWithStatus) []*pb.FeedItem {
+func feedItemsToProto(items []*logic.FeedItemWithStatus) []*pb.FeedItem {
 	result := make([]*pb.FeedItem, len(items))
 	for i, item := range items {
 		result[i] = feedItemToProto(item)
@@ -149,7 +149,7 @@ func feedItemsToProto(items []*service.FeedItemWithStatus) []*pb.FeedItem {
 	return result
 }
 
-func feedItemToProto(item *service.FeedItemWithStatus) *pb.FeedItem {
+func feedItemToProto(item *logic.FeedItemWithStatus) *pb.FeedItem {
 	if item == nil || item.FeedItem == nil {
 		return nil
 	}

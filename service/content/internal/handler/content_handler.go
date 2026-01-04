@@ -5,10 +5,10 @@ import (
 	"context"
 	"log/slog"
 
-	"github.com/funcdfs/lesser/content/internal/repository"
-	"github.com/funcdfs/lesser/content/internal/service"
-	pb "github.com/funcdfs/lesser/content/proto/content"
-	"github.com/funcdfs/lesser/pkg/proto/common"
+	"github.com/funcdfs/lesser/content/internal/data_access"
+	"github.com/funcdfs/lesser/content/internal/logic"
+	pb "github.com/funcdfs/lesser/content/gen_protos/content"
+	"github.com/funcdfs/lesser/pkg/gen_protos/common"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 )
@@ -16,12 +16,12 @@ import (
 // ContentHandler gRPC 处理器
 type ContentHandler struct {
 	pb.UnimplementedContentServiceServer
-	contentService *service.ContentService
+	contentService *logic.ContentService
 	log            *slog.Logger
 }
 
 // NewContentHandler 创建处理器
-func NewContentHandler(contentService *service.ContentService, log *slog.Logger) *ContentHandler {
+func NewContentHandler(contentService *logic.ContentService, log *slog.Logger) *ContentHandler {
 	if log == nil {
 		log = slog.Default()
 	}
@@ -51,7 +51,7 @@ func (h *ContentHandler) CreateContent(ctx context.Context, req *pb.CreateConten
 
 	content, err := h.contentService.Create(
 		req.AuthorId,
-		repository.ContentType(req.Type),
+		data_access.ContentType(req.Type),
 		req.Title, req.Text, req.Summary,
 		mediaURLs, req.Tags,
 		req.ReplyToId, req.QuoteId,
@@ -145,8 +145,8 @@ func (h *ContentHandler) ListContents(ctx context.Context, req *pb.ListContentsR
 
 	contents, total, err := h.contentService.List(
 		req.AuthorId,
-		repository.ContentType(req.Type),
-		repository.ContentStatus(req.Status),
+		data_access.ContentType(req.Type),
+		data_access.ContentStatus(req.Status),
 		req.Tags,
 		limit, offset,
 		req.OrderBy, req.Descending,
@@ -305,7 +305,7 @@ func (h *ContentHandler) UpdateCounter(ctx context.Context, req *pb.UpdateCounte
 
 	newCount, err := h.contentService.UpdateCounter(
 		req.ContentId,
-		repository.CounterType(req.CounterType),
+		data_access.CounterType(req.CounterType),
 		req.Delta,
 	)
 	if err != nil {
@@ -336,7 +336,7 @@ func (h *ContentHandler) CheckContentExists(ctx context.Context, req *pb.CheckCo
 // 辅助函数
 // ============================================================================
 
-func contentToProto(c *repository.Content) *pb.Content {
+func contentToProto(c *data_access.Content) *pb.Content {
 	if c == nil {
 		return nil
 	}
@@ -379,7 +379,7 @@ func contentToProto(c *repository.Content) *pb.Content {
 	return content
 }
 
-func contentsToProto(contents []*repository.Content) []*pb.Content {
+func contentsToProto(contents []*data_access.Content) []*pb.Content {
 	result := make([]*pb.Content, len(contents))
 	for i, c := range contents {
 		result[i] = contentToProto(c)
@@ -400,23 +400,23 @@ func extractMediaURLs(media []*pb.Media) []string {
 
 func mapError(err error) error {
 	switch err {
-	case repository.ErrContentNotFound:
+	case data_access.ErrContentNotFound:
 		return status.Error(codes.NotFound, "内容不存在")
-	case repository.ErrUnauthorized, service.ErrUnauthorized:
+	case data_access.ErrUnauthorized, logic.ErrUnauthorized:
 		return status.Error(codes.PermissionDenied, "无权限操作")
-	case service.ErrInvalidContent:
+	case logic.ErrInvalidContent:
 		return status.Error(codes.InvalidArgument, "内容无效")
-	case service.ErrContentTooLong:
+	case logic.ErrContentTooLong:
 		return status.Error(codes.InvalidArgument, "内容超出长度限制")
-	case service.ErrTitleRequired:
+	case logic.ErrTitleRequired:
 		return status.Error(codes.InvalidArgument, "标题不能为空")
-	case service.ErrTextRequired:
+	case logic.ErrTextRequired:
 		return status.Error(codes.InvalidArgument, "正文不能为空")
-	case service.ErrCannotEditStory:
+	case logic.ErrCannotEditStory:
 		return status.Error(codes.FailedPrecondition, "Story 不支持编辑")
-	case service.ErrNotDraft:
+	case logic.ErrNotDraft:
 		return status.Error(codes.FailedPrecondition, "只能发布草稿状态的内容")
-	case service.ErrDraftNotAllowed:
+	case logic.ErrDraftNotAllowed:
 		return status.Error(codes.InvalidArgument, "该内容类型不支持草稿")
 	default:
 		return status.Error(codes.Internal, err.Error())

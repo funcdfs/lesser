@@ -14,9 +14,10 @@ import (
 	"github.com/funcdfs/lesser/pkg/database"
 	"github.com/funcdfs/lesser/pkg/logger"
 	"github.com/funcdfs/lesser/user/internal/handler"
-	"github.com/funcdfs/lesser/user/internal/repository"
-	"github.com/funcdfs/lesser/user/internal/service"
-	pb "github.com/funcdfs/lesser/user/proto/user"
+	"github.com/funcdfs/lesser/user/internal/data_access"
+	"github.com/funcdfs/lesser/user/internal/logic"
+	"github.com/funcdfs/lesser/user/internal/messaging"
+	pb "github.com/funcdfs/lesser/user/gen_protos/user"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/reflection"
 )
@@ -52,17 +53,18 @@ func main() {
 	}
 
 	// 初始化仓库层
-	userRepo := repository.NewUserRepository(db)
-	followRepo := repository.NewFollowRepository(db)
-	blockRepo := repository.NewBlockRepository(db)
-	settingsRepo := repository.NewSettingsRepository(db)
+	userRepo := data_access.NewUserRepository(db)
+	followRepo := data_access.NewFollowRepository(db)
+	blockRepo := data_access.NewBlockRepository(db)
+	settingsRepo := data_access.NewSettingsRepository(db)
 
 	// 初始化服务层
-	userSvc := service.NewUserService(db, log, userRepo, followRepo, blockRepo, settingsRepo)
+	userSvc := logic.NewUserService(db, log, userRepo, followRepo, blockRepo, settingsRepo)
 
-	// 注入 RabbitMQ Publisher
+	// 初始化 messaging 层并注入
 	if publisher != nil {
-		userSvc.SetPublisher(publisher)
+		eventPublisher := messaging.NewEventPublisher(publisher)
+		userSvc.SetPublisher(eventPublisher)
 	}
 
 	// 初始化处理器

@@ -133,7 +133,7 @@ async fn generate_go(project_root: &std::path::Path, proto_dir: &std::path::Path
 
     for service in SERVICES {
         let service_dir = project_root.join("service").join(service);
-        let proto_out = service_dir.join("proto");
+        let proto_out = service_dir.join("gen_protos");
 
         // 如果服务目录存在
         if service_dir.exists() || *service == "gateway" || *service == "chat" {
@@ -152,7 +152,7 @@ async fn generate_go(project_root: &std::path::Path, proto_dir: &std::path::Path
     }
 
     // Gateway 需要额外的 proto 文件
-    let gateway_proto_out = project_root.join("service/gateway/proto");
+    let gateway_proto_out = project_root.join("service/gateway/gen_protos");
     let extra_protos = ["auth", "user", "content", "search", "comment", "interaction", "timeline", "notification"];
     
     for proto in extra_protos {
@@ -223,7 +223,7 @@ async fn generate_dart(project_root: &std::path::Path, proto_dir: &std::path::Pa
 
     ensure_dart_plugins().await?;
 
-    let dart_out = project_root.join("client/mobile_flutter/lib/generated/protos");
+    let dart_out = project_root.join("client/mobile_flutter/lib/gen_protos");
 
     // 清理旧的生成代码
     if dart_out.exists() {
@@ -279,14 +279,14 @@ fn print_generated_locations(target: &str) {
 
     match target {
         "all" => {
-            println!("  Go:   service/<service>/proto/");
-            println!("  Dart: client/mobile_flutter/lib/generated/protos/");
+            println!("  Go:   service/<service>/gen_protos/");
+            println!("  Dart: client/mobile_flutter/lib/gen_protos/");
         }
         "go" => {
-            println!("  Go:   service/<service>/proto/");
+            println!("  Go:   service/<service>/gen_protos/");
         }
         "dart" => {
-            println!("  Dart: client/mobile_flutter/lib/generated/protos/");
+            println!("  Dart: client/mobile_flutter/lib/gen_protos/");
         }
         _ => {}
     }

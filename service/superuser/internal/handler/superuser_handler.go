@@ -7,10 +7,10 @@ import (
 	"strings"
 	"time"
 
-	"github.com/funcdfs/lesser/superuser/internal/repository"
-	"github.com/funcdfs/lesser/superuser/internal/service"
-	pb "github.com/funcdfs/lesser/superuser/proto/superuser"
-	commonpb "github.com/funcdfs/lesser/pkg/proto/common"
+	"github.com/funcdfs/lesser/superuser/internal/data_access"
+	"github.com/funcdfs/lesser/superuser/internal/logic"
+	pb "github.com/funcdfs/lesser/superuser/gen_protos/superuser"
+	commonpb "github.com/funcdfs/lesser/pkg/gen_protos/common"
 	"github.com/google/uuid"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/metadata"
@@ -20,15 +20,15 @@ import (
 // SuperUserHandler gRPC 处理器
 type SuperUserHandler struct {
 	pb.UnimplementedSuperUserServiceServer
-	service service.SuperUserService
-	logger  *slog.Logger
+	logic  logic.SuperUserService
+	logger *slog.Logger
 }
 
 // NewSuperUserHandler 创建处理器
-func NewSuperUserHandler(svc service.SuperUserService, logger *slog.Logger) *SuperUserHandler {
+func NewSuperUserHandler(svc logic.SuperUserService, logger *slog.Logger) *SuperUserHandler {
 	return &SuperUserHandler{
-		service: svc,
-		logger:  logger,
+		logic:  svc,
+		logger: logger,
 	}
 }
 
@@ -41,7 +41,7 @@ func (h *SuperUserHandler) Login(ctx context.Context, req *pb.SuperUserLoginRequ
 	}
 
 	ip := h.getClientIP(ctx)
-	result, err := h.service.Login(ctx, req.Username, req.Password, ip)
+	result, err := h.logic.Login(ctx, req.Username, req.Password, ip)
 	if err != nil {
 		h.logger.Warn("登录失败", slog.String("username", req.Username), slog.Any("error", err))
 		return nil, status.Error(codes.Unauthenticated, err.Error())
@@ -60,7 +60,7 @@ func (h *SuperUserHandler) Logout(ctx context.Context, req *pb.SuperUserLogoutRe
 		return nil, status.Error(codes.InvalidArgument, "访问令牌不能为空")
 	}
 
-	if err := h.service.Logout(ctx, req.AccessToken); err != nil {
+	if err := h.logic.Logout(ctx, req.AccessToken); err != nil {
 		return nil, status.Error(codes.Internal, err.Error())
 	}
 
@@ -73,7 +73,7 @@ func (h *SuperUserHandler) RefreshToken(ctx context.Context, req *pb.SuperUserRe
 		return nil, status.Error(codes.InvalidArgument, "刷新令牌不能为空")
 	}
 
-	result, err := h.service.RefreshToken(ctx, req.RefreshToken)
+	result, err := h.logic.RefreshToken(ctx, req.RefreshToken)
 	if err != nil {
 		return nil, status.Error(codes.Unauthenticated, err.Error())
 	}
@@ -91,7 +91,7 @@ func (h *SuperUserHandler) ValidateToken(ctx context.Context, req *pb.ValidateTo
 		return &pb.ValidateTokenResponse{Valid: false}, nil
 	}
 
-	info, err := h.service.ValidateToken(ctx, req.AccessToken)
+	info, err := h.logic.ValidateToken(ctx, req.AccessToken)
 	if err != nil {
 		return &pb.ValidateTokenResponse{Valid: false}, nil
 	}
@@ -111,7 +111,7 @@ func (h *SuperUserHandler) ListUsers(ctx context.Context, req *pb.ListUsersReque
 		return nil, err
 	}
 
-	filter := repository.UserFilter{
+	filter := data_access.UserFilter{
 		Page:      int(req.Page),
 		PageSize:  int(req.PageSize),
 		SortBy:    req.SortBy,
@@ -124,7 +124,7 @@ func (h *SuperUserHandler) ListUsers(ctx context.Context, req *pb.ListUsersReque
 		filter.Status = &req.Status
 	}
 
-	users, total, err := h.service.ListUsers(ctx, filter)
+	users, total, err := h.logic.ListUsers(ctx, filter)
 	if err != nil {
 		return nil, status.Error(codes.Internal, err.Error())
 	}
@@ -153,7 +153,7 @@ func (h *SuperUserHandler) GetUser(ctx context.Context, req *pb.GetUserRequest) 
 		return nil, status.Error(codes.InvalidArgument, "无效的用户 ID")
 	}
 
-	user, err := h.service.GetUser(ctx, userID)
+	user, err := h.logic.GetUser(ctx, userID)
 	if err != nil {
 		return nil, status.Error(codes.NotFound, err.Error())
 	}
@@ -173,7 +173,7 @@ func (h *SuperUserHandler) BanUser(ctx context.Context, req *pb.BanUserRequest) 
 		return nil, status.Error(codes.InvalidArgument, "无效的用户 ID")
 	}
 
-	if err := h.service.BanUser(ctx, operatorID, userID, req.Reason, req.DurationSeconds); err != nil {
+	if err := h.logic.BanUser(ctx, operatorID, userID, req.Reason, req.DurationSeconds); err != nil {
 		return nil, status.Error(codes.Internal, err.Error())
 	}
 
@@ -192,7 +192,7 @@ func (h *SuperUserHandler) UnbanUser(ctx context.Context, req *pb.UnbanUserReque
 		return nil, status.Error(codes.InvalidArgument, "无效的用户 ID")
 	}
 
-	if err := h.service.UnbanUser(ctx, operatorID, userID); err != nil {
+	if err := h.logic.UnbanUser(ctx, operatorID, userID); err != nil {
 		return nil, status.Error(codes.Internal, err.Error())
 	}
 
@@ -211,7 +211,7 @@ func (h *SuperUserHandler) DeleteUser(ctx context.Context, req *pb.DeleteUserReq
 		return nil, status.Error(codes.InvalidArgument, "无效的用户 ID")
 	}
 
-	if err := h.service.DeleteUser(ctx, operatorID, userID, req.HardDelete); err != nil {
+	if err := h.logic.DeleteUser(ctx, operatorID, userID, req.HardDelete); err != nil {
 		return nil, status.Error(codes.Internal, err.Error())
 	}
 
@@ -231,7 +231,7 @@ func (h *SuperUserHandler) UpdateUser(ctx context.Context, req *pb.UpdateUserReq
 	}
 
 	// 获取现有用户
-	user, err := h.service.GetUser(ctx, userID)
+	user, err := h.logic.GetUser(ctx, userID)
 	if err != nil {
 		return nil, status.Error(codes.NotFound, err.Error())
 	}
@@ -253,7 +253,7 @@ func (h *SuperUserHandler) UpdateUser(ctx context.Context, req *pb.UpdateUserReq
 		user.IsActive = *req.IsActive
 	}
 
-	updatedUser, err := h.service.UpdateUser(ctx, operatorID, user)
+	updatedUser, err := h.logic.UpdateUser(ctx, operatorID, user)
 	if err != nil {
 		return nil, status.Error(codes.Internal, err.Error())
 	}
@@ -269,7 +269,7 @@ func (h *SuperUserHandler) ListContents(ctx context.Context, req *pb.ListContent
 		return nil, err
 	}
 
-	filter := repository.ContentFilter{
+	filter := data_access.ContentFilter{
 		Page:      int(req.Page),
 		PageSize:  int(req.PageSize),
 		SortBy:    req.SortBy,
@@ -291,7 +291,7 @@ func (h *SuperUserHandler) ListContents(ctx context.Context, req *pb.ListContent
 		filter.Search = &req.Search
 	}
 
-	contents, total, err := h.service.ListContents(ctx, filter)
+	contents, total, err := h.logic.ListContents(ctx, filter)
 	if err != nil {
 		return nil, status.Error(codes.Internal, err.Error())
 	}
@@ -321,7 +321,7 @@ func (h *SuperUserHandler) DeleteContent(ctx context.Context, req *pb.DeleteCont
 		return nil, status.Error(codes.InvalidArgument, "无效的内容 ID")
 	}
 
-	if err := h.service.DeleteContent(ctx, operatorID, contentID, req.HardDelete); err != nil {
+	if err := h.logic.DeleteContent(ctx, operatorID, contentID, req.HardDelete); err != nil {
 		return nil, status.Error(codes.Internal, err.Error())
 	}
 
@@ -340,7 +340,7 @@ func (h *SuperUserHandler) BatchDeleteContents(ctx context.Context, req *pb.Batc
 		contentIDs[i], _ = uuid.Parse(id)
 	}
 
-	deletedCount, failedIDs, err := h.service.BatchDeleteContents(ctx, operatorID, contentIDs, req.HardDelete)
+	deletedCount, failedIDs, err := h.logic.BatchDeleteContents(ctx, operatorID, contentIDs, req.HardDelete)
 	if err != nil {
 		return nil, status.Error(codes.Internal, err.Error())
 	}
@@ -365,7 +365,7 @@ func (h *SuperUserHandler) GetSystemStats(ctx context.Context, req *pb.GetSystem
 		return nil, err
 	}
 
-	stats, err := h.service.GetSystemStats(ctx)
+	stats, err := h.logic.GetSystemStats(ctx)
 	if err != nil {
 		return nil, status.Error(codes.Internal, err.Error())
 	}
@@ -388,7 +388,7 @@ func (h *SuperUserHandler) GetDatabaseStatus(ctx context.Context, req *pb.GetDat
 		return nil, err
 	}
 
-	dbStatus, err := h.service.GetDatabaseStatus(ctx)
+	dbStatus, err := h.logic.GetDatabaseStatus(ctx)
 	if err != nil {
 		return nil, status.Error(codes.Internal, err.Error())
 	}
@@ -418,7 +418,7 @@ func (h *SuperUserHandler) GetRedisStatus(ctx context.Context, req *pb.GetRedisS
 		return nil, err
 	}
 
-	redisStatus, err := h.service.GetRedisStatus(ctx)
+	redisStatus, err := h.logic.GetRedisStatus(ctx)
 	if err != nil {
 		return nil, status.Error(codes.Internal, err.Error())
 	}
@@ -439,7 +439,7 @@ func (h *SuperUserHandler) GetRabbitMQStatus(ctx context.Context, req *pb.GetRab
 		return nil, err
 	}
 
-	mqStatus, err := h.service.GetRabbitMQStatus(ctx)
+	mqStatus, err := h.logic.GetRabbitMQStatus(ctx)
 	if err != nil {
 		return nil, status.Error(codes.Internal, err.Error())
 	}
@@ -475,7 +475,7 @@ func (h *SuperUserHandler) ExecuteQuery(ctx context.Context, req *pb.ExecuteQuer
 		return nil, status.Error(codes.InvalidArgument, "查询语句不能为空")
 	}
 
-	result, err := h.service.ExecuteQuery(ctx, operatorID, req.Query, int(req.Limit))
+	result, err := h.logic.ExecuteQuery(ctx, operatorID, req.Query, int(req.Limit))
 	if err != nil {
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
@@ -503,7 +503,7 @@ func (h *SuperUserHandler) GetTableSchema(ctx context.Context, req *pb.GetTableS
 		return nil, status.Error(codes.InvalidArgument, "表名不能为空")
 	}
 
-	schema, err := h.service.GetTableSchema(ctx, req.TableName)
+	schema, err := h.logic.GetTableSchema(ctx, req.TableName)
 	if err != nil {
 		return nil, status.Error(codes.Internal, err.Error())
 	}
@@ -543,7 +543,7 @@ func (h *SuperUserHandler) ListTables(ctx context.Context, req *pb.ListTablesReq
 		return nil, err
 	}
 
-	tables, err := h.service.ListTables(ctx, req.Schema)
+	tables, err := h.logic.ListTables(ctx, req.Schema)
 	if err != nil {
 		return nil, status.Error(codes.Internal, err.Error())
 	}
@@ -559,7 +559,7 @@ func (h *SuperUserHandler) GetAuditLogs(ctx context.Context, req *pb.GetAuditLog
 		return nil, err
 	}
 
-	filter := repository.AuditLogFilter{
+	filter := data_access.AuditLogFilter{
 		Page:     int(req.Page),
 		PageSize: int(req.PageSize),
 	}
@@ -571,7 +571,7 @@ func (h *SuperUserHandler) GetAuditLogs(ctx context.Context, req *pb.GetAuditLog
 		filter.Action = &req.Action
 	}
 
-	logs, total, err := h.service.GetAuditLogs(ctx, filter)
+	logs, total, err := h.logic.GetAuditLogs(ctx, filter)
 	if err != nil {
 		return nil, status.Error(codes.Internal, err.Error())
 	}
@@ -604,7 +604,7 @@ func (h *SuperUserHandler) validateAuth(ctx context.Context) (uuid.UUID, error) 
 	}
 
 	token := strings.TrimPrefix(authHeader[0], "Bearer ")
-	info, err := h.service.ValidateToken(ctx, token)
+	info, err := h.logic.ValidateToken(ctx, token)
 	if err != nil || !info.Valid {
 		return uuid.Nil, status.Error(codes.Unauthenticated, "无效的认证令牌")
 	}
@@ -627,7 +627,7 @@ func (h *SuperUserHandler) getClientIP(ctx context.Context) string {
 }
 
 // toSuperUserPB 转换为 protobuf SuperUser
-func (h *SuperUserHandler) toSuperUserPB(su *repository.SuperUser) *pb.SuperUser {
+func (h *SuperUserHandler) toSuperUserPB(su *data_access.SuperUser) *pb.SuperUser {
 	result := &pb.SuperUser{
 		Id:          su.ID.String(),
 		Username:    su.Username,
@@ -642,7 +642,7 @@ func (h *SuperUserHandler) toSuperUserPB(su *repository.SuperUser) *pb.SuperUser
 }
 
 // toUserDetailPB 转换为 protobuf UserDetail
-func (h *SuperUserHandler) toUserDetailPB(u *repository.User) *pb.UserDetail {
+func (h *SuperUserHandler) toUserDetailPB(u *data_access.User) *pb.UserDetail {
 	result := &pb.UserDetail{
 		Id:             u.ID.String(),
 		Username:       u.Username,
@@ -670,7 +670,7 @@ func (h *SuperUserHandler) toUserDetailPB(u *repository.User) *pb.UserDetail {
 }
 
 // toContentDetailPB 转换为 protobuf ContentDetail
-func (h *SuperUserHandler) toContentDetailPB(c *repository.Content) *pb.ContentDetail {
+func (h *SuperUserHandler) toContentDetailPB(c *data_access.Content) *pb.ContentDetail {
 	result := &pb.ContentDetail{
 		Id:             c.ID.String(),
 		AuthorId:       c.AuthorID.String(),
@@ -696,7 +696,7 @@ func (h *SuperUserHandler) toContentDetailPB(c *repository.Content) *pb.ContentD
 }
 
 // toAuditLogPB 转换为 protobuf AuditLog
-func (h *SuperUserHandler) toAuditLogPB(l *repository.AuditLog) *pb.AuditLog {
+func (h *SuperUserHandler) toAuditLogPB(l *data_access.AuditLog) *pb.AuditLog {
 	result := &pb.AuditLog{
 		Id:                l.ID.String(),
 		SuperuserId:       l.SuperUserID.String(),

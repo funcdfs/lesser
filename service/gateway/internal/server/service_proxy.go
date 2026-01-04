@@ -10,15 +10,15 @@ import (
 
 	"google.golang.org/grpc"
 
-	authpb "github.com/funcdfs/lesser/gateway/proto/auth"
-	commentpb "github.com/funcdfs/lesser/gateway/proto/comment"
-	"github.com/funcdfs/lesser/gateway/proto/common"
-	contentpb "github.com/funcdfs/lesser/gateway/proto/content"
-	interactionpb "github.com/funcdfs/lesser/gateway/proto/interaction"
-	notificationpb "github.com/funcdfs/lesser/gateway/proto/notification"
-	searchpb "github.com/funcdfs/lesser/gateway/proto/search"
-	timelinepb "github.com/funcdfs/lesser/gateway/proto/timeline"
-	userpb "github.com/funcdfs/lesser/gateway/proto/user"
+	authpb "github.com/funcdfs/lesser/gateway/gen_protos/auth"
+	commentpb "github.com/funcdfs/lesser/gateway/gen_protos/comment"
+	"github.com/funcdfs/lesser/gateway/gen_protos/common"
+	contentpb "github.com/funcdfs/lesser/gateway/gen_protos/content"
+	interactionpb "github.com/funcdfs/lesser/gateway/gen_protos/interaction"
+	notificationpb "github.com/funcdfs/lesser/gateway/gen_protos/notification"
+	searchpb "github.com/funcdfs/lesser/gateway/gen_protos/search"
+	timelinepb "github.com/funcdfs/lesser/gateway/gen_protos/timeline"
+	userpb "github.com/funcdfs/lesser/gateway/gen_protos/user"
 )
 
 // ============================================================================

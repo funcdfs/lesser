@@ -11,11 +11,12 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/funcdfs/lesser/comment/internal/client"
+	"github.com/funcdfs/lesser/comment/internal/remote"
 	"github.com/funcdfs/lesser/comment/internal/handler"
-	"github.com/funcdfs/lesser/comment/internal/repository"
-	"github.com/funcdfs/lesser/comment/internal/service"
-	pb "github.com/funcdfs/lesser/comment/proto/comment"
+	"github.com/funcdfs/lesser/comment/internal/data_access"
+	"github.com/funcdfs/lesser/comment/internal/logic"
+	"github.com/funcdfs/lesser/comment/internal/messaging"
+	pb "github.com/funcdfs/lesser/comment/gen_protos/comment"
 	"github.com/funcdfs/lesser/pkg/broker"
 	"github.com/funcdfs/lesser/pkg/database"
 	"github.com/funcdfs/lesser/pkg/logger"
@@ -52,7 +53,7 @@ func main() {
 	log.Info("数据库连接成功", slog.String("db", dbConfig.DBName))
 
 	// 初始化 Content Service 客户端
-	contentClient, err := client.NewContentServiceClient(contentServiceAddr)
+	contentClient, err := remote.NewContentServiceClient(contentServiceAddr)
 	if err != nil {
 		log.Fatal("连接 Content Service 失败", slog.Any("error", err))
 	}
@@ -60,17 +61,24 @@ func main() {
 	log.Info("已连接 Content Service", slog.String("addr", contentServiceAddr))
 
 	// 初始化各层
-	commentRepo := repository.NewCommentRepository(db)
-	commentSvc := service.NewCommentService(commentRepo, contentClient)
+	commentRepo := data_access.NewCommentRepository(db)
+	commentSvc := logic.NewCommentService(commentRepo, contentClient)
 
 	// 初始化 RabbitMQ Publisher（用于发送通知事件）
-	publisher := broker.NewPublisher(rabbitmqURL, log)
+	var publisher *broker.Publisher
+	publisher = broker.NewPublisher(rabbitmqURL, log)
 	if err := publisher.Connect(); err != nil {
 		log.Warn("RabbitMQ 连接失败，通知功能将不可用", slog.Any("error", err))
+		publisher = nil
 	} else {
-		commentSvc.SetPublisher(publisher)
 		defer publisher.Close()
 		log.Info("RabbitMQ Publisher 已连接")
+	}
+
+	// 初始化 messaging 层并注入
+	if publisher != nil {
+		eventPublisher := messaging.NewEventPublisher(publisher)
+		commentSvc.SetPublisher(eventPublisher)
 	}
 
 	commentHandler := handler.NewCommentHandler(commentSvc, log.Logger)

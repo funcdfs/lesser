@@ -17,10 +17,10 @@ import (
 	"github.com/funcdfs/lesser/superuser/internal/config"
 	"github.com/funcdfs/lesser/superuser/internal/crypto"
 	"github.com/funcdfs/lesser/superuser/internal/handler"
-	"github.com/funcdfs/lesser/superuser/internal/repository"
-	"github.com/funcdfs/lesser/superuser/internal/repository/postgres"
-	"github.com/funcdfs/lesser/superuser/internal/service"
-	pb "github.com/funcdfs/lesser/superuser/proto/superuser"
+	"github.com/funcdfs/lesser/superuser/internal/data_access"
+	"github.com/funcdfs/lesser/superuser/internal/data_access/postgres"
+	"github.com/funcdfs/lesser/superuser/internal/logic"
+	pb "github.com/funcdfs/lesser/superuser/gen_protos/superuser"
 	"github.com/redis/go-redis/v9"
 )
 
@@ -99,7 +99,7 @@ func main() {
 	}
 
 	// 创建服务
-	superUserService := service.NewSuperUserService(service.ServiceDeps{
+	superUserService := logic.NewSuperUserService(logic.ServiceDeps{
 		SuperUserRepo:  superUserRepo,
 		AuditLogRepo:   auditLogRepo,
 		SessionRepo:    sessionRepo,
@@ -158,7 +158,7 @@ func initLogger() *slog.Logger {
 }
 
 // initDefaultSuperUser 初始化默认超级管理员
-func initDefaultSuperUser(ctx context.Context, repo repository.SuperUserRepository, hasher *crypto.PasswordHasher, cfg *config.Config, log *slog.Logger) error {
+func initDefaultSuperUser(ctx context.Context, repo data_access.SuperUserRepository, hasher *crypto.PasswordHasher, cfg *config.Config, log *slog.Logger) error {
 	// 检查是否已存在
 	exists, err := repo.ExistsByUsername(ctx, cfg.DefaultUsername)
 	if err != nil {
@@ -194,7 +194,7 @@ func initDefaultSuperUser(ctx context.Context, repo repository.SuperUserReposito
 		return err
 	}
 
-	su := &repository.SuperUser{
+	su := &data_access.SuperUser{
 		Username:    cfg.DefaultUsername,
 		Email:       cfg.DefaultEmail,
 		Password:    hashedPassword,

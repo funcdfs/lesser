@@ -11,11 +11,11 @@ import (
 	"syscall"
 
 	"github.com/funcdfs/lesser/pkg/database"
-	"github.com/funcdfs/lesser/timeline/internal/client"
+	"github.com/funcdfs/lesser/timeline/internal/remote"
 	"github.com/funcdfs/lesser/timeline/internal/handler"
-	"github.com/funcdfs/lesser/timeline/internal/repository"
-	"github.com/funcdfs/lesser/timeline/internal/service"
-	pb "github.com/funcdfs/lesser/timeline/proto/timeline"
+	"github.com/funcdfs/lesser/timeline/internal/data_access"
+	"github.com/funcdfs/lesser/timeline/internal/logic"
+	pb "github.com/funcdfs/lesser/timeline/gen_protos/timeline"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/reflection"
 )
@@ -45,7 +45,7 @@ func main() {
 	log.Info("数据库连接成功", slog.String("db", dbConfig.DBName))
 
 	// 初始化 Interaction Service 客户端
-	interactionClient, err := client.NewInteractionServiceClient(interactionServiceAddr)
+	interactionClient, err := remote.NewInteractionServiceClient(interactionServiceAddr)
 	if err != nil {
 		log.Error("连接 Interaction Service 失败", slog.Any("error", err))
 		os.Exit(1)
@@ -54,8 +54,8 @@ func main() {
 	log.Info("已连接 Interaction Service", slog.String("addr", interactionServiceAddr))
 
 	// 初始化各层
-	timelineRepo := repository.NewTimelineRepository(db, log)
-	timelineSvc := service.NewTimelineService(timelineRepo, interactionClient)
+	timelineRepo := data_access.NewTimelineRepository(db, log)
+	timelineSvc := logic.NewTimelineService(timelineRepo, interactionClient)
 	timelineHandler := handler.NewTimelineHandler(timelineSvc, log)
 
 	// 创建 gRPC 服务器

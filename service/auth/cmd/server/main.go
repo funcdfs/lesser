@@ -16,11 +16,11 @@ import (
 	"github.com/funcdfs/lesser/auth/internal/config"
 	"github.com/funcdfs/lesser/auth/internal/crypto"
 	"github.com/funcdfs/lesser/auth/internal/handler"
-	"github.com/funcdfs/lesser/auth/internal/repository"
-	"github.com/funcdfs/lesser/auth/internal/repository/postgres"
-	redisRepo "github.com/funcdfs/lesser/auth/internal/repository/redis"
-	"github.com/funcdfs/lesser/auth/internal/service"
-	pb "github.com/funcdfs/lesser/auth/proto/auth"
+	"github.com/funcdfs/lesser/auth/internal/data_access"
+	"github.com/funcdfs/lesser/auth/internal/data_access/postgres"
+	redisRepo "github.com/funcdfs/lesser/auth/internal/data_access/redis"
+	"github.com/funcdfs/lesser/auth/internal/logic"
+	pb "github.com/funcdfs/lesser/auth/gen_protos/auth"
 	"github.com/funcdfs/lesser/pkg/cache"
 	"github.com/funcdfs/lesser/pkg/database"
 )
@@ -64,11 +64,11 @@ func main() {
 	}
 
 	// 创建仓库
-	var userRepo repository.UserRepository = postgres.NewUserRepository(db)
-	var banRepo repository.BanRepository = postgres.NewBanRepository(db)
+	var userRepo data_access.UserRepository = postgres.NewUserRepository(db)
+	var banRepo data_access.BanRepository = postgres.NewBanRepository(db)
 
 	// 创建 Redis 仓库（如果可用）
-	var tokenBlacklist repository.TokenBlacklistRepository
+	var tokenBlacklist data_access.TokenBlacklistRepository
 	var banCache *redisRepo.BanCache
 	var loginAttemptCache *redisRepo.LoginAttemptCache
 	if redisClient != nil {
@@ -112,7 +112,7 @@ func main() {
 	jwtManager.Start(ctx)
 
 	// 创建服务
-	authService := service.NewAuthService(service.AuthServiceDeps{
+	authService := logic.NewAuthService(logic.AuthServiceDeps{
 		UserRepo:          userRepo,
 		BanRepo:           banRepo,
 		TokenBlacklist:    tokenBlacklist,

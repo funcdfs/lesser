@@ -10,10 +10,10 @@ import (
 	"syscall"
 
 	"github.com/funcdfs/lesser/notification/internal/handler"
-	"github.com/funcdfs/lesser/notification/internal/repository"
-	"github.com/funcdfs/lesser/notification/internal/service"
-	"github.com/funcdfs/lesser/notification/internal/worker"
-	pb "github.com/funcdfs/lesser/notification/proto/notification"
+	"github.com/funcdfs/lesser/notification/internal/data_access"
+	"github.com/funcdfs/lesser/notification/internal/logic"
+	"github.com/funcdfs/lesser/notification/internal/messaging"
+	pb "github.com/funcdfs/lesser/notification/gen_protos/notification"
 	"github.com/funcdfs/lesser/pkg/database"
 	"github.com/funcdfs/lesser/pkg/logger"
 	"google.golang.org/grpc"
@@ -45,8 +45,8 @@ func main() {
 	appLogger.Info("已连接到 PostgreSQL")
 
 	// 初始化服务层
-	notifRepo := repository.NewNotificationRepository(db)
-	notifSvc := service.NewNotificationService(notifRepo)
+	notifRepo := data_access.NewNotificationRepository(db)
+	notifSvc := logic.NewNotificationService(notifRepo)
 	notifHandler := handler.NewNotificationHandler(notifSvc)
 
 	// 创建 gRPC 服务器
@@ -64,7 +64,7 @@ func main() {
 	ctx, cancel := context.WithCancel(context.Background())
 
 	// 启动 RabbitMQ 事件消费者
-	eventWorker := worker.NewEventWorker(notifSvc, rabbitURL, appLogger)
+	eventWorker := messaging.NewEventWorker(notifSvc, rabbitURL, appLogger)
 	go func() {
 		appLogger.Info("启动 RabbitMQ 事件消费者")
 		if err := eventWorker.Start(ctx); err != nil {

@@ -5,10 +5,10 @@ import (
 	"context"
 	"log/slog"
 
-	"github.com/funcdfs/lesser/comment/internal/repository"
-	"github.com/funcdfs/lesser/comment/internal/service"
-	pb "github.com/funcdfs/lesser/comment/proto/comment"
-	"github.com/funcdfs/lesser/pkg/proto/common"
+	"github.com/funcdfs/lesser/comment/internal/data_access"
+	"github.com/funcdfs/lesser/comment/internal/logic"
+	pb "github.com/funcdfs/lesser/comment/gen_protos/comment"
+	"github.com/funcdfs/lesser/pkg/gen_protos/common"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 )
@@ -16,12 +16,12 @@ import (
 // CommentHandler gRPC 处理器
 type CommentHandler struct {
 	pb.UnimplementedCommentServiceServer
-	svc *service.CommentService
+	svc *logic.CommentService
 	log *slog.Logger
 }
 
 // NewCommentHandler 创建处理器
-func NewCommentHandler(svc *service.CommentService, log *slog.Logger) *CommentHandler {
+func NewCommentHandler(svc *logic.CommentService, log *slog.Logger) *CommentHandler {
 	if log == nil {
 		log = slog.Default()
 	}
@@ -113,7 +113,7 @@ func (h *CommentHandler) ListComments(ctx context.Context, req *pb.ListCommentsR
 	}
 
 	// 转换排序方式
-	sortBy := service.SortBy(req.SortBy)
+	sortBy := logic.SortBy(req.SortBy)
 
 	h.log.Debug("获取评论列表",
 		slog.String("content_id", req.ContentId),
@@ -224,7 +224,7 @@ func (h *CommentHandler) UnlikeComment(ctx context.Context, req *pb.UnlikeCommen
 // 转换函数
 // ============================================================================
 
-func commentToProto(c *repository.Comment) *pb.Comment {
+func commentToProto(c *data_access.Comment) *pb.Comment {
 	if c == nil {
 		return nil
 	}
@@ -242,7 +242,7 @@ func commentToProto(c *repository.Comment) *pb.Comment {
 	}
 }
 
-func commentsToProto(comments []*repository.Comment) []*pb.Comment {
+func commentsToProto(comments []*data_access.Comment) []*pb.Comment {
 	result := make([]*pb.Comment, len(comments))
 	for i, c := range comments {
 		result[i] = commentToProto(c)
@@ -252,23 +252,23 @@ func commentsToProto(comments []*repository.Comment) []*pb.Comment {
 
 func mapError(err error) error {
 	switch err {
-	case service.ErrContentNotFound:
+	case logic.ErrContentNotFound:
 		return status.Error(codes.NotFound, "内容不存在")
-	case service.ErrCommentsDisabled:
+	case logic.ErrCommentsDisabled:
 		return status.Error(codes.FailedPrecondition, "该内容已禁止评论")
-	case service.ErrUnauthorized:
+	case logic.ErrUnauthorized:
 		return status.Error(codes.PermissionDenied, "无权限操作")
-	case service.ErrCommentNotFound, repository.ErrCommentNotFound:
+	case logic.ErrCommentNotFound, data_access.ErrCommentNotFound:
 		return status.Error(codes.NotFound, "评论不存在")
-	case service.ErrInvalidParent, repository.ErrInvalidParent:
+	case logic.ErrInvalidParent, data_access.ErrInvalidParent:
 		return status.Error(codes.InvalidArgument, "父评论不存在或已删除")
-	case service.ErrEmptyText:
+	case logic.ErrEmptyText:
 		return status.Error(codes.InvalidArgument, "评论内容不能为空")
-	case service.ErrTextTooLong:
+	case logic.ErrTextTooLong:
 		return status.Error(codes.InvalidArgument, "评论内容超出长度限制")
-	case service.ErrAlreadyLiked:
+	case logic.ErrAlreadyLiked:
 		return status.Error(codes.AlreadyExists, "已经点赞过")
-	case service.ErrNotLiked:
+	case logic.ErrNotLiked:
 		return status.Error(codes.FailedPrecondition, "未点赞")
 	default:
 		return status.Error(codes.Internal, err.Error())

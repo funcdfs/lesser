@@ -10,21 +10,21 @@ import (
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 
-	"github.com/funcdfs/lesser/auth/internal/repository"
-	"github.com/funcdfs/lesser/auth/internal/service"
-	pb "github.com/funcdfs/lesser/auth/proto/auth"
-	"github.com/funcdfs/lesser/pkg/proto/common"
+	"github.com/funcdfs/lesser/auth/internal/data_access"
+	"github.com/funcdfs/lesser/auth/internal/logic"
+	pb "github.com/funcdfs/lesser/auth/gen_protos/auth"
+	"github.com/funcdfs/lesser/pkg/gen_protos/common"
 )
 
 // AuthHandler gRPC 认证处理器
 type AuthHandler struct {
 	pb.UnimplementedAuthServiceServer
-	authService service.AuthService
+	authService logic.AuthService
 	log         *slog.Logger
 }
 
 // NewAuthHandler 创建认证处理器
-func NewAuthHandler(authService service.AuthService, log *slog.Logger) *AuthHandler {
+func NewAuthHandler(authService logic.AuthService, log *slog.Logger) *AuthHandler {
 	return &AuthHandler{
 		authService: authService,
 		log:         log.With(slog.String("component", "handler")),
@@ -181,23 +181,23 @@ func (h *AuthHandler) GetUser(ctx context.Context, req *pb.GetUserRequest) (*pb.
 // handleError 统一错误处理
 func (h *AuthHandler) handleError(err error, msg string) error {
 	switch {
-	case errors.Is(err, repository.ErrUserExists):
+	case errors.Is(err, data_access.ErrUserExists):
 		return status.Error(codes.AlreadyExists, "用户已存在")
-	case errors.Is(err, repository.ErrUserNotFound):
+	case errors.Is(err, data_access.ErrUserNotFound):
 		return status.Error(codes.NotFound, "用户不存在")
-	case errors.Is(err, service.ErrInvalidCredentials):
+	case errors.Is(err, logic.ErrInvalidCredentials):
 		return status.Error(codes.Unauthenticated, "邮箱或密码错误")
-	case errors.Is(err, service.ErrUserBanned):
+	case errors.Is(err, logic.ErrUserBanned):
 		return status.Error(codes.PermissionDenied, "用户已被封禁")
-	case errors.Is(err, service.ErrAccountLocked):
+	case errors.Is(err, logic.ErrAccountLocked):
 		return status.Error(codes.ResourceExhausted, "账户已被锁定，请稍后再试")
-	case errors.Is(err, service.ErrInvalidToken):
+	case errors.Is(err, logic.ErrInvalidToken):
 		return status.Error(codes.Unauthenticated, "无效的令牌")
-	case errors.Is(err, service.ErrTokenExpired):
+	case errors.Is(err, logic.ErrTokenExpired):
 		return status.Error(codes.Unauthenticated, "令牌已过期")
-	case errors.Is(err, service.ErrPasswordTooWeak):
+	case errors.Is(err, logic.ErrPasswordTooWeak):
 		return status.Error(codes.InvalidArgument, err.Error())
-	case errors.Is(err, service.ErrUserNotActive):
+	case errors.Is(err, logic.ErrUserNotActive):
 		return status.Error(codes.PermissionDenied, "用户账户未激活")
 	default:
 		h.log.Error(msg, slog.Any("error", err))
@@ -206,7 +206,7 @@ func (h *AuthHandler) handleError(err error, msg string) error {
 }
 
 // userToProto 转换用户实体为 proto
-func userToProto(user *repository.User) *pb.User {
+func userToProto(user *data_access.User) *pb.User {
 	if user == nil {
 		return nil
 	}

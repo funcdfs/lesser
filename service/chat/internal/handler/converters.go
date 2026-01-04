@@ -1,13 +1,13 @@
 package handler
 
 import (
-	"github.com/funcdfs/lesser/chat/internal/repository"
-	pb "github.com/funcdfs/lesser/chat/proto/chat"
-	"github.com/funcdfs/lesser/chat/proto/common"
+	"github.com/funcdfs/lesser/chat/internal/data_access"
+	pb "github.com/funcdfs/lesser/chat/gen_protos/chat"
+	"github.com/funcdfs/lesser/chat/gen_protos/common"
 )
 
 // conversationToProto 将会话实体转换为 Proto
-func conversationToProto(conv *repository.Conversation) *pb.Conversation {
+func conversationToProto(conv *data_access.Conversation) *pb.Conversation {
 	memberIDs := make([]string, len(conv.Members))
 	for i, m := range conv.Members {
 		memberIDs[i] = m.UserID.String()
@@ -34,7 +34,7 @@ func conversationToProto(conv *repository.Conversation) *pb.Conversation {
 }
 
 // messageToProto 将消息实体转换为 Proto
-func messageToProto(msg *repository.Message) *pb.Message {
+func messageToProto(msg *data_access.Message) *pb.Message {
 	content := ""
 	if msg.Content.Valid {
 		content = msg.Content.String
@@ -56,17 +56,17 @@ func messageToProto(msg *repository.Message) *pb.Message {
 }
 
 // messageTypeToString 将消息类型转换为字符串
-func messageTypeToString(t repository.MessageType) string {
+func messageTypeToString(t data_access.MessageType) string {
 	switch t {
-	case repository.MessageTypeText:
+	case data_access.MessageTypeText:
 		return "text"
-	case repository.MessageTypeImage:
+	case data_access.MessageTypeImage:
 		return "image"
-	case repository.MessageTypeVideo:
+	case data_access.MessageTypeVideo:
 		return "video"
-	case repository.MessageTypeFile:
+	case data_access.MessageTypeFile:
 		return "file"
-	case repository.MessageTypeSystem:
+	case data_access.MessageTypeSystem:
 		return "system"
 	default:
 		return "text"
@@ -74,11 +74,11 @@ func messageTypeToString(t repository.MessageType) string {
 }
 
 // conversationTypeToProto 将会话类型转换为 Proto
-func conversationTypeToProto(t repository.ConversationType) pb.ConversationType {
+func conversationTypeToProto(t data_access.ConversationType) pb.ConversationType {
 	switch t {
-	case repository.ConversationTypePrivate:
+	case data_access.ConversationTypePrivate:
 		return pb.ConversationType_PRIVATE
-	case repository.ConversationTypeGroup:
+	case data_access.ConversationTypeGroup:
 		return pb.ConversationType_GROUP
 	default:
 		return pb.ConversationType_PRIVATE
@@ -86,31 +86,31 @@ func conversationTypeToProto(t repository.ConversationType) pb.ConversationType 
 }
 
 // protoToConversationType 将 Proto 会话类型转换为实体
-func protoToConversationType(t pb.ConversationType) repository.ConversationType {
+func protoToConversationType(t pb.ConversationType) data_access.ConversationType {
 	switch t {
 	case pb.ConversationType_PRIVATE:
-		return repository.ConversationTypePrivate
+		return data_access.ConversationTypePrivate
 	case pb.ConversationType_GROUP:
-		return repository.ConversationTypeGroup
+		return data_access.ConversationTypeGroup
 	default:
-		return repository.ConversationTypePrivate
+		return data_access.ConversationTypePrivate
 	}
 }
 
 // parseMessageType 解析消息类型字符串
-func parseMessageType(s string) repository.MessageType {
+func parseMessageType(s string) data_access.MessageType {
 	switch s {
 	case "text":
-		return repository.MessageTypeText
+		return data_access.MessageTypeText
 	case "image":
-		return repository.MessageTypeImage
+		return data_access.MessageTypeImage
 	case "video":
-		return repository.MessageTypeVideo
+		return data_access.MessageTypeVideo
 	case "file":
-		return repository.MessageTypeFile
+		return data_access.MessageTypeFile
 	case "system":
-		return repository.MessageTypeSystem
+		return data_access.MessageTypeSystem
 	default:
-		return repository.MessageTypeText
+		return data_access.MessageTypeText
 	}
 }

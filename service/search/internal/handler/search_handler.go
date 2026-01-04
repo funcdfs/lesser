@@ -3,10 +3,10 @@ package handler
 import (
 	"context"
 
-	"github.com/funcdfs/lesser/pkg/proto/common"
-	"github.com/funcdfs/lesser/search/internal/repository"
-	"github.com/funcdfs/lesser/search/internal/service"
-	pb "github.com/funcdfs/lesser/search/proto/search"
+	"github.com/funcdfs/lesser/pkg/gen_protos/common"
+	"github.com/funcdfs/lesser/search/internal/data_access"
+	"github.com/funcdfs/lesser/search/internal/logic"
+	pb "github.com/funcdfs/lesser/search/gen_protos/search"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 )
@@ -14,11 +14,11 @@ import (
 // SearchHandler 搜索服务 gRPC 处理器
 type SearchHandler struct {
 	pb.UnimplementedSearchServiceServer
-	searchService *service.SearchService
+	searchService *logic.SearchService
 }
 
 // NewSearchHandler 创建搜索处理器
-func NewSearchHandler(searchService *service.SearchService) *SearchHandler {
+func NewSearchHandler(searchService *logic.SearchService) *SearchHandler {
 	return &SearchHandler{searchService: searchService}
 }
 
@@ -135,7 +135,7 @@ func (h *SearchHandler) SearchAll(ctx context.Context, req *pb.SearchAllRequest)
 }
 
 // contentsToProto 将 Content 实体转换为 proto 消息
-func contentsToProto(contents []*repository.Content) []*pb.PostResult {
+func contentsToProto(contents []*data_access.Content) []*pb.PostResult {
 	if contents == nil {
 		return []*pb.PostResult{}
 	}
@@ -155,7 +155,7 @@ func contentsToProto(contents []*repository.Content) []*pb.PostResult {
 }
 
 // usersToProto 将 User 实体转换为 proto 消息
-func usersToProto(users []*repository.User) []*pb.UserResult {
+func usersToProto(users []*data_access.User) []*pb.UserResult {
 	if users == nil {
 		return []*pb.UserResult{}
 	}
@@ -174,7 +174,7 @@ func usersToProto(users []*repository.User) []*pb.UserResult {
 }
 
 // commentsToProto 将 Comment 实体转换为 proto 消息
-func commentsToProto(comments []*repository.Comment) []*pb.CommentResult {
+func commentsToProto(comments []*data_access.Comment) []*pb.CommentResult {
 	if comments == nil {
 		return []*pb.CommentResult{}
 	}

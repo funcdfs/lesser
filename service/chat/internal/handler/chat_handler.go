@@ -6,9 +6,9 @@ import (
 	"log/slog"
 
 	"github.com/google/uuid"
-	"github.com/funcdfs/lesser/chat/internal/service"
-	pb "github.com/funcdfs/lesser/chat/proto/chat"
-	"github.com/funcdfs/lesser/chat/proto/common"
+	"github.com/funcdfs/lesser/chat/internal/logic"
+	pb "github.com/funcdfs/lesser/chat/gen_protos/chat"
+	"github.com/funcdfs/lesser/chat/gen_protos/common"
 	"github.com/funcdfs/lesser/pkg/auth"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
@@ -17,13 +17,13 @@ import (
 // ChatHandler gRPC 处理器
 type ChatHandler struct {
 	pb.UnimplementedChatServiceServer
-	chatService   *service.ChatService
+	chatService   *logic.ChatService
 	streamManager *StreamManager
 	log           *slog.Logger
 }
 
 // NewChatHandler 创建处理器
-func NewChatHandler(chatService *service.ChatService, log interface{}) *ChatHandler {
+func NewChatHandler(chatService *logic.ChatService, log interface{}) *ChatHandler {
 	var slogger *slog.Logger
 	switch l := log.(type) {
 	case *slog.Logger:
@@ -137,7 +137,7 @@ func (h *ChatHandler) CreateConversation(ctx context.Context, req *pb.CreateConv
 		slog.Int("member_count", len(memberIDs)),
 	)
 
-	conv, err := h.chatService.CreateConversation(ctx, service.CreateConversationRequest{
+	conv, err := h.chatService.CreateConversation(ctx, logic.CreateConversationRequest{
 		Type:      convType,
 		Name:      req.GetName(),
 		MemberIDs: memberIDs,
@@ -183,7 +183,7 @@ func (h *ChatHandler) GetMessages(ctx context.Context, req *pb.GetMessagesReques
 
 	result, err := h.chatService.GetMessages(ctx, convID, userID, page, pageSize)
 	if err != nil {
-		if err == service.ErrNotMember {
+		if err == logic.ErrNotMember {
 			return nil, status.Error(codes.PermissionDenied, "您不是该会话的成员")
 		}
 		return nil, status.Error(codes.Internal, err.Error())
@@ -234,14 +234,14 @@ func (h *ChatHandler) SendMessage(ctx context.Context, req *pb.SendMessageReques
 		slog.String("type", string(msgType)),
 	)
 
-	msg, err := h.chatService.SendMessage(ctx, service.SendMessageRequest{
+	msg, err := h.chatService.SendMessage(ctx, logic.SendMessageRequest{
 		ConversationID: convID,
 		SenderID:       senderID,
 		Content:        req.GetContent(),
 		MessageType:    msgType,
 	})
 	if err != nil {
-		if err == service.ErrNotMember {
+		if err == logic.ErrNotMember {
 			return nil, status.Error(codes.PermissionDenied, "您不是该会话的成员")
 		}
 		return nil, status.Error(codes.Internal, err.Error())
@@ -275,11 +275,11 @@ func (h *ChatHandler) MarkAsRead(ctx context.Context, req *pb.MarkAsReadRequest)
 	receipt, err := h.chatService.MarkMessageAsRead(ctx, messageID, userID)
 	if err != nil {
 		switch err {
-		case service.ErrNotMember:
+		case logic.ErrNotMember:
 			return nil, status.Error(codes.PermissionDenied, "您不是该会话的成员")
-		case service.ErrCannotMarkOwnMessage:
+		case logic.ErrCannotMarkOwnMessage:
 			return nil, status.Error(codes.InvalidArgument, "不能标记自己发送的消息为已读")
-		case service.ErrAlreadyRead:
+		case logic.ErrAlreadyRead:
 			return nil, status.Error(codes.AlreadyExists, "消息已经标记为已读")
 		default:
 			return nil, status.Error(codes.Internal, err.Error())
@@ -321,7 +321,7 @@ func (h *ChatHandler) MarkConversationAsRead(ctx context.Context, req *pb.MarkCo
 
 	receipt, err := h.chatService.MarkConversationAsRead(ctx, convID, userID)
 	if err != nil {
-		if err == service.ErrNotMember {
+		if err == logic.ErrNotMember {
 			return nil, status.Error(codes.PermissionDenied, "您不是该会话的成员")
 		}
 		return nil, status.Error(codes.Internal, err.Error())

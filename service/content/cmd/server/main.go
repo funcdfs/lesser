@@ -11,9 +11,9 @@ import (
 	"syscall"
 
 	"github.com/funcdfs/lesser/content/internal/handler"
-	"github.com/funcdfs/lesser/content/internal/repository"
-	"github.com/funcdfs/lesser/content/internal/service"
-	pb "github.com/funcdfs/lesser/content/proto/content"
+	"github.com/funcdfs/lesser/content/internal/data_access"
+	"github.com/funcdfs/lesser/content/internal/logic"
+	pb "github.com/funcdfs/lesser/content/gen_protos/content"
 	"github.com/funcdfs/lesser/pkg/database"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/reflection"
@@ -44,8 +44,8 @@ func main() {
 	log.Info("数据库连接成功", slog.String("db", dbConfig.DBName))
 
 	// 初始化各层
-	contentRepo := repository.NewContentRepository(db)
-	contentSvc := service.NewContentService(contentRepo)
+	contentRepo := data_access.NewContentRepository(db)
+	contentSvc := logic.NewContentService(contentRepo)
 	contentHandler := handler.NewContentHandler(contentSvc, log)
 
 	// 创建 gRPC 服务器

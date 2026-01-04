@@ -19,8 +19,8 @@ import (
 	"github.com/funcdfs/lesser/gateway/internal/ratelimit"
 	"github.com/funcdfs/lesser/gateway/internal/router"
 	"github.com/funcdfs/lesser/gateway/internal/streaming"
-	authpb "github.com/funcdfs/lesser/gateway/proto/auth"
-	pb "github.com/funcdfs/lesser/gateway/proto/gateway"
+	authpb "github.com/funcdfs/lesser/gateway/gen_protos/auth"
+	pb "github.com/funcdfs/lesser/gateway/gen_protos/gateway"
 )
 
 // ============================================================================

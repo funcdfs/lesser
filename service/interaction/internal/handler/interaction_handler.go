@@ -5,10 +5,10 @@ import (
 	"context"
 	"log/slog"
 
-	"github.com/funcdfs/lesser/interaction/internal/repository"
-	"github.com/funcdfs/lesser/interaction/internal/service"
-	pb "github.com/funcdfs/lesser/interaction/proto/interaction"
-	"github.com/funcdfs/lesser/pkg/proto/common"
+	"github.com/funcdfs/lesser/interaction/internal/data_access"
+	"github.com/funcdfs/lesser/interaction/internal/logic"
+	pb "github.com/funcdfs/lesser/interaction/gen_protos/interaction"
+	"github.com/funcdfs/lesser/pkg/gen_protos/common"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 )
@@ -16,12 +16,12 @@ import (
 // InteractionHandler gRPC 处理器
 type InteractionHandler struct {
 	pb.UnimplementedInteractionServiceServer
-	svc *service.InteractionService
+	svc *logic.InteractionService
 	log *slog.Logger
 }
 
 // NewInteractionHandler 创建处理器
-func NewInteractionHandler(svc *service.InteractionService, log *slog.Logger) *InteractionHandler {
+func NewInteractionHandler(svc *logic.InteractionService, log *slog.Logger) *InteractionHandler {
 	if log == nil {
 		log = slog.Default()
 	}
@@ -207,7 +207,7 @@ func (h *InteractionHandler) BatchGetInteractionStatus(ctx context.Context, req 
 // 转换函数
 // ============================================================================
 
-func bookmarksToProto(bookmarks []*repository.Bookmark) []*pb.Bookmark {
+func bookmarksToProto(bookmarks []*data_access.Bookmark) []*pb.Bookmark {
 	result := make([]*pb.Bookmark, len(bookmarks))
 	for i, b := range bookmarks {
 		result[i] = &pb.Bookmark{
@@ -220,7 +220,7 @@ func bookmarksToProto(bookmarks []*repository.Bookmark) []*pb.Bookmark {
 	return result
 }
 
-func repostToProto(r *repository.Repost) *pb.Repost {
+func repostToProto(r *data_access.Repost) *pb.Repost {
 	if r == nil {
 		return nil
 	}
@@ -233,7 +233,7 @@ func repostToProto(r *repository.Repost) *pb.Repost {
 	}
 }
 
-func statusesToProto(statuses []*service.InteractionStatus) []*pb.UserInteractionStatus {
+func statusesToProto(statuses []*logic.InteractionStatus) []*pb.UserInteractionStatus {
 	result := make([]*pb.UserInteractionStatus, len(statuses))
 	for i, s := range statuses {
 		result[i] = &pb.UserInteractionStatus{
@@ -248,7 +248,7 @@ func statusesToProto(statuses []*service.InteractionStatus) []*pb.UserInteractio
 
 func mapError(err error) error {
 	switch err {
-	case service.ErrContentNotFound:
+	case logic.ErrContentNotFound:
 		return status.Error(codes.NotFound, "内容不存在")
 	default:
 		return status.Error(codes.Internal, err.Error())
