@@ -7,7 +7,7 @@ mod ui;
 
 use anyhow::Result;
 use clap::Parser;
-use cli::{Cli, Commands};
+use cli::{Cli, Commands, ProdCommands, TestTarget};
 use std::sync::atomic::{AtomicBool, Ordering};
 
 /// 全局调试模式标志
@@ -39,8 +39,42 @@ async fn main() -> Result<()> {
         Commands::Stop { target } => commands::stop::execute(target).await,
         Commands::Restart { service } => commands::restart::execute(service).await,
         Commands::Clean { command, force } => commands::clean::execute(command, force).await,
-        Commands::Init { force } => commands::init::execute(force).await,
+        Commands::Init { force, skip_hosts } => commands::init::execute(force, skip_hosts).await,
         Commands::Status => commands::status::execute().await,
         Commands::Proto { target } => commands::proto::execute(target).await,
+        Commands::Test { target } => {
+            // 转换 clap 的 TestTarget 到 commands::test::TestTarget
+            let test_target = match target {
+                TestTarget::All => commands::test::TestTarget::All,
+                TestTarget::Auth => commands::test::TestTarget::Auth,
+                TestTarget::User => commands::test::TestTarget::User,
+                TestTarget::Content => commands::test::TestTarget::Content,
+                TestTarget::Comment => commands::test::TestTarget::Comment,
+                TestTarget::Interaction => commands::test::TestTarget::Interaction,
+                TestTarget::Timeline => commands::test::TestTarget::Timeline,
+                TestTarget::Search => commands::test::TestTarget::Search,
+                TestTarget::Notification => commands::test::TestTarget::Notification,
+                TestTarget::Chat => commands::test::TestTarget::Chat,
+                TestTarget::Gateway => commands::test::TestTarget::Gateway,
+                TestTarget::Superuser => commands::test::TestTarget::Superuser,
+            };
+            commands::test::execute(test_target).await
+        }
+        Commands::Hosts => commands::hosts::execute().await,
+        Commands::Prod { command, force } => {
+            let prod_cmd = match command {
+                ProdCommands::Start => commands::prod::ProdCommand::Start,
+                ProdCommands::Stop => commands::prod::ProdCommand::Stop,
+                ProdCommands::Restart => commands::prod::ProdCommand::Restart,
+                ProdCommands::Status => commands::prod::ProdCommand::Status,
+                ProdCommands::Logs { service, lines } => {
+                    commands::prod::ProdCommand::Logs { service, lines }
+                }
+                ProdCommands::Deploy => commands::prod::ProdCommand::Deploy,
+                ProdCommands::Backup => commands::prod::ProdCommand::Backup,
+                ProdCommands::Validate => commands::prod::ProdCommand::Validate,
+            };
+            commands::prod::execute(prod_cmd, force).await
+        }
     }
 }

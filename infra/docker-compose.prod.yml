@@ -48,13 +48,13 @@ services:
           memory: 256M
 
   # --------------------------------------------------------------------------
-  # Database - PostgreSQL (Production)
+  # Database - PostgreSQL (Production with pgvector)
   # --------------------------------------------------------------------------
   postgres:
-    image: postgres:17-alpine
+    image: pgvector/pgvector:pg17
     container_name: postgres
     restart: always
-    command: postgres -c config_file=/etc/postgresql/postgresql.conf
+    command: postgres -c config_file=/etc/postgresql/postgresql.conf -c shared_preload_libraries=pg_stat_statements
     environment:
       POSTGRES_USER: ${POSTGRES_USER}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
@@ -62,8 +62,7 @@ services:
     volumes:
       - postgres_data:/var/lib/postgresql/data
       - ./database/init.sql:/docker-entrypoint-initdb.d/01-init.sql:ro
-      - ./database/init-chat.sql:/docker-entrypoint-initdb.d/02-init-chat.sql:ro
-      - ../scripts/database/docker-entrypoint-initdb.sh:/docker-entrypoint-initdb.d/03-create-chat-db.sh:ro
+      - ../scripts/database/docker-entrypoint-initdb.sh:/docker-entrypoint-initdb.d/02-create-chat-db.sh:ro
       - ./database/postgresql.conf:/etc/postgresql/postgresql.conf:ro
     networks:
       - app-network
@@ -112,7 +111,7 @@ services:
     container_name: rabbitmq
     restart: always
     environment:
-      RABBITMQ_DEFAULT_USER: ${RABBITMQ_USER:-superuser}
+      RABBITMQ_DEFAULT_USER: ${RABBITMQ_USER:-funcdfs}
       RABBITMQ_DEFAULT_PASS: ${RABBITMQ_PASSWORD}
     volumes:
       - rabbitmq_data:/var/lib/rabbitmq
@@ -129,6 +128,28 @@ services:
         limits:
           cpus: '1'
           memory: 512M
+
+  # --------------------------------------------------------------------------
+  # Database Monitor - PgHero (Production)
+  # --------------------------------------------------------------------------
+  pghero:
+    image: ankane/pghero:latest
+    container_name: pghero
+    restart: always
+    environment:
+      DATABASE_URL: postgres://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB}
+      PGHERO_USERNAME: ${PGHERO_USERNAME}
+      PGHERO_PASSWORD: ${PGHERO_PASSWORD}
+    networks:
+      - app-network
+    depends_on:
+      postgres:
+        condition: service_healthy
+    deploy:
+      resources:
+        limits:
+          cpus: '0.25'
+          memory: 128M
 
 
   # ==========================================================================

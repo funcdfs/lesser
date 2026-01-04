@@ -1,7 +1,10 @@
 pub mod clean;
+pub mod hosts;
 pub mod init;
+pub mod prod;
 pub mod proto;
 pub mod restart;
 pub mod start;
 pub mod status;
 pub mod stop;
+pub mod test;

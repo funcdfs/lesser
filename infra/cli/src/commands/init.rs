@@ -4,6 +4,7 @@ use std::time::Duration;
 use crate::config::Config;
 use crate::docker::DockerCompose;
 use crate::ui::{self, Spinner};
+use crate::commands::hosts;
 
 /// 超级管理员配置
 const SUPERUSER: (&str, &str, &str, &str) = ("funcdfs", "funcdfs@gmail.com", "fw142857", "funcdfs");
@@ -15,7 +16,7 @@ const TEST_USERS: &[(&str, &str, &str, &str)] = &[
 ];
 
 /// 执行 init 命令
-pub async fn execute(force: bool) -> Result<()> {
+pub async fn execute(force: bool, skip_hosts: bool) -> Result<()> {
     let config = Config::load()?;
 
     let compose = DockerCompose::new(
@@ -38,8 +39,27 @@ pub async fn execute(force: bool) -> Result<()> {
         }
     }
 
-    // Step 1: 启动基础设施
-    ui::step("1/5", "启动基础设施");
+    // Step 1: 配置 hosts（可选）
+    if !skip_hosts {
+        ui::step("1/6", "配置本地 hosts");
+        let spinner = Spinner::new("配置 hosts 文件...");
+        match hosts::setup_hosts_silent().await {
+            Ok(_) => {
+                spinner.finish_and_clear();
+                ui::step_done("hosts 配置完成");
+            }
+            Err(_) => {
+                spinner.finish_and_clear();
+                ui::warn("hosts 配置失败（需要 sudo 权限），跳过");
+                ui::hint("可稍后运行 devlesser hosts 手动配置");
+            }
+        }
+    } else {
+        ui::step("1/6", "跳过 hosts 配置");
+    }
+
+    // Step 2: 启动基础设施
+    ui::step("2/6", "启动基础设施");
     let spinner = Spinner::new("启动 PostgreSQL, Redis, RabbitMQ...");
     compose
         .up_wait(&["postgres", "redis", "rabbitmq", "traefik", "dozzle"])
@@ -52,8 +72,8 @@ pub async fn execute(force: bool) -> Result<()> {
     wait_for_postgres(&compose).await?;
     spinner.finish_and_clear();
 
-    // Step 2: 启动后端服务
-    ui::step("2/5", "启动后端服务");
+    // Step 3: 启动后端服务
+    ui::step("3/6", "启动后端服务");
     let spinner = Spinner::new("启动 Gateway, Auth, Chat...");
     compose
         .up_wait(&[
@@ -75,20 +95,20 @@ pub async fn execute(force: bool) -> Result<()> {
     tokio::time::sleep(Duration::from_secs(3)).await;
     spinner.finish_and_clear();
 
-    // Step 3: 创建超级管理员
-    ui::step("3/5", "创建超级管理员");
+    // Step 4: 创建超级管理员
+    ui::step("4/6", "创建超级管理员");
     create_superuser().await?;
 
-    // Step 4: 创建测试用户
-    ui::step("4/5", "创建测试用户");
+    // Step 5: 创建测试用户
+    ui::step("5/6", "创建测试用户");
     create_test_users().await?;
 
-    // Step 5: 完成
-    ui::step("5/5", "初始化完成");
+    // Step 6: 完成
+    ui::step("6/6", "初始化完成");
     println!();
 
     // 打印结果
-    print_init_result(&config);
+    print_init_result(&config, !skip_hosts);
 
     Ok(())
 }
@@ -233,7 +253,7 @@ async fn register_user(
 }
 
 /// 打印初始化结果
-fn print_init_result(_config: &Config) {
+fn print_init_result(_config: &Config, hosts_configured: bool) {
     ui::separator();
     ui::success("🎉 Lesser 开发环境初始化完成!");
     println!();
@@ -257,9 +277,15 @@ fn print_init_result(_config: &Config) {
     println!();
 
     println!("  {} 管理界面", ui::style_dim("▸"));
-    ui::kv("    Traefik", "http://localhost:8088");
-    ui::kv("    RabbitMQ", "http://localhost:15672 (guest/guest)");
-    ui::kv("    Dozzle", "http://localhost:9999");
+    if hosts_configured {
+        ui::kv("    Traefik", "http://traefik.local");
+        ui::kv("    RabbitMQ", "http://rabbitmq.local (guest/guest)");
+        ui::kv("    Dozzle", "http://dozzle.local");
+    } else {
+        ui::kv("    Traefik", "http://localhost:8088");
+        ui::kv("    RabbitMQ", "http://localhost:15672 (guest/guest)");
+        ui::kv("    Dozzle", "http://localhost:9999");
+    }
     println!();
 
     println!("  {} 下一步", ui::style_dim("▸"));
@@ -270,6 +296,10 @@ fn print_init_result(_config: &Config) {
     println!(
         "    运行 {} 查看服务状态",
         ui::style_cmd("devlesser status")
+    );
+    println!(
+        "    运行 {} 运行测试",
+        ui::style_cmd("devlesser test")
     );
     println!();
 }

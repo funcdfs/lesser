@@ -62,8 +62,9 @@
 | 业务服务 | Go + gRPC | Auth/User/Content/Interaction/Comment/Timeline/Search/Notification |
 | 聊天服务 | Go + gRPC 双向流 | 高性能实时聊天 |
 | 消息队列 | RabbitMQ | 仅用于次要异步任务 |
-| 数据库 | PostgreSQL 16 | 主数据存储 |
+| 数据库 | PostgreSQL 17 + pgvector | 主数据存储 + 向量语义搜索 |
 | 缓存 | Redis 7 | JWT 公钥缓存、会话缓存 |
+| 监控 | PgHero | 数据库性能监控 |
 
 ## 📁 目录结构
 
@@ -162,9 +163,14 @@ devlesser status
 | Traefik Dashboard | http://localhost:8088 |
 | RabbitMQ Management | http://localhost:15672 |
 | Dozzle (日志) | http://localhost:9999 |
+| Jaeger (链路追踪) | http://localhost:16686 |
+| RedisInsight | http://localhost:5540 |
+| PgHero (数据库监控) | http://localhost:8080 |
 | Flutter Web | http://localhost:3000 |
 
 ## 📋 CLI 命令
+
+所有脚本功能已完全内置到 CLI 中，无需依赖外部 shell 脚本。
 
 ```bash
 # 服务管理
@@ -173,18 +179,37 @@ devlesser stop
 devlesser restart [service]
 devlesser status
 
+# 初始化（含 hosts 配置）
+devlesser init               # 完整初始化
+devlesser init --skip-hosts  # 跳过 hosts 配置
+
 # Proto 代码生成
-devlesser proto              # 生成所有
+devlesser proto              # 生成所有 (别名: devlesser gen)
 devlesser proto go           # 仅生成 Go
 devlesser proto dart         # 仅生成 Dart
+
+# 测试
+devlesser test               # 运行所有测试
+devlesser test services      # 仅服务测试
+devlesser test search        # 仅搜索测试
+
+# hosts 配置
+devlesser hosts              # 配置本地域名 (需要 sudo)
+
+# 生产环境管理
+devlesser prod start         # 启动生产环境
+devlesser prod stop          # 停止生产环境
+devlesser prod restart       # 重启服务
+devlesser prod status        # 查看状态
+devlesser prod logs [service]  # 查看日志
+devlesser prod deploy        # 部署更新
+devlesser prod backup        # 备份数据库
+devlesser prod validate      # 验证环境变量
 
 # 清理
 devlesser clean              # 清理所有
 devlesser clean containers   # 仅清理容器
 devlesser clean volumes      # 清理数据卷
-
-# 初始化
-devlesser init
 ```
 
 ## 🔌 gRPC API
@@ -216,6 +241,56 @@ rpc StreamEvents(stream ClientEvent) returns (stream ServerEvent);
 ```
 
 ## 🔧 调试
+
+### 开发工具安装
+
+```bash
+# ghz - gRPC 压测工具
+brew install ghz
+
+# buf - Proto 管理工具（lint、格式化、breaking change 检测）
+brew install bufbuild/buf/buf
+
+# grpcurl - gRPC 命令行客户端
+brew install grpcurl
+```
+
+### 使用 ghz 压测
+
+```bash
+# 压测登录接口（100 并发，10000 请求）
+ghz --insecure \
+  --proto protos/auth/auth.proto \
+  --call auth.AuthService/Login \
+  -d '{"email":"test@example.com","password":"password123"}' \
+  -c 100 -n 10000 \
+  localhost:50053
+
+# 压测带 Token 的接口
+ghz --insecure \
+  --proto protos/timeline/timeline.proto \
+  --call timeline.TimelineService/GetHomeFeed \
+  -d '{"user_id":"xxx","pagination":{"page":1,"page_size":20}}' \
+  -H 'authorization: Bearer YOUR_TOKEN' \
+  -c 50 -n 5000 \
+  localhost:50053
+```
+
+### 使用 buf 管理 Proto
+
+```bash
+# 初始化 buf 配置（已配置则跳过）
+buf config init
+
+# lint 检查
+buf lint protos/
+
+# 格式化
+buf format -w protos/
+
+# 检测 breaking changes
+buf breaking protos/ --against '.git#branch=main'
+```
 
 ### 使用 grpcurl 测试
 

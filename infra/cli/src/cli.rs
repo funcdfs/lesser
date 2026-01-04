@@ -57,6 +57,9 @@ pub enum Commands {
         /// 跳过确认
         #[arg(short, long)]
         force: bool,
+        /// 跳过 hosts 配置
+        #[arg(long)]
+        skip_hosts: bool,
     },
 
     /// 📊 查看服务状态
@@ -64,11 +67,62 @@ pub enum Commands {
     Status,
 
     /// 🔧 生成 Proto 代码
+    #[command(alias = "gen")]
     Proto {
         /// 目标: all, go, dart
         #[arg(default_value = "all")]
         target: String,
     },
+
+    /// 🧪 运行测试
+    Test {
+        /// 测试目标: all, services, search
+        #[arg(default_value = "all")]
+        target: TestTarget,
+    },
+
+    /// 🌐 配置本地 hosts
+    Hosts,
+
+    /// 🏭 生产环境管理
+    Prod {
+        /// 生产环境子命令
+        #[command(subcommand)]
+        command: ProdCommands,
+        /// 跳过确认
+        #[arg(short, long, global = true)]
+        force: bool,
+    },
+}
+
+/// 测试目标
+#[derive(ValueEnum, Clone, Debug, PartialEq)]
+pub enum TestTarget {
+    /// 运行所有服务测试
+    All,
+    /// Auth 服务测试
+    Auth,
+    /// User 服务测试
+    User,
+    /// Content 服务测试
+    Content,
+    /// Comment 服务测试
+    Comment,
+    /// Interaction 服务测试
+    Interaction,
+    /// Timeline 服务测试
+    Timeline,
+    /// Search 服务测试
+    Search,
+    /// Notification 服务测试
+    Notification,
+    /// Chat 服务测试
+    Chat,
+    /// Gateway 路由测试
+    Gateway,
+    /// SuperUser 服务测试
+    #[value(alias = "su")]
+    Superuser,
 }
 
 /// 启动目标
@@ -101,4 +155,31 @@ pub enum CleanCommands {
     Chat,
     /// 清理用户数据
     Users,
+}
+
+/// 生产环境子命令
+#[derive(Subcommand, Clone, Debug)]
+pub enum ProdCommands {
+    /// 启动生产环境
+    Start,
+    /// 停止生产环境
+    Stop,
+    /// 重启服务
+    Restart,
+    /// 查看服务状态
+    Status,
+    /// 查看日志
+    Logs {
+        /// 服务名称 (可选)
+        service: Option<String>,
+        /// 显示行数
+        #[arg(short = 'n', long, default_value = "100")]
+        lines: u32,
+    },
+    /// 部署更新
+    Deploy,
+    /// 备份数据库
+    Backup,
+    /// 验证环境变量
+    Validate,
 }

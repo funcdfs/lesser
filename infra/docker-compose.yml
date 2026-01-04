@@ -37,13 +37,13 @@ services:
       start_period: 10s
 
   # --------------------------------------------------------------------------
-  # Database - PostgreSQL
+  # Database - PostgreSQL (with pgvector)
   # --------------------------------------------------------------------------
   postgres:
-    image: postgres:latest
+    image: pgvector/pgvector:pg17
     container_name: postgres
     restart: unless-stopped
-    command: postgres -c config_file=/etc/postgresql/postgresql.conf
+    command: postgres -c config_file=/etc/postgresql/postgresql.conf -c shared_preload_libraries=pg_stat_statements
     environment:
       POSTGRES_USER: ${POSTGRES_USER:-lesser}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-lesser_dev_password}
@@ -51,9 +51,7 @@ services:
     volumes:
       - postgres_data:/var/lib/postgresql
       - ./database/init.sql:/docker-entrypoint-initdb.d/01-init.sql:ro
-      - ./database/init-chat.sql:/docker-entrypoint-initdb.d/02-init-chat.sql:ro
-      - ../scripts/database/docker-entrypoint-initdb.sh:/docker-entrypoint-initdb.d/03-create-chat-db.sh:ro
-      - ./database/init-superuser.sql:/docker-entrypoint-initdb.d/04-init-superuser.sql:ro
+      - ../scripts/database/docker-entrypoint-initdb.sh:/docker-entrypoint-initdb.d/02-create-chat-db.sh:ro
       - ./database/postgresql.conf:/etc/postgresql/postgresql.conf:ro
     ports:
       - "${EXTERNAL_POSTGRES_PORT:-5432}:5432"
@@ -96,8 +94,8 @@ services:
     container_name: rabbitmq
     restart: unless-stopped
     environment:
-      RABBITMQ_DEFAULT_USER: ${RABBITMQ_USER:-superuser}
-      RABBITMQ_DEFAULT_PASS: ${RABBITMQ_PASSWORD:-superuser}
+      RABBITMQ_DEFAULT_USER: ${RABBITMQ_USER:-funcdfs}
+      RABBITMQ_DEFAULT_PASS: ${RABBITMQ_PASSWORD:-fw142857}
     volumes:
       - rabbitmq_data:/var/lib/rabbitmq
     ports:
@@ -125,6 +123,64 @@ services:
       - "${DOZZLE_PORT:-9999}:8080"
     networks:
       - app-network
+
+  # --------------------------------------------------------------------------
+  # Distributed Tracing - Jaeger
+  # --------------------------------------------------------------------------
+  jaeger:
+    image: jaegertracing/all-in-one:latest
+    container_name: jaeger
+    restart: unless-stopped
+    environment:
+      - COLLECTOR_OTLP_ENABLED=true
+    ports:
+      - "${JAEGER_UI_PORT:-16686}:16686"           # Jaeger UI
+      - "${JAEGER_OTLP_GRPC_PORT:-4317}:4317"      # OTLP gRPC
+      - "${JAEGER_OTLP_HTTP_PORT:-4318}:4318"      # OTLP HTTP
+    networks:
+      - app-network
+    healthcheck:
+      test: ["CMD", "wget", "--spider", "-q", "http://localhost:16686"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
+
+  # --------------------------------------------------------------------------
+  # Redis GUI - RedisInsight
+  # --------------------------------------------------------------------------
+  redisinsight:
+    image: redis/redisinsight:latest
+    container_name: redisinsight
+    restart: unless-stopped
+    volumes:
+      - redisinsight_data:/data
+    ports:
+      - "${REDISINSIGHT_PORT:-5540}:5540"
+    networks:
+      - app-network
+    depends_on:
+      redis:
+        condition: service_healthy
+
+  # --------------------------------------------------------------------------
+  # Database Monitor - PgHero
+  # --------------------------------------------------------------------------
+  pghero:
+    image: ankane/pghero:latest
+    container_name: pghero
+    restart: unless-stopped
+    environment:
+      DATABASE_URL: postgres://${POSTGRES_USER:-lesser}:${POSTGRES_PASSWORD:-lesser_dev_password}@postgres:5432/${POSTGRES_DB:-lesser_db}
+      PGHERO_USERNAME: ${PGHERO_USERNAME:-superuser}
+      PGHERO_PASSWORD: ${PGHERO_PASSWORD:-superuser}
+    ports:
+      - "${PGHERO_PORT:-8080}:8080"
+    networks:
+      - app-network
+    depends_on:
+      postgres:
+        condition: service_healthy
 
   # ==========================================================================
   # SERVICES - gRPC Service Cluster
@@ -583,4 +639,6 @@ volumes:
   rabbitmq_data:
     driver: local
   go_mod_cache:
+    driver: local
+  redisinsight_data:
     driver: local

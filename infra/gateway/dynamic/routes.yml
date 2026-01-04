@@ -1,14 +1,17 @@
 # ============================================================================
-# Traefik Dynamic Routes Configuration
-# gRPC 全面迁移后的路由配置 - 纯 gRPC + gRPC-Web
+# Traefik Dynamic Routes - gRPC 路由配置
+# ============================================================================
+# 纯 gRPC + gRPC-Web 架构路由
 # ============================================================================
 
 http:
-  # ============================================================================
-  # gRPC-Web Routers (Flutter Web 客户端使用)
-  # ============================================================================
+  # ==========================================================================
+  # gRPC-Web Routers (Flutter Web 客户端)
+  # ==========================================================================
+  # 路径前缀 /grpc/ 用于 gRPC-Web 请求
+  # ==========================================================================
   routers:
-    # Gateway gRPC-Web Routes (统一 API 入口)
+    # Gateway 统一入口
     grpc-web-gateway:
       rule: "PathPrefix(`/grpc/gateway.`)"
       service: gateway-grpc
@@ -17,7 +20,7 @@ http:
       middlewares:
         - grpc-web-headers
 
-    # Auth API Routes (通过 Gateway)
+    # Auth 认证服务
     grpc-web-auth:
       rule: "PathPrefix(`/grpc/auth.`)"
       service: gateway-grpc
@@ -26,7 +29,7 @@ http:
       middlewares:
         - grpc-web-headers
 
-    # Feed API Routes (通过 Gateway)
+    # Feed 时间线
     grpc-web-feed:
       rule: "PathPrefix(`/grpc/feed.`)"
       service: gateway-grpc
@@ -35,7 +38,7 @@ http:
       middlewares:
         - grpc-web-headers
 
-    # Post API Routes (通过 Gateway)
+    # Post 帖子
     grpc-web-post:
       rule: "PathPrefix(`/grpc/post.`)"
       service: gateway-grpc
@@ -44,7 +47,7 @@ http:
       middlewares:
         - grpc-web-headers
 
-    # User API Routes (通过 Gateway)
+    # User 用户
     grpc-web-user:
       rule: "PathPrefix(`/grpc/user.`)"
       service: gateway-grpc
@@ -53,7 +56,7 @@ http:
       middlewares:
         - grpc-web-headers
 
-    # Notification API Routes (通过 Gateway)
+    # Notification 通知
     grpc-web-notification:
       rule: "PathPrefix(`/grpc/notification.`)"
       service: gateway-grpc
@@ -62,7 +65,7 @@ http:
       middlewares:
         - grpc-web-headers
 
-    # Search API Routes (通过 Gateway)
+    # Search 搜索
     grpc-web-search:
       rule: "PathPrefix(`/grpc/search.`)"
       service: gateway-grpc
@@ -71,7 +74,7 @@ http:
       middlewares:
         - grpc-web-headers
 
-    # Chat gRPC-Web Routes (双向流)
+    # Chat 聊天（双向流）
     grpc-web-chat:
       rule: "PathPrefix(`/grpc/chat.`)"
       service: chat-grpc
@@ -81,7 +84,7 @@ http:
         - grpc-web-headers
         - grpc-stream-timeout
 
-    # SuperUser gRPC-Web Routes (超级管理员)
+    # SuperUser 超级管理员
     grpc-web-superuser:
       rule: "PathPrefix(`/grpc/superuser.`)"
       service: superuser-grpc
@@ -90,10 +93,9 @@ http:
       middlewares:
         - grpc-web-headers
 
-  # ============================================================================
-  # gRPC Routers (Native gRPC - 移动端/服务间通信)
-  # ============================================================================
-    # Gateway gRPC Routes
+  # ==========================================================================
+  # Native gRPC Routers (移动端 / 服务间通信)
+  # ==========================================================================
     grpc-gateway:
       rule: "PathPrefix(`/gateway.`)"
       service: gateway-grpc
@@ -136,58 +138,59 @@ http:
       entryPoints:
         - grpc
 
-    # Chat gRPC Routes (双向流 - 禁用超时)
+    # Chat 双向流（禁用超时）
     grpc-chat:
       rule: "PathPrefix(`/chat.`)"
       service: chat-grpc
       entryPoints:
         - grpc
 
-    # SuperUser gRPC Routes (超级管理员 - 独立服务)
+    # SuperUser 独立服务
     grpc-superuser:
       rule: "PathPrefix(`/superuser.`)"
       service: superuser-grpc
       entryPoints:
         - grpc
 
-  # ============================================================================
-  # Services
-  # ============================================================================
+  # ==========================================================================
+  # Services - gRPC 后端服务
+  # ==========================================================================
   services:
-    # Gateway gRPC 服务 (统一 API 入口)
+    # Gateway 统一 API 入口
     gateway-grpc:
       loadBalancer:
         servers:
           - url: "h2c://gateway:50053"
 
-    # Chat gRPC 服务 (双向流)
+    # Chat 双向流服务
     chat-grpc:
       loadBalancer:
         servers:
           - url: "h2c://chat:50052"
         serversTransport: grpc-stream-transport
 
-    # SuperUser gRPC 服务 (超级管理员)
+    # SuperUser 超级管理员服务
     superuser-grpc:
       loadBalancer:
         servers:
           - url: "h2c://superuser:50063"
 
-  # ============================================================================
-  # Servers Transports (连接配置)
-  # ============================================================================
+  # ==========================================================================
+  # Servers Transports - 连接配置
+  # ==========================================================================
   serversTransports:
-    # gRPC 双向流专用传输配置，禁用超时
+    # gRPC 双向流专用（禁用超时保持长连接）
     grpc-stream-transport:
       forwardingTimeouts:
         dialTimeout: "30s"
-        responseHeaderTimeout: "0s"    # 禁用响应头超时（双向流需要）
-        idleConnTimeout: "0s"          # 禁用空闲超时（保持长连接）
+        responseHeaderTimeout: "0s"
+        idleConnTimeout: "0s"
 
-  # ============================================================================
-  # Middlewares
-  # ============================================================================
+  # ==========================================================================
+  # Middlewares - 中间件
+  # ==========================================================================
   middlewares:
+    # gRPC-Web CORS 头
     grpc-web-headers:
       headers:
         customRequestHeaders:
@@ -207,12 +210,13 @@ http:
           - Grpc-Status
           - Grpc-Message
 
-    # gRPC 双向流超时配置
+    # 双向流超时配置
     grpc-stream-timeout:
       headers:
         customResponseHeaders:
           X-Stream-Timeout: "0"
 
+    # 限流中间件
     rate-limit:
       rateLimit:
         average: 100

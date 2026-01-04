@@ -1,0 +1,13 @@
+# buf 配置文件 - Proto 管理工具
+# https://buf.build/docs/configuration/v2/buf-yaml
+version: v2
+modules:
+  - path: protos
+lint:
+  use:
+    - STANDARD
+  except:
+    - PACKAGE_VERSION_SUFFIX
+breaking:
+  use:
+    - FILE

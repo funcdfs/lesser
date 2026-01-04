@@ -122,6 +122,16 @@ func (s *SearchProxyServer) SearchUsers(ctx context.Context, req *searchpb.Searc
 	return s.client.SearchUsers(ctx, req)
 }
 
+func (s *SearchProxyServer) SearchComments(ctx context.Context, req *searchpb.SearchCommentsRequest) (*searchpb.SearchCommentsResponse, error) {
+	s.log.Debug("搜索评论请求", slog.String("query", req.Query), slog.String("post_id", req.PostId))
+	return s.client.SearchComments(ctx, req)
+}
+
+func (s *SearchProxyServer) SearchAll(ctx context.Context, req *searchpb.SearchAllRequest) (*searchpb.SearchAllResponse, error) {
+	s.log.Debug("综合搜索请求", slog.String("query", req.Query))
+	return s.client.SearchAll(ctx, req)
+}
+
 // RegisterSearchProxyServer 注册 Search 代理服务
 func RegisterSearchProxyServer(s *grpc.Server, conn *grpc.ClientConn, log *slog.Logger) {
 	proxy := NewSearchProxyServer(conn, log)

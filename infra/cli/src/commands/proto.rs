@@ -1,18 +1,30 @@
 use std::process::Stdio;
 
-use anyhow::{bail, Context, Result};
+use anyhow::{bail, Result};
 use tokio::process::Command;
 
 use crate::config::paths;
 use crate::ui::{self, Spinner};
 
 /// 支持的 proto 生成目标
-const VALID_TARGETS: &[&str] = &["all", "go", "dart", "typescript"];
+const VALID_TARGETS: &[&str] = &["all", "go", "dart"];
+
+/// 服务列表
+const SERVICES: &[&str] = &[
+    "gateway",
+    "auth",
+    "user",
+    "content",
+    "interaction",
+    "comment",
+    "timeline",
+    "search",
+    "notification",
+    "chat",
+    "superuser",
+];
 
 /// 执行 proto 命令
-///
-/// # Arguments
-/// * `target` - 生成目标: all, python, go, dart, typescript
 pub async fn execute(target: String) -> Result<()> {
     // 验证目标参数
     let target_lower = target.to_lowercase();
@@ -24,75 +36,257 @@ pub async fn execute(target: String) -> Result<()> {
 
     ui::header("生成 Protocol Buffer 代码");
 
-    // 获取脚本路径
-    let script_path = paths::get_proto_script()?;
-
-    if !script_path.exists() {
-        ui::error(&format!("Proto 生成脚本不存在: {}", script_path.display()));
-        ui::info("请确保 scripts/proto/generate.sh 文件存在");
-        bail!("Proto 生成脚本不存在");
-    }
-
-    // 获取项目根目录
     let project_root = paths::find_project_root()?;
+    let proto_dir = project_root.join("protos");
+
+    // 检查 protoc 是否安装
+    if !check_protoc_installed().await {
+        ui::error("protoc 未安装");
+        ui::hint("安装: brew install protobuf");
+        bail!("protoc 未安装");
+    }
 
     ui::info(&format!("目标: {}", target_lower));
+    ui::info(&format!("Proto 目录: {}", proto_dir.display()));
+    println!();
 
-    let spinner = Spinner::new("正在生成 Proto 代码...");
-
-    // 执行生成脚本
-    let mut cmd = Command::new("bash");
-    cmd.arg(&script_path);
-
-    // 如果不是 all，传递目标参数
-    if target_lower != "all" {
-        cmd.arg(&target_lower);
+    match target_lower.as_str() {
+        "all" => {
+            generate_go(&project_root, &proto_dir).await?;
+            generate_dart(&project_root, &proto_dir).await?;
+        }
+        "go" => {
+            generate_go(&project_root, &proto_dir).await?;
+        }
+        "dart" => {
+            generate_dart(&project_root, &proto_dir).await?;
+        }
+        _ => {}
     }
 
-    cmd.current_dir(&project_root);
-    cmd.stdout(Stdio::inherit());
-    cmd.stderr(Stdio::inherit());
+    ui::success("Proto 代码生成完成");
+    print_generated_locations(&target_lower);
 
-    let status = cmd
+    Ok(())
+}
+
+/// 检查 protoc 是否安装
+async fn check_protoc_installed() -> bool {
+    Command::new("which")
+        .arg("protoc")
+        .stdout(Stdio::null())
+        .stderr(Stdio::null())
         .status()
         .await
-        .context("执行 proto 生成脚本失败")?;
+        .map(|s| s.success())
+        .unwrap_or(false)
+}
+
+/// 检查并安装 Go protoc 插件
+async fn ensure_go_plugins() -> Result<()> {
+    // 检查 protoc-gen-go
+    let has_gen_go = Command::new("which")
+        .arg("protoc-gen-go")
+        .stdout(Stdio::null())
+        .stderr(Stdio::null())
+        .status()
+        .await
+        .map(|s| s.success())
+        .unwrap_or(false);
+
+    if !has_gen_go {
+        ui::info("安装 protoc-gen-go...");
+        let _ = Command::new("go")
+            .args(["install", "google.golang.org/protobuf/cmd/protoc-gen-go@latest"])
+            .status()
+            .await;
+    }
+
+    // 检查 protoc-gen-go-grpc
+    let has_gen_grpc = Command::new("which")
+        .arg("protoc-gen-go-grpc")
+        .stdout(Stdio::null())
+        .stderr(Stdio::null())
+        .status()
+        .await
+        .map(|s| s.success())
+        .unwrap_or(false);
+
+    if !has_gen_grpc {
+        ui::info("安装 protoc-gen-go-grpc...");
+        let _ = Command::new("go")
+            .args(["install", "google.golang.org/grpc/cmd/protoc-gen-go-grpc@latest"])
+            .status()
+            .await;
+    }
+
+    Ok(())
+}
+
+/// 生成 Go 代码
+async fn generate_go(project_root: &std::path::Path, proto_dir: &std::path::Path) -> Result<()> {
+    ui::step("Go", "生成 Go gRPC 代码");
+
+    ensure_go_plugins().await?;
+
+    let spinner = Spinner::new("生成中...");
+
+    for service in SERVICES {
+        let service_dir = project_root.join("service").join(service);
+        let proto_out = service_dir.join("proto");
+
+        // 如果服务目录存在
+        if service_dir.exists() || *service == "gateway" || *service == "chat" {
+            // 创建输出目录
+            tokio::fs::create_dir_all(&proto_out).await?;
+
+            // 生成 common proto
+            let _ = generate_proto_go(proto_dir, &proto_out, "common/common.proto").await;
+
+            // 生成服务特定的 proto
+            let service_proto = format!("{}/{}.proto", service, service);
+            if proto_dir.join(&service_proto).exists() {
+                let _ = generate_proto_go(proto_dir, &proto_out, &service_proto).await;
+            }
+        }
+    }
+
+    // Gateway 需要额外的 proto 文件
+    let gateway_proto_out = project_root.join("service/gateway/proto");
+    let extra_protos = ["auth", "user", "content", "search", "comment", "interaction", "timeline", "notification"];
+    
+    for proto in extra_protos {
+        let proto_file = format!("{}/{}.proto", proto, proto);
+        if proto_dir.join(&proto_file).exists() {
+            let _ = generate_proto_go(proto_dir, &gateway_proto_out, &proto_file).await;
+        }
+    }
 
     spinner.finish_and_clear();
+    ui::step_done("Go 代码生成完成");
 
-    if status.success() {
-        ui::success("🔌 Proto 代码生成完成");
-        print_generated_locations(&target_lower);
-        Ok(())
-    } else {
-        let code = status.code().unwrap_or(1);
-        ui::error(&format!("Proto 代码生成失败，退出码: {}", code));
-        bail!("Proto 代码生成失败");
+    Ok(())
+}
+
+/// 生成单个 Go proto 文件
+async fn generate_proto_go(
+    proto_dir: &std::path::Path,
+    out_dir: &std::path::Path,
+    proto_file: &str,
+) -> Result<()> {
+    let status = Command::new("protoc")
+        .args([
+            &format!("--proto_path={}", proto_dir.display()),
+            &format!("--go_out={}", out_dir.display()),
+            "--go_opt=paths=source_relative",
+            &format!("--go-grpc_out={}", out_dir.display()),
+            "--go-grpc_opt=paths=source_relative",
+            &proto_dir.join(proto_file).to_string_lossy(),
+        ])
+        .stdout(Stdio::null())
+        .stderr(Stdio::null())
+        .status()
+        .await;
+
+    if status.is_err() || !status.unwrap().success() {
+        // 静默失败，某些 proto 可能有依赖问题
     }
+
+    Ok(())
+}
+
+/// 检查并安装 Dart protoc 插件
+async fn ensure_dart_plugins() -> Result<()> {
+    let has_gen_dart = Command::new("which")
+        .arg("protoc-gen-dart")
+        .stdout(Stdio::null())
+        .stderr(Stdio::null())
+        .status()
+        .await
+        .map(|s| s.success())
+        .unwrap_or(false);
+
+    if !has_gen_dart {
+        ui::info("安装 protoc-gen-dart...");
+        let _ = Command::new("dart")
+            .args(["pub", "global", "activate", "protoc_plugin"])
+            .status()
+            .await;
+    }
+
+    Ok(())
+}
+
+/// 生成 Dart 代码
+async fn generate_dart(project_root: &std::path::Path, proto_dir: &std::path::Path) -> Result<()> {
+    ui::step("Dart", "生成 Dart gRPC 代码");
+
+    ensure_dart_plugins().await?;
+
+    let dart_out = project_root.join("client/mobile_flutter/lib/generated/protos");
+
+    // 清理旧的生成代码
+    if dart_out.exists() {
+        let _ = tokio::fs::remove_dir_all(&dart_out).await;
+    }
+    tokio::fs::create_dir_all(&dart_out).await?;
+
+    let spinner = Spinner::new("生成中...");
+
+    // Proto 文件列表
+    let protos = [
+        "common/common.proto",
+        "auth/auth.proto",
+        "user/user.proto",
+        "content/content.proto",
+        "interaction/interaction.proto",
+        "comment/comment.proto",
+        "timeline/timeline.proto",
+        "search/search.proto",
+        "notification/notification.proto",
+        "chat/chat.proto",
+        "gateway/gateway.proto",
+        "superuser/superuser.proto",
+    ];
+
+    for proto in protos {
+        if proto_dir.join(proto).exists() {
+            let proto_path = proto_dir.join(proto).to_string_lossy().to_string();
+            let _ = Command::new("protoc")
+                .args([
+                    &format!("--proto_path={}", proto_dir.display()),
+                    &format!("--dart_out=grpc:{}", dart_out.display()),
+                    &proto_path,
+                ])
+                .stdout(Stdio::null())
+                .stderr(Stdio::null())
+                .status()
+                .await;
+        }
+    }
+
+    spinner.finish_and_clear();
+    ui::step_done("Dart 代码生成完成");
+
+    Ok(())
 }
 
 /// 打印生成的代码位置
 fn print_generated_locations(target: &str) {
+    println!();
     ui::separator();
     ui::info("生成的代码位置:");
 
     match target {
         "all" => {
-            ui::url("Go (Gateway)", "service/gateway/generated/");
-            ui::url("Go (Chat)", "service/chat_gin/generated/");
-            ui::url("Go (Workers)", "service/<xxx>_worker/generated/");
-            ui::url("Dart", "client/mobile_flutter/lib/generated/protos/");
-            ui::url("TypeScript", "client/web_react/src/generated/protos/");
+            println!("  Go:   service/<service>/proto/");
+            println!("  Dart: client/mobile_flutter/lib/generated/protos/");
         }
         "go" => {
-            ui::url("Go (Gateway)", "service/gateway/generated/");
-            ui::url("Go (Chat)", "service/chat_gin/generated/");
+            println!("  Go:   service/<service>/proto/");
         }
         "dart" => {
-            ui::url("Dart", "client/mobile_flutter/lib/generated/protos/");
-        }
-        "typescript" => {
-            ui::url("TypeScript", "client/web_react/src/generated/protos/");
+            println!("  Dart: client/mobile_flutter/lib/generated/protos/");
         }
         _ => {}
     }

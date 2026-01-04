@@ -19,8 +19,10 @@ import (
 const _ = grpc.SupportPackageIsVersion9
 
 const (
-	SearchService_SearchPosts_FullMethodName = "/search.SearchService/SearchPosts"
-	SearchService_SearchUsers_FullMethodName = "/search.SearchService/SearchUsers"
+	SearchService_SearchPosts_FullMethodName    = "/search.SearchService/SearchPosts"
+	SearchService_SearchUsers_FullMethodName    = "/search.SearchService/SearchUsers"
+	SearchService_SearchComments_FullMethodName = "/search.SearchService/SearchComments"
+	SearchService_SearchAll_FullMethodName      = "/search.SearchService/SearchAll"
 )
 
 // SearchServiceClient is the client API for SearchService service.
@@ -29,8 +31,14 @@ const (
 //
 // SearchService 搜索服务
 type SearchServiceClient interface {
+	// 搜索内容（帖子）
 	SearchPosts(ctx context.Context, in *SearchPostsRequest, opts ...grpc.CallOption) (*SearchPostsResponse, error)
+	// 搜索用户
 	SearchUsers(ctx context.Context, in *SearchUsersRequest, opts ...grpc.CallOption) (*SearchUsersResponse, error)
+	// 搜索评论
+	SearchComments(ctx context.Context, in *SearchCommentsRequest, opts ...grpc.CallOption) (*SearchCommentsResponse, error)
+	// 综合搜索（内容+评论+用户）
+	SearchAll(ctx context.Context, in *SearchAllRequest, opts ...grpc.CallOption) (*SearchAllResponse, error)
 }
 
 type searchServiceClient struct {
@@ -61,14 +69,40 @@ func (c *searchServiceClient) SearchUsers(ctx context.Context, in *SearchUsersRe
 	return out, nil
 }
 
+func (c *searchServiceClient) SearchComments(ctx context.Context, in *SearchCommentsRequest, opts ...grpc.CallOption) (*SearchCommentsResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(SearchCommentsResponse)
+	err := c.cc.Invoke(ctx, SearchService_SearchComments_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *searchServiceClient) SearchAll(ctx context.Context, in *SearchAllRequest, opts ...grpc.CallOption) (*SearchAllResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(SearchAllResponse)
+	err := c.cc.Invoke(ctx, SearchService_SearchAll_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // SearchServiceServer is the server API for SearchService service.
 // All implementations must embed UnimplementedSearchServiceServer
 // for forward compatibility.
 //
 // SearchService 搜索服务
 type SearchServiceServer interface {
+	// 搜索内容（帖子）
 	SearchPosts(context.Context, *SearchPostsRequest) (*SearchPostsResponse, error)
+	// 搜索用户
 	SearchUsers(context.Context, *SearchUsersRequest) (*SearchUsersResponse, error)
+	// 搜索评论
+	SearchComments(context.Context, *SearchCommentsRequest) (*SearchCommentsResponse, error)
+	// 综合搜索（内容+评论+用户）
+	SearchAll(context.Context, *SearchAllRequest) (*SearchAllResponse, error)
 	mustEmbedUnimplementedSearchServiceServer()
 }
 
@@ -84,6 +118,12 @@ func (UnimplementedSearchServiceServer) SearchPosts(context.Context, *SearchPost
 }
 func (UnimplementedSearchServiceServer) SearchUsers(context.Context, *SearchUsersRequest) (*SearchUsersResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method SearchUsers not implemented")
+}
+func (UnimplementedSearchServiceServer) SearchComments(context.Context, *SearchCommentsRequest) (*SearchCommentsResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method SearchComments not implemented")
+}
+func (UnimplementedSearchServiceServer) SearchAll(context.Context, *SearchAllRequest) (*SearchAllResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method SearchAll not implemented")
 }
 func (UnimplementedSearchServiceServer) mustEmbedUnimplementedSearchServiceServer() {}
 func (UnimplementedSearchServiceServer) testEmbeddedByValue()                       {}
@@ -142,6 +182,42 @@ func _SearchService_SearchUsers_Handler(srv interface{}, ctx context.Context, de
 	return interceptor(ctx, in, info, handler)
 }
 
+func _SearchService_SearchComments_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(SearchCommentsRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(SearchServiceServer).SearchComments(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: SearchService_SearchComments_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(SearchServiceServer).SearchComments(ctx, req.(*SearchCommentsRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _SearchService_SearchAll_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(SearchAllRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(SearchServiceServer).SearchAll(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: SearchService_SearchAll_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(SearchServiceServer).SearchAll(ctx, req.(*SearchAllRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // SearchService_ServiceDesc is the grpc.ServiceDesc for SearchService service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -156,6 +232,14 @@ var SearchService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "SearchUsers",
 			Handler:    _SearchService_SearchUsers_Handler,
+		},
+		{
+			MethodName: "SearchComments",
+			Handler:    _SearchService_SearchComments_Handler,
+		},
+		{
+			MethodName: "SearchAll",
+			Handler:    _SearchService_SearchAll_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},

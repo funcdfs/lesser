@@ -1,0 +1,98 @@
+# ============================================================================
+# Traefik Dynamic Routes - 控制面板路由配置
+# ============================================================================
+# 通过本地域名访问各服务控制面板，无需记忆端口号
+# 
+# 使用方法：
+# 1. 在 /etc/hosts 添加以下配置：
+#    127.0.0.1 traefik.local rabbitmq.local redis.local pghero.local jaeger.local dozzle.local
+#
+# 2. 访问方式：
+#    - http://traefik.local    → Traefik Dashboard
+#    - http://rabbitmq.local   → RabbitMQ Management
+#    - http://redis.local      → RedisInsight
+#    - http://pghero.local     → PgHero (PostgreSQL 监控)
+#    - http://jaeger.local     → Jaeger UI (链路追踪)
+#    - http://dozzle.local     → Dozzle (容器日志)
+# ============================================================================
+
+http:
+  # ==========================================================================
+  # Routers - 控制面板路由
+  # ==========================================================================
+  routers:
+    # Traefik Dashboard
+    traefik-dashboard:
+      rule: "Host(`traefik.local`)"
+      service: api@internal
+      entryPoints:
+        - web
+
+    # RabbitMQ Management UI
+    rabbitmq-dashboard:
+      rule: "Host(`rabbitmq.local`)"
+      service: rabbitmq-management
+      entryPoints:
+        - web
+
+    # RedisInsight
+    redis-dashboard:
+      rule: "Host(`redis.local`)"
+      service: redisinsight
+      entryPoints:
+        - web
+
+    # PgHero - PostgreSQL 监控
+    pghero-dashboard:
+      rule: "Host(`pghero.local`)"
+      service: pghero
+      entryPoints:
+        - web
+
+    # Jaeger UI - 链路追踪
+    jaeger-dashboard:
+      rule: "Host(`jaeger.local`)"
+      service: jaeger-ui
+      entryPoints:
+        - web
+
+    # Dozzle - 容器日志查看器
+    dozzle-dashboard:
+      rule: "Host(`dozzle.local`)"
+      service: dozzle
+      entryPoints:
+        - web
+
+  # ==========================================================================
+  # Services - 后端服务定义
+  # ==========================================================================
+  services:
+    # RabbitMQ Management (端口 15672)
+    rabbitmq-management:
+      loadBalancer:
+        servers:
+          - url: "http://rabbitmq:15672"
+
+    # RedisInsight (端口 5540)
+    redisinsight:
+      loadBalancer:
+        servers:
+          - url: "http://redisinsight:5540"
+
+    # PgHero (端口 8080)
+    pghero:
+      loadBalancer:
+        servers:
+          - url: "http://pghero:8080"
+
+    # Jaeger UI (端口 16686)
+    jaeger-ui:
+      loadBalancer:
+        servers:
+          - url: "http://jaeger:16686"
+
+    # Dozzle (端口 8080)
+    dozzle:
+      loadBalancer:
+        servers:
+          - url: "http://dozzle:8080"
