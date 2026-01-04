@@ -3,6 +3,7 @@ package repository
 
 import (
 	"database/sql"
+	"fmt"
 	"time"
 
 	"github.com/google/uuid"
@@ -80,17 +81,24 @@ func (r *BookmarkRepository) BatchExists(userID string, contentIDs []string) (ma
 	for rows.Next() {
 		var contentID string
 		if err := rows.Scan(&contentID); err != nil {
-			continue
+			return nil, fmt.Errorf("扫描行失败: %w", err)
 		}
 		result[contentID] = true
 	}
+
+	if err := rows.Err(); err != nil {
+		return nil, fmt.Errorf("行迭代错误: %w", err)
+	}
+
 	return result, nil
 }
 
 // List 获取收藏列表
 func (r *BookmarkRepository) List(userID string, limit, offset int) ([]*Bookmark, int, error) {
 	var total int
-	r.db.QueryRow(`SELECT COUNT(*) FROM bookmarks WHERE user_id = $1`, userID).Scan(&total)
+	if err := r.db.QueryRow(`SELECT COUNT(*) FROM bookmarks WHERE user_id = $1`, userID).Scan(&total); err != nil {
+		return nil, 0, fmt.Errorf("统计收藏数失败: %w", err)
+	}
 
 	rows, err := r.db.Query(`
 		SELECT id, user_id, content_id, created_at FROM bookmarks
@@ -104,8 +112,15 @@ func (r *BookmarkRepository) List(userID string, limit, offset int) ([]*Bookmark
 	var bookmarks []*Bookmark
 	for rows.Next() {
 		b := &Bookmark{}
-		rows.Scan(&b.ID, &b.UserID, &b.ContentID, &b.CreatedAt)
+		if err := rows.Scan(&b.ID, &b.UserID, &b.ContentID, &b.CreatedAt); err != nil {
+			return nil, 0, fmt.Errorf("扫描行失败: %w", err)
+		}
 		bookmarks = append(bookmarks, b)
 	}
+
+	if err := rows.Err(); err != nil {
+		return nil, 0, fmt.Errorf("行迭代错误: %w", err)
+	}
+
 	return bookmarks, total, nil
 }

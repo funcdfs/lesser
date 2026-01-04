@@ -5,6 +5,7 @@ import (
 	"context"
 	"database/sql"
 	"errors"
+	"fmt"
 	"time"
 
 	"github.com/google/uuid"
@@ -289,12 +290,17 @@ func (r *CommentRepository) BatchGetCount(ctx context.Context, contentIDs []stri
 		var contentID string
 		var count int32
 		if err := rows.Scan(&contentID, &count); err != nil {
-			continue
+			// 扫描失败时记录错误并返回，避免数据不一致
+			return nil, fmt.Errorf("扫描行失败: %w", err)
 		}
 		result[contentID] = count
 	}
 
-	return result, rows.Err()
+	if err := rows.Err(); err != nil {
+		return nil, fmt.Errorf("行迭代错误: %w", err)
+	}
+
+	return result, nil
 }
 
 
@@ -432,12 +438,17 @@ func (r *CommentRepository) BatchCheckLiked(ctx context.Context, userID string, 
 	for rows.Next() {
 		var commentID string
 		if err := rows.Scan(&commentID); err != nil {
-			continue
+			// 扫描失败时记录错误并返回，避免数据不一致
+			return nil, fmt.Errorf("扫描行失败: %w", err)
 		}
 		result[commentID] = true
 	}
 
-	return result, rows.Err()
+	if err := rows.Err(); err != nil {
+		return nil, fmt.Errorf("行迭代错误: %w", err)
+	}
+
+	return result, nil
 }
 
 // nullString 辅助函数

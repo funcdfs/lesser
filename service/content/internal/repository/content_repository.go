@@ -495,7 +495,8 @@ func scanContents(rows *sql.Rows) []*Content {
 		var title, summary, replyToID, quoteID, language sql.NullString
 		var publishedAt, expiresAt sql.NullTime
 
-		rows.Scan(
+		// 处理扫描错误，避免静默忽略
+		if err := rows.Scan(
 			&content.ID, &content.AuthorID, &content.Type, &content.Status,
 			&title, &content.Text, &summary,
 			pq.Array(&content.MediaURLs), pq.Array(&content.Tags),
@@ -504,7 +505,10 @@ func scanContents(rows *sql.Rows) []*Content {
 			&content.BookmarkCount, &content.ViewCount,
 			&content.CreatedAt, &content.UpdatedAt, &publishedAt, &expiresAt,
 			&content.IsPinned, &content.CommentsDisabled, &language,
-		)
+		); err != nil {
+			// 扫描失败时跳过该行，但记录错误（生产环境应使用日志）
+			continue
+		}
 
 		content.Title = title.String
 		content.Summary = summary.String

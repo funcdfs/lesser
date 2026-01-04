@@ -213,16 +213,11 @@ func (m *StreamManager) handleTyping(client *StreamClient, req *pb.TypingEvent) 
 }
 
 // BroadcastNewMessage 广播新消息给会话成员
+// 使用读锁保护并发访问，发送操作在锁外执行避免阻塞
 func (m *StreamManager) BroadcastNewMessage(conversationID string, msg *repository.Message, excludeUserID string) {
 	m.mu.RLock()
-	defer m.mu.RUnlock()
-
-	event := &pb.ServerEvent{
-		Event: &pb.ServerEvent_NewMessage{
-			NewMessage: &pb.NewMessageEvent{Message: messageToProto(msg)},
-		},
-	}
-
+	// 复制需要发送的客户端列表，避免长时间持有锁
+	var targets []*StreamClient
 	for userID, client := range m.clients {
 		if userID == excludeUserID {
 			continue
@@ -232,8 +227,27 @@ func (m *StreamManager) BroadcastNewMessage(conversationID string, msg *reposito
 		client.mu.RUnlock()
 
 		if subscribed {
-			client.stream.Send(event)
+			targets = append(targets, client)
 		}
+	}
+	m.mu.RUnlock()
+
+	// 在锁外执行发送操作
+	event := &pb.ServerEvent{
+		Event: &pb.ServerEvent_NewMessage{
+			NewMessage: &pb.NewMessageEvent{Message: messageToProto(msg)},
+		},
+	}
+
+	for _, client := range targets {
+		// 使用 goroutine 异步发送，避免单个客户端阻塞影响其他客户端
+		go func(c *StreamClient) {
+			if err := c.stream.Send(event); err != nil {
+				slog.Warn("发送消息失败",
+					slog.String("user_id", c.userID),
+					slog.Any("error", err))
+			}
+		}(client)
 	}
 }
 
@@ -258,10 +272,26 @@ func (m *StreamManager) NotifyBatchReadReceipt(receipt *repository.BatchReadRece
 }
 
 // BroadcastTyping 广播正在输入状态
+// 使用读锁保护并发访问，发送操作在锁外执行避免阻塞
 func (m *StreamManager) BroadcastTyping(conversationID, userID string, isTyping bool) {
 	m.mu.RLock()
-	defer m.mu.RUnlock()
+	// 复制需要发送的客户端列表
+	var targets []*StreamClient
+	for uid, client := range m.clients {
+		if uid == userID {
+			continue
+		}
+		client.mu.RLock()
+		subscribed := client.subscriptions[conversationID]
+		client.mu.RUnlock()
 
+		if subscribed {
+			targets = append(targets, client)
+		}
+	}
+	m.mu.RUnlock()
+
+	// 在锁外执行发送操作
 	event := &pb.ServerEvent{
 		Event: &pb.ServerEvent_TypingIndicator{
 			TypingIndicator: &pb.TypingIndicatorEvent{
@@ -272,25 +302,35 @@ func (m *StreamManager) BroadcastTyping(conversationID, userID string, isTyping 
 		},
 	}
 
-	for uid, client := range m.clients {
-		if uid == userID {
-			continue
-		}
+	for _, client := range targets {
+		go func(c *StreamClient) {
+			if err := c.stream.Send(event); err != nil {
+				slog.Warn("发送输入状态失败",
+					slog.String("user_id", c.userID),
+					slog.Any("error", err))
+			}
+		}(client)
+	}
+}
+
+// BroadcastMessageRead 广播消息已读
+// 使用读锁保护并发访问，发送操作在锁外执行避免阻塞
+func (m *StreamManager) BroadcastMessageRead(conversationID, readerID string, messageIDs []string) {
+	m.mu.RLock()
+	// 复制需要发送的客户端列表
+	var targets []*StreamClient
+	for _, client := range m.clients {
 		client.mu.RLock()
 		subscribed := client.subscriptions[conversationID]
 		client.mu.RUnlock()
 
 		if subscribed {
-			client.stream.Send(event)
+			targets = append(targets, client)
 		}
 	}
-}
+	m.mu.RUnlock()
 
-// BroadcastMessageRead 广播消息已读
-func (m *StreamManager) BroadcastMessageRead(conversationID, readerID string, messageIDs []string) {
-	m.mu.RLock()
-	defer m.mu.RUnlock()
-
+	// 在锁外执行发送操作
 	now := time.Now()
 	event := &pb.ServerEvent{
 		Event: &pb.ServerEvent_MessageRead{
@@ -303,14 +343,14 @@ func (m *StreamManager) BroadcastMessageRead(conversationID, readerID string, me
 		},
 	}
 
-	for _, client := range m.clients {
-		client.mu.RLock()
-		subscribed := client.subscriptions[conversationID]
-		client.mu.RUnlock()
-
-		if subscribed {
-			client.stream.Send(event)
-		}
+	for _, client := range targets {
+		go func(c *StreamClient) {
+			if err := c.stream.Send(event); err != nil {
+				slog.Warn("发送已读状态失败",
+					slog.String("user_id", c.userID),
+					slog.Any("error", err))
+			}
+		}(client)
 	}
 }
 

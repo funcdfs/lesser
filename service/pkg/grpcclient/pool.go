@@ -105,22 +105,30 @@ func (p *ClientPool) dial(ctx context.Context, cfg ClientConfig) (*grpc.ClientCo
 }
 
 // Close 关闭所有连接
+// 收集所有关闭错误，确保所有连接都被尝试关闭
 func (p *ClientPool) Close() error {
 	p.mu.Lock()
 	defer p.mu.Unlock()
 
-	var lastErr error
+	var errs []error
 	for name, conn := range p.conns {
 		if conn != nil {
 			if err := conn.Close(); err != nil {
 				p.log.Error("failed to close grpc connection",
 					slog.String("service", name),
 					slog.Any("error", err))
-				lastErr = err
+				errs = append(errs, fmt.Errorf("%s: %w", name, err))
+			} else {
+				p.log.Debug("grpc connection closed", slog.String("service", name))
 			}
 		}
 	}
 
 	p.conns = make(map[string]*grpc.ClientConn)
-	return lastErr
+
+	// 返回所有错误的汇总
+	if len(errs) > 0 {
+		return fmt.Errorf("关闭 %d 个连接时出错: %v", len(errs), errs)
+	}
+	return nil
 }

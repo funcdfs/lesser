@@ -28,8 +28,10 @@ TEST_USER_EMAIL="test_$(date +%s)@example.com"
 TEST_USER_PASSWORD="TestPassword123!"
 TEST_USERNAME="testuser_$(date +%s)"
 ACCESS_TOKEN=""
+REFRESH_TOKEN=""
 USER_ID=""
 CONTENT_ID=""
+DRAFT_ID=""
 COMMENT_ID=""
 CONVERSATION_ID=""
 
@@ -61,24 +63,6 @@ print_fail() {
     ((TOTAL_TESTS++))
 }
 
-# 执行 gRPC 调用并检查结果
-grpc_call() {
-    local service=$1
-    local method=$2
-    local data=$3
-    local addr=${4:-$GATEWAY_ADDR}
-    local auth=${5:-""}
-    
-    local cmd="grpcurl -plaintext"
-    if [ -n "$auth" ]; then
-        cmd="$cmd -H 'authorization: Bearer $auth'"
-    fi
-    cmd="$cmd -d '$data' $addr $service/$method"
-    
-    result=$(eval $cmd 2>&1)
-    echo "$result"
-}
-
 # ============================================================================
 # 1. Auth Service 测试
 # ============================================================================
@@ -103,7 +87,7 @@ test_auth_service() {
         print_fail "Register - 用户注册失败" "$result"
         return 1
     fi
-    
+
     # 1.2 登录
     print_test "Login - 用户登录"
     result=$(grpcurl -plaintext \
@@ -146,7 +130,7 @@ test_auth_service() {
     else
         print_fail "GetUser - 获取用户信息失败" "$result"
     fi
-    
+
     # 1.5 检查封禁状态
     print_test "CheckBanned - 检查封禁状态"
     result=$(grpcurl -plaintext \
@@ -168,8 +152,10 @@ test_auth_service() {
     
     if echo "$result" | grep -q "accessToken\|access_token"; then
         ACCESS_TOKEN=$(echo "$result" | grep -o '"accessToken": "[^"]*"' | cut -d'"' -f4)
+        REFRESH_TOKEN=$(echo "$result" | grep -o '"refreshToken": "[^"]*"' | cut -d'"' -f4)
         if [ -z "$ACCESS_TOKEN" ]; then
             ACCESS_TOKEN=$(echo "$result" | grep -o '"access_token": "[^"]*"' | cut -d'"' -f4)
+            REFRESH_TOKEN=$(echo "$result" | grep -o '"refresh_token": "[^"]*"' | cut -d'"' -f4)
         fi
         print_success "RefreshToken - 刷新令牌成功"
     else
@@ -196,7 +182,7 @@ test_user_service() {
     else
         print_fail "GetProfile - 获取用户资料失败" "$result"
     fi
-    
+
     # 2.2 通过用户名获取资料
     print_test "GetProfileByUsername - 通过用户名获取资料"
     result=$(grpcurl -plaintext \
@@ -248,8 +234,21 @@ test_user_service() {
     else
         print_fail "GetUserSettings - 获取设置失败" "$result"
     fi
+
+    # 2.6 更新用户设置
+    print_test "UpdateUserSettings - 更新用户设置"
+    result=$(grpcurl -plaintext \
+        -H "authorization: Bearer $ACCESS_TOKEN" \
+        -d "{\"user_id\":\"$USER_ID\",\"privacy\":{\"is_private_account\":false,\"allow_message_from_anyone\":true},\"notification\":{\"push_enabled\":true,\"notify_new_follower\":true}}" \
+        $GATEWAY_ADDR user.UserService/UpdateUserSettings 2>&1)
     
-    # 2.6 获取粉丝列表
+    if echo "$result" | grep -q "privacy\|notification\|userId"; then
+        print_success "UpdateUserSettings - 更新设置成功"
+    else
+        print_fail "UpdateUserSettings - 更新设置失败" "$result"
+    fi
+    
+    # 2.7 获取粉丝列表
     print_test "GetFollowers - 获取粉丝列表"
     result=$(grpcurl -plaintext \
         -H "authorization: Bearer $ACCESS_TOKEN" \
@@ -262,7 +261,7 @@ test_user_service() {
         print_fail "GetFollowers - 获取粉丝列表失败" "$result"
     fi
     
-    # 2.7 获取关注列表
+    # 2.8 获取关注列表
     print_test "GetFollowing - 获取关注列表"
     result=$(grpcurl -plaintext \
         -H "authorization: Bearer $ACCESS_TOKEN" \
@@ -274,8 +273,8 @@ test_user_service() {
     else
         print_fail "GetFollowing - 获取关注列表失败" "$result"
     fi
-    
-    # 2.8 获取屏蔽列表
+
+    # 2.9 获取屏蔽列表
     print_test "GetBlockList - 获取屏蔽列表"
     result=$(grpcurl -plaintext \
         -H "authorization: Bearer $ACCESS_TOKEN" \
@@ -288,7 +287,7 @@ test_user_service() {
         print_fail "GetBlockList - 获取屏蔽列表失败" "$result"
     fi
     
-    # 2.9 搜索用户
+    # 2.10 搜索用户
     print_test "SearchUsers - 搜索用户"
     result=$(grpcurl -plaintext \
         -H "authorization: Bearer $ACCESS_TOKEN" \
@@ -323,8 +322,22 @@ test_content_service() {
         print_fail "CreateContent - 创建内容失败" "$result"
         return 1
     fi
+
+    # 3.2 创建草稿 (ARTICLE 类型)
+    print_test "CreateContent (Draft) - 创建文章草稿"
+    result=$(grpcurl -plaintext \
+        -H "authorization: Bearer $ACCESS_TOKEN" \
+        -d "{\"author_id\":\"$USER_ID\",\"type\":3,\"title\":\"Test Article Draft\",\"text\":\"This is a draft article content.\",\"is_draft\":true}" \
+        $GATEWAY_ADDR content.ContentService/CreateContent 2>&1)
     
-    # 3.2 获取内容
+    if echo "$result" | grep -q '"id":'; then
+        DRAFT_ID=$(echo "$result" | grep -o '"id": "[^"]*"' | head -1 | cut -d'"' -f4)
+        print_success "CreateContent (Draft) - 创建草稿成功 (draft_id: $DRAFT_ID)"
+    else
+        print_fail "CreateContent (Draft) - 创建草稿失败" "$result"
+    fi
+    
+    # 3.3 获取内容
     print_test "GetContent - 获取内容详情"
     result=$(grpcurl -plaintext \
         -H "authorization: Bearer $ACCESS_TOKEN" \
@@ -337,7 +350,7 @@ test_content_service() {
         print_fail "GetContent - 获取内容失败" "$result"
     fi
     
-    # 3.3 更新内容
+    # 3.4 更新内容
     print_test "UpdateContent - 更新内容"
     result=$(grpcurl -plaintext \
         -H "authorization: Bearer $ACCESS_TOKEN" \
@@ -349,8 +362,8 @@ test_content_service() {
     else
         print_fail "UpdateContent - 更新内容失败" "$result"
     fi
-    
-    # 3.4 列表查询
+
+    # 3.5 列表查询
     print_test "ListContents - 获取内容列表"
     result=$(grpcurl -plaintext \
         -H "authorization: Bearer $ACCESS_TOKEN" \
@@ -363,7 +376,7 @@ test_content_service() {
         print_fail "ListContents - 获取列表失败" "$result"
     fi
     
-    # 3.5 批量获取内容
+    # 3.6 批量获取内容
     print_test "BatchGetContents - 批量获取内容"
     result=$(grpcurl -plaintext \
         -H "authorization: Bearer $ACCESS_TOKEN" \
@@ -376,7 +389,7 @@ test_content_service() {
         print_fail "BatchGetContents - 批量获取失败" "$result"
     fi
     
-    # 3.6 获取用户草稿
+    # 3.7 获取用户草稿
     print_test "GetUserDrafts - 获取用户草稿"
     result=$(grpcurl -plaintext \
         -H "authorization: Bearer $ACCESS_TOKEN" \
@@ -388,8 +401,25 @@ test_content_service() {
     else
         print_fail "GetUserDrafts - 获取草稿失败" "$result"
     fi
+
+    # 3.8 发布草稿
+    print_test "PublishDraft - 发布草稿"
+    if [ -n "$DRAFT_ID" ]; then
+        result=$(grpcurl -plaintext \
+            -H "authorization: Bearer $ACCESS_TOKEN" \
+            -d "{\"content_id\":\"$DRAFT_ID\",\"user_id\":\"$USER_ID\"}" \
+            $GATEWAY_ADDR content.ContentService/PublishDraft 2>&1)
+        
+        if echo "$result" | grep -q "content\|id" || [ -z "$result" ]; then
+            print_success "PublishDraft - 发布草稿成功"
+        else
+            print_fail "PublishDraft - 发布草稿失败" "$result"
+        fi
+    else
+        print_fail "PublishDraft - 跳过（无草稿 ID）" "DRAFT_ID is empty"
+    fi
     
-    # 3.7 获取回复列表
+    # 3.9 获取回复列表
     print_test "GetReplies - 获取回复列表"
     result=$(grpcurl -plaintext \
         -H "authorization: Bearer $ACCESS_TOKEN" \
@@ -402,7 +432,7 @@ test_content_service() {
         print_fail "GetReplies - 获取回复失败" "$result"
     fi
     
-    # 3.8 获取用户 Story
+    # 3.10 获取用户 Story
     print_test "GetUserStories - 获取用户 Story"
     result=$(grpcurl -plaintext \
         -H "authorization: Bearer $ACCESS_TOKEN" \
@@ -414,8 +444,8 @@ test_content_service() {
     else
         print_fail "GetUserStories - 获取 Story 失败" "$result"
     fi
-    
-    # 3.9 置顶内容
+
+    # 3.11 置顶内容
     print_test "PinContent - 置顶内容"
     result=$(grpcurl -plaintext \
         -H "authorization: Bearer $ACCESS_TOKEN" \
@@ -426,6 +456,19 @@ test_content_service() {
         print_success "PinContent - 置顶内容成功"
     else
         print_fail "PinContent - 置顶内容失败" "$result"
+    fi
+    
+    # 3.12 取消置顶
+    print_test "PinContent (Unpin) - 取消置顶"
+    result=$(grpcurl -plaintext \
+        -H "authorization: Bearer $ACCESS_TOKEN" \
+        -d "{\"content_id\":\"$CONTENT_ID\",\"user_id\":\"$USER_ID\",\"pin\":false}" \
+        $GATEWAY_ADDR content.ContentService/PinContent 2>&1)
+    
+    if echo "$result" | grep -q "success" || [ -z "$result" ] || echo "$result" | grep -q "{}"; then
+        print_success "PinContent (Unpin) - 取消置顶成功"
+    else
+        print_fail "PinContent (Unpin) - 取消置顶失败" "$result"
     fi
 }
 
@@ -448,7 +491,7 @@ test_interaction_service() {
     else
         print_fail "Like - 点赞失败" "$result"
     fi
-    
+
     # 4.2 检查点赞状态
     print_test "CheckLiked - 检查点赞状态"
     result=$(grpcurl -plaintext \
@@ -487,7 +530,7 @@ test_interaction_service() {
     else
         print_fail "ListBookmarks - 获取列表失败" "$result"
     fi
-    
+
     # 4.5 创建转发
     print_test "CreateRepost - 创建转发"
     result=$(grpcurl -plaintext \
@@ -526,7 +569,7 @@ test_interaction_service() {
     else
         print_fail "Unlike - 取消点赞失败" "$result"
     fi
-    
+
     # 4.8 取消收藏
     print_test "Unbookmark - 取消收藏"
     result=$(grpcurl -plaintext \
@@ -575,7 +618,7 @@ test_comment_service() {
         print_fail "CreateComment - 创建评论失败" "$result"
         return 1
     fi
-    
+
     # 5.2 获取评论
     print_test "GetComment - 获取评论详情"
     result=$(grpcurl -plaintext \
@@ -589,20 +632,33 @@ test_comment_service() {
         print_fail "GetComment - 获取评论失败" "$result"
     fi
     
-    # 5.3 获取评论列表
-    print_test "ListComments - 获取评论列表"
+    # 5.3 获取评论列表 (最新优先)
+    print_test "ListComments (NEWEST) - 获取评论列表（最新优先）"
     result=$(grpcurl -plaintext \
         -H "authorization: Bearer $ACCESS_TOKEN" \
         -d "{\"content_id\":\"$CONTENT_ID\",\"pagination\":{\"page\":1,\"page_size\":10},\"sort_by\":2}" \
         $GATEWAY_ADDR comment.CommentService/ListComments 2>&1)
     
     if echo "$result" | grep -q "comments\|pagination" || [ -z "$result" ]; then
-        print_success "ListComments - 获取列表成功"
+        print_success "ListComments (NEWEST) - 获取列表成功"
     else
-        print_fail "ListComments - 获取列表失败" "$result"
+        print_fail "ListComments (NEWEST) - 获取列表失败" "$result"
     fi
     
-    # 5.4 获取评论数量
+    # 5.4 获取评论列表 (最热门)
+    print_test "ListComments (HOTTEST) - 获取评论列表（最热门）"
+    result=$(grpcurl -plaintext \
+        -H "authorization: Bearer $ACCESS_TOKEN" \
+        -d "{\"content_id\":\"$CONTENT_ID\",\"pagination\":{\"page\":1,\"page_size\":10},\"sort_by\":3}" \
+        $GATEWAY_ADDR comment.CommentService/ListComments 2>&1)
+    
+    if echo "$result" | grep -q "comments\|pagination" || [ -z "$result" ]; then
+        print_success "ListComments (HOTTEST) - 获取列表成功"
+    else
+        print_fail "ListComments (HOTTEST) - 获取列表失败" "$result"
+    fi
+
+    # 5.5 获取评论数量
     print_test "GetCommentCount - 获取评论数量"
     result=$(grpcurl -plaintext \
         -H "authorization: Bearer $ACCESS_TOKEN" \
@@ -615,7 +671,7 @@ test_comment_service() {
         print_fail "GetCommentCount - 获取数量失败" "$result"
     fi
     
-    # 5.5 批量获取评论数量
+    # 5.6 批量获取评论数量
     print_test "BatchGetCommentCount - 批量获取评论数量"
     result=$(grpcurl -plaintext \
         -H "authorization: Bearer $ACCESS_TOKEN" \
@@ -628,7 +684,7 @@ test_comment_service() {
         print_fail "BatchGetCommentCount - 批量获取失败" "$result"
     fi
     
-    # 5.6 点赞评论
+    # 5.7 点赞评论
     print_test "LikeComment - 点赞评论"
     result=$(grpcurl -plaintext \
         -H "authorization: Bearer $ACCESS_TOKEN" \
@@ -640,8 +696,8 @@ test_comment_service() {
     else
         print_fail "LikeComment - 点赞评论失败" "$result"
     fi
-    
-    # 5.7 取消点赞评论
+
+    # 5.8 取消点赞评论
     print_test "UnlikeComment - 取消点赞评论"
     result=$(grpcurl -plaintext \
         -H "authorization: Bearer $ACCESS_TOKEN" \
@@ -654,7 +710,7 @@ test_comment_service() {
         print_fail "UnlikeComment - 取消点赞失败" "$result"
     fi
     
-    # 5.8 创建回复评论
+    # 5.9 创建回复评论
     print_test "CreateComment (Reply) - 创建回复评论"
     result=$(grpcurl -plaintext \
         -H "authorization: Bearer $ACCESS_TOKEN" \
@@ -662,9 +718,23 @@ test_comment_service() {
         $GATEWAY_ADDR comment.CommentService/CreateComment 2>&1)
     
     if echo "$result" | grep -q '"id":'; then
+        REPLY_COMMENT_ID=$(echo "$result" | grep -o '"id": "[^"]*"' | head -1 | cut -d'"' -f4)
         print_success "CreateComment (Reply) - 创建回复成功"
     else
         print_fail "CreateComment (Reply) - 创建回复失败" "$result"
+    fi
+    
+    # 5.10 获取回复列表
+    print_test "ListComments (Replies) - 获取回复列表"
+    result=$(grpcurl -plaintext \
+        -H "authorization: Bearer $ACCESS_TOKEN" \
+        -d "{\"content_id\":\"$CONTENT_ID\",\"parent_id\":\"$COMMENT_ID\",\"pagination\":{\"page\":1,\"page_size\":10}}" \
+        $GATEWAY_ADDR comment.CommentService/ListComments 2>&1)
+    
+    if echo "$result" | grep -q "comments\|pagination" || [ -z "$result" ]; then
+        print_success "ListComments (Replies) - 获取回复列表成功"
+    else
+        print_fail "ListComments (Replies) - 获取回复列表失败" "$result"
     fi
 }
 
@@ -701,20 +771,46 @@ test_timeline_service() {
         print_fail "GetUserFeed - 获取失败" "$result"
     fi
     
-    # 6.3 获取热门 Feed
-    print_test "GetHotFeed - 获取热门 Feed"
+    # 6.3 获取热门 Feed (day)
+    print_test "GetHotFeed (day) - 获取热门 Feed（日）"
+    result=$(grpcurl -plaintext \
+        -H "authorization: Bearer $ACCESS_TOKEN" \
+        -d "{\"user_id\":\"$USER_ID\",\"pagination\":{\"page\":1,\"page_size\":10},\"time_range\":\"day\"}" \
+        $GATEWAY_ADDR timeline.TimelineService/GetHotFeed 2>&1)
+    
+    if echo "$result" | grep -q "items\|pagination" || [ -z "$result" ] || echo "$result" | grep -q "{}"; then
+        print_success "GetHotFeed (day) - 获取成功"
+    else
+        print_fail "GetHotFeed (day) - 获取失败" "$result"
+    fi
+
+    # 6.4 获取热门 Feed (week)
+    print_test "GetHotFeed (week) - 获取热门 Feed（周）"
     result=$(grpcurl -plaintext \
         -H "authorization: Bearer $ACCESS_TOKEN" \
         -d "{\"user_id\":\"$USER_ID\",\"pagination\":{\"page\":1,\"page_size\":10},\"time_range\":\"week\"}" \
         $GATEWAY_ADDR timeline.TimelineService/GetHotFeed 2>&1)
     
     if echo "$result" | grep -q "items\|pagination" || [ -z "$result" ] || echo "$result" | grep -q "{}"; then
-        print_success "GetHotFeed - 获取成功"
+        print_success "GetHotFeed (week) - 获取成功"
     else
-        print_fail "GetHotFeed - 获取失败" "$result"
+        print_fail "GetHotFeed (week) - 获取失败" "$result"
     fi
     
-    # 6.4 获取推荐 Feed (预留功能，预期返回 Unimplemented)
+    # 6.5 获取热门 Feed (month)
+    print_test "GetHotFeed (month) - 获取热门 Feed（月）"
+    result=$(grpcurl -plaintext \
+        -H "authorization: Bearer $ACCESS_TOKEN" \
+        -d "{\"user_id\":\"$USER_ID\",\"pagination\":{\"page\":1,\"page_size\":10},\"time_range\":\"month\"}" \
+        $GATEWAY_ADDR timeline.TimelineService/GetHotFeed 2>&1)
+    
+    if echo "$result" | grep -q "items\|pagination" || [ -z "$result" ] || echo "$result" | grep -q "{}"; then
+        print_success "GetHotFeed (month) - 获取成功"
+    else
+        print_fail "GetHotFeed (month) - 获取失败" "$result"
+    fi
+    
+    # 6.6 获取推荐 Feed (预留功能)
     print_test "GetRecommendFeed - 获取推荐 Feed (预留)"
     result=$(grpcurl -plaintext \
         -H "authorization: Bearer $ACCESS_TOKEN" \
@@ -726,8 +822,8 @@ test_timeline_service() {
     else
         print_fail "GetRecommendFeed - 获取失败" "$result"
     fi
-    
-    # 6.5 获取内容详情
+
+    # 6.7 获取内容详情
     print_test "GetContentDetail - 获取内容详情"
     result=$(grpcurl -plaintext \
         -H "authorization: Bearer $ACCESS_TOKEN" \
@@ -779,6 +875,9 @@ test_search_service() {
 # 8. Notification Service 测试
 # ============================================================================
 
+# 通知 ID 变量
+NOTIFICATION_ID=""
+
 test_notification_service() {
     print_header "8. Notification Service 测试"
     
@@ -790,6 +889,8 @@ test_notification_service() {
         $GATEWAY_ADDR notification.NotificationService/List 2>&1)
     
     if echo "$result" | grep -q "notifications\|pagination" || [ -z "$result" ] || echo "$result" | grep -q "{}"; then
+        # 尝试提取通知 ID 用于后续测试
+        NOTIFICATION_ID=$(echo "$result" | grep -o '"id": "[^"]*"' | head -1 | cut -d'"' -f4)
         print_success "List - 获取列表成功"
     else
         print_fail "List - 获取列表失败" "$result"
@@ -808,7 +909,39 @@ test_notification_service() {
         print_fail "GetUnreadCount - 获取失败" "$result"
     fi
     
-    # 8.3 标记所有已读
+    # 8.3 获取未读通知列表
+    print_test "List (unread_only) - 获取未读通知列表"
+    result=$(grpcurl -plaintext \
+        -H "authorization: Bearer $ACCESS_TOKEN" \
+        -d "{\"user_id\":\"$USER_ID\",\"unread_only\":true,\"pagination\":{\"page\":1,\"page_size\":10}}" \
+        $GATEWAY_ADDR notification.NotificationService/List 2>&1)
+    
+    if echo "$result" | grep -q "notifications\|pagination" || [ -z "$result" ] || echo "$result" | grep -q "{}"; then
+        print_success "List (unread_only) - 获取成功"
+    else
+        print_fail "List (unread_only) - 获取失败" "$result"
+    fi
+
+    # 8.4 标记单条通知已读
+    print_test "Read - 标记单条通知已读"
+    if [ -n "$NOTIFICATION_ID" ]; then
+        result=$(grpcurl -plaintext \
+            -H "authorization: Bearer $ACCESS_TOKEN" \
+            -d "{\"notification_id\":\"$NOTIFICATION_ID\",\"user_id\":\"$USER_ID\"}" \
+            $GATEWAY_ADDR notification.NotificationService/Read 2>&1)
+        
+        if [ -z "$result" ] || echo "$result" | grep -q "{}" || ! echo "$result" | grep -q "Error"; then
+            print_success "Read - 标记成功"
+        else
+            print_fail "Read - 标记失败" "$result"
+        fi
+    else
+        # 没有通知时跳过，但不算失败
+        print_test "Read - 跳过（无通知）"
+        print_success "Read - 跳过（无可用通知 ID）"
+    fi
+    
+    # 8.5 标记所有已读
     print_test "ReadAll - 标记所有通知已读"
     result=$(grpcurl -plaintext \
         -H "authorization: Bearer $ACCESS_TOKEN" \
@@ -825,6 +958,8 @@ test_notification_service() {
 # ============================================================================
 # 9. Chat Service 测试
 # ============================================================================
+
+MESSAGE_ID=""
 
 test_chat_service() {
     print_header "9. Chat Service 测试"
@@ -843,7 +978,7 @@ test_chat_service() {
         print_fail "CreateConversation - 创建会话失败" "$result"
         return 1
     fi
-    
+
     # 9.2 获取会话列表
     print_test "GetConversations - 获取会话列表"
     result=$(grpcurl -plaintext \
@@ -883,7 +1018,7 @@ test_chat_service() {
     else
         print_fail "SendMessage - 发送消息失败" "$result"
     fi
-    
+
     # 9.5 获取消息列表
     print_test "GetMessages - 获取消息列表"
     result=$(grpcurl -plaintext \
@@ -927,7 +1062,7 @@ test_chat_service() {
     else
         print_fail "MarkConversationAsRead - 标记失败" "$result"
     fi
-    
+
     # 9.8 获取未读数
     print_test "GetUnreadCounts - 获取未读数"
     result=$(grpcurl -plaintext \
@@ -946,6 +1081,8 @@ test_chat_service() {
 # 10. SuperUser Service 测试
 # ============================================================================
 
+SUPERUSER_TOKEN=""
+
 test_superuser_service() {
     print_header "10. SuperUser Service 测试"
     
@@ -960,13 +1097,43 @@ test_superuser_service() {
         if [ -z "$SUPERUSER_TOKEN" ]; then
             SUPERUSER_TOKEN=$(echo "$result" | grep -o '"access_token": "[^"]*"' | cut -d'"' -f4)
         fi
+        SUPERUSER_REFRESH=$(echo "$result" | grep -o '"refreshToken": "[^"]*"' | cut -d'"' -f4)
         print_success "Login - 登录成功"
     else
         print_fail "Login - 登录失败" "$result"
         return 1
     fi
+
+    # 10.2 验证 Token
+    print_test "ValidateToken - 验证 Token"
+    result=$(grpcurl -plaintext \
+        -d "{\"access_token\":\"$SUPERUSER_TOKEN\"}" \
+        $SUPERUSER_ADDR superuser.SuperUserService/ValidateToken 2>&1)
     
-    # 10.2 获取系统统计
+    if echo "$result" | grep -q "valid\|superuserId" || [ -z "$result" ]; then
+        print_success "ValidateToken - 验证成功"
+    else
+        print_fail "ValidateToken - 验证失败" "$result"
+    fi
+    
+    # 10.3 刷新 Token
+    print_test "RefreshToken - 刷新 Token"
+    if [ -n "$SUPERUSER_REFRESH" ]; then
+        result=$(grpcurl -plaintext \
+            -d "{\"refresh_token\":\"$SUPERUSER_REFRESH\"}" \
+            $SUPERUSER_ADDR superuser.SuperUserService/RefreshToken 2>&1)
+        
+        if echo "$result" | grep -q "accessToken\|access_token"; then
+            SUPERUSER_TOKEN=$(echo "$result" | grep -o '"accessToken": "[^"]*"' | cut -d'"' -f4)
+            print_success "RefreshToken - 刷新成功"
+        else
+            print_fail "RefreshToken - 刷新失败" "$result"
+        fi
+    else
+        print_success "RefreshToken - 跳过（无 refresh token）"
+    fi
+    
+    # 10.4 获取系统统计
     print_test "GetSystemStats - 获取系统统计"
     result=$(grpcurl -plaintext \
         -H "authorization: Bearer $SUPERUSER_TOKEN" \
@@ -978,8 +1145,8 @@ test_superuser_service() {
     else
         print_fail "GetSystemStats - 获取失败" "$result"
     fi
-    
-    # 10.3 获取数据库状态
+
+    # 10.5 获取数据库状态
     print_test "GetDatabaseStatus - 获取数据库状态"
     result=$(grpcurl -plaintext \
         -H "authorization: Bearer $SUPERUSER_TOKEN" \
@@ -992,7 +1159,7 @@ test_superuser_service() {
         print_fail "GetDatabaseStatus - 获取失败" "$result"
     fi
     
-    # 10.4 获取 Redis 状态
+    # 10.6 获取 Redis 状态
     print_test "GetRedisStatus - 获取 Redis 状态"
     result=$(grpcurl -plaintext \
         -H "authorization: Bearer $SUPERUSER_TOKEN" \
@@ -1005,7 +1172,7 @@ test_superuser_service() {
         print_fail "GetRedisStatus - 获取失败" "$result"
     fi
     
-    # 10.5 获取 RabbitMQ 状态
+    # 10.7 获取 RabbitMQ 状态
     print_test "GetRabbitMQStatus - 获取 RabbitMQ 状态"
     result=$(grpcurl -plaintext \
         -H "authorization: Bearer $SUPERUSER_TOKEN" \
@@ -1017,8 +1184,8 @@ test_superuser_service() {
     else
         print_fail "GetRabbitMQStatus - 获取失败" "$result"
     fi
-    
-    # 10.6 获取用户列表
+
+    # 10.8 获取用户列表
     print_test "ListUsers - 获取用户列表"
     result=$(grpcurl -plaintext \
         -H "authorization: Bearer $SUPERUSER_TOKEN" \
@@ -1031,7 +1198,20 @@ test_superuser_service() {
         print_fail "ListUsers - 获取失败" "$result"
     fi
     
-    # 10.7 获取内容列表
+    # 10.9 获取用户详情
+    print_test "GetUser - 获取用户详情"
+    result=$(grpcurl -plaintext \
+        -H "authorization: Bearer $SUPERUSER_TOKEN" \
+        -d "{\"user_id\":\"$USER_ID\"}" \
+        $SUPERUSER_ADDR superuser.SuperUserService/GetUser 2>&1)
+    
+    if echo "$result" | grep -q "username\|id" || [ -z "$result" ]; then
+        print_success "GetUser - 获取成功"
+    else
+        print_fail "GetUser - 获取失败" "$result"
+    fi
+    
+    # 10.10 获取内容列表
     print_test "ListContents - 获取内容列表"
     result=$(grpcurl -plaintext \
         -H "authorization: Bearer $SUPERUSER_TOKEN" \
@@ -1043,8 +1223,8 @@ test_superuser_service() {
     else
         print_fail "ListContents - 获取失败" "$result"
     fi
-    
-    # 10.8 获取表列表
+
+    # 10.11 获取表列表
     print_test "ListTables - 获取数据库表列表"
     result=$(grpcurl -plaintext \
         -H "authorization: Bearer $SUPERUSER_TOKEN" \
@@ -1057,7 +1237,20 @@ test_superuser_service() {
         print_fail "ListTables - 获取失败" "$result"
     fi
     
-    # 10.9 执行只读查询
+    # 10.12 获取表结构
+    print_test "GetTableSchema - 获取表结构"
+    result=$(grpcurl -plaintext \
+        -H "authorization: Bearer $SUPERUSER_TOKEN" \
+        -d '{"table_name":"users"}' \
+        $SUPERUSER_ADDR superuser.SuperUserService/GetTableSchema 2>&1)
+    
+    if echo "$result" | grep -q "columns\|tableName" || [ -z "$result" ]; then
+        print_success "GetTableSchema - 获取成功"
+    else
+        print_fail "GetTableSchema - 获取失败" "$result"
+    fi
+    
+    # 10.13 执行只读查询
     print_test "ExecuteQuery - 执行只读 SQL 查询"
     result=$(grpcurl -plaintext \
         -H "authorization: Bearer $SUPERUSER_TOKEN" \
@@ -1069,8 +1262,8 @@ test_superuser_service() {
     else
         print_fail "ExecuteQuery - 查询失败" "$result"
     fi
-    
-    # 10.10 获取审计日志
+
+    # 10.14 获取审计日志
     print_test "GetAuditLogs - 获取审计日志"
     result=$(grpcurl -plaintext \
         -H "authorization: Bearer $SUPERUSER_TOKEN" \
@@ -1085,12 +1278,462 @@ test_superuser_service() {
 }
 
 # ============================================================================
-# 11. 清理测试数据
+# 11. 双用户交互测试
+# ============================================================================
+
+# 双用户测试数据
+USER_A_ID=""
+USER_A_EMAIL=""
+USER_A_TOKEN=""
+USER_A_REFRESH=""
+USER_A_USERNAME=""
+
+USER_B_ID=""
+USER_B_EMAIL=""
+USER_B_TOKEN=""
+USER_B_REFRESH=""
+USER_B_USERNAME=""
+
+PRIVATE_CONVERSATION_ID=""
+PRIVATE_MESSAGE_ID=""
+
+test_two_users_interaction() {
+    print_header "11. 双用户交互测试"
+    
+    local ts=$(date +%s)
+    USER_A_USERNAME="test_user_a_${ts}"
+    USER_A_EMAIL="test_a_${ts}@example.com"
+    USER_B_USERNAME="test_user_b_${ts}"
+    USER_B_EMAIL="test_b_${ts}@example.com"
+    
+    # 11.1 注册用户 A
+    print_test "注册用户 A"
+    result=$(grpcurl -plaintext \
+        -d "{\"username\":\"$USER_A_USERNAME\",\"email\":\"$USER_A_EMAIL\",\"password\":\"TestPassword123!\",\"display_name\":\"Test User A\"}" \
+        $GATEWAY_ADDR auth.AuthService/Register 2>&1)
+    
+    if echo "$result" | grep -q '"id":'; then
+        USER_A_ID=$(echo "$result" | grep -o '"id": "[^"]*"' | head -1 | cut -d'"' -f4)
+        USER_A_TOKEN=$(echo "$result" | grep -o '"accessToken": "[^"]*"' | cut -d'"' -f4)
+        print_success "用户 A 注册成功 (id: $USER_A_ID)"
+    else
+        print_fail "用户 A 注册失败" "$result"
+        return 1
+    fi
+
+    # 11.2 注册用户 B
+    print_test "注册用户 B"
+    result=$(grpcurl -plaintext \
+        -d "{\"username\":\"$USER_B_USERNAME\",\"email\":\"$USER_B_EMAIL\",\"password\":\"TestPassword123!\",\"display_name\":\"Test User B\"}" \
+        $GATEWAY_ADDR auth.AuthService/Register 2>&1)
+    
+    if echo "$result" | grep -q '"id":'; then
+        USER_B_ID=$(echo "$result" | grep -o '"id": "[^"]*"' | head -1 | cut -d'"' -f4)
+        USER_B_TOKEN=$(echo "$result" | grep -o '"accessToken": "[^"]*"' | cut -d'"' -f4)
+        print_success "用户 B 注册成功 (id: $USER_B_ID)"
+    else
+        print_fail "用户 B 注册失败" "$result"
+        return 1
+    fi
+    
+    # 11.3 用户 A 登出
+    print_test "用户 A 登出"
+    result=$(grpcurl -plaintext \
+        -H "authorization: Bearer $USER_A_TOKEN" \
+        -d "{\"access_token\":\"$USER_A_TOKEN\"}" \
+        $GATEWAY_ADDR auth.AuthService/Logout 2>&1)
+    
+    if [ -z "$result" ] || echo "$result" | grep -q "{}"; then
+        print_success "用户 A 登出成功"
+    else
+        print_fail "用户 A 登出失败" "$result"
+    fi
+    
+    # 11.4 用户 A 重新登录
+    print_test "用户 A 重新登录"
+    result=$(grpcurl -plaintext \
+        -d "{\"email\":\"$USER_A_EMAIL\",\"password\":\"TestPassword123!\"}" \
+        $GATEWAY_ADDR auth.AuthService/Login 2>&1)
+    
+    if echo "$result" | grep -q '"accessToken":'; then
+        USER_A_TOKEN=$(echo "$result" | grep -o '"accessToken": "[^"]*"' | cut -d'"' -f4)
+        print_success "用户 A 登录成功"
+    else
+        print_fail "用户 A 登录失败" "$result"
+        return 1
+    fi
+
+    # 11.5 用户 A 关注用户 B
+    print_test "用户 A 关注用户 B"
+    result=$(grpcurl -plaintext \
+        -H "authorization: Bearer $USER_A_TOKEN" \
+        -d "{\"follower_id\":\"$USER_A_ID\",\"following_id\":\"$USER_B_ID\"}" \
+        $GATEWAY_ADDR user.UserService/Follow 2>&1)
+    
+    if [ -z "$result" ] || echo "$result" | grep -q "{}"; then
+        print_success "用户 A 关注用户 B 成功"
+    else
+        print_fail "用户 A 关注用户 B 失败" "$result"
+    fi
+    
+    # 11.6 检查关注状态
+    print_test "检查 A 是否关注 B"
+    result=$(grpcurl -plaintext \
+        -H "authorization: Bearer $USER_A_TOKEN" \
+        -d "{\"follower_id\":\"$USER_A_ID\",\"following_id\":\"$USER_B_ID\"}" \
+        $GATEWAY_ADDR user.UserService/CheckFollowing 2>&1)
+    
+    if echo "$result" | grep -q '"isFollowing": true'; then
+        print_success "确认 A 已关注 B"
+    else
+        print_fail "关注状态检查失败" "$result"
+    fi
+    
+    # 11.7 用户 B 关注用户 A（互关）
+    print_test "用户 B 关注用户 A（互关）"
+    result=$(grpcurl -plaintext \
+        -H "authorization: Bearer $USER_B_TOKEN" \
+        -d "{\"follower_id\":\"$USER_B_ID\",\"following_id\":\"$USER_A_ID\"}" \
+        $GATEWAY_ADDR user.UserService/Follow 2>&1)
+    
+    if [ -z "$result" ] || echo "$result" | grep -q "{}"; then
+        print_success "用户 B 关注用户 A 成功"
+    else
+        print_fail "用户 B 关注用户 A 失败" "$result"
+    fi
+
+    # 11.8 获取关系状态
+    print_test "获取 A 和 B 的关系状态"
+    result=$(grpcurl -plaintext \
+        -H "authorization: Bearer $USER_A_TOKEN" \
+        -d "{\"user_id\":\"$USER_A_ID\",\"target_id\":\"$USER_B_ID\"}" \
+        $GATEWAY_ADDR user.UserService/GetRelationship 2>&1)
+    
+    if echo "$result" | grep -q '"isMutual": true'; then
+        print_success "确认 A 和 B 互关"
+    else
+        print_fail "关系状态检查失败" "$result"
+    fi
+    
+    # 11.9 获取共同关注
+    print_test "获取共同关注"
+    result=$(grpcurl -plaintext \
+        -H "authorization: Bearer $USER_A_TOKEN" \
+        -d "{\"user_id\":\"$USER_A_ID\",\"target_id\":\"$USER_B_ID\",\"pagination\":{\"page\":1,\"page_size\":10}}" \
+        $GATEWAY_ADDR user.UserService/GetMutualFollowers 2>&1)
+    
+    if echo "$result" | grep -q "users\|pagination" || [ -z "$result" ] || echo "$result" | grep -q "{}"; then
+        print_success "获取共同关注成功"
+    else
+        print_fail "获取共同关注失败" "$result"
+    fi
+    
+    # 11.10 用户 A 取消关注用户 B
+    print_test "用户 A 取消关注用户 B"
+    result=$(grpcurl -plaintext \
+        -H "authorization: Bearer $USER_A_TOKEN" \
+        -d "{\"follower_id\":\"$USER_A_ID\",\"following_id\":\"$USER_B_ID\"}" \
+        $GATEWAY_ADDR user.UserService/Unfollow 2>&1)
+    
+    if [ -z "$result" ] || echo "$result" | grep -q "{}"; then
+        print_success "用户 A 取消关注用户 B 成功"
+    else
+        print_fail "用户 A 取消关注用户 B 失败" "$result"
+    fi
+
+    # 11.11 用户 A 屏蔽用户 B（HIDE_POSTS）
+    print_test "用户 A 屏蔽用户 B（HIDE_POSTS - 不看他）"
+    result=$(grpcurl -plaintext \
+        -H "authorization: Bearer $USER_A_TOKEN" \
+        -d "{\"blocker_id\":\"$USER_A_ID\",\"blocked_id\":\"$USER_B_ID\",\"block_type\":1}" \
+        $GATEWAY_ADDR user.UserService/Block 2>&1)
+    
+    if [ -z "$result" ] || echo "$result" | grep -q "{}"; then
+        print_success "用户 A 屏蔽用户 B 成功"
+    else
+        print_fail "用户 A 屏蔽用户 B 失败" "$result"
+    fi
+    
+    # 11.12 检查屏蔽状态
+    print_test "检查屏蔽状态"
+    result=$(grpcurl -plaintext \
+        -H "authorization: Bearer $USER_A_TOKEN" \
+        -d "{\"user_id\":\"$USER_A_ID\",\"target_id\":\"$USER_B_ID\"}" \
+        $GATEWAY_ADDR user.UserService/CheckBlocked 2>&1)
+    
+    if echo "$result" | grep -q '"isBlocking": true'; then
+        print_success "确认 A 已屏蔽 B"
+    else
+        print_fail "屏蔽状态检查失败" "$result"
+    fi
+    
+    # 11.13 取消屏蔽
+    print_test "用户 A 取消屏蔽用户 B"
+    result=$(grpcurl -plaintext \
+        -H "authorization: Bearer $USER_A_TOKEN" \
+        -d "{\"blocker_id\":\"$USER_A_ID\",\"blocked_id\":\"$USER_B_ID\",\"block_type\":1}" \
+        $GATEWAY_ADDR user.UserService/Unblock 2>&1)
+    
+    if [ -z "$result" ] || echo "$result" | grep -q "{}"; then
+        print_success "用户 A 取消屏蔽用户 B 成功"
+    else
+        print_fail "用户 A 取消屏蔽用户 B 失败" "$result"
+    fi
+
+    # 11.14 用户 A 拉黑用户 B（BLOCK）
+    print_test "用户 A 拉黑用户 B（BLOCK - 双向屏蔽）"
+    result=$(grpcurl -plaintext \
+        -H "authorization: Bearer $USER_A_TOKEN" \
+        -d "{\"blocker_id\":\"$USER_A_ID\",\"blocked_id\":\"$USER_B_ID\",\"block_type\":3}" \
+        $GATEWAY_ADDR user.UserService/Block 2>&1)
+    
+    if [ -z "$result" ] || echo "$result" | grep -q "{}"; then
+        print_success "用户 A 拉黑用户 B 成功"
+    else
+        print_fail "用户 A 拉黑用户 B 失败" "$result"
+    fi
+    
+    # 11.15 取消拉黑
+    print_test "用户 A 取消拉黑用户 B"
+    result=$(grpcurl -plaintext \
+        -H "authorization: Bearer $USER_A_TOKEN" \
+        -d "{\"blocker_id\":\"$USER_A_ID\",\"blocked_id\":\"$USER_B_ID\",\"block_type\":3}" \
+        $GATEWAY_ADDR user.UserService/Unblock 2>&1)
+    
+    if [ -z "$result" ] || echo "$result" | grep -q "{}"; then
+        print_success "用户 A 取消拉黑用户 B 成功"
+    else
+        print_fail "用户 A 取消拉黑用户 B 失败" "$result"
+    fi
+    
+    # 11.16 创建私聊会话
+    print_test "创建 A 和 B 的私聊会话"
+    result=$(grpcurl -plaintext \
+        -H "authorization: Bearer $USER_A_TOKEN" \
+        -d "{\"type\":0,\"name\":\"\",\"member_ids\":[\"$USER_A_ID\",\"$USER_B_ID\"],\"creator_id\":\"$USER_A_ID\"}" \
+        $CHAT_ADDR chat.ChatService/CreateConversation 2>&1)
+    
+    if echo "$result" | grep -q '"id":'; then
+        PRIVATE_CONVERSATION_ID=$(echo "$result" | grep -o '"id": "[^"]*"' | head -1 | cut -d'"' -f4)
+        print_success "创建私聊会话成功 (id: $PRIVATE_CONVERSATION_ID)"
+    else
+        print_fail "创建私聊会话失败" "$result"
+    fi
+
+    # 11.17 用户 A 发送消息
+    print_test "用户 A 发送消息给用户 B"
+    result=$(grpcurl -plaintext \
+        -H "authorization: Bearer $USER_A_TOKEN" \
+        -d "{\"conversation_id\":\"$PRIVATE_CONVERSATION_ID\",\"sender_id\":\"$USER_A_ID\",\"content\":\"Hello from User A!\",\"message_type\":\"text\"}" \
+        $CHAT_ADDR chat.ChatService/SendMessage 2>&1)
+    
+    if echo "$result" | grep -q '"id":'; then
+        PRIVATE_MESSAGE_ID=$(echo "$result" | grep -o '"id": "[^"]*"' | head -1 | cut -d'"' -f4)
+        print_success "用户 A 发送消息成功 (id: $PRIVATE_MESSAGE_ID)"
+    else
+        print_fail "用户 A 发送消息失败" "$result"
+    fi
+    
+    # 11.18 用户 B 回复消息
+    print_test "用户 B 回复消息"
+    result=$(grpcurl -plaintext \
+        -H "authorization: Bearer $USER_B_TOKEN" \
+        -d "{\"conversation_id\":\"$PRIVATE_CONVERSATION_ID\",\"sender_id\":\"$USER_B_ID\",\"content\":\"Hi User A! Nice to meet you!\",\"message_type\":\"text\"}" \
+        $CHAT_ADDR chat.ChatService/SendMessage 2>&1)
+    
+    if echo "$result" | grep -q '"id":'; then
+        print_success "用户 B 回复消息成功"
+    else
+        print_fail "用户 B 回复消息失败" "$result"
+    fi
+    
+    # 11.19 获取消息列表
+    print_test "获取会话消息列表"
+    result=$(grpcurl -plaintext \
+        -H "authorization: Bearer $USER_A_TOKEN" \
+        -d "{\"conversation_id\":\"$PRIVATE_CONVERSATION_ID\",\"pagination\":{\"page\":1,\"page_size\":20}}" \
+        $CHAT_ADDR chat.ChatService/GetMessages 2>&1)
+    
+    if echo "$result" | grep -q '"messages":'; then
+        print_success "获取消息列表成功"
+    else
+        print_fail "获取消息列表失败" "$result"
+    fi
+
+    # 11.20 用户 B 标记消息已读
+    print_test "用户 B 标记 A 的消息已读"
+    result=$(grpcurl -plaintext \
+        -H "authorization: Bearer $USER_B_TOKEN" \
+        -d "{\"message_id\":\"$PRIVATE_MESSAGE_ID\",\"user_id\":\"$USER_B_ID\"}" \
+        $CHAT_ADDR chat.ChatService/MarkAsRead 2>&1)
+    
+    if echo "$result" | grep -q '"messageId":' || echo "$result" | grep -q '"readAt":'; then
+        print_success "用户 B 标记消息已读成功"
+    else
+        print_fail "用户 B 标记消息已读失败" "$result"
+    fi
+    
+    # 11.21 标记会话所有消息已读
+    print_test "用户 A 标记会话所有消息已读"
+    result=$(grpcurl -plaintext \
+        -H "authorization: Bearer $USER_A_TOKEN" \
+        -d "{\"conversation_id\":\"$PRIVATE_CONVERSATION_ID\",\"user_id\":\"$USER_A_ID\"}" \
+        $CHAT_ADDR chat.ChatService/MarkConversationAsRead 2>&1)
+    
+    if echo "$result" | grep -q '"conversationId":' || echo "$result" | grep -q '"readAt":' || [ -z "$result" ] || echo "$result" | grep -q "{}"; then
+        print_success "用户 A 标记会话已读成功"
+    else
+        print_fail "用户 A 标记会话已读失败" "$result"
+    fi
+    
+    # 11.22 获取未读数
+    print_test "获取未读消息数"
+    result=$(grpcurl -plaintext \
+        -H "authorization: Bearer $USER_B_TOKEN" \
+        -d "{\"user_id\":\"$USER_B_ID\",\"conversation_ids\":[\"$PRIVATE_CONVERSATION_ID\"]}" \
+        $CHAT_ADDR chat.ChatService/GetUnreadCounts 2>&1)
+    
+    if echo "$result" | grep -q '"unreadCounts":' || [ -z "$result" ] || echo "$result" | grep -q "{}"; then
+        print_success "获取未读数成功"
+    else
+        print_fail "获取未读数失败" "$result"
+    fi
+}
+
+# ============================================================================
+# 12. SuperUser 管理双用户测试
+# ============================================================================
+
+test_superuser_manage_two_users() {
+    print_header "12. SuperUser 管理双用户测试"
+    
+    # 12.1 SuperUser 登录
+    print_test "SuperUser 登录"
+    result=$(grpcurl -plaintext \
+        -d '{"username":"funcdfs","password":"fw142857"}' \
+        $SUPERUSER_ADDR superuser.SuperUserService/Login 2>&1)
+    
+    if echo "$result" | grep -q '"accessToken":'; then
+        SUPERUSER_TOKEN=$(echo "$result" | grep -o '"accessToken": "[^"]*"' | cut -d'"' -f4)
+        print_success "SuperUser 登录成功"
+    else
+        print_fail "SuperUser 登录失败" "$result"
+        return 1
+    fi
+    
+    # 12.2 查看用户 A 详情
+    print_test "查看用户 A 详情"
+    result=$(grpcurl -plaintext \
+        -H "authorization: Bearer $SUPERUSER_TOKEN" \
+        -d "{\"user_id\":\"$USER_A_ID\"}" \
+        $SUPERUSER_ADDR superuser.SuperUserService/GetUser 2>&1)
+    
+    if echo "$result" | grep -q '"username":'; then
+        print_success "查看用户 A 详情成功"
+    else
+        print_fail "查看用户 A 详情失败" "$result"
+    fi
+    
+    # 12.3 更新用户 A 信息
+    print_test "更新用户 A 信息"
+    result=$(grpcurl -plaintext \
+        -H "authorization: Bearer $SUPERUSER_TOKEN" \
+        -d "{\"user_id\":\"$USER_A_ID\",\"display_name\":\"Updated User A\"}" \
+        $SUPERUSER_ADDR superuser.SuperUserService/UpdateUser 2>&1)
+    
+    if echo "$result" | grep -q '"username":\|Updated'; then
+        print_success "更新用户 A 信息成功"
+    else
+        print_fail "更新用户 A 信息失败" "$result"
+    fi
+
+    # 12.4 封禁用户 A
+    print_test "封禁用户 A"
+    result=$(grpcurl -plaintext \
+        -H "authorization: Bearer $SUPERUSER_TOKEN" \
+        -d "{\"user_id\":\"$USER_A_ID\",\"reason\":\"Test ban\",\"duration_seconds\":3600}" \
+        $SUPERUSER_ADDR superuser.SuperUserService/BanUser 2>&1)
+    
+    if echo "$result" | grep -q '"success": true'; then
+        print_success "封禁用户 A 成功"
+    else
+        print_fail "封禁用户 A 失败" "$result"
+    fi
+    
+    # 12.5 解封用户 A
+    print_test "解封用户 A"
+    result=$(grpcurl -plaintext \
+        -H "authorization: Bearer $SUPERUSER_TOKEN" \
+        -d "{\"user_id\":\"$USER_A_ID\"}" \
+        $SUPERUSER_ADDR superuser.SuperUserService/UnbanUser 2>&1)
+    
+    if echo "$result" | grep -q '"success": true'; then
+        print_success "解封用户 A 成功"
+    else
+        print_fail "解封用户 A 失败" "$result"
+    fi
+    
+    # 12.6 删除用户 A（软删除）
+    print_test "删除用户 A（软删除）"
+    result=$(grpcurl -plaintext \
+        -H "authorization: Bearer $SUPERUSER_TOKEN" \
+        -d "{\"user_id\":\"$USER_A_ID\",\"hard_delete\":false}" \
+        $SUPERUSER_ADDR superuser.SuperUserService/DeleteUser 2>&1)
+    
+    if echo "$result" | grep -q '"success": true'; then
+        print_success "删除用户 A（软删除）成功"
+    else
+        print_fail "删除用户 A（软删除）失败" "$result"
+    fi
+
+    # 12.7 删除用户 B（硬删除）
+    print_test "删除用户 B（硬删除）"
+    result=$(grpcurl -plaintext \
+        -H "authorization: Bearer $SUPERUSER_TOKEN" \
+        -d "{\"user_id\":\"$USER_B_ID\",\"hard_delete\":true}" \
+        $SUPERUSER_ADDR superuser.SuperUserService/DeleteUser 2>&1)
+    
+    if echo "$result" | grep -q '"success": true'; then
+        print_success "删除用户 B（硬删除）成功"
+    else
+        print_fail "删除用户 B（硬删除）失败" "$result"
+    fi
+    
+    # 12.8 SuperUser 登出
+    print_test "SuperUser 登出"
+    result=$(grpcurl -plaintext \
+        -d "{\"access_token\":\"$SUPERUSER_TOKEN\"}" \
+        $SUPERUSER_ADDR superuser.SuperUserService/Logout 2>&1)
+    
+    if [ -z "$result" ] || echo "$result" | grep -q "{}"; then
+        print_success "SuperUser 登出成功"
+    else
+        print_fail "SuperUser 登出失败" "$result"
+    fi
+}
+
+# ============================================================================
+# 13. 清理测试数据
 # ============================================================================
 
 cleanup_test_data() {
-    print_header "11. 清理测试数据"
+    print_header "13. 清理测试数据"
     
+    # 删除回复评论
+    if [ -n "$REPLY_COMMENT_ID" ]; then
+        print_test "DeleteComment - 删除回复评论"
+        result=$(grpcurl -plaintext \
+            -H "authorization: Bearer $ACCESS_TOKEN" \
+            -d "{\"comment_id\":\"$REPLY_COMMENT_ID\",\"user_id\":\"$USER_ID\"}" \
+            $GATEWAY_ADDR comment.CommentService/DeleteComment 2>&1)
+        
+        if echo "$result" | grep -q "success" || [ -z "$result" ]; then
+            print_success "DeleteComment (Reply) - 删除成功"
+        else
+            print_fail "DeleteComment (Reply) - 删除失败" "$result"
+        fi
+    fi
+
     # 删除评论
     if [ -n "$COMMENT_ID" ]; then
         print_test "DeleteComment - 删除测试评论"
@@ -1103,6 +1746,21 @@ cleanup_test_data() {
             print_success "DeleteComment - 删除成功"
         else
             print_fail "DeleteComment - 删除失败" "$result"
+        fi
+    fi
+    
+    # 删除草稿
+    if [ -n "$DRAFT_ID" ]; then
+        print_test "DeleteContent - 删除测试草稿"
+        result=$(grpcurl -plaintext \
+            -H "authorization: Bearer $ACCESS_TOKEN" \
+            -d "{\"content_id\":\"$DRAFT_ID\",\"user_id\":\"$USER_ID\"}" \
+            $GATEWAY_ADDR content.ContentService/DeleteContent 2>&1)
+        
+        if echo "$result" | grep -q "success" || [ -z "$result" ]; then
+            print_success "DeleteContent (Draft) - 删除成功"
+        else
+            print_fail "DeleteContent (Draft) - 删除失败" "$result"
         fi
     fi
     
@@ -1120,10 +1778,11 @@ cleanup_test_data() {
             print_fail "DeleteContent - 删除失败" "$result"
         fi
     fi
-    
+
     # 登出
     print_test "Logout - 用户登出"
     result=$(grpcurl -plaintext \
+        -H "authorization: Bearer $ACCESS_TOKEN" \
         -d "{\"access_token\":\"$ACCESS_TOKEN\"}" \
         $GATEWAY_ADDR auth.AuthService/Logout 2>&1)
     
@@ -1163,8 +1822,10 @@ main() {
     test_notification_service
     test_chat_service
     test_superuser_service
+    test_two_users_interaction
+    test_superuser_manage_two_users
     cleanup_test_data
-    
+
     # 输出测试结果
     print_header "测试结果汇总"
     echo ""

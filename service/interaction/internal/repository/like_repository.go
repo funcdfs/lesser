@@ -3,6 +3,7 @@ package repository
 
 import (
 	"database/sql"
+	"fmt"
 	"time"
 
 	"github.com/google/uuid"
@@ -72,9 +73,14 @@ func (r *LikeRepository) BatchExists(userID string, contentIDs []string) (map[st
 	for rows.Next() {
 		var contentID string
 		if err := rows.Scan(&contentID); err != nil {
-			continue
+			return nil, fmt.Errorf("扫描行失败: %w", err)
 		}
 		result[contentID] = true
 	}
+
+	if err := rows.Err(); err != nil {
+		return nil, fmt.Errorf("行迭代错误: %w", err)
+	}
+
 	return result, nil
 }

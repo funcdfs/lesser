@@ -145,23 +145,26 @@ func HealthCheckWithTimeout(ctx context.Context, db *sql.DB, timeout time.Durati
 type TxFunc func(tx *sql.Tx) error
 
 // WithTransaction 在事务中执行函数
+// 使用 committed 标志确保 Commit 成功后不会再执行 Rollback
 func WithTransaction(ctx context.Context, db *sql.DB, fn TxFunc) error {
 	tx, err := db.BeginTx(ctx, nil)
 	if err != nil {
 		return fmt.Errorf("开始事务失败: %w", err)
 	}
 
+	var committed bool
 	defer func() {
 		if p := recover(); p != nil {
 			tx.Rollback()
 			panic(p)
 		}
+		// 只有在未提交时才回滚
+		if !committed {
+			tx.Rollback()
+		}
 	}()
 
 	if err := fn(tx); err != nil {
-		if rbErr := tx.Rollback(); rbErr != nil {
-			return fmt.Errorf("回滚事务失败: %v, 原始错误: %w", rbErr, err)
-		}
 		return err
 	}
 
@@ -169,27 +172,31 @@ func WithTransaction(ctx context.Context, db *sql.DB, fn TxFunc) error {
 		return fmt.Errorf("提交事务失败: %w", err)
 	}
 
+	committed = true
 	return nil
 }
 
 // WithTransactionOptions 带选项的事务执行
+// 使用 committed 标志确保 Commit 成功后不会再执行 Rollback
 func WithTransactionOptions(ctx context.Context, db *sql.DB, opts *sql.TxOptions, fn TxFunc) error {
 	tx, err := db.BeginTx(ctx, opts)
 	if err != nil {
 		return fmt.Errorf("开始事务失败: %w", err)
 	}
 
+	var committed bool
 	defer func() {
 		if p := recover(); p != nil {
 			tx.Rollback()
 			panic(p)
 		}
+		// 只有在未提交时才回滚
+		if !committed {
+			tx.Rollback()
+		}
 	}()
 
 	if err := fn(tx); err != nil {
-		if rbErr := tx.Rollback(); rbErr != nil {
-			return fmt.Errorf("回滚事务失败: %v, 原始错误: %w", rbErr, err)
-		}
 		return err
 	}
 
@@ -197,6 +204,7 @@ func WithTransactionOptions(ctx context.Context, db *sql.DB, opts *sql.TxOptions
 		return fmt.Errorf("提交事务失败: %w", err)
 	}
 
+	committed = true
 	return nil
 }
 
