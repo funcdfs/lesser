@@ -80,6 +80,49 @@ pub fn step_done(msg: &str) {
     }
 }
 
+/// 打印步骤完成消息（带函数名和文件路径）
+/// 
+/// 输出格式：
+/// ```
+///   ✓ 测试名称
+///       → Method()  file.rs
+/// ```
+pub fn step_done_with_func(msg: &str, func_name: &str, file_path: &str) {
+    if no_color() {
+        println!("  [OK] {}", msg);
+        println!("        -> {}  {}", func_name, file_path);
+    } else {
+        println!("  {} {}", style("✓").green(), msg);
+        println!("        {} {}  {}", style("→").dim(), style(func_name).cyan(), style(file_path).dim());
+    }
+}
+
+/// 打印步骤失败消息
+pub fn step_fail(msg: &str) {
+    if no_color() {
+        println!("  [FAIL] {}", msg);
+    } else {
+        println!("  {} {}", style("✗").red(), msg);
+    }
+}
+
+/// 打印步骤失败消息（带函数名和文件路径）
+/// 
+/// 输出格式：
+/// ```
+///   ✗ 测试名称
+///       → Method()  file.rs
+/// ```
+pub fn step_fail_with_func(msg: &str, func_name: &str, file_path: &str) {
+    if no_color() {
+        println!("  [FAIL] {}", msg);
+        println!("        -> {}  {}", func_name, file_path);
+    } else {
+        println!("  {} {}", style("✗").red(), msg);
+        println!("        {} {}  {}", style("→").dim(), style(func_name).cyan(), style(file_path).dim());
+    }
+}
+
 /// 打印键值对
 pub fn kv(key: &str, value: &str) {
     if no_color() {
@@ -156,7 +199,8 @@ pub fn header(title: &str) {
     println!();
 }
 
-/// 打印 URL
+/// 打印 URL（用于显示服务访问地址）
+#[allow(dead_code)]
 pub fn url(name: &str, url: &str) {
     if no_color() {
         println!("  {}  ->  {}", name, url);

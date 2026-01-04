@@ -33,10 +33,13 @@ const SERVICES: ServiceGroup = ServiceGroup {
     services: &[
         "auth",
         "user",
-        "post",
-        "feed",
+        "content",
+        "interaction",
+        "comment",
+        "timeline",
         "search",
         "notification",
+        "superuser",
     ],
     emoji: "⚙️",
 };
@@ -131,10 +134,13 @@ async fn start_services(compose: &DockerCompose) -> Result<()> {
     ui::kv("Gateway gRPC", "localhost:50053");
     ui::kv("Auth gRPC", "localhost:50054");
     ui::kv("User gRPC", "localhost:50055");
-    ui::kv("Post gRPC", "localhost:50056");
-    ui::kv("Feed gRPC", "localhost:50057");
+    ui::kv("Content gRPC", "localhost:50056");
     ui::kv("Search gRPC", "localhost:50058");
     ui::kv("Notification gRPC", "localhost:50059");
+    ui::kv("Interaction gRPC", "localhost:50060");
+    ui::kv("Comment gRPC", "localhost:50061");
+    ui::kv("Timeline gRPC", "localhost:50062");
+    ui::kv("SuperUser gRPC", "localhost:50063");
     ui::kv("Chat gRPC", "localhost:50052");
 
     Ok(())
@@ -412,10 +418,13 @@ fn print_service_info(config: &Config) {
     ui::kv("    Gateway", "localhost:50053");
     ui::kv("    Auth", "localhost:50054");
     ui::kv("    User", "localhost:50055");
-    ui::kv("    Post", "localhost:50056");
-    ui::kv("    Feed", "localhost:50057");
+    ui::kv("    Content", "localhost:50056");
     ui::kv("    Search", "localhost:50058");
     ui::kv("    Notification", "localhost:50059");
+    ui::kv("    Interaction", "localhost:50060");
+    ui::kv("    Comment", "localhost:50061");
+    ui::kv("    Timeline", "localhost:50062");
+    ui::kv("    SuperUser", "localhost:50063");
     ui::kv("    Chat", "localhost:50052");
     println!();
 

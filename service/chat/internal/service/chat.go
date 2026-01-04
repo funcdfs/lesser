@@ -3,6 +3,7 @@ package service
 
 import (
 	"context"
+	"database/sql"
 	"fmt"
 	"log/slog"
 	"time"
@@ -208,13 +209,10 @@ func (s *ChatService) SendMessage(ctx context.Context, req SendMessageRequest) (
 	}
 
 	msg := &repository.Message{
-		DialogID:   req.ConversationID,
-		SenderID:   req.SenderID,
-		Content:    req.Content,
-		MsgType:    req.MessageType,
-		Date:       time.Now().UTC(),
-		IsOutgoing: true,
-		IsUnread:   true,
+		ConversationID: req.ConversationID,
+		SenderID:       req.SenderID,
+		Type:           req.MessageType,
+		Content:        sql.NullString{String: req.Content, Valid: true},
 	}
 
 	if err := s.messageRepo.Create(ctx, msg); err != nil {
@@ -347,7 +345,7 @@ func (s *ChatService) IsMember(ctx context.Context, conversationID, userID uuid.
 }
 
 // GetMessageByID 根据 ID 获取消息
-func (s *ChatService) GetMessageByID(ctx context.Context, messageID int64) (*repository.Message, error) {
+func (s *ChatService) GetMessageByID(ctx context.Context, messageID uuid.UUID) (*repository.Message, error) {
 	return s.messageRepo.GetByID(ctx, messageID)
 }
 
@@ -419,13 +417,13 @@ func (s *ChatService) MarkConversationAsRead(ctx context.Context, conversationID
 }
 
 // MarkMessageAsRead 标记单条消息为已读
-func (s *ChatService) MarkMessageAsRead(ctx context.Context, messageID int64, userID uuid.UUID) (*repository.ReadReceipt, error) {
+func (s *ChatService) MarkMessageAsRead(ctx context.Context, messageID uuid.UUID, userID uuid.UUID) (*repository.ReadReceipt, error) {
 	msg, err := s.messageRepo.GetByID(ctx, messageID)
 	if err != nil {
 		return nil, fmt.Errorf("%w: %v", ErrGetMessageFailed, err)
 	}
 
-	member, err := s.conversationRepo.GetMember(ctx, msg.DialogID, userID)
+	member, err := s.conversationRepo.GetMember(ctx, msg.ConversationID, userID)
 	if err != nil {
 		if err == repository.ErrNotFound {
 			return nil, ErrNotMember
@@ -439,27 +437,27 @@ func (s *ChatService) MarkMessageAsRead(ctx context.Context, messageID int64, us
 	}
 
 	// 检查是否已读
-	if member.LastReadAt.Valid && !msg.Date.After(member.LastReadAt.Time) {
+	if member.LastReadAt.Valid && !msg.CreatedAt.After(member.LastReadAt.Time) {
 		return nil, ErrAlreadyRead
 	}
 
-	readAt := msg.Date
+	readAt := msg.CreatedAt
 
 	// 更新最后已读时间
-	if err := s.conversationRepo.UpdateLastReadAt(ctx, msg.DialogID, userID, readAt); err != nil {
+	if err := s.conversationRepo.UpdateLastReadAt(ctx, msg.ConversationID, userID, readAt); err != nil {
 		return nil, fmt.Errorf("%w: %v", ErrMarkReadFailed, err)
 	}
 
 	// 使缓存失效
 	if s.unreadCacheService != nil {
-		if err := s.unreadCacheService.InvalidateCache(ctx, userID, msg.DialogID); err != nil {
+		if err := s.unreadCacheService.InvalidateCache(ctx, userID, msg.ConversationID); err != nil {
 			slog.Warn("使未读数缓存失效失败", slog.Any("error", err))
 		}
 	}
 
 	return &repository.ReadReceipt{
 		MessageID:      messageID,
-		ConversationID: msg.DialogID,
+		ConversationID: msg.ConversationID,
 		ReaderID:       userID,
 		ReadAt:         time.Now(),
 	}, nil

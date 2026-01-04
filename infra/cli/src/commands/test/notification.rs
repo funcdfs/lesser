@@ -34,28 +34,28 @@ pub async fn run_tests() -> Result<TestStats> {
 
     // 1. Bob 关注 Alice（触发关注通知）
     let result = follow_user(&bob, &alice.id).await;
-    stats.record(result, "Bob 关注 Alice");
+    stats.record_with_func(result, "Bob 关注 Alice", "Follow()", "user/handler.go");
     grpc::delay_medium().await;
 
     // 2. Alice 获取未读通知数
     let result = get_unread_count(&alice).await;
-    stats.record(result, "获取未读通知数");
+    stats.record_with_func(result, "获取未读通知数", "GetUnreadCount()", "notification/handler.go");
     grpc::delay_short().await;
 
     // 3. Alice 获取通知列表
     let (success, notification_id) = list_notifications(&alice).await;
-    stats.record(success, "获取通知列表");
+    stats.record_with_func(success, "获取通知列表", "List()", "notification/handler.go");
     grpc::delay_short().await;
 
     // 4. Alice 获取未读通知列表
     let result = list_unread_notifications(&alice).await;
-    stats.record(result, "获取未读通知列表");
+    stats.record_with_func(result, "获取未读通知列表", "List()", "notification/handler.go");
     grpc::delay_short().await;
 
     // 5. Alice 标记单条通知已读
     if !notification_id.is_empty() {
         let result = read_notification(&alice, &notification_id).await;
-        stats.record(result, "标记单条通知已读");
+        stats.record_with_func(result, "标记单条通知已读", "Read()", "notification/handler.go");
         grpc::delay_short().await;
     } else {
         stats.record(true, "标记单条通知已读（无通知，跳过）");
@@ -63,12 +63,12 @@ pub async fn run_tests() -> Result<TestStats> {
 
     // 6. Alice 标记所有通知已读
     let result = read_all_notifications(&alice).await;
-    stats.record(result, "标记所有通知已读");
+    stats.record_with_func(result, "标记所有通知已读", "ReadAll()", "notification/handler.go");
     grpc::delay_short().await;
 
     // 7. 再次获取未读数（应为 0）
     let result = get_unread_count(&alice).await;
-    stats.record(result, "再次获取未读数");
+    stats.record_with_func(result, "再次获取未读数", "GetUnreadCount()", "notification/handler.go");
 
     // 清理
     auth::cleanup_user(&alice).await;

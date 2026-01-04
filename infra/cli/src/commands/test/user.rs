@@ -46,102 +46,102 @@ pub async fn run_tests() -> Result<TestStats> {
 
     // 1. Alice 查看自己的资料
     let result = get_profile(&alice, &alice.id).await;
-    stats.record(result, "Alice 查看自己的资料");
+    stats.record_with_func(result, "Alice 查看自己的资料", "GetProfile()", "user/handler.go");
     grpc::delay_short().await;
 
     // 2. Alice 更新个人资料
     let result = update_profile(&alice, "Hello, I'm Alice! 🌟", "Shanghai").await;
-    stats.record(result, "Alice 更新个人资料");
+    stats.record_with_func(result, "Alice 更新个人资料", "UpdateProfile()", "user/handler.go");
     grpc::delay_short().await;
 
     // 3. Bob 通过用户名查看 Alice 的资料
     let result = get_profile_by_username(&bob, &alice.username).await;
-    stats.record(result, "Bob 通过用户名查看 Alice");
+    stats.record_with_func(result, "Bob 通过用户名查看 Alice", "GetProfileByUsername()", "user/handler.go");
     grpc::delay_short().await;
 
     // 4. Alice 关注 Bob
     let result = follow(&alice, &bob.id).await;
-    stats.record(result, "Alice 关注 Bob");
+    stats.record_with_func(result, "Alice 关注 Bob", "Follow()", "user/handler.go");
     grpc::delay_short().await;
 
     // 5. 检查关注状态
     let result = check_following(&alice, &bob.id).await;
-    stats.record(result, "检查 Alice 是否关注 Bob");
+    stats.record_with_func(result, "检查 Alice 是否关注 Bob", "CheckFollowing()", "user/handler.go");
     grpc::delay_short().await;
 
     // 6. Bob 关注 Alice（互关）
     let result = follow(&bob, &alice.id).await;
-    stats.record(result, "Bob 关注 Alice（互关）");
+    stats.record_with_func(result, "Bob 关注 Alice（互关）", "Follow()", "user/handler.go");
     grpc::delay_short().await;
 
     // 7. 检查互关状态
     let result = get_relationship(&alice, &bob.id).await;
-    stats.record(result, "检查互关状态");
+    stats.record_with_func(result, "检查互关状态", "GetRelationship()", "user/handler.go");
     grpc::delay_short().await;
 
     // 8. 获取 Alice 的粉丝列表
     let result = get_followers(&alice).await;
-    stats.record(result, "获取 Alice 的粉丝列表");
+    stats.record_with_func(result, "获取 Alice 的粉丝列表", "GetFollowers()", "user/handler.go");
     grpc::delay_short().await;
 
     // 9. 获取 Alice 的关注列表
     let result = get_following(&alice).await;
-    stats.record(result, "获取 Alice 的关注列表");
+    stats.record_with_func(result, "获取 Alice 的关注列表", "GetFollowing()", "user/handler.go");
     grpc::delay_short().await;
 
     // 10. 获取共同关注
     let result = get_mutual_followers(&alice, &bob.id).await;
-    stats.record(result, "获取共同关注");
+    stats.record_with_func(result, "获取共同关注", "GetMutualFollowers()", "user/handler.go");
     grpc::delay_short().await;
 
     // 11. Alice 取消关注 Bob
     let result = unfollow(&alice, &bob.id).await;
-    stats.record(result, "Alice 取消关注 Bob");
+    stats.record_with_func(result, "Alice 取消关注 Bob", "Unfollow()", "user/handler.go");
     grpc::delay_short().await;
 
     // 12. Alice 屏蔽 Bob（HIDE_POSTS - 不看他）
     let result = block(&alice, &bob.id, 1).await;
-    stats.record(result, "Alice 屏蔽 Bob（不看他）");
+    stats.record_with_func(result, "Alice 屏蔽 Bob（不看他）", "Block()", "user/handler.go");
     grpc::delay_short().await;
 
     // 13. 检查屏蔽状态
     let result = check_blocked(&alice, &bob.id).await;
-    stats.record(result, "检查屏蔽状态");
+    stats.record_with_func(result, "检查屏蔽状态", "CheckBlocked()", "user/handler.go");
     grpc::delay_short().await;
 
     // 14. Alice 取消屏蔽 Bob
     let result = unblock(&alice, &bob.id, 1).await;
-    stats.record(result, "Alice 取消屏蔽 Bob");
+    stats.record_with_func(result, "Alice 取消屏蔽 Bob", "Unblock()", "user/handler.go");
     grpc::delay_short().await;
 
     // 15. Alice 拉黑 Bob（BLOCK - 双向屏蔽）
     let result = block(&alice, &bob.id, 3).await;
-    stats.record(result, "Alice 拉黑 Bob");
+    stats.record_with_func(result, "Alice 拉黑 Bob", "Block()", "user/handler.go");
     grpc::delay_short().await;
 
     // 16. Alice 取消拉黑 Bob
     let result = unblock(&alice, &bob.id, 3).await;
-    stats.record(result, "Alice 取消拉黑 Bob");
+    stats.record_with_func(result, "Alice 取消拉黑 Bob", "Unblock()", "user/handler.go");
     grpc::delay_short().await;
 
     // 17. 获取用户设置
     let result = get_user_settings(&alice).await;
-    stats.record(result, "获取用户设置");
+    stats.record_with_func(result, "获取用户设置", "GetUserSettings()", "user/handler.go");
     grpc::delay_short().await;
 
     // 18. 更新用户设置
     let result = update_user_settings(&alice).await;
-    stats.record(result, "更新用户设置");
+    stats.record_with_func(result, "更新用户设置", "UpdateUserSettings()", "user/handler.go");
     grpc::delay_short().await;
 
     // 19. 批量获取用户资料
     let result = batch_get_profiles(&alice, &[&alice.id, &bob.id]).await;
-    stats.record(result, "批量获取用户资料");
+    stats.record_with_func(result, "批量获取用户资料", "BatchGetProfiles()", "user/handler.go");
     grpc::delay_short().await;
 
     // 20. 搜索用户
     let result = search_users(&alice, "test").await;
-    stats.record(result, "搜索用户");
+    stats.record_with_func(result, "搜索用户", "SearchUsers()", "user/handler.go");
 
     // 清理
     auth::cleanup_user(&alice).await;

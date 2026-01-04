@@ -46,12 +46,12 @@ pub async fn run_tests() -> Result<TestStats> {
             return Ok(stats);
         }
     };
-    stats.record(true, "Alice 发布内容");
+    stats.record_with_func(true, "Alice 发布内容", "CreateContent()", "content/handler.go");
     grpc::delay_short().await;
 
     // 2. Bob 对内容发表评论
     let (success, bob_comment_id) = create_comment(&bob, &content_id, "", "这篇内容写得真好！👍").await;
-    stats.record(success, "Bob 发表评论");
+    stats.record_with_func(success, "Bob 发表评论", "CreateComment()", "comment/handler.go");
     grpc::delay_short().await;
 
     // 3. Alice 回复 Bob 的评论
@@ -60,23 +60,23 @@ pub async fn run_tests() -> Result<TestStats> {
     } else {
         (false, String::new())
     };
-    stats.record(success, "Alice 回复 Bob 的评论");
+    stats.record_with_func(success, "Alice 回复 Bob 的评论", "CreateComment()", "comment/handler.go");
     grpc::delay_short().await;
 
     // 4. 获取评论列表（最新优先）
     let result = list_comments(&alice, &content_id, 2).await;
-    stats.record(result, "获取评论列表（最新优先）");
+    stats.record_with_func(result, "获取评论列表（最新优先）", "ListComments()", "comment/handler.go");
     grpc::delay_short().await;
 
     // 5. 获取评论列表（最热门）
     let result = list_comments(&alice, &content_id, 3).await;
-    stats.record(result, "获取评论列表（最热门）");
+    stats.record_with_func(result, "获取评论列表（最热门）", "ListComments()", "comment/handler.go");
     grpc::delay_short().await;
 
     // 6. 获取回复列表
     if !bob_comment_id.is_empty() {
         let result = list_replies(&alice, &content_id, &bob_comment_id).await;
-        stats.record(result, "获取评论的回复列表");
+        stats.record_with_func(result, "获取评论的回复列表", "ListComments()", "comment/handler.go");
         grpc::delay_short().await;
     } else {
         stats.record(false, "获取评论的回复列表（跳过）");
@@ -85,7 +85,7 @@ pub async fn run_tests() -> Result<TestStats> {
     // 7. Bob 点赞 Alice 的回复
     if !alice_reply_id.is_empty() {
         let result = like_comment(&bob, &alice_reply_id).await;
-        stats.record(result, "Bob 点赞 Alice 的回复");
+        stats.record_with_func(result, "Bob 点赞 Alice 的回复", "LikeComment()", "comment/handler.go");
         grpc::delay_short().await;
     } else {
         stats.record(false, "Bob 点赞 Alice 的回复（跳过）");
@@ -93,13 +93,13 @@ pub async fn run_tests() -> Result<TestStats> {
 
     // 8. 获取评论数量
     let result = get_comment_count(&alice, &content_id).await;
-    stats.record(result, "获取评论数量");
+    stats.record_with_func(result, "获取评论数量", "GetCommentCount()", "comment/handler.go");
     grpc::delay_short().await;
 
     // 9. Bob 取消点赞
     if !alice_reply_id.is_empty() {
         let result = unlike_comment(&bob, &alice_reply_id).await;
-        stats.record(result, "Bob 取消点赞");
+        stats.record_with_func(result, "Bob 取消点赞", "UnlikeComment()", "comment/handler.go");
         grpc::delay_short().await;
     } else {
         stats.record(false, "Bob 取消点赞（跳过）");
@@ -108,7 +108,7 @@ pub async fn run_tests() -> Result<TestStats> {
     // 10. 获取单条评论
     if !bob_comment_id.is_empty() {
         let result = get_comment(&alice, &bob_comment_id).await;
-        stats.record(result, "获取单条评论");
+        stats.record_with_func(result, "获取单条评论", "GetComment()", "comment/handler.go");
         grpc::delay_short().await;
     } else {
         stats.record(false, "获取单条评论（跳过）");
@@ -117,7 +117,7 @@ pub async fn run_tests() -> Result<TestStats> {
     // 11. Alice 删除自己的回复
     if !alice_reply_id.is_empty() {
         let result = delete_comment(&alice, &alice_reply_id).await;
-        stats.record(result, "Alice 删除自己的回复");
+        stats.record_with_func(result, "Alice 删除自己的回复", "DeleteComment()", "comment/handler.go");
         grpc::delay_short().await;
     } else {
         stats.record(false, "Alice 删除自己的回复（跳过）");
@@ -126,7 +126,7 @@ pub async fn run_tests() -> Result<TestStats> {
     // 12. Bob 删除自己的评论
     if !bob_comment_id.is_empty() {
         let result = delete_comment(&bob, &bob_comment_id).await;
-        stats.record(result, "Bob 删除自己的评论");
+        stats.record_with_func(result, "Bob 删除自己的评论", "DeleteComment()", "comment/handler.go");
     } else {
         stats.record(false, "Bob 删除自己的评论（跳过）");
     }

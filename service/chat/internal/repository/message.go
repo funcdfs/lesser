@@ -3,126 +3,37 @@ package repository
 import (
 	"context"
 	"database/sql"
-	"database/sql/driver"
-	"encoding/json"
 	"fmt"
 	"time"
 
 	"github.com/google/uuid"
 )
 
-// NullableJSON 可空的 JSON 类型
-type NullableJSON json.RawMessage
-
-// Scan 实现 sql.Scanner 接口
-func (n *NullableJSON) Scan(value interface{}) error {
-	if value == nil {
-		*n = nil
-		return nil
-	}
-	switch v := value.(type) {
-	case []byte:
-		*n = NullableJSON(v)
-	case string:
-		*n = NullableJSON(v)
-	default:
-		return fmt.Errorf("无法将 %T 转换为 NullableJSON", value)
-	}
-	return nil
-}
-
-// Value 实现 driver.Valuer 接口
-func (n NullableJSON) Value() (driver.Value, error) {
-	if n == nil {
-		return nil, nil
-	}
-	return []byte(n), nil
-}
-
-// MessageType 消息类型
+// MessageType 消息类型 (数据库中为 INTEGER)
 type MessageType int
 
 const (
-	MessageTypeText   MessageType = 0
-	MessageTypeImage  MessageType = 1
-	MessageTypeVideo  MessageType = 2
-	MessageTypeLink   MessageType = 3
-	MessageTypeFile   MessageType = 4
-	MessageTypeSystem MessageType = 9
+	MessageTypeText   MessageType = 1 // 文本消息
+	MessageTypeImage  MessageType = 2 // 图片消息
+	MessageTypeVideo  MessageType = 3 // 视频消息
+	MessageTypeFile   MessageType = 4 // 文件消息
+	MessageTypeSystem MessageType = 5 // 系统消息
 )
 
-// String 返回消息类型字符串
-func (mt MessageType) String() string {
-	switch mt {
-	case MessageTypeText:
-		return "text"
-	case MessageTypeImage:
-		return "image"
-	case MessageTypeVideo:
-		return "video"
-	case MessageTypeLink:
-		return "link"
-	case MessageTypeFile:
-		return "file"
-	case MessageTypeSystem:
-		return "system"
-	default:
-		return "text"
-	}
-}
-
-// ParseMessageType 解析消息类型字符串
-func ParseMessageType(s string) MessageType {
-	switch s {
-	case "text":
-		return MessageTypeText
-	case "image":
-		return MessageTypeImage
-	case "video":
-		return MessageTypeVideo
-	case "link":
-		return MessageTypeLink
-	case "file":
-		return MessageTypeFile
-	case "system":
-		return MessageTypeSystem
-	default:
-		return MessageTypeText
-	}
-}
-
-// Message 消息实体
+// Message 消息实体 (匹配数据库 messages 表结构)
 type Message struct {
-	ID         int64
-	LocalID    int32
-	DialogID   uuid.UUID
-	SenderID   uuid.UUID
-	Content    string
-	MsgType    MessageType
-	Entities   NullableJSON
-	MediaInfo  NullableJSON
-	ReplyToID  sql.NullInt64
-	Date       time.Time
-	EditDate   sql.NullTime
-	IsOutgoing bool
-	IsUnread   bool
-	Flags      int32
-}
-
-// ReadReceipt 已读回执
-type ReadReceipt struct {
-	MessageID      int64
+	ID             uuid.UUID
 	ConversationID uuid.UUID
-	ReaderID       uuid.UUID
-	ReadAt         time.Time
-}
-
-// BatchReadReceipt 批量已读回执
-type BatchReadReceipt struct {
-	ConversationID uuid.UUID
-	ReaderID       uuid.UUID
-	MessageIDs     []int64
-	ReadAt         time.Time
+	SenderID       uuid.UUID
+	Type           MessageType
+	Content        sql.NullString
+	MediaURL       sql.NullString
+	MediaType      sql.NullString
+	ReplyToID      uuid.NullUUID
+	IsEdited       bool
+	IsDeleted      bool
+	CreatedAt      time.Time
+	UpdatedAt      time.Time
 }
 
 // MessageRepository 消息仓库
@@ -137,81 +48,41 @@ func NewMessageRepository(db *sql.DB) *MessageRepository {
 
 // Create 创建消息
 func (r *MessageRepository) Create(ctx context.Context, msg *Message) error {
-	// 使用事务确保 local_id 的原子性递增
-	tx, err := r.db.BeginTx(ctx, nil)
-	if err != nil {
-		return fmt.Errorf("开始事务失败: %w", err)
-	}
-	defer tx.Rollback()
-
-	// 获取当前会话的最大 local_id
-	var maxLocalID sql.NullInt32
-	err = tx.QueryRowContext(ctx,
-		`SELECT MAX(local_id) FROM chat_messages WHERE dialog_id = $1`,
-		msg.DialogID,
-	).Scan(&maxLocalID)
-	if err != nil {
-		return fmt.Errorf("获取最大 local_id 失败: %w", err)
-	}
-
-	nextLocalID := int32(1)
-	if maxLocalID.Valid {
-		nextLocalID = maxLocalID.Int32 + 1
-	}
-
 	query := `
-		INSERT INTO chat_messages (
-			local_id, dialog_id, sender_id, content, msg_type, entities, media_info,
-			reply_to_id, date, is_outgoing, is_unread, flags
-		)
-		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)
-		RETURNING id
+		INSERT INTO messages (id, conversation_id, sender_id, type, content, media_url, media_type, reply_to_id, created_at, updated_at)
+		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
 	`
-	if msg.Date.IsZero() {
-		msg.Date = time.Now().UTC()
+	now := time.Now().UTC()
+	if msg.ID == uuid.Nil {
+		msg.ID = uuid.New()
 	}
+	msg.CreatedAt = now
+	msg.UpdatedAt = now
 
-	// 处理 JSON 字段，空值转为 null
-	var entities, mediaInfo interface{}
-	if len(msg.Entities) > 0 {
-		entities = msg.Entities
-	}
-	if len(msg.MediaInfo) > 0 {
-		mediaInfo = msg.MediaInfo
-	}
-
-	err = tx.QueryRowContext(ctx, query,
-		nextLocalID, msg.DialogID, msg.SenderID, msg.Content, msg.MsgType,
-		entities, mediaInfo, msg.ReplyToID,
-		msg.Date, msg.IsOutgoing, msg.IsUnread, msg.Flags,
-	).Scan(&msg.ID)
+	_, err := r.db.ExecContext(ctx, query,
+		msg.ID, msg.ConversationID, msg.SenderID, int(msg.Type),
+		msg.Content, msg.MediaURL, msg.MediaType, msg.ReplyToID,
+		msg.CreatedAt, msg.UpdatedAt,
+	)
 	if err != nil {
 		return fmt.Errorf("创建消息失败: %w", err)
 	}
-
-	msg.LocalID = nextLocalID
-
-	if err = tx.Commit(); err != nil {
-		return fmt.Errorf("提交事务失败: %w", err)
-	}
-
 	return nil
 }
 
 // GetByID 根据 ID 获取消息
-func (r *MessageRepository) GetByID(ctx context.Context, id int64) (*Message, error) {
+func (r *MessageRepository) GetByID(ctx context.Context, id uuid.UUID) (*Message, error) {
 	query := `
-		SELECT id, local_id, dialog_id, sender_id, content, msg_type,
-			   entities, media_info, reply_to_id, date, edit_date,
-			   is_outgoing, is_unread, flags
-		FROM chat_messages
-		WHERE id = $1 AND deleted_at IS NULL
+		SELECT id, conversation_id, sender_id, type, content, media_url, media_type,
+			   reply_to_id, is_edited, is_deleted, created_at, updated_at
+		FROM messages
+		WHERE id = $1 AND is_deleted = false
 	`
 	msg := &Message{}
 	err := r.db.QueryRowContext(ctx, query, id).Scan(
-		&msg.ID, &msg.LocalID, &msg.DialogID, &msg.SenderID, &msg.Content, &msg.MsgType,
-		&msg.Entities, &msg.MediaInfo, &msg.ReplyToID, &msg.Date, &msg.EditDate,
-		&msg.IsOutgoing, &msg.IsUnread, &msg.Flags,
+		&msg.ID, &msg.ConversationID, &msg.SenderID, &msg.Type,
+		&msg.Content, &msg.MediaURL, &msg.MediaType, &msg.ReplyToID,
+		&msg.IsEdited, &msg.IsDeleted, &msg.CreatedAt, &msg.UpdatedAt,
 	)
 	if err != nil {
 		if err == sql.ErrNoRows {
@@ -226,8 +97,8 @@ func (r *MessageRepository) GetByID(ctx context.Context, id int64) (*Message, er
 func (r *MessageRepository) GetByConversationID(ctx context.Context, conversationID uuid.UUID, page, pageSize int) ([]Message, int64, error) {
 	// 统计总数
 	countQuery := `
-		SELECT COUNT(*) FROM chat_messages
-		WHERE dialog_id = $1 AND deleted_at IS NULL
+		SELECT COUNT(*) FROM messages
+		WHERE conversation_id = $1 AND is_deleted = false
 	`
 	var total int64
 	if err := r.db.QueryRowContext(ctx, countQuery, conversationID).Scan(&total); err != nil {
@@ -237,12 +108,11 @@ func (r *MessageRepository) GetByConversationID(ctx context.Context, conversatio
 	// 查询消息列表
 	offset := (page - 1) * pageSize
 	query := `
-		SELECT id, local_id, dialog_id, sender_id, content, msg_type,
-			   entities, media_info, reply_to_id, date, edit_date,
-			   is_outgoing, is_unread, flags
-		FROM chat_messages
-		WHERE dialog_id = $1 AND deleted_at IS NULL
-		ORDER BY date DESC
+		SELECT id, conversation_id, sender_id, type, content, media_url, media_type,
+			   reply_to_id, is_edited, is_deleted, created_at, updated_at
+		FROM messages
+		WHERE conversation_id = $1 AND is_deleted = false
+		ORDER BY created_at DESC
 		LIMIT $2 OFFSET $3
 	`
 	rows, err := r.db.QueryContext(ctx, query, conversationID, pageSize, offset)
@@ -255,9 +125,9 @@ func (r *MessageRepository) GetByConversationID(ctx context.Context, conversatio
 	for rows.Next() {
 		var msg Message
 		if err := rows.Scan(
-			&msg.ID, &msg.LocalID, &msg.DialogID, &msg.SenderID, &msg.Content, &msg.MsgType,
-			&msg.Entities, &msg.MediaInfo, &msg.ReplyToID, &msg.Date, &msg.EditDate,
-			&msg.IsOutgoing, &msg.IsUnread, &msg.Flags,
+			&msg.ID, &msg.ConversationID, &msg.SenderID, &msg.Type,
+			&msg.Content, &msg.MediaURL, &msg.MediaType, &msg.ReplyToID,
+			&msg.IsEdited, &msg.IsDeleted, &msg.CreatedAt, &msg.UpdatedAt,
 		); err != nil {
 			return nil, 0, fmt.Errorf("扫描消息失败: %w", err)
 		}
@@ -270,19 +140,18 @@ func (r *MessageRepository) GetByConversationID(ctx context.Context, conversatio
 // GetLatestByConversationID 获取会话的最新消息
 func (r *MessageRepository) GetLatestByConversationID(ctx context.Context, conversationID uuid.UUID) (*Message, error) {
 	query := `
-		SELECT id, local_id, dialog_id, sender_id, content, msg_type,
-			   entities, media_info, reply_to_id, date, edit_date,
-			   is_outgoing, is_unread, flags
-		FROM chat_messages
-		WHERE dialog_id = $1 AND deleted_at IS NULL
-		ORDER BY date DESC
+		SELECT id, conversation_id, sender_id, type, content, media_url, media_type,
+			   reply_to_id, is_edited, is_deleted, created_at, updated_at
+		FROM messages
+		WHERE conversation_id = $1 AND is_deleted = false
+		ORDER BY created_at DESC
 		LIMIT 1
 	`
 	msg := &Message{}
 	err := r.db.QueryRowContext(ctx, query, conversationID).Scan(
-		&msg.ID, &msg.LocalID, &msg.DialogID, &msg.SenderID, &msg.Content, &msg.MsgType,
-		&msg.Entities, &msg.MediaInfo, &msg.ReplyToID, &msg.Date, &msg.EditDate,
-		&msg.IsOutgoing, &msg.IsUnread, &msg.Flags,
+		&msg.ID, &msg.ConversationID, &msg.SenderID, &msg.Type,
+		&msg.Content, &msg.MediaURL, &msg.MediaType, &msg.ReplyToID,
+		&msg.IsEdited, &msg.IsDeleted, &msg.CreatedAt, &msg.UpdatedAt,
 	)
 	if err != nil {
 		if err == sql.ErrNoRows {
@@ -297,13 +166,13 @@ func (r *MessageRepository) GetLatestByConversationID(ctx context.Context, conve
 func (r *MessageRepository) GetUnreadCount(ctx context.Context, conversationID, userID uuid.UUID) (int64, error) {
 	query := `
 		SELECT COUNT(*)
-		FROM chat_messages m
-		INNER JOIN chat_conversation_members cm
-			ON cm.conversation_id = m.dialog_id AND cm.user_id = $2
-		WHERE m.dialog_id = $1
+		FROM messages m
+		INNER JOIN conversation_members cm
+			ON cm.conversation_id = m.conversation_id AND cm.user_id = $2
+		WHERE m.conversation_id = $1
 			AND m.sender_id != $2
-			AND m.deleted_at IS NULL
-			AND m.date > COALESCE(cm.last_read_at, cm.joined_at, '1970-01-01')
+			AND m.is_deleted = false
+			AND m.created_at > COALESCE(cm.last_read_at, cm.joined_at, '1970-01-01')
 	`
 	var count int64
 	if err := r.db.QueryRowContext(ctx, query, conversationID, userID).Scan(&count); err != nil {
@@ -327,15 +196,15 @@ func (r *MessageRepository) GetUnreadCountsBatch(ctx context.Context, userID uui
 	}
 
 	query := fmt.Sprintf(`
-		SELECT m.dialog_id, COUNT(*)
-		FROM chat_messages m
-		INNER JOIN chat_conversation_members cm
-			ON cm.conversation_id = m.dialog_id AND cm.user_id = $1
-		WHERE m.dialog_id IN (%s)
+		SELECT m.conversation_id, COUNT(*)
+		FROM messages m
+		INNER JOIN conversation_members cm
+			ON cm.conversation_id = m.conversation_id AND cm.user_id = $1
+		WHERE m.conversation_id IN (%s)
 			AND m.sender_id != $1
-			AND m.deleted_at IS NULL
-			AND m.date > COALESCE(cm.last_read_at, cm.joined_at, '1970-01-01')
-		GROUP BY m.dialog_id
+			AND m.is_deleted = false
+			AND m.created_at > COALESCE(cm.last_read_at, cm.joined_at, '1970-01-01')
+		GROUP BY m.conversation_id
 	`, placeholders)
 
 	rows, err := r.db.QueryContext(ctx, query, args...)
@@ -362,36 +231,9 @@ func (r *MessageRepository) GetUnreadCountsBatch(ctx context.Context, userID uui
 	return counts, nil
 }
 
-// FindUnreadMessageIDsInRange 查找指定时间范围内的未读消息 ID
-func (r *MessageRepository) FindUnreadMessageIDsInRange(ctx context.Context, conversationID, userID uuid.UUID, afterTime, beforeOrEqualTime time.Time) ([]int64, error) {
-	query := `
-		SELECT id FROM chat_messages
-		WHERE dialog_id = $1
-			AND sender_id != $2
-			AND deleted_at IS NULL
-			AND date > $3
-			AND date <= $4
-	`
-	rows, err := r.db.QueryContext(ctx, query, conversationID, userID, afterTime, beforeOrEqualTime)
-	if err != nil {
-		return nil, fmt.Errorf("查找未读消息 ID 失败: %w", err)
-	}
-	defer rows.Close()
-
-	var ids []int64
-	for rows.Next() {
-		var id int64
-		if err := rows.Scan(&id); err != nil {
-			return nil, fmt.Errorf("扫描消息 ID 失败: %w", err)
-		}
-		ids = append(ids, id)
-	}
-	return ids, nil
-}
-
 // Delete 删除消息（软删除）
-func (r *MessageRepository) Delete(ctx context.Context, id int64) error {
-	query := `UPDATE chat_messages SET deleted_at = $1 WHERE id = $2 AND deleted_at IS NULL`
+func (r *MessageRepository) Delete(ctx context.Context, id uuid.UUID) error {
+	query := `UPDATE messages SET is_deleted = true, updated_at = $1 WHERE id = $2 AND is_deleted = false`
 	result, err := r.db.ExecContext(ctx, query, time.Now().UTC(), id)
 	if err != nil {
 		return fmt.Errorf("删除消息失败: %w", err)
@@ -405,10 +247,54 @@ func (r *MessageRepository) Delete(ctx context.Context, id int64) error {
 
 // DeleteByConversationID 删除会话的所有消息（软删除）
 func (r *MessageRepository) DeleteByConversationID(ctx context.Context, conversationID uuid.UUID) error {
-	query := `UPDATE chat_messages SET deleted_at = $1 WHERE dialog_id = $2 AND deleted_at IS NULL`
+	query := `UPDATE messages SET is_deleted = true, updated_at = $1 WHERE conversation_id = $2 AND is_deleted = false`
 	_, err := r.db.ExecContext(ctx, query, time.Now().UTC(), conversationID)
 	if err != nil {
 		return fmt.Errorf("删除消息失败: %w", err)
 	}
 	return nil
+}
+
+
+// ReadReceipt 已读回执
+type ReadReceipt struct {
+	MessageID      uuid.UUID
+	ConversationID uuid.UUID
+	ReaderID       uuid.UUID
+	ReadAt         time.Time
+}
+
+// BatchReadReceipt 批量已读回执
+type BatchReadReceipt struct {
+	ConversationID uuid.UUID
+	ReaderID       uuid.UUID
+	MessageIDs     []uuid.UUID
+	ReadAt         time.Time
+}
+
+// FindUnreadMessageIDsInRange 查找指定时间范围内的未读消息 ID
+func (r *MessageRepository) FindUnreadMessageIDsInRange(ctx context.Context, conversationID, userID uuid.UUID, afterTime, beforeOrEqualTime time.Time) ([]uuid.UUID, error) {
+	query := `
+		SELECT id FROM messages
+		WHERE conversation_id = $1
+			AND sender_id != $2
+			AND is_deleted = false
+			AND created_at > $3
+			AND created_at <= $4
+	`
+	rows, err := r.db.QueryContext(ctx, query, conversationID, userID, afterTime, beforeOrEqualTime)
+	if err != nil {
+		return nil, fmt.Errorf("查找未读消息 ID 失败: %w", err)
+	}
+	defer rows.Close()
+
+	var ids []uuid.UUID
+	for rows.Next() {
+		var id uuid.UUID
+		if err := rows.Scan(&id); err != nil {
+			return nil, fmt.Errorf("扫描消息 ID 失败: %w", err)
+		}
+		ids = append(ids, id)
+	}
+	return ids, nil
 }

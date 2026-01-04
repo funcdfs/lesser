@@ -123,6 +123,18 @@ pub enum TestTarget {
     /// SuperUser 服务测试
     #[value(alias = "su")]
     Superuser,
+    /// 数据库分表验证
+    Db,
+    /// 服务联动测试
+    Integration,
+    /// 第一轮测试（初始化）
+    Round1,
+    /// 第二轮测试（重建）
+    Round2,
+    /// 第三轮测试（重启）
+    Round3,
+    /// 完整三轮测试
+    Full,
 }
 
 /// 启动目标

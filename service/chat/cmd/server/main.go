@@ -31,19 +31,13 @@ func main() {
 	grpcPort := getEnv("GRPC_PORT", "50052")
 
 	// 数据库连接（Chat 使用独立数据库 lesser_chat_db）
-	// 优先使用 DATABASE_URL，否则使用分离的配置
-	var dbConfig database.Config
-	if dbURL := getEnv("DATABASE_URL", ""); dbURL != "" {
-		dbConfig = database.Config{DSN: dbURL}
-	} else {
-		dbConfig = database.Config{
-			Host:     getEnv("DB_HOST", "localhost"),
-			Port:     getEnv("DB_PORT", "5432"),
-			User:     getEnv("DB_USER", "postgres"),
-			Password: getEnv("DB_PASSWORD", "postgres"),
-			DBName:   getEnv("DB_NAME", "lesser_chat_db"),
-			SSLMode:  getEnv("DB_SSLMODE", "disable"),
-		}
+	dbConfig := database.Config{
+		Host:     getEnv("DB_HOST", "localhost"),
+		Port:     getEnv("DB_PORT", "5432"),
+		User:     getEnv("DB_USER", "postgres"),
+		Password: getEnv("DB_PASSWORD", "postgres"),
+		DBName:   getEnv("DB_NAME", "lesser_chat_db"),
+		SSLMode:  getEnv("DB_SSLMODE", "disable"),
 	}
 
 	db, err := database.NewConnection(dbConfig)

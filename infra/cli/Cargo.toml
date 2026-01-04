@@ -48,6 +48,12 @@ ctrlc = "3"
 # 并发工具
 futures = "0.3"
 
+# 数据库连接
+tokio-postgres = { version = "0.7", features = ["with-uuid-1", "with-chrono-0_4"] }
+
+# UUID 支持
+uuid = { version = "1", features = ["v4"] }
+
 [dev-dependencies]
 # 属性测试
 proptest = "1"

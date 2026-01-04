@@ -10,6 +10,7 @@ package server
 import (
 	"context"
 	"log/slog"
+	"time"
 
 	"google.golang.org/grpc"
 
@@ -107,6 +108,7 @@ func NewGatewayServer(cfg Config, log *slog.Logger) (*GatewayServer, error) {
 }
 
 // Start 启动 Gateway 服务
+// 包含重试机制，确保 Auth 服务可用后能正确加载公钥
 func (s *GatewayServer) Start(ctx context.Context) error {
 	authConn := s.router.GetAuthConn()
 	if authConn == nil {
@@ -118,14 +120,76 @@ func (s *GatewayServer) Start(ctx context.Context) error {
 	authClient := authpb.NewAuthServiceClient(authConn)
 	adapter := &authClientAdapter{client: authClient}
 
-	// 启动 JWT 验签器
-	if err := s.jwtValidator.Start(ctx, adapter); err != nil {
+	// 启动 JWT 验签器（带重试）
+	if err := s.startJWTValidatorWithRetry(ctx, adapter); err != nil {
 		s.log.Warn("JWT 验签器启动失败", slog.Any("error", err))
+		// 启动后台重试协程
+		go s.backgroundJWTValidatorRetry(adapter)
 		return nil
 	}
 
 	s.log.Info("Gateway 服务已启动")
 	return nil
+}
+
+// startJWTValidatorWithRetry 带重试的 JWT 验签器启动
+// 最多重试 5 次，每次间隔递增（1s, 2s, 4s, 8s, 16s）
+func (s *GatewayServer) startJWTValidatorWithRetry(ctx context.Context, adapter *authClientAdapter) error {
+	maxRetries := 5
+	baseDelay := time.Second
+
+	var lastErr error
+	for i := 0; i < maxRetries; i++ {
+		if err := s.jwtValidator.Start(ctx, adapter); err != nil {
+			lastErr = err
+			delay := baseDelay * time.Duration(1<<i) // 指数退避
+			s.log.Warn("JWT 验签器启动失败，准备重试",
+				slog.Int("attempt", i+1),
+				slog.Int("max_retries", maxRetries),
+				slog.Duration("delay", delay),
+				slog.Any("error", err))
+
+			select {
+			case <-ctx.Done():
+				return ctx.Err()
+			case <-time.After(delay):
+				continue
+			}
+		}
+		return nil // 成功
+	}
+	return lastErr
+}
+
+// backgroundJWTValidatorRetry 后台重试 JWT 验签器启动
+// 当初始启动失败时，在后台持续重试直到成功
+func (s *GatewayServer) backgroundJWTValidatorRetry(adapter *authClientAdapter) {
+	retryInterval := 30 * time.Second
+	maxRetries := 60 // 最多重试 30 分钟
+
+	for i := 0; i < maxRetries; i++ {
+		time.Sleep(retryInterval)
+
+		// 检查是否已经就绪
+		if s.jwtValidator.IsReady() {
+			s.log.Info("JWT 验签器已就绪")
+			return
+		}
+
+		ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+		if err := s.jwtValidator.Start(ctx, adapter); err != nil {
+			s.log.Debug("后台重试 JWT 验签器失败",
+				slog.Int("attempt", i+1),
+				slog.Any("error", err))
+		} else {
+			s.log.Info("后台重试 JWT 验签器成功")
+			cancel()
+			return
+		}
+		cancel()
+	}
+
+	s.log.Error("JWT 验签器后台重试超时，请检查 Auth 服务状态")
 }
 
 // Stop 停止 Gateway 服务

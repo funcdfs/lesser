@@ -57,6 +57,12 @@ async fn main() -> Result<()> {
                 TestTarget::Chat => commands::test::TestTarget::Chat,
                 TestTarget::Gateway => commands::test::TestTarget::Gateway,
                 TestTarget::Superuser => commands::test::TestTarget::Superuser,
+                TestTarget::Db => commands::test::TestTarget::Db,
+                TestTarget::Integration => commands::test::TestTarget::Integration,
+                TestTarget::Round1 => commands::test::TestTarget::Round1,
+                TestTarget::Round2 => commands::test::TestTarget::Round2,
+                TestTarget::Round3 => commands::test::TestTarget::Round3,
+                TestTarget::Full => commands::test::TestTarget::Full,
             };
             commands::test::execute(test_target).await
         }

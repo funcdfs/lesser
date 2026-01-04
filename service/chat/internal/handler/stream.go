@@ -2,7 +2,6 @@ package handler
 
 import (
 	"context"
-	"fmt"
 	"io"
 	"log/slog"
 	"sync"
@@ -176,7 +175,7 @@ func (m *StreamManager) handleSendMessage(client *StreamClient, req *pb.SendMess
 		ConversationID: convID,
 		SenderID:       userID,
 		Content:        req.Content,
-		MessageType:    repository.ParseMessageType(req.MessageType),
+		MessageType:    parseMessageType(req.MessageType),
 	})
 	if err != nil {
 		client.SendError("SEND_FAILED", err.Error(), req.ClientMessageId)
@@ -258,7 +257,7 @@ func (m *StreamManager) BroadcastToConversation(conversationID uuid.UUID, msg *r
 
 // NotifyReadReceipt 通知单条消息已读
 func (m *StreamManager) NotifyReadReceipt(receipt *repository.ReadReceipt) {
-	messageIDs := []string{fmt.Sprintf("%d", receipt.MessageID)}
+	messageIDs := []string{receipt.MessageID.String()}
 	m.BroadcastMessageRead(receipt.ConversationID.String(), receipt.ReaderID.String(), messageIDs)
 }
 
@@ -266,7 +265,7 @@ func (m *StreamManager) NotifyReadReceipt(receipt *repository.ReadReceipt) {
 func (m *StreamManager) NotifyBatchReadReceipt(receipt *repository.BatchReadReceipt) {
 	messageIDs := make([]string, len(receipt.MessageIDs))
 	for i, id := range receipt.MessageIDs {
-		messageIDs[i] = fmt.Sprintf("%d", id)
+		messageIDs[i] = id.String()
 	}
 	m.BroadcastMessageRead(receipt.ConversationID.String(), receipt.ReaderID.String(), messageIDs)
 }

@@ -1,12 +1,9 @@
 -- ============================================================================
--- PostgreSQL 数据库初始化脚本 (统一版本)
+-- PostgreSQL 数据库初始化脚本 (lesser_db)
 -- ============================================================================
 -- 架构说明:
---   - lesser_db (默认): 核心服务 (用户、帖子、Feed、搜索、通知等)
---   - lesser_chat_db:   Chat 服务 (会话、消息) - 由 shell 脚本创建
--- 
--- 这种设计在一个 PostgreSQL 容器中创建两个独立数据库，
--- 既节省资源又保持服务间的数据隔离。
+--   - lesser_db (本文件): 核心服务 (用户、帖子、交互、评论、通知等)
+--   - lesser_chat_db: Chat 服务 (由 02-init-chat-db.sh 创建)
 -- ============================================================================
 
 -- ============================================================================
@@ -253,7 +250,9 @@ CREATE INDEX IF NOT EXISTS idx_contents_tags ON contents USING GIN(tags);
 CREATE INDEX IF NOT EXISTS idx_contents_author_type ON contents(author_id, type);
 CREATE INDEX IF NOT EXISTS idx_contents_author_status ON contents(author_id, status);
 CREATE INDEX IF NOT EXISTS idx_contents_pinned ON contents(author_id, is_pinned) WHERE is_pinned = true;
-CREATE INDEX IF NOT EXISTS idx_contents_feed_timeline ON contents(author_id, published_at DESC NULLS LAST, created_at DESC) WHERE status = 2 AND (expires_at IS NULL OR expires_at > NOW());
+-- 注意: 不能在索引谓词中使用 NOW()，因为它不是 IMMUTABLE 函数
+-- 过期内容的过滤应该在查询时进行
+CREATE INDEX IF NOT EXISTS idx_contents_feed_timeline ON contents(author_id, published_at DESC NULLS LAST, created_at DESC) WHERE status = 2;
 CREATE INDEX IF NOT EXISTS idx_contents_user_feed ON contents(author_id, is_pinned DESC, published_at DESC NULLS LAST) WHERE status = 2;
 
 DROP TRIGGER IF EXISTS update_contents_updated_at ON contents;
@@ -374,7 +373,7 @@ CREATE TABLE IF NOT EXISTS user_bans (
     reason TEXT NOT NULL,
     banned_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
     expires_at TIMESTAMP WITH TIME ZONE,
-    operator_id UUID REFERENCES users(id) ON DELETE SET NULL,
+    operator_id UUID,  -- SuperUser ID，不设外键约束（SuperUser 是独立认证体系）
     is_active BOOLEAN DEFAULT true,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()

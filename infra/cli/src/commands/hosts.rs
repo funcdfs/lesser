@@ -118,6 +118,7 @@ async fn setup_hosts_internal() -> Result<()> {
 }
 
 /// 检查 hosts 是否已配置
+#[allow(dead_code)]
 pub async fn is_hosts_configured() -> bool {
     let output = Command::new("grep")
         .args(["-q", MARKER_START, "/etc/hosts"])
@@ -128,6 +129,7 @@ pub async fn is_hosts_configured() -> bool {
 }
 
 /// 获取配置的域名列表
+#[allow(dead_code)]
 pub fn get_local_domains() -> &'static [(&'static str, &'static str)] {
     LOCAL_DOMAINS
 }

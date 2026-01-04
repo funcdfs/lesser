@@ -372,18 +372,52 @@ devlesser stop               # 停止服务
 devlesser restart [service]  # 重启服务
 devlesser status             # 查看状态
 
+# 初始化（含 hosts 配置）
+devlesser init               # 完整初始化
+devlesser init --skip-hosts  # 跳过 hosts 配置
+
 # Proto 代码生成
-devlesser proto              # 生成所有 Proto 代码
+devlesser proto              # 生成所有 Proto 代码 (别名: devlesser gen)
 devlesser proto go           # 仅生成 Go
 devlesser proto dart         # 仅生成 Dart
+
+# 测试
+devlesser test               # 运行所有服务测试
+devlesser test auth          # Auth 服务测试
+devlesser test user          # User 服务测试
+devlesser test content       # Content 服务测试
+devlesser test comment       # Comment 服务测试
+devlesser test interaction   # Interaction 服务测试
+devlesser test timeline      # Timeline 服务测试
+devlesser test search        # Search 服务测试
+devlesser test notification  # Notification 服务测试
+devlesser test chat          # Chat 服务测试
+devlesser test gateway       # Gateway 路由测试
+devlesser test superuser     # SuperUser 服务测试
+devlesser test db            # 数据库分表验证
+devlesser test integration   # 服务联动测试
+devlesser test round1        # 第一轮测试（初始化）
+devlesser test round2        # 第二轮测试（重建）
+devlesser test round3        # 第三轮测试（重启）
+devlesser test full          # 完整三轮测试
+
+# hosts 配置
+devlesser hosts              # 配置本地域名 (需要 sudo)
+
+# 生产环境管理
+devlesser prod start         # 启动生产环境
+devlesser prod stop          # 停止生产环境
+devlesser prod restart       # 重启服务
+devlesser prod status        # 查看状态
+devlesser prod logs [service]  # 查看日志
+devlesser prod deploy        # 部署更新
+devlesser prod backup        # 备份数据库
+devlesser prod validate      # 验证环境变量
 
 # 清理
 devlesser clean              # 清理所有
 devlesser clean containers   # 仅清理容器
 devlesser clean volumes      # 清理数据卷
-
-# 初始化
-devlesser init               # 初始化开发环境
 ```
 
 ### 9.2 代码审查清单

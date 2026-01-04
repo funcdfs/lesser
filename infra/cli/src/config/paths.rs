@@ -18,7 +18,8 @@ const ENV_FILE_NEW: &str = "infra/env/dev.env";
 /// 旧环境变量文件路径 (兼容)
 const ENV_FILE_LEGACY: &str = "infra/.env.dev";
 
-/// Proto 生成脚本路径
+/// Proto 生成脚本路径（用于 proto 命令）
+#[allow(dead_code)]
 pub const PROTO_SCRIPT: &str = "scripts/proto/generate.sh";
 
 /// Flutter 客户端目录
@@ -90,6 +91,7 @@ pub fn get_env_file() -> Result<PathBuf> {
 }
 
 /// 获取 proto 生成脚本的完整路径
+#[allow(dead_code)]
 pub fn get_proto_script() -> Result<PathBuf> {
     let root = find_project_root()?;
     Ok(root.join(PROTO_SCRIPT))

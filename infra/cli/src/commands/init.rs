@@ -81,10 +81,13 @@ pub async fn execute(force: bool, skip_hosts: bool) -> Result<()> {
             "chat",
             "auth",
             "user",
-            "post",
-            "feed",
+            "content",
+            "interaction",
+            "comment",
+            "timeline",
             "notification",
             "search",
+            "superuser",
         ])
         .await?;
     spinner.finish_and_clear();

@@ -4,7 +4,6 @@ package handler
 import (
 	"context"
 	"log/slog"
-	"strconv"
 
 	"github.com/google/uuid"
 	"github.com/funcdfs/lesser/chat/internal/service"
@@ -263,7 +262,7 @@ func (h *ChatHandler) MarkAsRead(ctx context.Context, req *pb.MarkAsReadRequest)
 		return nil, status.Error(codes.InvalidArgument, "用户 ID 不能为空")
 	}
 
-	messageID, err := strconv.ParseInt(req.GetMessageId(), 10, 64)
+	messageID, err := uuid.Parse(req.GetMessageId())
 	if err != nil {
 		return nil, status.Error(codes.InvalidArgument, "消息 ID 格式无效")
 	}
@@ -291,7 +290,7 @@ func (h *ChatHandler) MarkAsRead(ctx context.Context, req *pb.MarkAsReadRequest)
 	h.streamManager.NotifyReadReceipt(receipt)
 
 	return &pb.ReadReceipt{
-		MessageId:      strconv.FormatInt(receipt.MessageID, 10),
+		MessageId:      receipt.MessageID.String(),
 		ConversationId: receipt.ConversationID.String(),
 		ReaderId:       receipt.ReaderID.String(),
 		ReadAt: &common.Timestamp{
@@ -333,7 +332,7 @@ func (h *ChatHandler) MarkConversationAsRead(ctx context.Context, req *pb.MarkCo
 
 	messageIDs := make([]string, len(receipt.MessageIDs))
 	for i, id := range receipt.MessageIDs {
-		messageIDs[i] = strconv.FormatInt(id, 10)
+		messageIDs[i] = id.String()
 	}
 
 	return &pb.BatchReadReceipt{

@@ -26,7 +26,7 @@ pub async fn run_tests() -> Result<TestStats> {
 
     // 1. 用户注册
     let result = register_user(&mut user).await;
-    stats.record(result, "注册新用户");
+    stats.record_with_func(result, "注册新用户", "Register()", "auth/handler.go");
     grpc::delay_short().await;
 
     if user.access_token.is_empty() {
@@ -36,47 +36,47 @@ pub async fn run_tests() -> Result<TestStats> {
 
     // 2. 重复注册（应该失败）
     let result = test_duplicate_register(&user).await;
-    stats.record(result, "重复注册被拒绝");
+    stats.record_with_func(result, "重复注册被拒绝", "Register()", "auth/handler.go");
     grpc::delay_short().await;
 
     // 3. 用户登出
     let result = logout_user(&user).await;
-    stats.record(result, "用户登出");
+    stats.record_with_func(result, "用户登出", "Logout()", "auth/handler.go");
     grpc::delay_short().await;
 
     // 4. 用户登录
     let result = login_user(&mut user).await;
-    stats.record(result, "用户登录");
+    stats.record_with_func(result, "用户登录", "Login()", "auth/handler.go");
     grpc::delay_short().await;
 
     // 5. 错误密码登录（应该失败）
     let result = test_wrong_password_login(&user).await;
-    stats.record(result, "错误密码登录被拒绝");
+    stats.record_with_func(result, "错误密码登录被拒绝", "Login()", "auth/handler.go");
     grpc::delay_short().await;
 
     // 6. 获取公钥
     let result = get_public_key().await;
-    stats.record(result, "获取 JWT 公钥");
+    stats.record_with_func(result, "获取 JWT 公钥", "GetPublicKey()", "auth/handler.go");
     grpc::delay_short().await;
 
     // 7. 获取用户信息
     let result = get_user_info(&user).await;
-    stats.record(result, "获取用户信息");
+    stats.record_with_func(result, "获取用户信息", "GetUser()", "auth/handler.go");
     grpc::delay_short().await;
 
     // 8. 检查封禁状态
     let result = check_banned(&user).await;
-    stats.record(result, "检查封禁状态");
+    stats.record_with_func(result, "检查封禁状态", "CheckBanned()", "auth/handler.go");
     grpc::delay_short().await;
 
     // 9. Token 刷新
     let result = refresh_token(&mut user).await;
-    stats.record(result, "刷新 Token");
+    stats.record_with_func(result, "刷新 Token", "RefreshToken()", "auth/handler.go");
     grpc::delay_short().await;
 
     // 10. 最终登出
     let result = logout_user(&user).await;
-    stats.record(result, "最终登出");
+    stats.record_with_func(result, "最终登出", "Logout()", "auth/handler.go");
 
     println!();
     Ok(stats)
@@ -137,6 +137,7 @@ async fn login_user(user: &mut TestUser) -> bool {
 /// 用户登出
 async fn logout_user(user: &TestUser) -> bool {
     let data = format!(r#"{{"access_token":"{}"}}"#, user.access_token);
+    // Logout 需要 authorization header
     let result = grpc::call_gateway("auth.AuthService/Logout", &data, Some(&user.access_token)).await;
     result.is_empty_success() || result.success
 }

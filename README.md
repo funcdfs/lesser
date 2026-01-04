@@ -189,9 +189,24 @@ devlesser proto go           # 仅生成 Go
 devlesser proto dart         # 仅生成 Dart
 
 # 测试
-devlesser test               # 运行所有测试
-devlesser test services      # 仅服务测试
-devlesser test search        # 仅搜索测试
+devlesser test               # 运行所有服务测试
+devlesser test auth          # Auth 服务测试
+devlesser test user          # User 服务测试
+devlesser test content       # Content 服务测试
+devlesser test comment       # Comment 服务测试
+devlesser test interaction   # Interaction 服务测试
+devlesser test timeline      # Timeline 服务测试
+devlesser test search        # Search 服务测试
+devlesser test notification  # Notification 服务测试
+devlesser test chat          # Chat 服务测试
+devlesser test gateway       # Gateway 路由测试
+devlesser test superuser     # SuperUser 服务测试
+devlesser test db            # 数据库分表验证
+devlesser test integration   # 服务联动测试
+devlesser test round1        # 第一轮测试（初始化）
+devlesser test round2        # 第二轮测试（重建）
+devlesser test round3        # 第三轮测试（重启）
+devlesser test full          # 完整三轮测试
 
 # hosts 配置
 devlesser hosts              # 配置本地域名 (需要 sudo)

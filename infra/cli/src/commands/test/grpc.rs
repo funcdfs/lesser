@@ -113,33 +113,31 @@ pub async fn call_superuser(method: &str, data: &str, token: Option<&str>) -> Gr
     call(SUPERUSER_ADDR, method, data, token).await
 }
 
-/// 从 JSON 字符串中提取字段值
+/// 从 JSON 字符串中提取字段值（支持嵌套对象中的字段）
 pub fn extract_json_field(json: &str, field: &str) -> Option<String> {
-    // 支持 camelCase 和 snake_case
+    // 尝试多种模式匹配
     let patterns = [
         format!(r#""{}": ""#, field),
         format!(r#""{}":\s*""#, field),
+        format!(r#""{}":"#, field),
     ];
 
     for pattern in &patterns {
-        if let Some(start) = json.find(pattern.trim_end_matches(r"\s*")) {
-            let search_start = start + pattern.len() - 1;
-            // 找到值的起始引号
-            if let Some(quote_start) = json[search_start..].find('"') {
-                let value_start = search_start + quote_start + 1;
-                if let Some(end) = json[value_start..].find('"') {
-                    return Some(json[value_start..value_start + end].to_string());
+        let search_pattern = pattern.trim_end_matches(r"\s*");
+        if let Some(start) = json.find(search_pattern) {
+            let after_key = start + search_pattern.len();
+            let remaining = &json[after_key..];
+            
+            // 跳过空白字符
+            let trimmed = remaining.trim_start();
+            
+            // 检查是否是字符串值
+            if trimmed.starts_with('"') {
+                let value_start = 1;
+                if let Some(end) = trimmed[value_start..].find('"') {
+                    return Some(trimmed[value_start..value_start + end].to_string());
                 }
             }
-        }
-    }
-
-    // 简单模式匹配
-    let simple_pattern = format!(r#""{}": ""#, field);
-    if let Some(start) = json.find(&simple_pattern) {
-        let value_start = start + simple_pattern.len();
-        if let Some(end) = json[value_start..].find('"') {
-            return Some(json[value_start..value_start + end].to_string());
         }
     }
 

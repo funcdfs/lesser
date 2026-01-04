@@ -47,52 +47,52 @@ pub async fn run_tests() -> Result<TestStats> {
             return Ok(stats);
         }
     };
-    stats.record(true, "Alice 发布内容");
+    stats.record_with_func(true, "Alice 发布内容", "CreateContent()", "content/handler.go");
     grpc::delay_short().await;
 
     // 2. Bob 点赞 Alice 的内容
     let result = like_content(&bob, &content_id).await;
-    stats.record(result, "Bob 点赞内容");
+    stats.record_with_func(result, "Bob 点赞内容", "Like()", "interaction/handler.go");
     grpc::delay_short().await;
 
     // 3. 检查点赞状态
     let result = check_liked(&bob, &content_id).await;
-    stats.record(result, "检查点赞状态");
+    stats.record_with_func(result, "检查点赞状态", "CheckLiked()", "interaction/handler.go");
     grpc::delay_short().await;
 
     // 4. Bob 收藏 Alice 的内容
     let result = bookmark_content(&bob, &content_id).await;
-    stats.record(result, "Bob 收藏内容");
+    stats.record_with_func(result, "Bob 收藏内容", "Bookmark()", "interaction/handler.go");
     grpc::delay_short().await;
 
     // 5. Bob 转发 Alice 的内容（带引用）
     let result = create_repost(&bob, &content_id, "好内容，分享给大家！").await;
-    stats.record(result, "Bob 转发内容（带引用）");
+    stats.record_with_func(result, "Bob 转发内容（带引用）", "CreateRepost()", "interaction/handler.go");
     grpc::delay_short().await;
 
     // 6. 批量获取交互状态
     let result = batch_get_interaction_status(&bob, &[&content_id]).await;
-    stats.record(result, "批量获取交互状态");
+    stats.record_with_func(result, "批量获取交互状态", "BatchGetInteractionStatus()", "interaction/handler.go");
     grpc::delay_short().await;
 
     // 7. 获取 Bob 的收藏列表
     let result = list_bookmarks(&bob).await;
-    stats.record(result, "获取收藏列表");
+    stats.record_with_func(result, "获取收藏列表", "ListBookmarks()", "interaction/handler.go");
     grpc::delay_short().await;
 
     // 8. Bob 取消点赞
     let result = unlike_content(&bob, &content_id).await;
-    stats.record(result, "Bob 取消点赞");
+    stats.record_with_func(result, "Bob 取消点赞", "Unlike()", "interaction/handler.go");
     grpc::delay_short().await;
 
     // 9. Bob 取消收藏
     let result = unbookmark_content(&bob, &content_id).await;
-    stats.record(result, "Bob 取消收藏");
+    stats.record_with_func(result, "Bob 取消收藏", "Unbookmark()", "interaction/handler.go");
     grpc::delay_short().await;
 
     // 10. Bob 删除转发
     let result = delete_repost(&bob, &content_id).await;
-    stats.record(result, "Bob 删除转发");
+    stats.record_with_func(result, "Bob 删除转发", "DeleteRepost()", "interaction/handler.go");
 
     // 清理
     auth::cleanup_user(&alice).await;

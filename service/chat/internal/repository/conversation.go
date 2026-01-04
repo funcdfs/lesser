@@ -11,20 +11,21 @@ import (
 	"github.com/lib/pq"
 )
 
-// ConversationType 会话类型
-type ConversationType string
+// ConversationType 会话类型 (数据库中为 INTEGER)
+type ConversationType int
 
 const (
-	ConversationTypePrivate ConversationType = "private"
-	ConversationTypeGroup   ConversationType = "group"
-	ConversationTypeChannel ConversationType = "channel"
+	ConversationTypePrivate ConversationType = 1 // 私聊
+	ConversationTypeGroup   ConversationType = 2 // 群聊
 )
 
-// MemberRole 成员角色
+// MemberRole 成员角色 (数据库中为 INTEGER)
+type MemberRole int
+
 const (
-	MemberRoleOwner  = "owner"
-	MemberRoleAdmin  = "admin"
-	MemberRoleMember = "member"
+	MemberRoleMember MemberRole = 1 // 普通成员
+	MemberRoleAdmin  MemberRole = 2 // 管理员
+	MemberRoleOwner  MemberRole = 3 // 群主
 )
 
 // Conversation 会话实体
@@ -44,7 +45,7 @@ type Conversation struct {
 type ConversationMember struct {
 	ConversationID uuid.UUID
 	UserID         uuid.UUID
-	Role           string
+	Role           MemberRole
 	JoinedAt       time.Time
 	LastReadAt     sql.NullTime
 	// 以下字段从 User 服务获取，不存储在数据库
@@ -74,7 +75,7 @@ func (r *ConversationRepository) Create(ctx context.Context, conv *Conversation,
 
 	// 插入会话
 	query := `
-		INSERT INTO chat_conversations (id, type, name, creator_id, created_at, updated_at)
+		INSERT INTO conversations (id, type, name, creator_id, created_at, updated_at)
 		VALUES ($1, $2, $3, $4, $5, $6)
 	`
 	now := time.Now().UTC()
@@ -91,7 +92,7 @@ func (r *ConversationRepository) Create(ctx context.Context, conv *Conversation,
 
 	// 插入成员
 	memberQuery := `
-		INSERT INTO chat_conversation_members (conversation_id, user_id, role, joined_at)
+		INSERT INTO conversation_members (conversation_id, user_id, role, joined_at)
 		VALUES ($1, $2, $3, $4)
 	`
 	for _, userID := range memberIDs {
@@ -99,7 +100,7 @@ func (r *ConversationRepository) Create(ctx context.Context, conv *Conversation,
 		if userID == conv.CreatorID {
 			role = MemberRoleOwner
 		}
-		_, err = tx.ExecContext(ctx, memberQuery, conv.ID, userID, role, now)
+		_, err = tx.ExecContext(ctx, memberQuery, conv.ID, userID, int(role), now)
 		if err != nil {
 			return fmt.Errorf("添加成员失败: %w", err)
 		}
@@ -112,7 +113,7 @@ func (r *ConversationRepository) Create(ctx context.Context, conv *Conversation,
 func (r *ConversationRepository) GetByID(ctx context.Context, id uuid.UUID) (*Conversation, error) {
 	query := `
 		SELECT id, type, name, creator_id, created_at, updated_at
-		FROM chat_conversations
+		FROM conversations
 		WHERE id = $1
 	`
 	conv := &Conversation{}
@@ -141,8 +142,8 @@ func (r *ConversationRepository) GetByUserID(ctx context.Context, userID uuid.UU
 	// 统计总数
 	countQuery := `
 		SELECT COUNT(*)
-		FROM chat_conversations c
-		INNER JOIN chat_conversation_members m ON c.id = m.conversation_id
+		FROM conversations c
+		INNER JOIN conversation_members m ON c.id = m.conversation_id
 		WHERE m.user_id = $1
 	`
 	var total int64
@@ -154,8 +155,8 @@ func (r *ConversationRepository) GetByUserID(ctx context.Context, userID uuid.UU
 	offset := (page - 1) * pageSize
 	query := `
 		SELECT c.id, c.type, c.name, c.creator_id, c.created_at, c.updated_at
-		FROM chat_conversations c
-		INNER JOIN chat_conversation_members m ON c.id = m.conversation_id
+		FROM conversations c
+		INNER JOIN conversation_members m ON c.id = m.conversation_id
 		WHERE m.user_id = $1
 		ORDER BY c.updated_at DESC
 		LIMIT $2 OFFSET $3
@@ -190,18 +191,18 @@ func (r *ConversationRepository) GetByUserID(ctx context.Context, userID uuid.UU
 func (r *ConversationRepository) GetPrivateConversation(ctx context.Context, userID1, userID2 uuid.UUID) (*Conversation, error) {
 	query := `
 		SELECT c.id, c.type, c.name, c.creator_id, c.created_at, c.updated_at
-		FROM chat_conversations c
-		WHERE c.type = 'private'
+		FROM conversations c
+		WHERE c.type = $1
 		AND c.id IN (
-			SELECT conversation_id FROM chat_conversation_members WHERE user_id = $1
+			SELECT conversation_id FROM conversation_members WHERE user_id = $2
 		)
 		AND c.id IN (
-			SELECT conversation_id FROM chat_conversation_members WHERE user_id = $2
+			SELECT conversation_id FROM conversation_members WHERE user_id = $3
 		)
 		LIMIT 1
 	`
 	conv := &Conversation{}
-	err := r.db.QueryRowContext(ctx, query, userID1, userID2).Scan(
+	err := r.db.QueryRowContext(ctx, query, int(ConversationTypePrivate), userID1, userID2).Scan(
 		&conv.ID, &conv.Type, &conv.Name, &conv.CreatorID, &conv.CreatedAt, &conv.UpdatedAt,
 	)
 	if err != nil {
@@ -223,7 +224,7 @@ func (r *ConversationRepository) GetPrivateConversation(ctx context.Context, use
 // IsMember 检查用户是否为会话成员
 func (r *ConversationRepository) IsMember(ctx context.Context, conversationID, userID uuid.UUID) (bool, error) {
 	query := `
-		SELECT COUNT(*) FROM chat_conversation_members
+		SELECT COUNT(*) FROM conversation_members
 		WHERE conversation_id = $1 AND user_id = $2
 	`
 	var count int64
@@ -237,7 +238,7 @@ func (r *ConversationRepository) IsMember(ctx context.Context, conversationID, u
 func (r *ConversationRepository) GetMember(ctx context.Context, conversationID, userID uuid.UUID) (*ConversationMember, error) {
 	query := `
 		SELECT conversation_id, user_id, role, joined_at, last_read_at
-		FROM chat_conversation_members
+		FROM conversation_members
 		WHERE conversation_id = $1 AND user_id = $2
 	`
 	member := &ConversationMember{}
@@ -255,7 +256,7 @@ func (r *ConversationRepository) GetMember(ctx context.Context, conversationID, 
 
 // GetMemberIDs 获取会话的所有成员 ID
 func (r *ConversationRepository) GetMemberIDs(ctx context.Context, conversationID uuid.UUID) ([]uuid.UUID, error) {
-	query := `SELECT user_id FROM chat_conversation_members WHERE conversation_id = $1`
+	query := `SELECT user_id FROM conversation_members WHERE conversation_id = $1`
 	rows, err := r.db.QueryContext(ctx, query, conversationID)
 	if err != nil {
 		return nil, fmt.Errorf("获取成员列表失败: %w", err)
@@ -274,12 +275,12 @@ func (r *ConversationRepository) GetMemberIDs(ctx context.Context, conversationI
 }
 
 // AddMember 添加成员
-func (r *ConversationRepository) AddMember(ctx context.Context, conversationID, userID uuid.UUID, role string) error {
+func (r *ConversationRepository) AddMember(ctx context.Context, conversationID, userID uuid.UUID, role MemberRole) error {
 	query := `
-		INSERT INTO chat_conversation_members (conversation_id, user_id, role, joined_at)
+		INSERT INTO conversation_members (conversation_id, user_id, role, joined_at)
 		VALUES ($1, $2, $3, $4)
 	`
-	_, err := r.db.ExecContext(ctx, query, conversationID, userID, role, time.Now().UTC())
+	_, err := r.db.ExecContext(ctx, query, conversationID, userID, int(role), time.Now().UTC())
 	if err != nil {
 		if pqErr, ok := err.(*pq.Error); ok && pqErr.Code == "23505" {
 			return ErrDuplicate
@@ -291,7 +292,7 @@ func (r *ConversationRepository) AddMember(ctx context.Context, conversationID, 
 
 // RemoveMember 移除成员
 func (r *ConversationRepository) RemoveMember(ctx context.Context, conversationID, userID uuid.UUID) error {
-	query := `DELETE FROM chat_conversation_members WHERE conversation_id = $1 AND user_id = $2`
+	query := `DELETE FROM conversation_members WHERE conversation_id = $1 AND user_id = $2`
 	result, err := r.db.ExecContext(ctx, query, conversationID, userID)
 	if err != nil {
 		return fmt.Errorf("移除成员失败: %w", err)
@@ -305,7 +306,7 @@ func (r *ConversationRepository) RemoveMember(ctx context.Context, conversationI
 
 // UpdateTimestamp 更新会话时间戳
 func (r *ConversationRepository) UpdateTimestamp(ctx context.Context, conversationID uuid.UUID) error {
-	query := `UPDATE chat_conversations SET updated_at = $1 WHERE id = $2`
+	query := `UPDATE conversations SET updated_at = $1 WHERE id = $2`
 	_, err := r.db.ExecContext(ctx, query, time.Now().UTC(), conversationID)
 	if err != nil {
 		return fmt.Errorf("更新会话时间戳失败: %w", err)
@@ -316,7 +317,7 @@ func (r *ConversationRepository) UpdateTimestamp(ctx context.Context, conversati
 // UpdateLastReadAt 更新成员的最后已读时间
 func (r *ConversationRepository) UpdateLastReadAt(ctx context.Context, conversationID, userID uuid.UUID, readAt time.Time) error {
 	query := `
-		UPDATE chat_conversation_members
+		UPDATE conversation_members
 		SET last_read_at = $1
 		WHERE conversation_id = $2 AND user_id = $3
 	`
@@ -340,13 +341,13 @@ func (r *ConversationRepository) Delete(ctx context.Context, id uuid.UUID) error
 	defer tx.Rollback()
 
 	// 删除成员
-	_, err = tx.ExecContext(ctx, `DELETE FROM chat_conversation_members WHERE conversation_id = $1`, id)
+	_, err = tx.ExecContext(ctx, `DELETE FROM conversation_members WHERE conversation_id = $1`, id)
 	if err != nil {
 		return fmt.Errorf("删除成员失败: %w", err)
 	}
 
 	// 删除会话
-	result, err := tx.ExecContext(ctx, `DELETE FROM chat_conversations WHERE id = $1`, id)
+	result, err := tx.ExecContext(ctx, `DELETE FROM conversations WHERE id = $1`, id)
 	if err != nil {
 		return fmt.Errorf("删除会话失败: %w", err)
 	}
@@ -362,7 +363,7 @@ func (r *ConversationRepository) Delete(ctx context.Context, id uuid.UUID) error
 func (r *ConversationRepository) getMembers(ctx context.Context, conversationID uuid.UUID) ([]ConversationMember, error) {
 	query := `
 		SELECT conversation_id, user_id, role, joined_at, last_read_at
-		FROM chat_conversation_members
+		FROM conversation_members
 		WHERE conversation_id = $1
 	`
 	rows, err := r.db.QueryContext(ctx, query, conversationID)
