@@ -35,10 +35,11 @@ service ChatService {
 // ============================================================================
 
 // ConversationType 会话类型
+// 注意：CHANNEL 类型已迁移到独立的 Channel 服务 (protos/channel/channel.proto)
 enum ConversationType {
   PRIVATE = 0;  // 一对一私聊
   GROUP = 1;    // 多人群聊
-  CHANNEL = 2;  // 广播频道
+  // CHANNEL = 2; // 已废弃，请使用 Channel 服务
 }
 
 // Conversation 会话实体

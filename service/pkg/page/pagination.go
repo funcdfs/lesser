@@ -184,6 +184,23 @@ func NewCursorResponse(nextCursor string, hasMore bool) *CursorResponse {
 	}
 }
 
+// ---- Proto 分页转换 ----
+
+// Pagination proto 分页接口（避免直接依赖 proto 包）
+type Pagination interface {
+	GetPage() int32
+	GetPageSize() int32
+}
+
+// FromProto 从 proto 分页参数创建 Request
+// 如果 pagination 为 nil，返回默认分页参数
+func FromProto(pagination Pagination) *Request {
+	if pagination == nil {
+		return NewRequest(DefaultPage, DefaultPageSize)
+	}
+	return NewRequest(pagination.GetPage(), pagination.GetPageSize())
+}
+
 // ---- SQL 辅助 ----
 
 // SQLPagination SQL 分页参数

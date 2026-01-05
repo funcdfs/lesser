@@ -2,6 +2,8 @@
 package config
 
 import (
+	"crypto/rand"
+	"encoding/base64"
 	"os"
 	"strconv"
 	"time"
@@ -52,6 +54,20 @@ type Config struct {
 
 // LoadFromEnv 从环境变量加载配置
 func LoadFromEnv() *Config {
+	// 生成随机默认密码（仅在未设置环境变量时使用）
+	defaultPassword := getEnv("SUPERUSER_PASSWORD", "")
+	if defaultPassword == "" {
+		// 生成随机密码，强制用户通过环境变量设置
+		defaultPassword = generateRandomPassword()
+	}
+
+	// JWT 密钥必须从环境变量获取
+	jwtSecret := getEnv("SUPERUSER_JWT_SECRET", "")
+	if jwtSecret == "" {
+		// 生成随机密钥（生产环境应该通过环境变量设置）
+		jwtSecret = generateRandomPassword()
+	}
+
 	return &Config{
 		// 服务配置
 		ServiceName: getEnv("SERVICE_NAME", "superuser"),
@@ -72,20 +88,20 @@ func LoadFromEnv() *Config {
 		RabbitMQURL: getEnv("RABBITMQ_URL", "amqp://superuser:superuser@rabbitmq:5672/"),
 
 		// JWT 配置
-		JWTSecret:            getEnv("SUPERUSER_JWT_SECRET", "superuser-secret-key-change-in-production"),
+		JWTSecret:            jwtSecret,
 		AccessTokenDuration:  getDurationEnv("ACCESS_TOKEN_DURATION", 30*time.Minute),
 		RefreshTokenDuration: getDurationEnv("REFRESH_TOKEN_DURATION", 24*time.Hour),
 
-		// 默认超级管理员配置
-		DefaultUsername:    getEnv("SUPERUSER_USERNAME", "funcdfs"),
-		DefaultEmail:       getEnv("SUPERUSER_EMAIL", "funcdfs@gmail.com"),
-		DefaultPassword:    getEnv("SUPERUSER_PASSWORD", "fw142857"),
-		DefaultDisplayName: getEnv("SUPERUSER_DISPLAY_NAME", "funcdfs"),
+		// 默认超级管理员配置（必须通过环境变量设置）
+		DefaultUsername:    getEnv("SUPERUSER_USERNAME", "admin"),
+		DefaultEmail:       getEnv("SUPERUSER_EMAIL", "admin@lesser.local"),
+		DefaultPassword:    defaultPassword,
+		DefaultDisplayName: getEnv("SUPERUSER_DISPLAY_NAME", "Administrator"),
 
-		// Argon2 密码哈希参数
-		Argon2Memory:      getUint32Env("ARGON2_MEMORY", 64*1024),
-		Argon2Iterations:  getUint32Env("ARGON2_ITERATIONS", 3),
-		Argon2Parallelism: uint8(getIntEnv("ARGON2_PARALLELISM", 2)),
+		// Argon2 密码哈希参数（OWASP 推荐）
+		Argon2Memory:      getUint32Env("ARGON2_MEMORY", 19456), // 19 MiB
+		Argon2Iterations:  getUint32Env("ARGON2_ITERATIONS", 2),
+		Argon2Parallelism: uint8(getIntEnv("ARGON2_PARALLELISM", 1)),
 		Argon2SaltLength:  getUint32Env("ARGON2_SALT_LENGTH", 16),
 		Argon2KeyLength:   getUint32Env("ARGON2_KEY_LENGTH", 32),
 
@@ -93,6 +109,16 @@ func LoadFromEnv() *Config {
 		MaxLoginAttempts: getIntEnv("MAX_LOGIN_ATTEMPTS", 5),
 		LoginLockoutTime: getDurationEnv("LOGIN_LOCKOUT_TIME", 15*time.Minute),
 	}
+}
+
+// generateRandomPassword 生成随机密码
+func generateRandomPassword() string {
+	bytes := make([]byte, 32)
+	if _, err := rand.Read(bytes); err != nil {
+		// 回退到固定值（仅开发环境）
+		return "change-me-in-production"
+	}
+	return base64.URLEncoding.EncodeToString(bytes)[:24]
 }
 
 func getEnv(key, defaultValue string) string {

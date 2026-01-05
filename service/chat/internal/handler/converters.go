@@ -1,9 +1,9 @@
 package handler
 
 import (
-	"github.com/funcdfs/lesser/chat/internal/data_access"
 	pb "github.com/funcdfs/lesser/chat/gen_protos/chat"
-	"github.com/funcdfs/lesser/chat/gen_protos/common"
+	"github.com/funcdfs/lesser/chat/internal/data_access"
+	"github.com/funcdfs/lesser/pkg/gen_protos/common"
 )
 
 // conversationToProto 将会话实体转换为 Proto
@@ -86,6 +86,7 @@ func conversationTypeToProto(t data_access.ConversationType) pb.ConversationType
 }
 
 // protoToConversationType 将 Proto 会话类型转换为实体
+// 注意：CHANNEL 类型已迁移到独立的 Channel 服务，此处返回 ConversationTypeChannel 用于错误处理
 func protoToConversationType(t pb.ConversationType) data_access.ConversationType {
 	switch t {
 	case pb.ConversationType_PRIVATE:

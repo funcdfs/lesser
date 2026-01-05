@@ -10,7 +10,7 @@ import (
 	"time"
 
 	"github.com/funcdfs/lesser/pkg/grpc/interceptor"
-	"github.com/funcdfs/lesser/pkg/logger"
+	"github.com/funcdfs/lesser/pkg/log"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/health"
 	"google.golang.org/grpc/health/grpc_health_v1"
@@ -21,7 +21,7 @@ import (
 type Server struct {
 	server   *grpc.Server
 	listener net.Listener
-	log      *logger.Logger
+	log      *log.Logger
 	config   Config
 	health   *health.Server
 }
@@ -48,8 +48,8 @@ func DefaultConfig() Config {
 		Port:              50051,
 		EnableReflection:  true,
 		EnableHealthCheck: true,
-		MaxRecvMsgSize:    4 * 1024 * 1024,  // 4MB
-		MaxSendMsgSize:    4 * 1024 * 1024,  // 4MB
+		MaxRecvMsgSize:    4 * 1024 * 1024, // 4MB
+		MaxSendMsgSize:    4 * 1024 * 1024, // 4MB
 		ConnectionTimeout: 30 * time.Second,
 	}
 }
@@ -65,9 +65,9 @@ func WithConfig(cfg Config) Option {
 }
 
 // New 创建 gRPC 服务器
-func New(log *logger.Logger, opts ...Option) *Server {
+func New(logger *log.Logger, opts ...Option) *Server {
 	s := &Server{
-		log:    log,
+		log:    logger,
 		config: DefaultConfig(),
 	}
 

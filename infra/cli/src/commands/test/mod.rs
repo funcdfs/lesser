@@ -21,6 +21,7 @@
 //! - `search`: Search 服务测试
 //! - `notification`: Notification 服务测试
 //! - `chat`: Chat 服务测试
+//! - `channel`: Channel 服务测试（广播频道）
 //! - `gateway`: Gateway 服务测试
 //! - `superuser`: SuperUser 服务测试
 
@@ -35,6 +36,7 @@ pub mod integration;
 
 // 服务测试模块
 pub mod auth;
+pub mod channel;
 pub mod chat;
 pub mod comment;
 pub mod content;

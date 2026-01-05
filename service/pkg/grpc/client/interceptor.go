@@ -5,7 +5,7 @@ import (
 	"log/slog"
 	"time"
 
-	"github.com/funcdfs/lesser/pkg/logger"
+	"github.com/funcdfs/lesser/pkg/log"
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/codes"
@@ -24,7 +24,7 @@ func TraceInterceptor() grpc.UnaryClientInterceptor {
 		cc *grpc.ClientConn, invoker grpc.UnaryInvoker, opts ...grpc.CallOption) error {
 
 		// 从 context 中提取 trace_id
-		traceID := logger.TraceIDFromContext(ctx)
+		traceID := log.TraceIDFromContext(ctx)
 		if traceID != "" {
 			// 添加到 gRPC metadata
 			ctx = metadata.AppendToOutgoingContext(ctx, "trace_id", traceID)
@@ -87,7 +87,7 @@ func extractServiceName(fullMethod string) string {
 
 // LoggingInterceptor 创建日志拦截器
 // 记录 gRPC 调用的方法、耗时和错误
-func LoggingInterceptor(log *logger.Logger) grpc.UnaryClientInterceptor {
+func LoggingInterceptor(logger *log.Logger) grpc.UnaryClientInterceptor {
 	return func(ctx context.Context, method string, req, reply interface{},
 		cc *grpc.ClientConn, invoker grpc.UnaryInvoker, opts ...grpc.CallOption) error {
 
@@ -96,12 +96,12 @@ func LoggingInterceptor(log *logger.Logger) grpc.UnaryClientInterceptor {
 		duration := time.Since(start)
 
 		if err != nil {
-			log.WithContext(ctx).Error("grpc call failed",
+			logger.WithContext(ctx).Error("grpc call failed",
 				slog.String("method", method),
 				slog.Duration("duration", duration),
 				slog.Any("error", err))
 		} else {
-			log.WithContext(ctx).Debug("grpc call completed",
+			logger.WithContext(ctx).Debug("grpc call completed",
 				slog.String("method", method),
 				slog.Duration("duration", duration))
 		}
@@ -163,21 +163,35 @@ func IsRetryable(err error) bool {
 }
 
 // ChainUnaryClient 链接多个拦截器
+// 使用递归方式构建拦截器链，避免闭包变量捕获问题
 func ChainUnaryClient(interceptors ...grpc.UnaryClientInterceptor) grpc.UnaryClientInterceptor {
+	n := len(interceptors)
+	if n == 0 {
+		return func(ctx context.Context, method string, req, reply interface{},
+			cc *grpc.ClientConn, invoker grpc.UnaryInvoker, opts ...grpc.CallOption) error {
+			return invoker(ctx, method, req, reply, cc, opts...)
+		}
+	}
+	if n == 1 {
+		return interceptors[0]
+	}
+
 	return func(ctx context.Context, method string, req, reply interface{},
 		cc *grpc.ClientConn, invoker grpc.UnaryInvoker, opts ...grpc.CallOption) error {
+		// 使用递归构建链式调用
+		return interceptors[0](ctx, method, req, reply, cc,
+			buildChainInvoker(interceptors[1:], invoker), opts...)
+	}
+}
 
-		// 构建拦截器链
-		chain := invoker
-		for i := len(interceptors) - 1; i >= 0; i-- {
-			interceptor := interceptors[i]
-			next := chain
-			chain = func(ctx context.Context, method string, req, reply interface{},
-				cc *grpc.ClientConn, opts ...grpc.CallOption) error {
-				return interceptor(ctx, method, req, reply, cc, next, opts...)
-			}
-		}
-
-		return chain(ctx, method, req, reply, cc, opts...)
+// buildChainInvoker 递归构建拦截器链
+func buildChainInvoker(interceptors []grpc.UnaryClientInterceptor, finalInvoker grpc.UnaryInvoker) grpc.UnaryInvoker {
+	if len(interceptors) == 0 {
+		return finalInvoker
+	}
+	return func(ctx context.Context, method string, req, reply interface{},
+		cc *grpc.ClientConn, opts ...grpc.CallOption) error {
+		return interceptors[0](ctx, method, req, reply, cc,
+			buildChainInvoker(interceptors[1:], finalInvoker), opts...)
 	}
 }

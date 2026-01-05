@@ -5,7 +5,6 @@ package router
 import (
 	"context"
 	"fmt"
-	"log/slog"
 	"sync"
 
 	"google.golang.org/grpc"
@@ -13,6 +12,7 @@ import (
 	"google.golang.org/grpc/credentials/insecure"
 
 	gwErr "github.com/funcdfs/lesser/gateway/internal/errors"
+	"github.com/funcdfs/lesser/pkg/log"
 )
 
 // ServiceName 服务名称常量
@@ -26,6 +26,7 @@ const (
 	ServiceComment      ServiceName = "comment"
 	ServiceTimeline     ServiceName = "timeline"
 	ServiceChat         ServiceName = "chat"
+	ServiceChannel      ServiceName = "channel"
 	ServiceSearch       ServiceName = "search"
 	ServiceNotification ServiceName = "notification"
 )
@@ -39,6 +40,7 @@ type ServiceConfig struct {
 	CommentAddr      string
 	TimelineAddr     string
 	ChatAddr         string
+	ChannelAddr      string
 	SearchAddr       string
 	NotificationAddr string
 }
@@ -47,18 +49,18 @@ type ServiceConfig struct {
 type Router struct {
 	mu    sync.RWMutex
 	conns map[ServiceName]*grpc.ClientConn
-	log   *slog.Logger
+	log   *log.Logger
 }
 
 // NewRouter 创建路由器并建立所有服务连接
-func NewRouter(cfg ServiceConfig, log *slog.Logger) (*Router, error) {
-	if log == nil {
-		log = slog.Default()
+func NewRouter(cfg ServiceConfig, logger *log.Logger) (*Router, error) {
+	if logger == nil {
+		logger = log.Global()
 	}
 
 	r := &Router{
 		conns: make(map[ServiceName]*grpc.ClientConn),
-		log:   log.With(slog.String("component", "router")),
+		log:   logger.With(log.String("component", "router")),
 	}
 
 	// 服务地址映射
@@ -70,6 +72,7 @@ func NewRouter(cfg ServiceConfig, log *slog.Logger) (*Router, error) {
 		ServiceComment:      cfg.CommentAddr,
 		ServiceTimeline:     cfg.TimelineAddr,
 		ServiceChat:         cfg.ChatAddr,
+		ServiceChannel:      cfg.ChannelAddr,
 		ServiceSearch:       cfg.SearchAddr,
 		ServiceNotification: cfg.NotificationAddr,
 	}
@@ -87,7 +90,7 @@ func NewRouter(cfg ServiceConfig, log *slog.Logger) (*Router, error) {
 			return nil, fmt.Errorf("连接 %s 服务失败: %w", name, err)
 		}
 		r.conns[name] = conn
-		r.log.Info("服务已连接", slog.String("service", string(name)), slog.String("addr", addr))
+		r.log.Info("服务已连接", log.String("service", string(name)), log.String("addr", addr))
 	}
 
 	return r, nil
@@ -135,6 +138,11 @@ func (r *Router) GetChatConn() *grpc.ClientConn {
 	return r.GetConn(ServiceChat)
 }
 
+// GetChannelConn 获取 Channel 服务连接
+func (r *Router) GetChannelConn() *grpc.ClientConn {
+	return r.GetConn(ServiceChannel)
+}
+
 // GetSearchConn 获取 Search 服务连接
 func (r *Router) GetSearchConn() *grpc.ClientConn {
 	return r.GetConn(ServiceSearch)
@@ -176,7 +184,7 @@ func (r *Router) Close() {
 	for name, conn := range r.conns {
 		if conn != nil {
 			if err := conn.Close(); err != nil {
-				r.log.Warn("关闭连接失败", slog.String("service", string(name)), slog.Any("error", err))
+				r.log.Warn("关闭连接失败", log.String("service", string(name)), log.Any("error", err))
 			}
 		}
 	}

@@ -62,17 +62,17 @@ func (h *PasswordHasher) NeedsRehash(encodedHash string) bool {
 
 // PasswordValidator 密码强度验证器
 type PasswordValidator struct {
-	MinLength   int
-	RequireNum  bool
-	RequireMix  bool
+	MinLength  int
+	RequireNum bool
+	RequireMix bool
 }
 
 // NewPasswordValidator 创建密码验证器
 func NewPasswordValidator(minLength int, requireNum, requireMix bool) *PasswordValidator {
 	return &PasswordValidator{
-		MinLength:   minLength,
-		RequireNum:  requireNum,
-		RequireMix:  requireMix,
+		MinLength:  minLength,
+		RequireNum: requireNum,
+		RequireMix: requireMix,
 	}
 }
 

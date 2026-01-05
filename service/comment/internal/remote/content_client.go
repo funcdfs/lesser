@@ -89,6 +89,7 @@ func (c *ContentServiceClient) CheckContentExists(ctx context.Context, contentID
 }
 
 // GetContentAuthorID 获取内容作者 ID
+// 注意：当前使用 GetContent API，如果 Content 服务提供专门的 GetAuthorID API 可以优化
 func (c *ContentServiceClient) GetContentAuthorID(ctx context.Context, contentID string) (string, error) {
 	conn, err := c.pool.GetConn(ctx, contentServiceName)
 	if err != nil {
@@ -97,14 +98,18 @@ func (c *ContentServiceClient) GetContentAuthorID(ctx context.Context, contentID
 	}
 
 	client := contentpb.NewContentServiceClient(conn)
+
+	// 使用 CheckContentExists 无法获取作者 ID，只能用 GetContent
+	// TODO: 建议 Content 服务添加 GetContentAuthorID RPC 以提高效率
 	resp, err := client.GetContent(ctx, &contentpb.GetContentRequest{
 		ContentId: contentID,
 	})
 	if err != nil {
-		c.log.WithContext(ctx).Error("获取内容作者 ID 失败",
+		// 获取作者 ID 失败不应阻塞主流程，仅记录警告
+		c.log.WithContext(ctx).Warn("获取内容作者 ID 失败",
 			"content_id", contentID,
 			"error", err)
-		return "", err
+		return "", nil
 	}
 	if resp.Content == nil {
 		return "", nil

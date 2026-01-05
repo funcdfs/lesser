@@ -4,7 +4,6 @@ package logic
 import (
 	"context"
 	"fmt"
-	"log/slog"
 	"time"
 
 	"github.com/google/uuid"
@@ -12,14 +11,15 @@ import (
 	"github.com/funcdfs/lesser/auth/internal/config"
 	"github.com/funcdfs/lesser/auth/internal/crypto"
 	"github.com/funcdfs/lesser/auth/internal/data_access"
+	"github.com/funcdfs/lesser/pkg/log"
 )
 
 // AuthServiceImpl 认证服务实现
 type AuthServiceImpl struct {
-	// 仓库依赖
-	userRepo       data_access.UserRepository
-	banRepo        data_access.BanRepository
-	tokenBlacklist data_access.TokenBlacklistRepository
+	// 数据访问依赖
+	userDA       data_access.UserDataAccess
+	banDA        data_access.BanDataAccess
+	tokenBlacklist data_access.TokenBlacklistDataAccess
 
 	// 缓存依赖
 	banCache          *data_access.BanCache
@@ -34,28 +34,28 @@ type AuthServiceImpl struct {
 	cfg *config.Config
 
 	// 日志
-	log *slog.Logger
+	log *log.Logger
 }
 
 // AuthServiceDeps 认证服务依赖
 type AuthServiceDeps struct {
-	UserRepo          data_access.UserRepository
-	BanRepo           data_access.BanRepository
-	TokenBlacklist    data_access.TokenBlacklistRepository
+	UserDA          data_access.UserDataAccess
+	BanDA           data_access.BanDataAccess
+	TokenBlacklist    data_access.TokenBlacklistDataAccess
 	BanCache          *data_access.BanCache
 	LoginAttemptCache *data_access.LoginAttemptCache
 	PasswordHasher    *crypto.PasswordHasher
 	PasswordValidator *crypto.PasswordValidator
 	JWTManager        *crypto.JWTManager
 	Config            *config.Config
-	Logger            *slog.Logger
+	Logger            *log.Logger
 }
 
 // NewAuthService 创建认证服务
 func NewAuthService(deps AuthServiceDeps) AuthService {
 	return &AuthServiceImpl{
-		userRepo:          deps.UserRepo,
-		banRepo:           deps.BanRepo,
+		userDA:          deps.UserDA,
+		banDA:           deps.BanDA,
 		tokenBlacklist:    deps.TokenBlacklist,
 		banCache:          deps.BanCache,
 		loginAttemptCache: deps.LoginAttemptCache,
@@ -75,9 +75,9 @@ func (s *AuthServiceImpl) Register(ctx context.Context, username, email, passwor
 	}
 
 	// 检查用户是否已存在
-	exists, err := s.userRepo.ExistsByEmailOrUsername(ctx, email, username)
+	exists, err := s.userDA.ExistsByEmailOrUsername(ctx, email, username)
 	if err != nil {
-		s.log.Error("检查用户存在性失败", slog.Any("error", err))
+		s.log.Error("检查用户存在性失败", log.Any("error", err))
 		return nil, fmt.Errorf("检查用户失败: %w", err)
 	}
 	if exists {
@@ -87,7 +87,7 @@ func (s *AuthServiceImpl) Register(ctx context.Context, username, email, passwor
 	// 哈希密码
 	hashedPassword, err := s.passwordHasher.Hash(password)
 	if err != nil {
-		s.log.Error("密码哈希失败", slog.Any("error", err))
+		s.log.Error("密码哈希失败", log.Any("error", err))
 		return nil, fmt.Errorf("密码处理失败: %w", err)
 	}
 
@@ -104,12 +104,12 @@ func (s *AuthServiceImpl) Register(ctx context.Context, username, email, passwor
 		UpdatedAt:   now,
 	}
 
-	if err := s.userRepo.Create(ctx, user); err != nil {
-		s.log.Error("创建用户失败", slog.Any("error", err), slog.String("email", email))
+	if err := s.userDA.Create(ctx, user); err != nil {
+		s.log.Error("创建用户失败", log.Any("error", err), log.String("email", email))
 		return nil, fmt.Errorf("创建用户失败: %w", err)
 	}
 
-	s.log.Info("用户注册成功", slog.String("user_id", user.ID), slog.String("username", username))
+	s.log.Info("用户注册成功", log.String("user_id", user.ID), log.String("username", username))
 
 	// 生成 Token
 	return s.generateTokens(user)
@@ -118,12 +118,12 @@ func (s *AuthServiceImpl) Register(ctx context.Context, username, email, passwor
 // Login 用户登录
 func (s *AuthServiceImpl) Login(ctx context.Context, email, password string) (*AuthResult, error) {
 	// 获取用户
-	user, err := s.userRepo.GetByEmail(ctx, email)
+	user, err := s.userDA.GetByEmail(ctx, email)
 	if err != nil {
 		if err == data_access.ErrUserNotFound {
 			return nil, ErrInvalidCredentials
 		}
-		s.log.Error("获取用户失败", slog.Any("error", err), slog.String("email", email))
+		s.log.Error("获取用户失败", log.Any("error", err), log.String("email", email))
 		return nil, fmt.Errorf("获取用户失败: %w", err)
 	}
 
@@ -131,9 +131,9 @@ func (s *AuthServiceImpl) Login(ctx context.Context, email, password string) (*A
 	if s.loginAttemptCache != nil {
 		locked, err := s.loginAttemptCache.IsLocked(ctx, user.ID, s.cfg.MaxLoginAttempts)
 		if err != nil {
-			s.log.Warn("检查账户锁定状态失败", slog.Any("error", err))
+			s.log.Warn("检查账户锁定状态失败", log.Any("error", err))
 		} else if locked {
-			s.log.Warn("账户已锁定", slog.String("user_id", user.ID))
+			s.log.Warn("账户已锁定", log.String("user_id", user.ID))
 			return nil, ErrAccountLocked
 		}
 	}
@@ -141,7 +141,7 @@ func (s *AuthServiceImpl) Login(ctx context.Context, email, password string) (*A
 	// 检查是否被封禁
 	banInfo, err := s.CheckBanned(ctx, user.ID)
 	if err != nil {
-		s.log.Error("检查封禁状态失败", slog.Any("error", err))
+		s.log.Error("检查封禁状态失败", log.Any("error", err))
 		return nil, fmt.Errorf("检查封禁状态失败: %w", err)
 	}
 	if banInfo.Banned {
@@ -156,14 +156,14 @@ func (s *AuthServiceImpl) Login(ctx context.Context, email, password string) (*A
 	// 验证密码
 	match, err := s.passwordHasher.Verify(password, user.Password)
 	if err != nil {
-		s.log.Error("密码验证失败", slog.Any("error", err))
+		s.log.Error("密码验证失败", log.Any("error", err))
 		return nil, fmt.Errorf("密码验证失败: %w", err)
 	}
 	if !match {
 		// 记录失败尝试
 		if s.loginAttemptCache != nil {
 			count, _ := s.loginAttemptCache.IncrementFailure(ctx, user.ID)
-			s.log.Warn("登录失败", slog.String("user_id", user.ID), slog.Int("attempt", count))
+			s.log.Warn("登录失败", log.String("user_id", user.ID), log.Int("attempt", count))
 		}
 		return nil, ErrInvalidCredentials
 	}
@@ -177,15 +177,15 @@ func (s *AuthServiceImpl) Login(ctx context.Context, email, password string) (*A
 	if s.passwordHasher.NeedsRehash(user.Password) {
 		newHash, err := s.passwordHasher.Hash(password)
 		if err == nil {
-			_ = s.userRepo.UpdatePassword(ctx, user.ID, newHash)
-			s.log.Info("密码哈希已升级", slog.String("user_id", user.ID))
+			_ = s.userDA.UpdatePassword(ctx, user.ID, newHash)
+			s.log.Info("密码哈希已升级", log.String("user_id", user.ID))
 		}
 	}
 
 	// 更新最后登录时间
-	_ = s.userRepo.UpdateLastLogin(ctx, user.ID)
+	_ = s.userDA.UpdateLastLogin(ctx, user.ID)
 
-	s.log.Info("用户登录成功", slog.String("user_id", user.ID))
+	s.log.Info("用户登录成功", log.String("user_id", user.ID))
 
 	// 生成 Token
 	return s.generateTokens(user)
@@ -201,23 +201,23 @@ func (s *AuthServiceImpl) Logout(ctx context.Context, accessToken string) error 
 	// 获取 Token ID 和过期时间
 	tokenID, err := s.jwtManager.GetTokenID(accessToken)
 	if err != nil {
-		s.log.Warn("解析 Token ID 失败", slog.Any("error", err))
+		s.log.Warn("解析 Token ID 失败", log.Any("error", err))
 		return nil // 不返回错误，允许登出
 	}
 
 	expiresAt, err := s.jwtManager.GetTokenExpiry(accessToken)
 	if err != nil {
-		s.log.Warn("解析 Token 过期时间失败", slog.Any("error", err))
+		s.log.Warn("解析 Token 过期时间失败", log.Any("error", err))
 		return nil
 	}
 
 	// 添加到黑名单
 	if err := s.tokenBlacklist.Add(ctx, tokenID, expiresAt); err != nil {
-		s.log.Error("添加 Token 到黑名单失败", slog.Any("error", err))
+		s.log.Error("添加 Token 到黑名单失败", log.Any("error", err))
 		return fmt.Errorf("登出失败: %w", err)
 	}
 
-	s.log.Debug("Token 已加入黑名单", slog.String("token_id", tokenID))
+	s.log.Debug("Token 已加入黑名单", log.String("token_id", tokenID))
 	return nil
 }
 
@@ -233,7 +233,7 @@ func (s *AuthServiceImpl) RefreshToken(ctx context.Context, refreshToken string)
 	}
 
 	// 获取用户
-	user, err := s.userRepo.GetByID(ctx, claims.UserID)
+	user, err := s.userDA.GetByID(ctx, claims.UserID)
 	if err != nil {
 		if err == data_access.ErrUserNotFound {
 			return nil, ErrInvalidToken
@@ -255,7 +255,7 @@ func (s *AuthServiceImpl) RefreshToken(ctx context.Context, refreshToken string)
 		return nil, ErrUserNotActive
 	}
 
-	s.log.Debug("Token 刷新成功", slog.String("user_id", user.ID))
+	s.log.Debug("Token 刷新成功", log.String("user_id", user.ID))
 
 	// 生成新 Token
 	return s.generateTokens(user)
@@ -292,8 +292,8 @@ func (s *AuthServiceImpl) BanUser(ctx context.Context, userID, reason string, du
 		CreatedBy: operatorID,
 	}
 
-	if err := s.banRepo.Create(ctx, ban); err != nil {
-		s.log.Error("创建封禁记录失败", slog.Any("error", err), slog.String("user_id", userID))
+	if err := s.banDA.Create(ctx, ban); err != nil {
+		s.log.Error("创建封禁记录失败", log.Any("error", err), log.String("user_id", userID))
 		return fmt.Errorf("封禁用户失败: %w", err)
 	}
 
@@ -303,17 +303,17 @@ func (s *AuthServiceImpl) BanUser(ctx context.Context, userID, reason string, du
 	}
 
 	s.log.Info("用户已封禁",
-		slog.String("user_id", userID),
-		slog.String("reason", reason),
-		slog.String("operator", operatorID))
+		log.String("user_id", userID),
+		log.String("reason", reason),
+		log.String("operator", operatorID))
 
 	return nil
 }
 
 // UnbanUser 解封用户
 func (s *AuthServiceImpl) UnbanUser(ctx context.Context, userID string) error {
-	if err := s.banRepo.Delete(ctx, userID); err != nil {
-		s.log.Error("删除封禁记录失败", slog.Any("error", err), slog.String("user_id", userID))
+	if err := s.banDA.Delete(ctx, userID); err != nil {
+		s.log.Error("删除封禁记录失败", log.Any("error", err), log.String("user_id", userID))
 		return fmt.Errorf("解封用户失败: %w", err)
 	}
 
@@ -322,7 +322,7 @@ func (s *AuthServiceImpl) UnbanUser(ctx context.Context, userID string) error {
 		_ = s.banCache.Delete(ctx, userID)
 	}
 
-	s.log.Info("用户已解封", slog.String("user_id", userID))
+	s.log.Info("用户已解封", log.String("user_id", userID))
 	return nil
 }
 
@@ -332,7 +332,7 @@ func (s *AuthServiceImpl) CheckBanned(ctx context.Context, userID string) (*BanI
 	if s.banCache != nil {
 		entry, err := s.banCache.Get(ctx, userID)
 		if err != nil {
-			s.log.Warn("获取封禁缓存失败", slog.Any("error", err))
+			s.log.Warn("获取封禁缓存失败", log.Any("error", err))
 		} else if entry != nil {
 			return &BanInfo{
 				Banned:    entry.Banned,
@@ -343,7 +343,7 @@ func (s *AuthServiceImpl) CheckBanned(ctx context.Context, userID string) (*BanI
 	}
 
 	// 查数据库
-	banned, ban, err := s.banRepo.IsUserBanned(ctx, userID)
+	banned, ban, err := s.banDA.IsUserBanned(ctx, userID)
 	if err != nil {
 		return nil, err
 	}
@@ -370,7 +370,7 @@ func (s *AuthServiceImpl) CheckBanned(ctx context.Context, userID string) (*BanI
 
 // GetUser 获取用户信息
 func (s *AuthServiceImpl) GetUser(ctx context.Context, userID string) (*data_access.User, error) {
-	return s.userRepo.GetByID(ctx, userID)
+	return s.userDA.GetByID(ctx, userID)
 }
 
 // generateTokens 生成 Token 对

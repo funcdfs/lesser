@@ -4,23 +4,22 @@ package main
 
 import (
 	"context"
-	"log/slog"
 	"net"
 	"os"
 	"os/signal"
 	"syscall"
 	"time"
 
+	pb "github.com/funcdfs/lesser/comment/gen_protos/comment"
 	"github.com/funcdfs/lesser/comment/internal/data_access"
 	"github.com/funcdfs/lesser/comment/internal/handler"
 	"github.com/funcdfs/lesser/comment/internal/logic"
 	"github.com/funcdfs/lesser/comment/internal/messaging"
 	"github.com/funcdfs/lesser/comment/internal/remote"
-	pb "github.com/funcdfs/lesser/comment/gen_protos/comment"
-	"github.com/funcdfs/lesser/pkg/mq"
 	"github.com/funcdfs/lesser/pkg/db"
-	"github.com/funcdfs/lesser/pkg/log"
 	"github.com/funcdfs/lesser/pkg/grpc/interceptor"
+	"github.com/funcdfs/lesser/pkg/log"
+	"github.com/funcdfs/lesser/pkg/mq"
 	"github.com/funcdfs/lesser/pkg/trace"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/reflection"
@@ -28,7 +27,7 @@ import (
 
 func main() {
 	// 初始化日志
-	log := log.New("comment")
+	logger := log.New("comment")
 
 	grpcPort := getEnv("GRPC_PORT", "50055")
 	contentServiceAddr := getEnv("CONTENT_SERVICE_ADDR", "content:50054")
@@ -39,10 +38,10 @@ func main() {
 	tracingCfg := trace.DefaultConfig("comment")
 	shutdown, err := trace.Init(ctx, tracingCfg)
 	if err != nil {
-		log.Error("初始化 OpenTelemetry 失败", slog.Any("error", err))
+		logger.Error("初始化 OpenTelemetry 失败", log.Any("error", err))
 	} else {
 		defer shutdown(ctx)
-		log.Info("OpenTelemetry 初始化成功", slog.String("endpoint", tracingCfg.Endpoint))
+		logger.Info("OpenTelemetry 初始化成功", log.String("endpoint", tracingCfg.Endpoint))
 	}
 
 	// 数据库连接
@@ -60,32 +59,32 @@ func main() {
 
 	database, err := db.NewPostgresConnection(dbConfig)
 	if err != nil {
-		log.Fatal("数据库连接失败", slog.Any("error", err))
+		logger.Fatal("数据库连接失败", log.Any("error", err))
 	}
 	defer database.Close()
-	log.Info("数据库连接成功", slog.String("db", dbConfig.DBName))
+	logger.Info("数据库连接成功", log.String("db", dbConfig.DBName))
 
 	// 初始化 Content Service 客户端
-	contentClient, err := remote.NewContentServiceClient(contentServiceAddr, log)
+	contentClient, err := remote.NewContentServiceClient(contentServiceAddr, logger)
 	if err != nil {
-		log.Fatal("连接 Content Service 失败", slog.Any("error", err))
+		logger.Fatal("连接 Content Service 失败", log.Any("error", err))
 	}
 	defer contentClient.Close()
-	log.Info("已连接 Content Service", slog.String("addr", contentServiceAddr))
+	logger.Info("已连接 Content Service", log.String("addr", contentServiceAddr))
 
 	// 初始化各层
-	commentRepo := data_access.NewCommentRepository(database)
-	commentSvc := logic.NewCommentService(commentRepo, contentClient)
+	commentDA := data_access.NewCommentDataAccess(database)
+	commentSvc := logic.NewCommentService(commentDA, contentClient)
 
 	// 初始化 RabbitMQ Publisher（用于发送通知事件）
 	var publisher *mq.Publisher
-	publisher = mq.NewPublisher(rabbitmqURL, log)
+	publisher = mq.NewPublisher(rabbitmqURL, logger)
 	if err := publisher.Connect(); err != nil {
-		log.Warn("RabbitMQ 连接失败，通知功能将不可用", slog.Any("error", err))
+		logger.Warn("RabbitMQ 连接失败，通知功能将不可用", log.Any("error", err))
 		publisher = nil
 	} else {
 		defer publisher.Close()
-		log.Info("RabbitMQ Publisher 已连接")
+		logger.Info("RabbitMQ Publisher 已连接")
 	}
 
 	// 初始化 messaging 层并注入
@@ -94,14 +93,14 @@ func main() {
 		commentSvc.SetPublisher(eventPublisher)
 	}
 
-	commentHandler := handler.NewCommentHandler(commentSvc, log.Logger)
+	commentHandler := handler.NewCommentHandler(commentSvc, logger)
 
 	// 创建 gRPC 服务器（带拦截器）
 	grpcServer := grpc.NewServer(
 		grpc.ChainUnaryInterceptor(
-			interceptor.RecoveryInterceptor(log),
+			interceptor.RecoveryInterceptor(logger),
 			interceptor.TraceInterceptor(),
-			interceptor.LoggingInterceptor(log),
+			interceptor.LoggingInterceptor(logger),
 		),
 	)
 	pb.RegisterCommentServiceServer(grpcServer, commentHandler)
@@ -110,7 +109,7 @@ func main() {
 	// 监听端口
 	lis, err := net.Listen("tcp", ":"+grpcPort)
 	if err != nil {
-		log.Fatal("端口监听失败", slog.String("port", grpcPort), slog.Any("error", err))
+		logger.Fatal("端口监听失败", log.String("port", grpcPort), log.Any("error", err))
 	}
 
 	// 优雅关闭
@@ -119,14 +118,14 @@ func main() {
 		sigCh := make(chan os.Signal, 1)
 		signal.Notify(sigCh, syscall.SIGINT, syscall.SIGTERM)
 		<-sigCh
-		log.Info("收到关闭信号，开始关闭...")
+		logger.Info("收到关闭信号，开始关闭...")
 		cancel()
 		grpcServer.GracefulStop()
 	}()
 
-	log.Info("Comment 服务已启动", slog.String("port", grpcPort))
+	logger.Info("Comment 服务已启动", log.String("port", grpcPort))
 	if err := grpcServer.Serve(lis); err != nil && ctx.Err() == nil {
-		log.Fatal("gRPC 服务异常退出", slog.Any("error", err))
+		logger.Fatal("gRPC 服务异常退出", log.Any("error", err))
 	}
 }
 

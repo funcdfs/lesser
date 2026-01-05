@@ -4,17 +4,17 @@ package main
 
 import (
 	"context"
-	"log/slog"
+	
 	"net"
 	"os"
 	"os/signal"
 	"syscall"
 
-	"github.com/funcdfs/lesser/notification/internal/handler"
+	pb "github.com/funcdfs/lesser/notification/gen_protos/notification"
 	"github.com/funcdfs/lesser/notification/internal/data_access"
+	"github.com/funcdfs/lesser/notification/internal/handler"
 	"github.com/funcdfs/lesser/notification/internal/logic"
 	"github.com/funcdfs/lesser/notification/internal/messaging"
-	pb "github.com/funcdfs/lesser/notification/gen_protos/notification"
 	"github.com/funcdfs/lesser/pkg/db"
 	"github.com/funcdfs/lesser/pkg/log"
 	"google.golang.org/grpc"
@@ -40,15 +40,15 @@ func main() {
 
 	database, err := db.NewPostgresConnection(dbConfig)
 	if err != nil {
-		pkgLog.Fatal("连接数据库失败", slog.Any("error", err))
+		pkgLog.Fatal("连接数据库失败", log.Any("error", err))
 	}
 	defer database.Close()
 	pkgLog.Info("已连接到 PostgreSQL")
 
 	// 初始化服务层
-	notifRepo := data_access.NewNotificationRepository(database)
-	notifSvc := logic.NewNotificationService(notifRepo)
-	notifHandler := handler.NewNotificationHandler(notifSvc, pkgLog.Logger)
+	notifDA := data_access.NewNotificationDataAccess(database)
+	notifSvc := logic.NewNotificationService(notifDA)
+	notifHandler := handler.NewNotificationHandler(notifSvc, pkgLog)
 
 	// 创建 gRPC 服务器
 	grpcServer := grpc.NewServer()
@@ -58,7 +58,7 @@ func main() {
 	// 监听端口
 	lis, err := net.Listen("tcp", ":"+grpcPort)
 	if err != nil {
-		pkgLog.Fatal("监听端口失败", slog.String("port", grpcPort), slog.Any("error", err))
+		pkgLog.Fatal("监听端口失败", log.String("port", grpcPort), log.Any("error", err))
 	}
 
 	// 创建上下文用于优雅停机
@@ -69,7 +69,7 @@ func main() {
 	go func() {
 		pkgLog.Info("启动 RabbitMQ 事件消费者")
 		if err := eventWorker.Start(ctx); err != nil {
-			pkgLog.Error("事件消费者启动失败", slog.Any("error", err))
+			pkgLog.Error("事件消费者启动失败", log.Any("error", err))
 		}
 	}()
 
@@ -84,9 +84,9 @@ func main() {
 		grpcServer.GracefulStop()
 	}()
 
-	pkgLog.Info("Notification Service 启动", slog.String("port", grpcPort))
+	pkgLog.Info("Notification Service 启动", log.String("port", grpcPort))
 	if err := grpcServer.Serve(lis); err != nil && ctx.Err() == nil {
-		pkgLog.Fatal("gRPC 服务启动失败", slog.Any("error", err))
+		pkgLog.Fatal("gRPC 服务启动失败", log.Any("error", err))
 	}
 }
 

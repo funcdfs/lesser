@@ -1,0 +1,16 @@
+{
+  "enabled": true,
+  "name": "Service 修改同步检查",
+  "description": "当 service 目录下的服务代码被修改后，自动检查 CLI 测试是否同步更新，以及与 gateway 和 pkg 的集成是否合理，防止重复实现相同逻辑。",
+  "version": "1",
+  "when": {
+    "type": "fileEdited",
+    "patterns": [
+      "service/*/internal/**/*.go"
+    ]
+  },
+  "then": {
+    "type": "askAgent",
+    "prompt": "我刚刚修改了 service 下的服务代码，请帮我检查以下几点：\n\n1. **CLI 测试同步检查**：查看 `infra/cli/src/commands/test/` 目录下对应服务的测试文件，确认测试用例是否需要同步更新以覆盖新的功能或修改。\n\n2. **Gateway 集成检查**：查看 `service/gateway/` 目录，确认 gateway 的路由转发和代理逻辑是否需要相应调整。\n\n3. **pkg 公共库检查**：查看 `service/pkg/` 目录，检查是否存在可复用的公共函数或逻辑，避免在具体服务中重复实现。如果新增的逻辑具有通用性，建议提取到 pkg 中。\n\n4. **重复逻辑检测**：检查修改的代码是否与其他服务或 pkg 中已有的实现存在重复，如有重复请指出并建议重构方案。\n\n请给出具体的检查结果和建议。"
+  }
+}

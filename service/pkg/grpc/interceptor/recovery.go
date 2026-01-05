@@ -7,18 +7,18 @@ import (
 	"log/slog"
 	"runtime/debug"
 
-	"github.com/funcdfs/lesser/pkg/logger"
+	"github.com/funcdfs/lesser/pkg/log"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 )
 
 // RecoveryInterceptor 创建 panic 恢复拦截器
-func RecoveryInterceptor(log *logger.Logger) grpc.UnaryServerInterceptor {
+func RecoveryInterceptor(logger *log.Logger) grpc.UnaryServerInterceptor {
 	return func(ctx context.Context, req interface{}, info *grpc.UnaryServerInfo, handler grpc.UnaryHandler) (resp interface{}, err error) {
 		defer func() {
 			if r := recover(); r != nil {
-				log.WithContext(ctx).Error("panic recovered",
+				logger.WithContext(ctx).Error("panic recovered",
 					slog.Any("panic", r),
 					slog.String("method", info.FullMethod),
 					slog.String("stack", string(debug.Stack())))
@@ -30,11 +30,11 @@ func RecoveryInterceptor(log *logger.Logger) grpc.UnaryServerInterceptor {
 }
 
 // StreamRecoveryInterceptor 创建流式 panic 恢复拦截器
-func StreamRecoveryInterceptor(log *logger.Logger) grpc.StreamServerInterceptor {
+func StreamRecoveryInterceptor(logger *log.Logger) grpc.StreamServerInterceptor {
 	return func(srv interface{}, ss grpc.ServerStream, info *grpc.StreamServerInfo, handler grpc.StreamHandler) (err error) {
 		defer func() {
 			if r := recover(); r != nil {
-				log.Error("stream panic recovered",
+				logger.Error("stream panic recovered",
 					slog.Any("panic", r),
 					slog.String("method", info.FullMethod),
 					slog.String("stack", string(debug.Stack())))

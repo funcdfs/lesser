@@ -1,14 +1,16 @@
+// Package handler 提供搜索服务的 gRPC 处理器
 package handler
 
 import (
 	"context"
-	"log/slog"
+	"sync"
 
 	"github.com/funcdfs/lesser/pkg/gen_protos/common"
 	"github.com/funcdfs/lesser/pkg/log"
+	"github.com/funcdfs/lesser/pkg/page"
+	pb "github.com/funcdfs/lesser/search/gen_protos/search"
 	"github.com/funcdfs/lesser/search/internal/data_access"
 	"github.com/funcdfs/lesser/search/internal/logic"
-	pb "github.com/funcdfs/lesser/search/gen_protos/search"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 )
@@ -16,18 +18,18 @@ import (
 // SearchHandler 搜索服务 gRPC 处理器
 type SearchHandler struct {
 	pb.UnimplementedSearchServiceServer
-	searchService *logic.SearchService
-	log           *slog.Logger
+	svc *logic.SearchService
+	log *log.Logger
 }
 
 // NewSearchHandler 创建搜索处理器
-func NewSearchHandler(searchService *logic.SearchService, log *slog.Logger) *SearchHandler {
-	if log == nil {
-		log = slog.Default()
+func NewSearchHandler(svc *logic.SearchService, logger *log.Logger) *SearchHandler {
+	if logger == nil {
+		logger = log.Global()
 	}
 	return &SearchHandler{
-		searchService: searchService,
-		log:           log.With(slog.String("component", "handler")),
+		svc: svc,
+		log: logger.With(log.String("component", "handler")),
 	}
 }
 
@@ -37,33 +39,22 @@ func (h *SearchHandler) SearchPosts(ctx context.Context, req *pb.SearchPostsRequ
 		return nil, status.Error(codes.InvalidArgument, "搜索关键词不能为空")
 	}
 
-	page, pageSize := int32(1), int32(20)
-	if req.Pagination != nil {
-		if req.Pagination.Page > 0 {
-			page = req.Pagination.Page
-		}
-		if req.Pagination.PageSize > 0 {
-			pageSize = req.Pagination.PageSize
-		}
-	}
-	limit := int(pageSize)
-	offset := int((page - 1) * pageSize)
+	pageReq := page.FromProto(req.Pagination)
+	limit, offset := int(pageReq.Limit()), int(pageReq.Offset())
 
-	// 目前仅支持关键词搜索，语义搜索需要外部 embedding 服务
 	// TODO: 集成 embedding 服务后启用语义搜索
-	contents, total, err := h.searchService.SearchContents(req.Query, limit, offset)
+	contents, total, err := h.svc.SearchContents(ctx, req.Query, limit, offset)
 	if err != nil {
-		h.log.Error("搜索内容失败",
-			slog.String("query", req.Query),
-			slog.String("trace_id", log.TraceIDFromContext(ctx)),
-			slog.Any("error", err),
+		h.log.WithContext(ctx).Error("搜索内容失败",
+			log.String("query", req.Query),
+			log.Any("error", err),
 		)
 		return nil, logic.ToGRPCError(err)
 	}
 
 	return &pb.SearchPostsResponse{
 		Posts:      contentsToProto(contents),
-		Pagination: &common.Pagination{Page: page, PageSize: pageSize, Total: int32(total)},
+		Pagination: &common.Pagination{Page: pageReq.Page, PageSize: pageReq.PageSize, Total: int32(total)},
 	}, nil
 }
 
@@ -73,31 +64,21 @@ func (h *SearchHandler) SearchUsers(ctx context.Context, req *pb.SearchUsersRequ
 		return nil, status.Error(codes.InvalidArgument, "搜索关键词不能为空")
 	}
 
-	page, pageSize := int32(1), int32(20)
-	if req.Pagination != nil {
-		if req.Pagination.Page > 0 {
-			page = req.Pagination.Page
-		}
-		if req.Pagination.PageSize > 0 {
-			pageSize = req.Pagination.PageSize
-		}
-	}
-	limit := int(pageSize)
-	offset := int((page - 1) * pageSize)
+	pageReq := page.FromProto(req.Pagination)
+	limit, offset := int(pageReq.Limit()), int(pageReq.Offset())
 
-	users, total, err := h.searchService.SearchUsers(req.Query, limit, offset)
+	users, total, err := h.svc.SearchUsers(ctx, req.Query, limit, offset)
 	if err != nil {
-		h.log.Error("搜索用户失败",
-			slog.String("query", req.Query),
-			slog.String("trace_id", log.TraceIDFromContext(ctx)),
-			slog.Any("error", err),
+		h.log.WithContext(ctx).Error("搜索用户失败",
+			log.String("query", req.Query),
+			log.Any("error", err),
 		)
 		return nil, logic.ToGRPCError(err)
 	}
 
 	return &pb.SearchUsersResponse{
 		Users:      usersToProto(users),
-		Pagination: &common.Pagination{Page: page, PageSize: pageSize, Total: int32(total)},
+		Pagination: &common.Pagination{Page: pageReq.Page, PageSize: pageReq.PageSize, Total: int32(total)},
 	}, nil
 }
 
@@ -107,36 +88,26 @@ func (h *SearchHandler) SearchComments(ctx context.Context, req *pb.SearchCommen
 		return nil, status.Error(codes.InvalidArgument, "搜索关键词不能为空")
 	}
 
-	page, pageSize := int32(1), int32(20)
-	if req.Pagination != nil {
-		if req.Pagination.Page > 0 {
-			page = req.Pagination.Page
-		}
-		if req.Pagination.PageSize > 0 {
-			pageSize = req.Pagination.PageSize
-		}
-	}
-	limit := int(pageSize)
-	offset := int((page - 1) * pageSize)
+	pageReq := page.FromProto(req.Pagination)
+	limit, offset := int(pageReq.Limit()), int(pageReq.Offset())
 
-	comments, total, err := h.searchService.SearchComments(req.Query, req.PostId, limit, offset)
+	comments, total, err := h.svc.SearchComments(ctx, req.Query, req.PostId, limit, offset)
 	if err != nil {
-		h.log.Error("搜索评论失败",
-			slog.String("query", req.Query),
-			slog.String("post_id", req.PostId),
-			slog.String("trace_id", log.TraceIDFromContext(ctx)),
-			slog.Any("error", err),
+		h.log.WithContext(ctx).Error("搜索评论失败",
+			log.String("query", req.Query),
+			log.String("post_id", req.PostId),
+			log.Any("error", err),
 		)
 		return nil, logic.ToGRPCError(err)
 	}
 
 	return &pb.SearchCommentsResponse{
 		Comments:   commentsToProto(comments),
-		Pagination: &common.Pagination{Page: page, PageSize: pageSize, Total: int32(total)},
+		Pagination: &common.Pagination{Page: pageReq.Page, PageSize: pageReq.PageSize, Total: int32(total)},
 	}, nil
 }
 
-// SearchAll 综合搜索
+// SearchAll 综合搜索（并行执行）
 func (h *SearchHandler) SearchAll(ctx context.Context, req *pb.SearchAllRequest) (*pb.SearchAllResponse, error) {
 	if req.Query == "" {
 		return nil, status.Error(codes.InvalidArgument, "搜索关键词不能为空")
@@ -146,11 +117,36 @@ func (h *SearchHandler) SearchAll(ctx context.Context, req *pb.SearchAllRequest)
 	if limit <= 0 {
 		limit = 5 // 每种类型默认返回 5 条
 	}
+	if limit > 20 {
+		limit = 20 // 综合搜索每种类型最多 20 条
+	}
 
 	// 并行搜索内容、评论、用户
-	contents, _, _ := h.searchService.SearchContents(req.Query, limit, 0)
-	comments, _, _ := h.searchService.SearchComments(req.Query, "", limit, 0)
-	users, _, _ := h.searchService.SearchUsers(req.Query, limit, 0)
+	var (
+		wg       sync.WaitGroup
+		contents []*data_access.Content
+		comments []*data_access.Comment
+		users    []*data_access.User
+	)
+
+	wg.Add(3)
+
+	go func() {
+		defer wg.Done()
+		contents, _, _ = h.svc.SearchContents(ctx, req.Query, limit, 0)
+	}()
+
+	go func() {
+		defer wg.Done()
+		comments, _, _ = h.svc.SearchComments(ctx, req.Query, "", limit, 0)
+	}()
+
+	go func() {
+		defer wg.Done()
+		users, _, _ = h.svc.SearchUsers(ctx, req.Query, limit, 0)
+	}()
+
+	wg.Wait()
 
 	return &pb.SearchAllResponse{
 		Posts:    contentsToProto(contents),
@@ -159,9 +155,13 @@ func (h *SearchHandler) SearchAll(ctx context.Context, req *pb.SearchAllRequest)
 	}, nil
 }
 
+// ============================================================================
+// 辅助函数
+// ============================================================================
+
 // contentsToProto 将 Content 实体转换为 proto 消息
 func contentsToProto(contents []*data_access.Content) []*pb.PostResult {
-	if contents == nil {
+	if len(contents) == 0 {
 		return []*pb.PostResult{}
 	}
 	result := make([]*pb.PostResult, len(contents))
@@ -181,7 +181,7 @@ func contentsToProto(contents []*data_access.Content) []*pb.PostResult {
 
 // usersToProto 将 User 实体转换为 proto 消息
 func usersToProto(users []*data_access.User) []*pb.UserResult {
-	if users == nil {
+	if len(users) == 0 {
 		return []*pb.UserResult{}
 	}
 	result := make([]*pb.UserResult, len(users))
@@ -200,7 +200,7 @@ func usersToProto(users []*data_access.User) []*pb.UserResult {
 
 // commentsToProto 将 Comment 实体转换为 proto 消息
 func commentsToProto(comments []*data_access.Comment) []*pb.CommentResult {
-	if comments == nil {
+	if len(comments) == 0 {
 		return []*pb.CommentResult{}
 	}
 	result := make([]*pb.CommentResult, len(comments))

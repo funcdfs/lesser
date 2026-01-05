@@ -9,7 +9,7 @@ import (
 	"log/slog"
 	"sync"
 
-	"github.com/funcdfs/lesser/pkg/logger"
+	"github.com/funcdfs/lesser/pkg/log"
 	amqp "github.com/rabbitmq/amqp091-go"
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/attribute"
@@ -23,15 +23,15 @@ type Publisher struct {
 	url     string
 	conn    *amqp.Connection
 	channel *amqp.Channel
-	log     *logger.Logger
+	log     *log.Logger
 	mu      sync.RWMutex
 }
 
 // NewPublisher 创建消息发布者
-func NewPublisher(url string, log *logger.Logger) *Publisher {
+func NewPublisher(url string, logger *log.Logger) *Publisher {
 	return &Publisher{
 		url: url,
-		log: log,
+		log: logger,
 	}
 }
 
@@ -65,7 +65,6 @@ func (p *Publisher) Connect() error {
 	return nil
 }
 
-
 // Close 关闭连接
 func (p *Publisher) Close() error {
 	p.mu.Lock()
@@ -97,14 +96,20 @@ func (p *Publisher) Publish(ctx context.Context, routingKey string, event interf
 func (p *Publisher) PublishRaw(ctx context.Context, routingKey string, body []byte) error {
 	p.mu.RLock()
 	ch := p.channel
+	conn := p.conn
 	p.mu.RUnlock()
 
-	if ch == nil {
+	if ch == nil || conn == nil {
 		return fmt.Errorf("未连接到 RabbitMQ")
 	}
 
+	// 检查连接是否已关闭
+	if conn.IsClosed() {
+		return fmt.Errorf("RabbitMQ 连接已关闭")
+	}
+
 	// 从 context 中提取 trace_id
-	traceID := logger.TraceIDFromContext(ctx)
+	traceID := log.TraceIDFromContext(ctx)
 
 	// 创建 OpenTelemetry Span
 	tracer := otel.Tracer("rabbitmq-publisher")
@@ -167,13 +172,13 @@ func (p *Publisher) PublishRaw(ctx context.Context, routingKey string, body []by
 // 自动传播 trace_id 到消息头
 func (p *Publisher) PublishAsync(ctx context.Context, routingKey string, event interface{}) {
 	// 提取 trace_id 以便在 goroutine 中使用
-	traceID := logger.TraceIDFromContext(ctx)
+	traceID := log.TraceIDFromContext(ctx)
 
 	go func() {
 		// 在新的 goroutine 中重新注入 trace_id
 		asyncCtx := context.Background()
 		if traceID != "" {
-			asyncCtx = logger.ContextWithTraceID(asyncCtx, traceID)
+			asyncCtx = log.ContextWithTraceID(asyncCtx, traceID)
 		}
 
 		if err := p.Publish(asyncCtx, routingKey, event); err != nil {

@@ -4,29 +4,40 @@ package main
 
 import (
 	"context"
-	"log/slog"
 	"net"
 	"os"
 	"os/signal"
 	"syscall"
 
 	"github.com/funcdfs/lesser/pkg/db"
+	"github.com/funcdfs/lesser/pkg/grpc/interceptor"
 	"github.com/funcdfs/lesser/pkg/log"
+	"github.com/funcdfs/lesser/pkg/trace"
+	pb "github.com/funcdfs/lesser/search/gen_protos/search"
 	"github.com/funcdfs/lesser/search/internal/data_access"
 	"github.com/funcdfs/lesser/search/internal/handler"
 	"github.com/funcdfs/lesser/search/internal/logic"
 	"github.com/funcdfs/lesser/search/internal/messaging"
-	pb "github.com/funcdfs/lesser/search/gen_protos/search"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/reflection"
 )
 
 func main() {
-	// 初始化日志
-	pkgLog := log.New("search")
+	logger := log.New("search")
 
 	grpcPort := getEnv("GRPC_PORT", "50058")
 	rabbitURL := getEnv("RABBITMQ_URL", "amqp://superuser:superuser@rabbitmq:5672/")
+
+	// 初始化 OpenTelemetry
+	ctx := context.Background()
+	tracingCfg := trace.DefaultConfig("search")
+	shutdown, err := trace.Init(ctx, tracingCfg)
+	if err != nil {
+		logger.Error("初始化 OpenTelemetry 失败", log.Any("error", err))
+	} else {
+		defer shutdown(ctx)
+		logger.Info("OpenTelemetry 初始化成功", log.String("endpoint", tracingCfg.Endpoint))
+	}
 
 	// 数据库配置
 	dbConfig := db.PostgresConfig{
@@ -40,36 +51,42 @@ func main() {
 
 	database, err := db.NewPostgresConnection(dbConfig)
 	if err != nil {
-		pkgLog.Fatal("数据库连接失败", slog.Any("error", err))
+		logger.Fatal("数据库连接失败", log.Any("error", err))
 	}
 	defer database.Close()
-	pkgLog.Info("数据库连接成功", slog.String("db", dbConfig.DBName))
+	logger.Info("数据库连接成功", log.String("db", dbConfig.DBName))
 
 	// 初始化服务层
-	searchRepo := data_access.NewSearchRepository(database)
-	searchSvc := logic.NewSearchService(searchRepo)
-	searchHandler := handler.NewSearchHandler(searchSvc, pkgLog.Logger)
+	searchDA := data_access.NewSearchDataAccess(database)
+	searchSvc := logic.NewSearchService(searchDA)
+	searchHandler := handler.NewSearchHandler(searchSvc, logger)
 
-	// 创建 gRPC 服务器
-	grpcServer := grpc.NewServer()
+	// 创建 gRPC 服务器（带拦截器）
+	grpcServer := grpc.NewServer(
+		grpc.ChainUnaryInterceptor(
+			interceptor.RecoveryInterceptor(logger),
+			interceptor.TraceInterceptor(),
+			interceptor.LoggingInterceptor(logger),
+		),
+	)
 	pb.RegisterSearchServiceServer(grpcServer, searchHandler)
 	reflection.Register(grpcServer)
 
 	// 监听端口
 	lis, err := net.Listen("tcp", ":"+grpcPort)
 	if err != nil {
-		pkgLog.Fatal("端口监听失败", slog.String("port", grpcPort), slog.Any("error", err))
+		logger.Fatal("端口监听失败", log.String("port", grpcPort), log.Any("error", err))
 	}
 
 	// 创建上下文用于优雅停机
 	ctx, cancel := context.WithCancel(context.Background())
 
 	// 启动 RabbitMQ 事件消费者（消费内容索引事件）
-	eventWorker := messaging.NewEventWorker(searchSvc, rabbitURL, pkgLog)
+	eventWorker := messaging.NewEventWorker(searchSvc, rabbitURL, logger)
 	go func() {
-		pkgLog.Info("启动 RabbitMQ 事件消费者（内容索引）")
+		logger.Info("启动 RabbitMQ 事件消费者（内容索引）")
 		if err := eventWorker.Start(ctx); err != nil {
-			pkgLog.Error("事件消费者启动失败", slog.Any("error", err))
+			logger.Error("事件消费者启动失败", log.Any("error", err))
 		}
 	}()
 
@@ -78,15 +95,15 @@ func main() {
 		sigCh := make(chan os.Signal, 1)
 		signal.Notify(sigCh, syscall.SIGINT, syscall.SIGTERM)
 		<-sigCh
-		pkgLog.Info("收到停机信号，正在关闭...")
+		logger.Info("收到停机信号，正在关闭...")
 		cancel()
 		eventWorker.Stop()
 		grpcServer.GracefulStop()
 	}()
 
-	pkgLog.Info("Search 服务已启动", slog.String("port", grpcPort))
+	logger.Info("Search 服务已启动", log.String("port", grpcPort))
 	if err := grpcServer.Serve(lis); err != nil && ctx.Err() == nil {
-		pkgLog.Fatal("gRPC 服务异常退出", slog.Any("error", err))
+		logger.Fatal("gRPC 服务异常退出", log.Any("error", err))
 	}
 }
 

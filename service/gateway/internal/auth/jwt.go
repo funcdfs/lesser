@@ -14,11 +14,11 @@ import (
 	"encoding/pem"
 	"errors"
 	"fmt"
-	"log/slog"
 	"sync"
 	"sync/atomic"
 	"time"
 
+	"github.com/funcdfs/lesser/pkg/log"
 	"github.com/golang-jwt/jwt/v5"
 	"google.golang.org/grpc"
 )
@@ -110,7 +110,7 @@ type JWTValidator struct {
 
 	// 依赖
 	authClient AuthServiceClient
-	log        *slog.Logger
+	log        *log.Logger
 
 	// 生命周期管理
 	refreshTicker *time.Ticker
@@ -120,21 +120,21 @@ type JWTValidator struct {
 }
 
 // NewJWTValidator 创建 JWT 验签器
-func NewJWTValidator(config ValidatorConfig, log *slog.Logger) *JWTValidator {
+func NewJWTValidator(config ValidatorConfig, logger *log.Logger) *JWTValidator {
 	if config.RefreshInterval <= 0 {
 		config.RefreshInterval = time.Hour
 	}
 	if config.RefreshTimeout <= 0 {
 		config.RefreshTimeout = 10 * time.Second
 	}
-	if log == nil {
-		log = slog.Default()
+	if logger == nil {
+		logger = log.Global()
 	}
 
 	return &JWTValidator{
 		config:   config,
 		stopChan: make(chan struct{}),
-		log:      log.With(slog.String("component", "jwt")),
+		log:      logger.With(log.String("component", "jwt")),
 	}
 }
 
@@ -163,8 +163,8 @@ func (v *JWTValidator) Start(ctx context.Context, authClient AuthServiceClient) 
 
 	state := v.keyState.Load()
 	v.log.Info("验签器已启动",
-		slog.String("key_id", state.keyID),
-		slog.Duration("refresh_interval", v.config.RefreshInterval))
+		log.String("key_id", state.keyID),
+		log.Duration("refresh_interval", v.config.RefreshInterval))
 
 	return nil
 }
@@ -205,15 +205,15 @@ func (v *JWTValidator) ValidateToken(tokenString string) (*Claims, error) {
 		// 检查 Key ID 是否匹配
 		if kid, ok := token.Header["kid"].(string); ok && kid != keyID {
 			v.log.Warn("密钥 ID 不匹配，尝试惰性刷新",
-				slog.String("token_kid", kid),
-				slog.String("current_kid", keyID))
+				log.String("token_kid", kid),
+				log.String("current_kid", keyID))
 
 			// 惰性刷新（带超时）
 			ctx, cancel := context.WithTimeout(context.Background(), v.config.RefreshTimeout)
 			defer cancel()
 
 			if err := v.refreshPublicKey(ctx); err != nil {
-				v.log.Error("惰性刷新失败", slog.Any("error", err))
+				v.log.Error("惰性刷新失败", log.Any("error", err))
 				return nil, fmt.Errorf("密钥 ID 不匹配且刷新失败: %w", err)
 			}
 
@@ -221,7 +221,7 @@ func (v *JWTValidator) ValidateToken(tokenString string) (*Claims, error) {
 			newState := v.keyState.Load()
 			if newState != nil {
 				publicKey = newState.key
-				v.log.Info("惰性刷新成功", slog.String("new_kid", newState.keyID))
+				v.log.Info("惰性刷新成功", log.String("new_kid", newState.keyID))
 			}
 		}
 
@@ -270,10 +270,10 @@ func (v *JWTValidator) backgroundRefresh() {
 		case <-v.refreshTicker.C:
 			ctx, cancel := context.WithTimeout(context.Background(), v.config.RefreshTimeout)
 			if err := v.refreshPublicKey(ctx); err != nil {
-				v.log.Warn("定时刷新失败，继续使用旧密钥", slog.Any("error", err))
+				v.log.Warn("定时刷新失败，继续使用旧密钥", log.Any("error", err))
 			} else {
 				state := v.keyState.Load()
-				v.log.Debug("公钥已刷新", slog.String("key_id", state.keyID))
+				v.log.Debug("公钥已刷新", log.String("key_id", state.keyID))
 			}
 			cancel()
 		}

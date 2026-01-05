@@ -52,7 +52,6 @@ type ContentLikedEvent struct {
 	LikerID         string `json:"liker_id"`          // 点赞者
 }
 
-
 // ContentRepostedEvent 内容转发事件
 type ContentRepostedEvent struct {
 	ContentID       string `json:"content_id"`

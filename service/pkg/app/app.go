@@ -11,6 +11,7 @@ import (
 	"os/signal"
 	"sync"
 	"syscall"
+	"time"
 
 	"github.com/funcdfs/lesser/pkg/db"
 	"github.com/funcdfs/lesser/pkg/grpc/client"
@@ -179,17 +180,35 @@ func (a *App) Run(ctx context.Context, brokerConfigs ...mq.Config) error {
 }
 
 // Shutdown 优雅关闭应用
+// 使用超时保护确保关闭过程不会无限阻塞
 func (a *App) Shutdown() {
 	a.log.Info("shutting down application")
+
+	// 创建带超时的 context
+	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+	defer cancel()
 
 	// 逆序关闭组件
 	for i := len(a.components) - 1; i >= 0; i-- {
 		c := a.components[i]
 		a.log.Info("stopping component", slog.String("component", c.Name()))
-		if err := c.Stop(); err != nil {
-			a.log.Error("failed to stop component",
-				slog.String("component", c.Name()),
-				slog.Any("error", err))
+
+		// 使用 goroutine 和 select 实现超时
+		done := make(chan error, 1)
+		go func() {
+			done <- c.Stop()
+		}()
+
+		select {
+		case err := <-done:
+			if err != nil {
+				a.log.Error("failed to stop component",
+					slog.String("component", c.Name()),
+					slog.Any("error", err))
+			}
+		case <-ctx.Done():
+			a.log.Warn("component stop timeout",
+				slog.String("component", c.Name()))
 		}
 	}
 

@@ -3,12 +3,13 @@ package logic
 import (
 	"context"
 	"fmt"
-	"log/slog"
 	"time"
 
-	"github.com/google/uuid"
 	"github.com/funcdfs/lesser/chat/internal/data_access"
 	"github.com/funcdfs/lesser/pkg/db"
+	"github.com/funcdfs/lesser/pkg/log"
+	"github.com/google/uuid"
+	"github.com/redis/go-redis/v9"
 )
 
 const (
@@ -18,15 +19,15 @@ const (
 
 // UnreadCacheService 未读数缓存服务
 type UnreadCacheService struct {
-	cache       *db.Client
-	messageRepo *data_access.MessageRepository
+	cache       *db.RedisClient
+	messageDA *data_access.MessageDataAccess
 }
 
 // NewUnreadCacheService 创建未读数缓存服务
-func NewUnreadCacheService(cache *db.Client, messageRepo *data_access.MessageRepository) *UnreadCacheService {
+func NewUnreadCacheService(cache *db.RedisClient, messageDA *data_access.MessageDataAccess) *UnreadCacheService {
 	return &UnreadCacheService{
 		cache:       cache,
-		messageRepo: messageRepo,
+		messageDA: messageDA,
 	}
 }
 
@@ -40,29 +41,29 @@ func (s *UnreadCacheService) GetUnreadCount(ctx context.Context, userID, convers
 
 	// 尝试从缓存获取
 	var count int64
-	err := s.db.Get(ctx, key, &count)
+	err := s.cache.Get(ctx, key, &count)
 	if err == nil {
 		return count, nil
 	}
 
 	// 缓存未命中，从数据库获取
 	if err == db.ErrKeyNotFound {
-		count, err = s.messageRepo.GetUnreadCount(ctx, conversationID, userID)
+		count, err = s.messageDA.GetUnreadCount(ctx, conversationID, userID)
 		if err != nil {
 			return 0, fmt.Errorf("从数据库获取未读数失败: %w", err)
 		}
 
 		// 写入缓存
-		if cacheErr := s.db.Set(ctx, key, count, UnreadCacheTTL); cacheErr != nil {
-			slog.Warn("更新未读数缓存失败", slog.Any("error", cacheErr))
+		if cacheErr := s.cache.Set(ctx, key, count, UnreadCacheTTL); cacheErr != nil {
+			log.Warn("更新未读数缓存失败", log.Any("error", cacheErr))
 		}
 
 		return count, nil
 	}
 
 	// 缓存读取失败，降级到数据库
-	slog.Warn("读取缓存失败，降级到数据库查询", slog.Any("error", err))
-	return s.messageRepo.GetUnreadCount(ctx, conversationID, userID)
+	log.Warn("读取缓存失败，降级到数据库查询", log.Any("error", err))
+	return s.messageDA.GetUnreadCount(ctx, conversationID, userID)
 }
 
 // GetUnreadCountsBatch 批量获取未读数
@@ -78,7 +79,7 @@ func (s *UnreadCacheService) GetUnreadCountsBatch(ctx context.Context, userID uu
 	for _, convID := range conversationIDs {
 		key := unreadCacheKey(userID, convID)
 		var count int64
-		err := s.db.Get(ctx, key, &count)
+		err := s.cache.Get(ctx, key, &count)
 		if err == nil {
 			result[convID] = count
 		} else {
@@ -88,7 +89,7 @@ func (s *UnreadCacheService) GetUnreadCountsBatch(ctx context.Context, userID uu
 
 	// 从数据库获取未命中的
 	if len(cacheMisses) > 0 {
-		dbCounts, err := s.messageRepo.GetUnreadCountsBatch(ctx, userID, cacheMisses)
+		dbCounts, err := s.messageDA.GetUnreadCountsBatch(ctx, userID, cacheMisses)
 		if err != nil {
 			return nil, fmt.Errorf("从数据库批量获取未读数失败: %w", err)
 		}
@@ -97,8 +98,8 @@ func (s *UnreadCacheService) GetUnreadCountsBatch(ctx context.Context, userID uu
 			result[convID] = count
 			// 写入缓存
 			key := unreadCacheKey(userID, convID)
-			if cacheErr := s.db.Set(ctx, key, count, UnreadCacheTTL); cacheErr != nil {
-				slog.Warn("更新未读数缓存失败", slog.Any("error", cacheErr))
+			if cacheErr := s.cache.Set(ctx, key, count, UnreadCacheTTL); cacheErr != nil {
+				log.Warn("更新未读数缓存失败", log.Any("error", cacheErr))
 			}
 		}
 
@@ -114,44 +115,54 @@ func (s *UnreadCacheService) GetUnreadCountsBatch(ctx context.Context, userID uu
 }
 
 // IncrementUnreadCount 增加未读数
+// 使用 Redis 事务确保原子性操作
 func (s *UnreadCacheService) IncrementUnreadCount(ctx context.Context, userID, conversationID uuid.UUID) error {
 	key := unreadCacheKey(userID, conversationID)
-	client := s.db.GetClient()
+	client := s.cache.GetClient()
 
-	// 检查缓存是否存在
-	exists, err := s.db.Exists(ctx, key)
-	if err != nil {
-		return fmt.Errorf("检查缓存键是否存在失败: %w", err)
-	}
+	// 使用 WATCH + MULTI/EXEC 实现乐观锁
+	// 如果 key 不存在，先从数据库加载
+	err := client.Watch(ctx, func(tx *redis.Tx) error {
+		// 检查 key 是否存在
+		exists, err := tx.Exists(ctx, key).Result()
+		if err != nil {
+			return fmt.Errorf("检查缓存键是否存在失败: %w", err)
+		}
 
-	if exists {
-		// 缓存存在，直接增加
-		if err := client.Incr(ctx, key).Err(); err != nil {
-			return fmt.Errorf("增加未读数失败: %w", err)
+		if exists > 0 {
+			// 缓存存在，使用事务增加
+			_, err = tx.TxPipelined(ctx, func(pipe redis.Pipeliner) error {
+				pipe.Incr(ctx, key)
+				pipe.Expire(ctx, key, UnreadCacheTTL)
+				return nil
+			})
+			return err
 		}
-		// 刷新 TTL
-		if err := client.Expire(ctx, key, UnreadCacheTTL).Err(); err != nil {
-			slog.Warn("刷新缓存 TTL 失败", slog.Any("error", err))
-		}
-	} else {
+
 		// 缓存不存在，从数据库获取后设置
-		count, err := s.messageRepo.GetUnreadCount(ctx, conversationID, userID)
+		count, err := s.messageDA.GetUnreadCount(ctx, conversationID, userID)
 		if err != nil {
 			return fmt.Errorf("从数据库获取未读数失败: %w", err)
 		}
-		// 新消息已经在数据库中，所以不需要 +1
-		if err := s.db.Set(ctx, key, count, UnreadCacheTTL); err != nil {
-			return fmt.Errorf("设置未读数缓存失败: %w", err)
-		}
-	}
 
+		// 新消息已经在数据库中，所以不需要 +1
+		_, err = tx.TxPipelined(ctx, func(pipe redis.Pipeliner) error {
+			pipe.Set(ctx, key, count, UnreadCacheTTL)
+			return nil
+		})
+		return err
+	}, key)
+
+	if err != nil {
+		return fmt.Errorf("增加未读数失败: %w", err)
+	}
 	return nil
 }
 
 // ResetUnreadCount 重置未读数为 0
 func (s *UnreadCacheService) ResetUnreadCount(ctx context.Context, userID, conversationID uuid.UUID) error {
 	key := unreadCacheKey(userID, conversationID)
-	if err := s.db.Set(ctx, key, int64(0), UnreadCacheTTL); err != nil {
+	if err := s.cache.Set(ctx, key, int64(0), UnreadCacheTTL); err != nil {
 		return fmt.Errorf("重置未读数缓存失败: %w", err)
 	}
 	return nil
@@ -160,5 +171,5 @@ func (s *UnreadCacheService) ResetUnreadCount(ctx context.Context, userID, conve
 // InvalidateCache 使缓存失效
 func (s *UnreadCacheService) InvalidateCache(ctx context.Context, userID, conversationID uuid.UUID) error {
 	key := unreadCacheKey(userID, conversationID)
-	return s.db.Delete(ctx, key)
+	return s.cache.Delete(ctx, key)
 }

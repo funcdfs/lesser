@@ -5,9 +5,9 @@ import (
 	"context"
 
 	"github.com/funcdfs/lesser/pkg/gen_protos/common"
+	pb "github.com/funcdfs/lesser/user/gen_protos/user"
 	"github.com/funcdfs/lesser/user/internal/data_access"
 	"github.com/funcdfs/lesser/user/internal/logic"
-	pb "github.com/funcdfs/lesser/user/gen_protos/user"
 )
 
 // ============================================================================
@@ -70,13 +70,13 @@ func relationshipToProto(r *data_access.RelationshipStatus) *pb.RelationshipStat
 		return nil
 	}
 	return &pb.RelationshipStatus{
-		IsFollowing:   r.IsFollowing,
-		IsFollowedBy:  r.IsFollowedBy,
-		IsMutual:      r.IsMutual,
-		IsBlocking:    r.IsBlocking,
-		IsBlockedBy:   r.IsBlockedBy,
-		IsMuting:      r.IsMuting,
-		IsHidingFrom:  r.IsHidingFrom,
+		IsFollowing:  r.IsFollowing,
+		IsFollowedBy: r.IsFollowedBy,
+		IsMutual:     r.IsMutual,
+		IsBlocking:   r.IsBlocking,
+		IsBlockedBy:  r.IsBlockedBy,
+		IsMuting:     r.IsMuting,
+		IsHidingFrom: r.IsHidingFrom,
 	}
 }
 
@@ -147,13 +147,13 @@ func protoToPrivacySettings(userID string, p *pb.PrivacySettings) *data_access.P
 		return nil
 	}
 	return &data_access.PrivacySettings{
-		UserID:                  userID,
-		IsPrivateAccount:        p.IsPrivateAccount,
-		AllowMessageFromAnyone:  p.AllowMessageFromAnyone,
-		ShowOnlineStatus:        p.ShowOnlineStatus,
-		ShowLastSeen:            p.ShowLastSeen,
-		AllowTagging:            p.AllowTagging,
-		ShowActivityStatus:      p.ShowActivityStatus,
+		UserID:                 userID,
+		IsPrivateAccount:       p.IsPrivateAccount,
+		AllowMessageFromAnyone: p.AllowMessageFromAnyone,
+		ShowOnlineStatus:       p.ShowOnlineStatus,
+		ShowLastSeen:           p.ShowLastSeen,
+		AllowTagging:           p.AllowTagging,
+		ShowActivityStatus:     p.ShowActivityStatus,
 	}
 }
 

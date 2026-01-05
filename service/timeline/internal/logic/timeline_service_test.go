@@ -219,7 +219,7 @@ func TestEnrichWithInteractionStatus_ClientError(t *testing.T) {
 
 func TestGetContentDetail_NotFound(t *testing.T) {
 	// 测试内容不存在的情况
-	// 由于需要 mock repository，这里只测试错误类型
+	// 由于需要 mock data_access，这里只测试错误类型
 	if ErrContentNotFound == nil {
 		t.Error("ErrContentNotFound 不应该为 nil")
 	}
@@ -287,22 +287,22 @@ func TestInteractionStatus_Structure(t *testing.T) {
 
 // ==================== GetContentIDs 测试 ====================
 
-func TestGetContentIDs_EmptyList(t *testing.T) {
+func TestExtractContentIDs_EmptyList(t *testing.T) {
 	// 测试空列表
-	ids := data_access.GetContentIDs([]*data_access.FeedItem{})
+	ids := data_access.ExtractContentIDs([]*data_access.FeedItem{})
 	if len(ids) != 0 {
 		t.Errorf("空列表应该返回空 ID 列表，但得到: %d 个", len(ids))
 	}
 }
 
-func TestGetContentIDs_MultipleItems(t *testing.T) {
+func TestExtractContentIDs_MultipleItems(t *testing.T) {
 	// 测试多个条目
 	items := []*data_access.FeedItem{
 		createTestFeedItem("content1", "author1", false),
 		createTestFeedItem("content2", "author2", false),
 		createTestFeedItem("content3", "author3", true),
 	}
-	ids := data_access.GetContentIDs(items)
+	ids := data_access.ExtractContentIDs(items)
 
 	if len(ids) != 3 {
 		t.Errorf("应该返回 3 个 ID，但得到: %d 个", len(ids))

@@ -4,11 +4,12 @@ package logic
 import (
 	"context"
 	"database/sql"
-	"log/slog"
+	"time"
 
 	"github.com/funcdfs/lesser/pkg/db"
 	"github.com/funcdfs/lesser/pkg/log"
 	"github.com/funcdfs/lesser/user/internal/data_access"
+	"github.com/google/uuid"
 )
 
 // EventPublisher 事件发布接口
@@ -21,10 +22,10 @@ type EventPublisher interface {
 type UserService struct {
 	db           *sql.DB
 	log          *log.Logger
-	userRepo     *data_access.UserRepository
-	followRepo   *data_access.FollowRepository
-	blockRepo    *data_access.BlockRepository
-	settingsRepo *data_access.SettingsRepository
+	userDA       *data_access.UserDataAccess
+	followDA     *data_access.FollowDataAccess
+	blockDA      *data_access.BlockDataAccess
+	settingsDA   *data_access.SettingsDataAccess
 	publisher    EventPublisher // 事件发布者（可选）
 }
 
@@ -32,18 +33,18 @@ type UserService struct {
 func NewUserService(
 	db *sql.DB,
 	log *log.Logger,
-	userRepo *data_access.UserRepository,
-	followRepo *data_access.FollowRepository,
-	blockRepo *data_access.BlockRepository,
-	settingsRepo *data_access.SettingsRepository,
+	userDA *data_access.UserDataAccess,
+	followDA *data_access.FollowDataAccess,
+	blockDA *data_access.BlockDataAccess,
+	settingsDA *data_access.SettingsDataAccess,
 ) *UserService {
 	return &UserService{
 		db:           db,
 		log:          log,
-		userRepo:     userRepo,
-		followRepo:   followRepo,
-		blockRepo:    blockRepo,
-		settingsRepo: settingsRepo,
+		userDA:       userDA,
+		followDA:     followDA,
+		blockDA:      blockDA,
+		settingsDA:   settingsDA,
 	}
 }
 
@@ -58,17 +59,17 @@ func (s *UserService) SetPublisher(publisher EventPublisher) {
 
 // GetProfile 获取用户资料
 func (s *UserService) GetProfile(ctx context.Context, userID string) (*data_access.User, error) {
-	return s.userRepo.GetByID(ctx, userID)
+	return s.userDA.GetByID(ctx, userID)
 }
 
 // GetProfileByUsername 通过用户名获取资料
 func (s *UserService) GetProfileByUsername(ctx context.Context, username string) (*data_access.User, error) {
-	return s.userRepo.GetByUsername(ctx, username)
+	return s.userDA.GetByUsername(ctx, username)
 }
 
 // GetProfileWithRelationship 获取用户资料（带关系状态）
 func (s *UserService) GetProfileWithRelationship(ctx context.Context, userID, viewerID string) (*data_access.User, *data_access.RelationshipStatus, error) {
-	user, err := s.userRepo.GetByID(ctx, userID)
+	user, err := s.userDA.GetByID(ctx, userID)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -89,7 +90,7 @@ func (s *UserService) GetProfileWithRelationship(ctx context.Context, userID, vi
 // UpdateProfile 更新用户资料
 func (s *UserService) UpdateProfile(ctx context.Context, userID string, updates map[string]interface{}) (*data_access.User, error) {
 	// 检查用户是否存在
-	user, err := s.userRepo.GetByID(ctx, userID)
+	user, err := s.userDA.GetByID(ctx, userID)
 	if err != nil {
 		return nil, err
 	}
@@ -114,11 +115,11 @@ func (s *UserService) UpdateProfile(ctx context.Context, userID string, updates 
 		user.IsPrivate = v.(bool)
 	}
 
-	if err := s.userRepo.Update(ctx, user); err != nil {
+	if err := s.userDA.Update(ctx, user); err != nil {
 		return nil, err
 	}
 
-	return s.userRepo.GetByID(ctx, userID)
+	return s.userDA.GetByID(ctx, userID)
 }
 
 // BatchGetProfiles 批量获取用户资料
@@ -126,7 +127,7 @@ func (s *UserService) BatchGetProfiles(ctx context.Context, userIDs []string) (m
 	if len(userIDs) > 100 {
 		userIDs = userIDs[:100]
 	}
-	return s.userRepo.BatchGetByIDs(ctx, userIDs)
+	return s.userDA.BatchGetByIDs(ctx, userIDs)
 }
 
 // SearchUsers 搜索用户
@@ -137,7 +138,7 @@ func (s *UserService) SearchUsers(ctx context.Context, query string, limit, offs
 	if limit > 100 {
 		limit = 100
 	}
-	return s.userRepo.Search(ctx, query, limit, offset)
+	return s.userDA.Search(ctx, query, limit, offset)
 }
 
 // ============================================================================
@@ -152,13 +153,13 @@ func (s *UserService) Follow(ctx context.Context, followerID, followingID string
 	}
 
 	// 检查目标用户是否存在
-	targetUser, err := s.userRepo.GetByID(ctx, followingID)
+	targetUser, err := s.userDA.GetByID(ctx, followingID)
 	if err != nil {
 		return err
 	}
 
 	// 检查是否被对方屏蔽
-	isBlocked, blockType, err := s.blockRepo.IsBlockedBy(ctx, followerID, followingID)
+	isBlocked, blockType, err := s.blockDA.IsBlockedBy(ctx, followerID, followingID)
 	if err != nil {
 		return err
 	}
@@ -167,7 +168,7 @@ func (s *UserService) Follow(ctx context.Context, followerID, followingID string
 	}
 
 	// 检查是否已关注
-	exists, err := s.followRepo.Exists(ctx, followerID, followingID)
+	exists, err := s.followDA.Exists(ctx, followerID, followingID)
 	if err != nil {
 		return err
 	}
@@ -177,18 +178,36 @@ func (s *UserService) Follow(ctx context.Context, followerID, followingID string
 
 	// 如果是私密账户，创建关注请求
 	if targetUser.IsPrivate {
-		return s.followRepo.CreateFollowRequest(ctx, followerID, followingID)
+		return s.followDA.CreateFollowRequest(ctx, followerID, followingID)
 	}
 
-	// 使用事务创建关注关系
+	// 使用事务创建关注关系并更新计数器
 	err = db.WithTransaction(ctx, s.db, func(tx *sql.Tx) error {
-		if err := s.followRepo.Create(ctx, followerID, followingID); err != nil {
-			return err
+		// 在事务中创建关注关系
+		_, txErr := tx.ExecContext(ctx, `
+			INSERT INTO follows (id, follower_id, following_id, created_at)
+			VALUES ($1, $2, $3, $4)
+			ON CONFLICT (follower_id, following_id) DO NOTHING
+		`, generateFollowID(), followerID, followingID, time.Now())
+		if txErr != nil {
+			return txErr
 		}
-		if err := s.userRepo.IncrementFollowingCount(ctx, followerID); err != nil {
-			return err
+
+		// 在事务中更新关注者的 following_count
+		_, txErr = tx.ExecContext(ctx, `
+			UPDATE users SET following_count = following_count + 1, updated_at = NOW()
+			WHERE id = $1
+		`, followerID)
+		if txErr != nil {
+			return txErr
 		}
-		return s.userRepo.IncrementFollowersCount(ctx, followingID)
+
+		// 在事务中更新被关注者的 followers_count
+		_, txErr = tx.ExecContext(ctx, `
+			UPDATE users SET followers_count = followers_count + 1, updated_at = NOW()
+			WHERE id = $1
+		`, followingID)
+		return txErr
 	})
 
 	if err != nil {
@@ -199,35 +218,56 @@ func (s *UserService) Follow(ctx context.Context, followerID, followingID string
 	if s.publisher != nil {
 		s.publisher.PublishUserFollowed(ctx, followerID, followingID)
 		s.log.Debug("已发布用户关注事件",
-			slog.String("follower_id", followerID),
-			slog.String("following_id", followingID))
+			log.String("follower_id", followerID),
+			log.String("following_id", followingID))
 	}
 
 	return nil
 }
 
+// generateFollowID 生成关注记录 ID
+func generateFollowID() string {
+	return uuid.New().String()
+}
+
 // Unfollow 取消关注
 func (s *UserService) Unfollow(ctx context.Context, followerID, followingID string) error {
 	// 检查是否已关注
-	exists, err := s.followRepo.Exists(ctx, followerID, followingID)
+	exists, err := s.followDA.Exists(ctx, followerID, followingID)
 	if err != nil {
 		return err
 	}
 	if !exists {
 		// 可能有待处理的关注请求，删除它
-		_ = s.followRepo.DeleteFollowRequest(ctx, followerID, followingID)
+		_ = s.followDA.DeleteFollowRequest(ctx, followerID, followingID)
 		return nil // 幂等操作
 	}
 
-	// 使用事务删除关注关系
+	// 使用事务删除关注关系并更新计数器
 	return db.WithTransaction(ctx, s.db, func(tx *sql.Tx) error {
-		if err := s.followRepo.Delete(ctx, followerID, followingID); err != nil {
-			return err
+		// 在事务中删除关注关系
+		_, txErr := tx.ExecContext(ctx, `
+			DELETE FROM follows WHERE follower_id = $1 AND following_id = $2
+		`, followerID, followingID)
+		if txErr != nil {
+			return txErr
 		}
-		if err := s.userRepo.DecrementFollowingCount(ctx, followerID); err != nil {
-			return err
+
+		// 在事务中更新关注者的 following_count
+		_, txErr = tx.ExecContext(ctx, `
+			UPDATE users SET following_count = GREATEST(following_count - 1, 0), updated_at = NOW()
+			WHERE id = $1
+		`, followerID)
+		if txErr != nil {
+			return txErr
 		}
-		return s.userRepo.DecrementFollowersCount(ctx, followingID)
+
+		// 在事务中更新被关注者的 followers_count
+		_, txErr = tx.ExecContext(ctx, `
+			UPDATE users SET followers_count = GREATEST(followers_count - 1, 0), updated_at = NOW()
+			WHERE id = $1
+		`, followingID)
+		return txErr
 	})
 }
 
@@ -236,7 +276,7 @@ func (s *UserService) GetFollowers(ctx context.Context, userID string, limit, of
 	if limit <= 0 {
 		limit = 20
 	}
-	return s.followRepo.GetFollowers(ctx, userID, limit, offset)
+	return s.followDA.GetFollowers(ctx, userID, limit, offset)
 }
 
 // GetFollowing 获取关注列表
@@ -244,12 +284,12 @@ func (s *UserService) GetFollowing(ctx context.Context, userID string, limit, of
 	if limit <= 0 {
 		limit = 20
 	}
-	return s.followRepo.GetFollowing(ctx, userID, limit, offset)
+	return s.followDA.GetFollowing(ctx, userID, limit, offset)
 }
 
 // CheckFollowing 检查是否关注
 func (s *UserService) CheckFollowing(ctx context.Context, followerID, followingID string) (bool, error) {
-	return s.followRepo.Exists(ctx, followerID, followingID)
+	return s.followDA.Exists(ctx, followerID, followingID)
 }
 
 // GetMutualFollowers 获取共同关注
@@ -257,7 +297,7 @@ func (s *UserService) GetMutualFollowers(ctx context.Context, userID, targetID s
 	if limit <= 0 {
 		limit = 20
 	}
-	return s.followRepo.GetMutualFollowers(ctx, userID, targetID, limit, offset)
+	return s.followDA.GetMutualFollowers(ctx, userID, targetID, limit, offset)
 }
 
 // ============================================================================
@@ -269,13 +309,13 @@ func (s *UserService) GetRelationship(ctx context.Context, userID, targetID stri
 	status := &data_access.RelationshipStatus{}
 
 	// 关注状态
-	isFollowing, err := s.followRepo.Exists(ctx, userID, targetID)
+	isFollowing, err := s.followDA.Exists(ctx, userID, targetID)
 	if err != nil {
 		return nil, err
 	}
 	status.IsFollowing = isFollowing
 
-	isFollowedBy, err := s.followRepo.Exists(ctx, targetID, userID)
+	isFollowedBy, err := s.followDA.Exists(ctx, targetID, userID)
 	if err != nil {
 		return nil, err
 	}
@@ -283,7 +323,7 @@ func (s *UserService) GetRelationship(ctx context.Context, userID, targetID stri
 	status.IsMutual = isFollowing && isFollowedBy
 
 	// 屏蔽状态
-	myBlockType, theirBlockType, err := s.blockRepo.GetBidirectionalBlockStatus(ctx, userID, targetID)
+	myBlockType, theirBlockType, err := s.blockDA.GetBidirectionalBlockStatus(ctx, userID, targetID)
 	if err != nil {
 		return nil, err
 	}
@@ -317,35 +357,35 @@ func (s *UserService) Block(ctx context.Context, blockerID, blockedID string, bl
 	}
 
 	// 检查目标用户是否存在
-	if _, err := s.userRepo.GetByID(ctx, blockedID); err != nil {
+	if _, err := s.userDA.GetByID(ctx, blockedID); err != nil {
 		return err
 	}
 
 	// 使用事务
 	return db.WithTransaction(ctx, s.db, func(tx *sql.Tx) error {
 		// 创建屏蔽关系
-		if err := s.blockRepo.Create(ctx, blockerID, blockedID, blockType); err != nil {
+		if err := s.blockDA.Create(ctx, blockerID, blockedID, blockType); err != nil {
 			return err
 		}
 
 		// 如果是拉黑，同时取消双方的关注关系
 		if blockType == data_access.BlockTypeBlock {
 			// 取消我对他的关注
-			if exists, _ := s.followRepo.Exists(ctx, blockerID, blockedID); exists {
-				if err := s.followRepo.Delete(ctx, blockerID, blockedID); err != nil {
+			if exists, _ := s.followDA.Exists(ctx, blockerID, blockedID); exists {
+				if err := s.followDA.Delete(ctx, blockerID, blockedID); err != nil {
 					return err
 				}
-				_ = s.userRepo.DecrementFollowingCount(ctx, blockerID)
-				_ = s.userRepo.DecrementFollowersCount(ctx, blockedID)
+				_ = s.userDA.DecrementFollowingCount(ctx, blockerID)
+				_ = s.userDA.DecrementFollowersCount(ctx, blockedID)
 			}
 
 			// 取消他对我的关注
-			if exists, _ := s.followRepo.Exists(ctx, blockedID, blockerID); exists {
-				if err := s.followRepo.Delete(ctx, blockedID, blockerID); err != nil {
+			if exists, _ := s.followDA.Exists(ctx, blockedID, blockerID); exists {
+				if err := s.followDA.Delete(ctx, blockedID, blockerID); err != nil {
 					return err
 				}
-				_ = s.userRepo.DecrementFollowingCount(ctx, blockedID)
-				_ = s.userRepo.DecrementFollowersCount(ctx, blockerID)
+				_ = s.userDA.DecrementFollowingCount(ctx, blockedID)
+				_ = s.userDA.DecrementFollowersCount(ctx, blockerID)
 			}
 		}
 
@@ -356,7 +396,7 @@ func (s *UserService) Block(ctx context.Context, blockerID, blockedID string, bl
 // Unblock 取消屏蔽
 func (s *UserService) Unblock(ctx context.Context, blockerID, blockedID string, blockType data_access.BlockType) error {
 	// 获取当前屏蔽状态
-	currentBlock, err := s.blockRepo.Get(ctx, blockerID, blockedID)
+	currentBlock, err := s.blockDA.Get(ctx, blockerID, blockedID)
 	if err != nil {
 		return err
 	}
@@ -366,7 +406,7 @@ func (s *UserService) Unblock(ctx context.Context, blockerID, blockedID string, 
 
 	// 如果要取消的类型是 BLOCK，直接删除
 	if blockType == data_access.BlockTypeBlock {
-		return s.blockRepo.Delete(ctx, blockerID, blockedID)
+		return s.blockDA.Delete(ctx, blockerID, blockedID)
 	}
 
 	// 如果当前是 BLOCK，取消其中一种
@@ -380,12 +420,12 @@ func (s *UserService) Unblock(ctx context.Context, blockerID, blockedID string, 
 		} else {
 			newType = data_access.BlockTypeHidePosts
 		}
-		return s.blockRepo.UpdateType(ctx, blockerID, blockedID, newType)
+		return s.blockDA.UpdateType(ctx, blockerID, blockedID, newType)
 	}
 
 	// 如果当前类型和要取消的类型一致，删除
 	if currentBlock.BlockType == blockType {
-		return s.blockRepo.Delete(ctx, blockerID, blockedID)
+		return s.blockDA.Delete(ctx, blockerID, blockedID)
 	}
 
 	return nil // 类型不匹配，不做操作
@@ -396,7 +436,7 @@ func (s *UserService) GetBlockList(ctx context.Context, userID string, blockType
 	if limit <= 0 {
 		limit = 20
 	}
-	return s.blockRepo.GetBlockList(ctx, userID, blockType, limit, offset)
+	return s.blockDA.GetBlockList(ctx, userID, blockType, limit, offset)
 }
 
 // CheckBlocked 检查屏蔽状态
@@ -410,17 +450,17 @@ func (s *UserService) CheckBlocked(ctx context.Context, userID, targetID string)
 
 // GetUserSettings 获取用户设置
 func (s *UserService) GetUserSettings(ctx context.Context, userID string) (*data_access.UserSettings, error) {
-	return s.settingsRepo.GetUserSettings(ctx, userID)
+	return s.settingsDA.GetUserSettings(ctx, userID)
 }
 
 // UpdatePrivacySettings 更新隐私设置
 func (s *UserService) UpdatePrivacySettings(ctx context.Context, userID string, settings *data_access.PrivacySettings) error {
 	settings.UserID = userID
-	return s.settingsRepo.UpsertPrivacySettings(ctx, settings)
+	return s.settingsDA.UpsertPrivacySettings(ctx, settings)
 }
 
 // UpdateNotificationSettings 更新通知设置
 func (s *UserService) UpdateNotificationSettings(ctx context.Context, userID string, settings *data_access.NotificationSettings) error {
 	settings.UserID = userID
-	return s.settingsRepo.UpsertNotificationSettings(ctx, settings)
+	return s.settingsDA.UpsertNotificationSettings(ctx, settings)
 }

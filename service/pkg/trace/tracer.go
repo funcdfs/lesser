@@ -60,7 +60,6 @@ func DefaultConfig(serviceName string) Config {
 // ShutdownFunc 关闭函数类型
 type ShutdownFunc func(context.Context) error
 
-
 // Init 初始化 OpenTelemetry Tracer
 // 返回 shutdown 函数用于优雅关闭
 func Init(ctx context.Context, cfg Config) (ShutdownFunc, error) {

@@ -3,11 +3,11 @@ package handler
 
 import (
 	"context"
-	"log/slog"
+	
 
+	pb "github.com/funcdfs/lesser/content/gen_protos/content"
 	"github.com/funcdfs/lesser/content/internal/data_access"
 	"github.com/funcdfs/lesser/content/internal/logic"
-	pb "github.com/funcdfs/lesser/content/gen_protos/content"
 	"github.com/funcdfs/lesser/pkg/gen_protos/common"
 	"github.com/funcdfs/lesser/pkg/log"
 	"google.golang.org/grpc/codes"
@@ -18,17 +18,17 @@ import (
 type ContentHandler struct {
 	pb.UnimplementedContentServiceServer
 	contentService *logic.ContentService
-	log            *slog.Logger
+	log            *log.Logger
 }
 
 // NewContentHandler 创建处理器
-func NewContentHandler(contentService *logic.ContentService, log *slog.Logger) *ContentHandler {
-	if log == nil {
-		log = slog.Default()
+func NewContentHandler(contentService *logic.ContentService, logger *log.Logger) *ContentHandler {
+	if logger == nil {
+		logger = log.Global()
 	}
 	return &ContentHandler{
 		contentService: contentService,
-		log:            log.With(slog.String("component", "handler")),
+		log:            logger.With(log.String("component", "handler")),
 	}
 }
 
@@ -43,8 +43,8 @@ func (h *ContentHandler) CreateContent(ctx context.Context, req *pb.CreateConten
 	}
 
 	h.log.Debug("创建内容",
-		slog.String("author_id", req.AuthorId),
-		slog.String("type", req.Type.String()),
+		log.String("author_id", req.AuthorId),
+		log.String("type", req.Type.String()),
 	)
 
 	// 转换媒体 URL
@@ -62,9 +62,9 @@ func (h *ContentHandler) CreateContent(ctx context.Context, req *pb.CreateConten
 	)
 	if err != nil {
 		h.log.Error("创建内容失败",
-			slog.String("author_id", req.AuthorId),
-			slog.String("trace_id", log.TraceIDFromContext(ctx)),
-			slog.Any("error", err),
+			log.String("author_id", req.AuthorId),
+			log.String("trace_id", log.TraceIDFromContext(ctx)),
+			log.Any("error", err),
 		)
 		return nil, logic.ToGRPCError(err)
 	}
@@ -78,12 +78,12 @@ func (h *ContentHandler) GetContent(ctx context.Context, req *pb.GetContentReque
 		return nil, status.Error(codes.InvalidArgument, "content_id 不能为空")
 	}
 
-	content, err := h.contentService.Get(req.ContentId, req.ViewerId)
+	content, err := h.contentService.Get(ctx, req.ContentId, req.ViewerId)
 	if err != nil {
 		h.log.Error("获取内容失败",
-			slog.String("content_id", req.ContentId),
-			slog.String("trace_id", log.TraceIDFromContext(ctx)),
-			slog.Any("error", err),
+			log.String("content_id", req.ContentId),
+			log.String("trace_id", log.TraceIDFromContext(ctx)),
+			log.Any("error", err),
 		)
 		return nil, logic.ToGRPCError(err)
 	}
@@ -104,8 +104,8 @@ func (h *ContentHandler) UpdateContent(ctx context.Context, req *pb.UpdateConten
 	}
 
 	h.log.Debug("更新内容",
-		slog.String("content_id", req.ContentId),
-		slog.String("user_id", req.UserId),
+		log.String("content_id", req.ContentId),
+		log.String("user_id", req.UserId),
 	)
 
 	mediaURLs := extractMediaURLs(req.Media)
@@ -120,10 +120,10 @@ func (h *ContentHandler) UpdateContent(ctx context.Context, req *pb.UpdateConten
 	)
 	if err != nil {
 		h.log.Error("更新内容失败",
-			slog.String("content_id", req.ContentId),
-			slog.String("user_id", req.UserId),
-			slog.String("trace_id", log.TraceIDFromContext(ctx)),
-			slog.Any("error", err),
+			log.String("content_id", req.ContentId),
+			log.String("user_id", req.UserId),
+			log.String("trace_id", log.TraceIDFromContext(ctx)),
+			log.Any("error", err),
 		)
 		return nil, logic.ToGRPCError(err)
 	}
@@ -138,16 +138,16 @@ func (h *ContentHandler) DeleteContent(ctx context.Context, req *pb.DeleteConten
 	}
 
 	h.log.Debug("删除内容",
-		slog.String("content_id", req.ContentId),
-		slog.String("user_id", req.UserId),
+		log.String("content_id", req.ContentId),
+		log.String("user_id", req.UserId),
 	)
 
 	if err := h.contentService.Delete(ctx, req.ContentId, req.UserId); err != nil {
 		h.log.Error("删除内容失败",
-			slog.String("content_id", req.ContentId),
-			slog.String("user_id", req.UserId),
-			slog.String("trace_id", log.TraceIDFromContext(ctx)),
-			slog.Any("error", err),
+			log.String("content_id", req.ContentId),
+			log.String("user_id", req.UserId),
+			log.String("trace_id", log.TraceIDFromContext(ctx)),
+			log.Any("error", err),
 		)
 		return nil, logic.ToGRPCError(err)
 	}
@@ -180,8 +180,8 @@ func (h *ContentHandler) ListContents(ctx context.Context, req *pb.ListContentsR
 	)
 	if err != nil {
 		h.log.Error("列表查询失败",
-			slog.String("trace_id", log.TraceIDFromContext(ctx)),
-			slog.Any("error", err),
+			log.String("trace_id", log.TraceIDFromContext(ctx)),
+			log.Any("error", err),
 		)
 		return nil, logic.ToGRPCError(err)
 	}
@@ -197,12 +197,16 @@ func (h *ContentHandler) BatchGetContents(ctx context.Context, req *pb.BatchGetC
 	if len(req.ContentIds) == 0 {
 		return &pb.BatchGetContentsResponse{Contents: []*pb.Content{}}, nil
 	}
+	// 限制批量查询数量，防止性能问题
+	if len(req.ContentIds) > 100 {
+		return nil, status.Error(codes.InvalidArgument, "批量查询数量不能超过 100")
+	}
 
 	contents, err := h.contentService.BatchGet(req.ContentIds)
 	if err != nil {
 		h.log.Error("批量获取内容失败",
-			slog.String("trace_id", log.TraceIDFromContext(ctx)),
-			slog.Any("error", err),
+			log.String("trace_id", log.TraceIDFromContext(ctx)),
+			log.Any("error", err),
 		)
 		return nil, logic.ToGRPCError(err)
 	}
@@ -229,9 +233,9 @@ func (h *ContentHandler) GetUserDrafts(ctx context.Context, req *pb.GetUserDraft
 	drafts, total, err := h.contentService.GetUserDrafts(req.UserId, int(pageSize), int((page-1)*pageSize))
 	if err != nil {
 		h.log.Error("获取用户草稿失败",
-			slog.String("user_id", req.UserId),
-			slog.String("trace_id", log.TraceIDFromContext(ctx)),
-			slog.Any("error", err),
+			log.String("user_id", req.UserId),
+			log.String("trace_id", log.TraceIDFromContext(ctx)),
+			log.Any("error", err),
 		)
 		return nil, logic.ToGRPCError(err)
 	}
@@ -249,17 +253,17 @@ func (h *ContentHandler) PublishDraft(ctx context.Context, req *pb.PublishDraftR
 	}
 
 	h.log.Debug("发布草稿",
-		slog.String("content_id", req.ContentId),
-		slog.String("user_id", req.UserId),
+		log.String("content_id", req.ContentId),
+		log.String("user_id", req.UserId),
 	)
 
 	content, err := h.contentService.PublishDraft(ctx, req.ContentId, req.UserId)
 	if err != nil {
 		h.log.Error("发布草稿失败",
-			slog.String("content_id", req.ContentId),
-			slog.String("user_id", req.UserId),
-			slog.String("trace_id", log.TraceIDFromContext(ctx)),
-			slog.Any("error", err),
+			log.String("content_id", req.ContentId),
+			log.String("user_id", req.UserId),
+			log.String("trace_id", log.TraceIDFromContext(ctx)),
+			log.Any("error", err),
 		)
 		return nil, logic.ToGRPCError(err)
 	}
@@ -286,9 +290,9 @@ func (h *ContentHandler) GetReplies(ctx context.Context, req *pb.GetRepliesReque
 	replies, total, err := h.contentService.GetReplies(req.ContentId, int(pageSize), int((page-1)*pageSize))
 	if err != nil {
 		h.log.Error("获取回复列表失败",
-			slog.String("content_id", req.ContentId),
-			slog.String("trace_id", log.TraceIDFromContext(ctx)),
-			slog.Any("error", err),
+			log.String("content_id", req.ContentId),
+			log.String("trace_id", log.TraceIDFromContext(ctx)),
+			log.Any("error", err),
 		)
 		return nil, logic.ToGRPCError(err)
 	}
@@ -308,9 +312,9 @@ func (h *ContentHandler) GetUserStories(ctx context.Context, req *pb.GetUserStor
 	stories, err := h.contentService.GetUserStories(req.UserId)
 	if err != nil {
 		h.log.Error("获取用户 Story 失败",
-			slog.String("user_id", req.UserId),
-			slog.String("trace_id", log.TraceIDFromContext(ctx)),
-			slog.Any("error", err),
+			log.String("user_id", req.UserId),
+			log.String("trace_id", log.TraceIDFromContext(ctx)),
+			log.Any("error", err),
 		)
 		return nil, logic.ToGRPCError(err)
 	}
@@ -328,17 +332,17 @@ func (h *ContentHandler) PinContent(ctx context.Context, req *pb.PinContentReque
 	}
 
 	h.log.Debug("置顶内容",
-		slog.String("content_id", req.ContentId),
-		slog.String("user_id", req.UserId),
-		slog.Bool("pin", req.Pin),
+		log.String("content_id", req.ContentId),
+		log.String("user_id", req.UserId),
+		log.Bool("pin", req.Pin),
 	)
 
 	if err := h.contentService.PinContent(req.ContentId, req.UserId, req.Pin); err != nil {
 		h.log.Error("置顶内容失败",
-			slog.String("content_id", req.ContentId),
-			slog.String("user_id", req.UserId),
-			slog.String("trace_id", log.TraceIDFromContext(ctx)),
-			slog.Any("error", err),
+			log.String("content_id", req.ContentId),
+			log.String("user_id", req.UserId),
+			log.String("trace_id", log.TraceIDFromContext(ctx)),
+			log.Any("error", err),
 		)
 		return nil, logic.ToGRPCError(err)
 	}
@@ -360,9 +364,9 @@ func (h *ContentHandler) UpdateCounter(ctx context.Context, req *pb.UpdateCounte
 	}
 
 	h.log.Debug("更新计数器",
-		slog.String("content_id", req.ContentId),
-		slog.String("counter_type", req.CounterType.String()),
-		slog.Int("delta", int(req.Delta)),
+		log.String("content_id", req.ContentId),
+		log.String("counter_type", req.CounterType.String()),
+		log.Int("delta", int(req.Delta)),
 	)
 
 	newCount, err := h.contentService.UpdateCounter(
@@ -372,9 +376,9 @@ func (h *ContentHandler) UpdateCounter(ctx context.Context, req *pb.UpdateCounte
 	)
 	if err != nil {
 		h.log.Error("更新计数器失败",
-			slog.String("content_id", req.ContentId),
-			slog.String("trace_id", log.TraceIDFromContext(ctx)),
-			slog.Any("error", err),
+			log.String("content_id", req.ContentId),
+			log.String("trace_id", log.TraceIDFromContext(ctx)),
+			log.Any("error", err),
 		)
 		return nil, logic.ToGRPCError(err)
 	}
@@ -391,9 +395,9 @@ func (h *ContentHandler) CheckContentExists(ctx context.Context, req *pb.CheckCo
 	exists, commentsDisabled, err := h.contentService.CheckContentExists(req.ContentId)
 	if err != nil {
 		h.log.Error("检查内容是否存在失败",
-			slog.String("content_id", req.ContentId),
-			slog.String("trace_id", log.TraceIDFromContext(ctx)),
-			slog.Any("error", err),
+			log.String("content_id", req.ContentId),
+			log.String("trace_id", log.TraceIDFromContext(ctx)),
+			log.Any("error", err),
 		)
 		return nil, logic.ToGRPCError(err)
 	}

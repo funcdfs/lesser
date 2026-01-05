@@ -3,15 +3,14 @@ package handler
 
 import (
 	"context"
-	"log/slog"
 
+	"github.com/funcdfs/lesser/pkg/gen_protos/common"
 	"github.com/funcdfs/lesser/pkg/log"
 	"github.com/funcdfs/lesser/pkg/page"
-	"github.com/funcdfs/lesser/pkg/gen_protos/common"
 	"github.com/funcdfs/lesser/pkg/validate"
+	pb "github.com/funcdfs/lesser/user/gen_protos/user"
 	"github.com/funcdfs/lesser/user/internal/data_access"
 	"github.com/funcdfs/lesser/user/internal/logic"
-	pb "github.com/funcdfs/lesser/user/gen_protos/user"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 )
@@ -21,21 +20,16 @@ type UserHandler struct {
 	pb.UnimplementedUserServiceServer
 	userService *logic.UserService
 	log         *log.Logger
-	slog        *slog.Logger
 }
 
 // NewUserHandler 创建用户处理器实例
 func NewUserHandler(userService *logic.UserService, logger *log.Logger) *UserHandler {
-	var slogger *slog.Logger
-	if logger != nil {
-		slogger = logger.Logger
-	} else {
-		slogger = slog.Default()
+	if logger == nil {
+		logger = log.Global()
 	}
 	return &UserHandler{
 		userService: userService,
-		log:         logger,
-		slog:        slogger.With(slog.String("component", "handler")),
+		log:         logger.With(log.String("component", "handler")),
 	}
 }
 
@@ -52,10 +46,10 @@ func (h *UserHandler) GetProfile(ctx context.Context, req *pb.GetProfileRequest)
 
 	user, relationship, err := h.userService.GetProfileWithRelationship(ctx, req.UserId, req.ViewerId)
 	if err != nil {
-		h.slog.Error("获取用户资料失败",
-			slog.String("user_id", req.UserId),
-			slog.String("trace_id", log.TraceIDFromContext(ctx)),
-			slog.Any("error", err),
+		h.log.Error("获取用户资料失败",
+			log.String("user_id", req.UserId),
+			log.String("trace_id", log.TraceIDFromContext(ctx)),
+			log.Any("error", err),
 		)
 		return nil, h.handleError(err)
 	}
@@ -72,10 +66,10 @@ func (h *UserHandler) GetProfileByUsername(ctx context.Context, req *pb.GetProfi
 
 	user, err := h.userService.GetProfileByUsername(ctx, req.Username)
 	if err != nil {
-		h.slog.Error("通过用户名获取资料失败",
-			slog.String("username", req.Username),
-			slog.String("trace_id", log.TraceIDFromContext(ctx)),
-			slog.Any("error", err),
+		h.log.Error("通过用户名获取资料失败",
+			log.String("username", req.Username),
+			log.String("trace_id", log.TraceIDFromContext(ctx)),
+			log.Any("error", err),
 		)
 		return nil, h.handleError(err)
 	}
@@ -119,10 +113,10 @@ func (h *UserHandler) UpdateProfile(ctx context.Context, req *pb.UpdateProfileRe
 
 	user, err := h.userService.UpdateProfile(ctx, req.UserId, updates)
 	if err != nil {
-		h.slog.Error("更新用户资料失败",
-			slog.String("user_id", req.UserId),
-			slog.String("trace_id", log.TraceIDFromContext(ctx)),
-			slog.Any("error", err),
+		h.log.Error("更新用户资料失败",
+			log.String("user_id", req.UserId),
+			log.String("trace_id", log.TraceIDFromContext(ctx)),
+			log.Any("error", err),
 		)
 		return nil, h.handleError(err)
 	}
@@ -138,9 +132,9 @@ func (h *UserHandler) BatchGetProfiles(ctx context.Context, req *pb.BatchGetProf
 
 	users, err := h.userService.BatchGetProfiles(ctx, req.UserIds)
 	if err != nil {
-		h.slog.Error("批量获取用户资料失败",
-			slog.String("trace_id", log.TraceIDFromContext(ctx)),
-			slog.Any("error", err),
+		h.log.Error("批量获取用户资料失败",
+			log.String("trace_id", log.TraceIDFromContext(ctx)),
+			log.Any("error", err),
 		)
 		return nil, h.handleError(err)
 	}
@@ -168,11 +162,11 @@ func (h *UserHandler) Follow(ctx context.Context, req *pb.FollowRequest) (*commo
 	}
 
 	if err := h.userService.Follow(ctx, req.FollowerId, req.FollowingId); err != nil {
-		h.slog.Error("关注用户失败",
-			slog.String("follower_id", req.FollowerId),
-			slog.String("following_id", req.FollowingId),
-			slog.String("trace_id", log.TraceIDFromContext(ctx)),
-			slog.Any("error", err),
+		h.log.Error("关注用户失败",
+			log.String("follower_id", req.FollowerId),
+			log.String("following_id", req.FollowingId),
+			log.String("trace_id", log.TraceIDFromContext(ctx)),
+			log.Any("error", err),
 		)
 		return nil, h.handleError(err)
 	}
@@ -191,11 +185,11 @@ func (h *UserHandler) Unfollow(ctx context.Context, req *pb.UnfollowRequest) (*c
 	}
 
 	if err := h.userService.Unfollow(ctx, req.FollowerId, req.FollowingId); err != nil {
-		h.slog.Error("取消关注失败",
-			slog.String("follower_id", req.FollowerId),
-			slog.String("following_id", req.FollowingId),
-			slog.String("trace_id", log.TraceIDFromContext(ctx)),
-			slog.Any("error", err),
+		h.log.Error("取消关注失败",
+			log.String("follower_id", req.FollowerId),
+			log.String("following_id", req.FollowingId),
+			log.String("trace_id", log.TraceIDFromContext(ctx)),
+			log.Any("error", err),
 		)
 		return nil, h.handleError(err)
 	}
@@ -215,10 +209,10 @@ func (h *UserHandler) GetFollowers(ctx context.Context, req *pb.GetFollowersRequ
 
 	users, total, err := h.userService.GetFollowers(ctx, req.UserId, int(limit), int(offset))
 	if err != nil {
-		h.slog.Error("获取粉丝列表失败",
-			slog.String("user_id", req.UserId),
-			slog.String("trace_id", log.TraceIDFromContext(ctx)),
-			slog.Any("error", err),
+		h.log.Error("获取粉丝列表失败",
+			log.String("user_id", req.UserId),
+			log.String("trace_id", log.TraceIDFromContext(ctx)),
+			log.Any("error", err),
 		)
 		return nil, h.handleError(err)
 	}
@@ -241,10 +235,10 @@ func (h *UserHandler) GetFollowing(ctx context.Context, req *pb.GetFollowingRequ
 
 	users, total, err := h.userService.GetFollowing(ctx, req.UserId, int(limit), int(offset))
 	if err != nil {
-		h.slog.Error("获取关注列表失败",
-			slog.String("user_id", req.UserId),
-			slog.String("trace_id", log.TraceIDFromContext(ctx)),
-			slog.Any("error", err),
+		h.log.Error("获取关注列表失败",
+			log.String("user_id", req.UserId),
+			log.String("trace_id", log.TraceIDFromContext(ctx)),
+			log.Any("error", err),
 		)
 		return nil, h.handleError(err)
 	}
@@ -267,11 +261,11 @@ func (h *UserHandler) CheckFollowing(ctx context.Context, req *pb.CheckFollowing
 
 	isFollowing, err := h.userService.CheckFollowing(ctx, req.FollowerId, req.FollowingId)
 	if err != nil {
-		h.slog.Error("检查是否关注失败",
-			slog.String("follower_id", req.FollowerId),
-			slog.String("following_id", req.FollowingId),
-			slog.String("trace_id", log.TraceIDFromContext(ctx)),
-			slog.Any("error", err),
+		h.log.Error("检查是否关注失败",
+			log.String("follower_id", req.FollowerId),
+			log.String("following_id", req.FollowingId),
+			log.String("trace_id", log.TraceIDFromContext(ctx)),
+			log.Any("error", err),
 		)
 		return nil, h.handleError(err)
 	}
@@ -291,11 +285,11 @@ func (h *UserHandler) GetRelationship(ctx context.Context, req *pb.GetRelationsh
 
 	relationship, err := h.userService.GetRelationship(ctx, req.UserId, req.TargetId)
 	if err != nil {
-		h.slog.Error("获取用户关系失败",
-			slog.String("user_id", req.UserId),
-			slog.String("target_id", req.TargetId),
-			slog.String("trace_id", log.TraceIDFromContext(ctx)),
-			slog.Any("error", err),
+		h.log.Error("获取用户关系失败",
+			log.String("user_id", req.UserId),
+			log.String("target_id", req.TargetId),
+			log.String("trace_id", log.TraceIDFromContext(ctx)),
+			log.Any("error", err),
 		)
 		return nil, h.handleError(err)
 	}
@@ -320,11 +314,11 @@ func (h *UserHandler) GetMutualFollowers(ctx context.Context, req *pb.GetMutualF
 
 	users, total, err := h.userService.GetMutualFollowers(ctx, req.UserId, req.TargetId, int(limit), int(offset))
 	if err != nil {
-		h.slog.Error("获取共同关注失败",
-			slog.String("user_id", req.UserId),
-			slog.String("target_id", req.TargetId),
-			slog.String("trace_id", log.TraceIDFromContext(ctx)),
-			slog.Any("error", err),
+		h.log.Error("获取共同关注失败",
+			log.String("user_id", req.UserId),
+			log.String("target_id", req.TargetId),
+			log.String("trace_id", log.TraceIDFromContext(ctx)),
+			log.Any("error", err),
 		)
 		return nil, h.handleError(err)
 	}
@@ -355,11 +349,11 @@ func (h *UserHandler) Block(ctx context.Context, req *pb.BlockRequest) (*common.
 	}
 
 	if err := h.userService.Block(ctx, req.BlockerId, req.BlockedId, blockType); err != nil {
-		h.slog.Error("屏蔽用户失败",
-			slog.String("blocker_id", req.BlockerId),
-			slog.String("blocked_id", req.BlockedId),
-			slog.String("trace_id", log.TraceIDFromContext(ctx)),
-			slog.Any("error", err),
+		h.log.Error("屏蔽用户失败",
+			log.String("blocker_id", req.BlockerId),
+			log.String("blocked_id", req.BlockedId),
+			log.String("trace_id", log.TraceIDFromContext(ctx)),
+			log.Any("error", err),
 		)
 		return nil, h.handleError(err)
 	}
@@ -383,11 +377,11 @@ func (h *UserHandler) Unblock(ctx context.Context, req *pb.UnblockRequest) (*com
 	}
 
 	if err := h.userService.Unblock(ctx, req.BlockerId, req.BlockedId, blockType); err != nil {
-		h.slog.Error("取消屏蔽失败",
-			slog.String("blocker_id", req.BlockerId),
-			slog.String("blocked_id", req.BlockedId),
-			slog.String("trace_id", log.TraceIDFromContext(ctx)),
-			slog.Any("error", err),
+		h.log.Error("取消屏蔽失败",
+			log.String("blocker_id", req.BlockerId),
+			log.String("blocked_id", req.BlockedId),
+			log.String("trace_id", log.TraceIDFromContext(ctx)),
+			log.Any("error", err),
 		)
 		return nil, h.handleError(err)
 	}
@@ -408,10 +402,10 @@ func (h *UserHandler) GetBlockList(ctx context.Context, req *pb.GetBlockListRequ
 	blockType := protoToBlockType(req.BlockType)
 	blockedUsers, total, err := h.userService.GetBlockList(ctx, req.UserId, blockType, int(limit), int(offset))
 	if err != nil {
-		h.slog.Error("获取屏蔽列表失败",
-			slog.String("user_id", req.UserId),
-			slog.String("trace_id", log.TraceIDFromContext(ctx)),
-			slog.Any("error", err),
+		h.log.Error("获取屏蔽列表失败",
+			log.String("user_id", req.UserId),
+			log.String("trace_id", log.TraceIDFromContext(ctx)),
+			log.Any("error", err),
 		)
 		return nil, h.handleError(err)
 	}
@@ -434,11 +428,11 @@ func (h *UserHandler) CheckBlocked(ctx context.Context, req *pb.CheckBlockedRequ
 
 	relationship, err := h.userService.CheckBlocked(ctx, req.UserId, req.TargetId)
 	if err != nil {
-		h.slog.Error("检查屏蔽状态失败",
-			slog.String("user_id", req.UserId),
-			slog.String("target_id", req.TargetId),
-			slog.String("trace_id", log.TraceIDFromContext(ctx)),
-			slog.Any("error", err),
+		h.log.Error("检查屏蔽状态失败",
+			log.String("user_id", req.UserId),
+			log.String("target_id", req.TargetId),
+			log.String("trace_id", log.TraceIDFromContext(ctx)),
+			log.Any("error", err),
 		)
 		return nil, h.handleError(err)
 	}
@@ -466,10 +460,10 @@ func (h *UserHandler) GetUserSettings(ctx context.Context, req *pb.GetUserSettin
 
 	settings, err := h.userService.GetUserSettings(ctx, req.UserId)
 	if err != nil {
-		h.slog.Error("获取用户设置失败",
-			slog.String("user_id", req.UserId),
-			slog.String("trace_id", log.TraceIDFromContext(ctx)),
-			slog.Any("error", err),
+		h.log.Error("获取用户设置失败",
+			log.String("user_id", req.UserId),
+			log.String("trace_id", log.TraceIDFromContext(ctx)),
+			log.Any("error", err),
 		)
 		return nil, h.handleError(err)
 	}
@@ -488,10 +482,10 @@ func (h *UserHandler) UpdateUserSettings(ctx context.Context, req *pb.UpdateUser
 	if req.Privacy != nil {
 		privacySettings := protoToPrivacySettings(req.UserId, req.Privacy)
 		if err := h.userService.UpdatePrivacySettings(ctx, req.UserId, privacySettings); err != nil {
-			h.slog.Error("更新隐私设置失败",
-				slog.String("user_id", req.UserId),
-				slog.String("trace_id", log.TraceIDFromContext(ctx)),
-				slog.Any("error", err),
+			h.log.Error("更新隐私设置失败",
+				log.String("user_id", req.UserId),
+				log.String("trace_id", log.TraceIDFromContext(ctx)),
+				log.Any("error", err),
 			)
 			return nil, h.handleError(err)
 		}
@@ -501,10 +495,10 @@ func (h *UserHandler) UpdateUserSettings(ctx context.Context, req *pb.UpdateUser
 	if req.Notification != nil {
 		notificationSettings := protoToNotificationSettings(req.UserId, req.Notification)
 		if err := h.userService.UpdateNotificationSettings(ctx, req.UserId, notificationSettings); err != nil {
-			h.slog.Error("更新通知设置失败",
-				slog.String("user_id", req.UserId),
-				slog.String("trace_id", log.TraceIDFromContext(ctx)),
-				slog.Any("error", err),
+			h.log.Error("更新通知设置失败",
+				log.String("user_id", req.UserId),
+				log.String("trace_id", log.TraceIDFromContext(ctx)),
+				log.Any("error", err),
 			)
 			return nil, h.handleError(err)
 		}
@@ -513,10 +507,10 @@ func (h *UserHandler) UpdateUserSettings(ctx context.Context, req *pb.UpdateUser
 	// 返回更新后的设置
 	settings, err := h.userService.GetUserSettings(ctx, req.UserId)
 	if err != nil {
-		h.slog.Error("获取更新后的用户设置失败",
-			slog.String("user_id", req.UserId),
-			slog.String("trace_id", log.TraceIDFromContext(ctx)),
-			slog.Any("error", err),
+		h.log.Error("获取更新后的用户设置失败",
+			log.String("user_id", req.UserId),
+			log.String("trace_id", log.TraceIDFromContext(ctx)),
+			log.Any("error", err),
 		)
 		return nil, h.handleError(err)
 	}
@@ -540,10 +534,10 @@ func (h *UserHandler) SearchUsers(ctx context.Context, req *pb.SearchUsersReques
 
 	users, total, err := h.userService.SearchUsers(ctx, req.Query, int(limit), int(offset))
 	if err != nil {
-		h.slog.Error("搜索用户失败",
-			slog.String("query", req.Query),
-			slog.String("trace_id", log.TraceIDFromContext(ctx)),
-			slog.Any("error", err),
+		h.log.Error("搜索用户失败",
+			log.String("query", req.Query),
+			log.String("trace_id", log.TraceIDFromContext(ctx)),
+			log.Any("error", err),
 		)
 		return nil, h.handleError(err)
 	}

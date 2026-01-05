@@ -3,29 +3,28 @@ package main
 
 import (
 	"context"
-	"log/slog"
 	"net"
 	"os"
 	"os/signal"
 	"strconv"
 	"syscall"
 
-	"github.com/funcdfs/lesser/pkg/mq"
 	"github.com/funcdfs/lesser/pkg/db"
 	"github.com/funcdfs/lesser/pkg/log"
-	"github.com/funcdfs/lesser/user/internal/handler"
+	"github.com/funcdfs/lesser/pkg/mq"
+	pb "github.com/funcdfs/lesser/user/gen_protos/user"
 	"github.com/funcdfs/lesser/user/internal/data_access"
+	"github.com/funcdfs/lesser/user/internal/handler"
 	"github.com/funcdfs/lesser/user/internal/logic"
 	"github.com/funcdfs/lesser/user/internal/messaging"
-	pb "github.com/funcdfs/lesser/user/gen_protos/user"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/reflection"
 )
 
 func main() {
 	// 初始化日志
-	log := log.New("user-service")
-	log.Info("用户服务启动中...")
+	logger := log.New("user-service")
+	logger.Info("用户服务启动中...")
 
 	// 读取配置
 	grpcPort := getEnvInt("GRPC_PORT", 50053)
@@ -35,31 +34,31 @@ func main() {
 	dbConfig := db.PostgresConfigFromEnv()
 	pgDB, err := db.NewPostgresConnection(dbConfig)
 	if err != nil {
-		log.Error("数据库连接失败", slog.Any("error", err))
+		logger.Error("数据库连接失败", log.Any("error", err))
 		os.Exit(1)
 	}
 	defer pgDB.Close()
-	log.Info("数据库连接成功", slog.String("host", dbConfig.Host))
+	logger.Info("数据库连接成功", log.String("host", dbConfig.Host))
 
 	// 初始化 RabbitMQ Publisher（可选，失败不影响服务启动）
 	var publisher *mq.Publisher
-	publisher = mq.NewPublisher(rabbitMQURL, log)
+	publisher = mq.NewPublisher(rabbitMQURL, logger)
 	if err := publisher.Connect(); err != nil {
-		log.Warn("RabbitMQ 连接失败，事件通知功能将不可用", slog.Any("error", err))
+		logger.Warn("RabbitMQ 连接失败，事件通知功能将不可用", log.Any("error", err))
 		publisher = nil
 	} else {
 		defer publisher.Close()
-		log.Info("RabbitMQ 连接成功")
+		logger.Info("RabbitMQ 连接成功")
 	}
 
-	// 初始化仓库层
-	userRepo := data_access.NewUserRepository(pgDB)
-	followRepo := data_access.NewFollowRepository(pgDB)
-	blockRepo := data_access.NewBlockRepository(pgDB)
-	settingsRepo := data_access.NewSettingsRepository(pgDB)
+	// 初始化数据访问层
+	userDA := data_access.NewUserDataAccess(pgDB)
+	followDA := data_access.NewFollowDataAccess(pgDB)
+	blockDA := data_access.NewBlockDataAccess(pgDB)
+	settingsDA := data_access.NewSettingsDataAccess(pgDB)
 
 	// 初始化服务层
-	userSvc := logic.NewUserService(pgDB, log, userRepo, followRepo, blockRepo, settingsRepo)
+	userSvc := logic.NewUserService(pgDB, logger, userDA, followDA, blockDA, settingsDA)
 
 	// 初始化 messaging 层并注入
 	if publisher != nil {
@@ -68,7 +67,7 @@ func main() {
 	}
 
 	// 初始化处理器
-	userHandler := handler.NewUserHandler(userSvc, log)
+	userHandler := handler.NewUserHandler(userSvc, logger)
 
 	// 创建 gRPC 服务器（简化版，不使用 pkg/grpcserver）
 	grpcServer := grpc.NewServer()
@@ -79,7 +78,7 @@ func main() {
 	addr := ":" + strconv.Itoa(grpcPort)
 	lis, err := net.Listen("tcp", addr)
 	if err != nil {
-		log.Error("端口监听失败", slog.Int("port", grpcPort), slog.Any("error", err))
+		logger.Error("端口监听失败", log.Int("port", grpcPort), log.Any("error", err))
 		os.Exit(1)
 	}
 
@@ -89,14 +88,14 @@ func main() {
 		sigCh := make(chan os.Signal, 1)
 		signal.Notify(sigCh, syscall.SIGINT, syscall.SIGTERM)
 		<-sigCh
-		log.Info("收到关闭信号，开始关闭...")
+		logger.Info("收到关闭信号，开始关闭...")
 		cancel()
 		grpcServer.GracefulStop()
 	}()
 
-	log.Info("User 服务已启动", slog.Int("port", grpcPort))
+	logger.Info("User 服务已启动", log.Int("port", grpcPort))
 	if err := grpcServer.Serve(lis); err != nil && ctx.Err() == nil {
-		log.Error("gRPC 服务异常退出", slog.Any("error", err))
+		logger.Error("gRPC 服务异常退出", log.Any("error", err))
 		os.Exit(1)
 	}
 }

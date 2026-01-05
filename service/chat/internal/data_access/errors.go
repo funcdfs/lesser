@@ -16,6 +16,8 @@ var (
 	// 会话相关
 	ErrConversationNotFound  = errors.New(codes.NotFound, "会话不存在")
 	ErrNotConversationMember = errors.New(codes.PermissionDenied, "您不是该会话的成员")
+	// CHANNEL 类型已迁移到独立的 Channel 服务
+	ErrChannelTypeNotSupported = errors.New(codes.InvalidArgument, "CHANNEL 类型已迁移到独立的 Channel 服务，请使用 ChannelService")
 
 	// 消息相关
 	ErrMessageNotFound = errors.New(codes.NotFound, "消息不存在")

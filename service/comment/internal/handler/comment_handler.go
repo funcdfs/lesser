@@ -3,11 +3,11 @@ package handler
 
 import (
 	"context"
-	"log/slog"
+	
 
+	pb "github.com/funcdfs/lesser/comment/gen_protos/comment"
 	"github.com/funcdfs/lesser/comment/internal/data_access"
 	"github.com/funcdfs/lesser/comment/internal/logic"
-	pb "github.com/funcdfs/lesser/comment/gen_protos/comment"
 	"github.com/funcdfs/lesser/pkg/gen_protos/common"
 	"github.com/funcdfs/lesser/pkg/log"
 	"google.golang.org/grpc/codes"
@@ -18,17 +18,17 @@ import (
 type CommentHandler struct {
 	pb.UnimplementedCommentServiceServer
 	svc *logic.CommentService
-	log *slog.Logger
+	log *log.Logger
 }
 
 // NewCommentHandler 创建处理器
-func NewCommentHandler(svc *logic.CommentService, log *slog.Logger) *CommentHandler {
-	if log == nil {
-		log = slog.Default()
+func NewCommentHandler(svc *logic.CommentService, logger *log.Logger) *CommentHandler {
+	if logger == nil {
+		logger = log.Global()
 	}
 	return &CommentHandler{
 		svc: svc,
-		log: log.With(slog.String("component", "handler")),
+		log: logger.With(log.String("component", "handler")),
 	}
 }
 
@@ -45,13 +45,18 @@ func (h *CommentHandler) CreateComment(ctx context.Context, req *pb.CreateCommen
 	}
 
 	h.log.Debug("创建评论",
-		slog.String("author_id", req.AuthorId),
-		slog.String("content_id", req.ContentId),
+		log.String("author_id", req.AuthorId),
+		log.String("content_id", req.ContentId),
 	)
 
-	// 注意：当前 proto 未定义 mentioned_user_ids 字段，传 nil
-	comment, count, err := h.svc.CreateComment(ctx, req.AuthorId, req.ContentId, req.ParentId, req.Text, nil)
+	comment, count, err := h.svc.CreateComment(ctx, req.AuthorId, req.ContentId, req.ParentId, req.Text, req.MentionedUserIds)
 	if err != nil {
+		h.log.Error("创建评论失败",
+			log.String("author_id", req.AuthorId),
+			log.String("content_id", req.ContentId),
+			log.String("trace_id", log.TraceIDFromContext(ctx)),
+			log.Any("error", err),
+		)
 		return nil, mapError(err)
 	}
 
@@ -85,8 +90,8 @@ func (h *CommentHandler) DeleteComment(ctx context.Context, req *pb.DeleteCommen
 	}
 
 	h.log.Debug("删除评论",
-		slog.String("comment_id", req.CommentId),
-		slog.String("user_id", req.UserId),
+		log.String("comment_id", req.CommentId),
+		log.String("user_id", req.UserId),
 	)
 
 	count, err := h.svc.DeleteComment(ctx, req.CommentId, req.UserId)
@@ -96,7 +101,6 @@ func (h *CommentHandler) DeleteComment(ctx context.Context, req *pb.DeleteCommen
 
 	return &pb.DeleteCommentResponse{Success: true, CommentCount: count}, nil
 }
-
 
 // ListComments 获取评论列表（支持排序）
 func (h *CommentHandler) ListComments(ctx context.Context, req *pb.ListCommentsRequest) (*pb.ListCommentsResponse, error) {
@@ -118,17 +122,17 @@ func (h *CommentHandler) ListComments(ctx context.Context, req *pb.ListCommentsR
 	sortBy := logic.SortBy(req.SortBy)
 
 	h.log.Debug("获取评论列表",
-		slog.String("content_id", req.ContentId),
-		slog.String("parent_id", req.ParentId),
-		slog.Int("sort_by", int(sortBy)),
+		log.String("content_id", req.ContentId),
+		log.String("parent_id", req.ParentId),
+		log.Int("sort_by", int(sortBy)),
 	)
 
 	comments, total, err := h.svc.ListComments(ctx, req.ContentId, req.ParentId, sortBy, int(pageSize), int((page-1)*pageSize))
 	if err != nil {
 		h.log.Error("获取评论列表失败",
-			slog.String("content_id", req.ContentId),
-			slog.String("trace_id", log.TraceIDFromContext(ctx)),
-			slog.Any("error", err),
+			log.String("content_id", req.ContentId),
+			log.String("trace_id", log.TraceIDFromContext(ctx)),
+			log.Any("error", err),
 		)
 		return nil, mapError(err)
 	}
@@ -148,9 +152,9 @@ func (h *CommentHandler) GetCommentCount(ctx context.Context, req *pb.GetComment
 	count, err := h.svc.GetCommentCount(ctx, req.ContentId)
 	if err != nil {
 		h.log.Error("获取评论数量失败",
-			slog.String("content_id", req.ContentId),
-			slog.String("trace_id", log.TraceIDFromContext(ctx)),
-			slog.Any("error", err),
+			log.String("content_id", req.ContentId),
+			log.String("trace_id", log.TraceIDFromContext(ctx)),
+			log.Any("error", err),
 		)
 		return nil, mapError(err)
 	}
@@ -170,8 +174,8 @@ func (h *CommentHandler) BatchGetCommentCount(ctx context.Context, req *pb.Batch
 	countMap, err := h.svc.BatchGetCommentCount(ctx, req.ContentIds)
 	if err != nil {
 		h.log.Error("批量获取评论数量失败",
-			slog.String("trace_id", log.TraceIDFromContext(ctx)),
-			slog.Any("error", err),
+			log.String("trace_id", log.TraceIDFromContext(ctx)),
+			log.Any("error", err),
 		)
 		return nil, mapError(err)
 	}
@@ -187,7 +191,6 @@ func (h *CommentHandler) BatchGetCommentCount(ctx context.Context, req *pb.Batch
 	return &pb.BatchGetCommentCountResponse{Counts: counts}, nil
 }
 
-
 // ============================================================================
 // 评论点赞
 // ============================================================================
@@ -202,8 +205,8 @@ func (h *CommentHandler) LikeComment(ctx context.Context, req *pb.LikeCommentReq
 	}
 
 	h.log.Debug("点赞评论",
-		slog.String("user_id", req.UserId),
-		slog.String("comment_id", req.CommentId),
+		log.String("user_id", req.UserId),
+		log.String("comment_id", req.CommentId),
 	)
 
 	count, err := h.svc.LikeComment(ctx, req.UserId, req.CommentId)
@@ -224,8 +227,8 @@ func (h *CommentHandler) UnlikeComment(ctx context.Context, req *pb.UnlikeCommen
 	}
 
 	h.log.Debug("取消点赞评论",
-		slog.String("user_id", req.UserId),
-		slog.String("comment_id", req.CommentId),
+		log.String("user_id", req.UserId),
+		log.String("comment_id", req.CommentId),
 	)
 
 	count, err := h.svc.UnlikeComment(ctx, req.UserId, req.CommentId)

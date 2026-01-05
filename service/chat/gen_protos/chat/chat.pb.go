@@ -23,12 +23,12 @@ const (
 )
 
 // ConversationType 会话类型
+// 注意：CHANNEL 类型已迁移到独立的 Channel 服务 (protos/channel/channel.proto)
 type ConversationType int32
 
 const (
 	ConversationType_PRIVATE ConversationType = 0 // 一对一私聊
 	ConversationType_GROUP   ConversationType = 1 // 多人群聊
-	ConversationType_CHANNEL ConversationType = 2 // 广播频道
 )
 
 // Enum value maps for ConversationType.
@@ -36,12 +36,10 @@ var (
 	ConversationType_name = map[int32]string{
 		0: "PRIVATE",
 		1: "GROUP",
-		2: "CHANNEL",
 	}
 	ConversationType_value = map[string]int32{
 		"PRIVATE": 0,
 		"GROUP":   1,
-		"CHANNEL": 2,
 	}
 )
 
@@ -2424,11 +2422,10 @@ const file_chat_chat_proto_rawDesc = "" +
 	"\x06action\x18\x03 \x01(\tR\x06action\"g\n" +
 	"\x10MessageSentEvent\x12*\n" +
 	"\x11client_message_id\x18\x01 \x01(\tR\x0fclientMessageId\x12'\n" +
-	"\amessage\x18\x02 \x01(\v2\r.chat.MessageR\amessage*7\n" +
+	"\amessage\x18\x02 \x01(\v2\r.chat.MessageR\amessage**\n" +
 	"\x10ConversationType\x12\v\n" +
 	"\aPRIVATE\x10\x00\x12\t\n" +
-	"\x05GROUP\x10\x01\x12\v\n" +
-	"\aCHANNEL\x10\x022\x81\x05\n" +
+	"\x05GROUP\x10\x012\x81\x05\n" +
 	"\vChatService\x12N\n" +
 	"\x10GetConversations\x12\x1d.chat.GetConversationsRequest\x1a\x1b.chat.ConversationsResponse\x12C\n" +
 	"\x0fGetConversation\x12\x1c.chat.GetConversationRequest\x1a\x12.chat.Conversation\x12I\n" +

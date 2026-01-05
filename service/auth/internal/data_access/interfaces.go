@@ -9,17 +9,17 @@ import (
 
 // User 用户实体
 type User struct {
-	ID           string
-	Username     string
-	Email        string
-	Password     string // Argon2id 哈希
-	DisplayName  string
-	AvatarURL    string
-	Bio          string
-	IsActive     bool
-	IsVerified   bool
-	CreatedAt    time.Time
-	UpdatedAt    time.Time
+	ID          string
+	Username    string
+	Email       string
+	Password    string // Argon2id 哈希
+	DisplayName string
+	AvatarURL   string
+	Bio         string
+	IsActive    bool
+	IsVerified  bool
+	CreatedAt   time.Time
+	UpdatedAt   time.Time
 }
 
 // Ban 封禁记录
@@ -40,8 +40,8 @@ type LoginAttempt struct {
 	CreatedAt time.Time
 }
 
-// UserRepository 用户数据访问接口
-type UserRepository interface {
+// UserDataAccess 用户数据访问接口
+type UserDataAccess interface {
 	// Create 创建用户
 	Create(ctx context.Context, user *User) error
 	// GetByID 根据 ID 获取用户
@@ -58,8 +58,8 @@ type UserRepository interface {
 	UpdateLastLogin(ctx context.Context, userID string) error
 }
 
-// BanRepository 封禁数据访问接口
-type BanRepository interface {
+// BanDataAccess 封禁数据访问接口
+type BanDataAccess interface {
 	// Create 创建封禁记录
 	Create(ctx context.Context, ban *Ban) error
 	// GetByUserID 获取用户的封禁记录
@@ -70,16 +70,16 @@ type BanRepository interface {
 	IsUserBanned(ctx context.Context, userID string) (bool, *Ban, error)
 }
 
-// TokenBlacklistRepository Token 黑名单接口
-type TokenBlacklistRepository interface {
+// TokenBlacklistDataAccess Token 黑名单接口
+type TokenBlacklistDataAccess interface {
 	// Add 添加 Token 到黑名单
 	Add(ctx context.Context, tokenID string, expiresAt time.Time) error
 	// IsBlacklisted 检查 Token 是否在黑名单中
 	IsBlacklisted(ctx context.Context, tokenID string) (bool, error)
 }
 
-// LoginAttemptRepository 登录尝试记录接口
-type LoginAttemptRepository interface {
+// LoginAttemptDataAccess 登录尝试记录接口
+type LoginAttemptDataAccess interface {
 	// Record 记录登录尝试
 	Record(ctx context.Context, attempt *LoginAttempt) error
 	// GetRecentFailures 获取最近的失败次数

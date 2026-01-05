@@ -24,15 +24,15 @@ var (
 	ErrUnavailable    = New(codes.Unavailable, "服务不可用")
 
 	// 认证相关
-	ErrInvalidCredentials = New(codes.Unauthenticated, "用户名或密码错误")
-	ErrTokenExpired       = New(codes.Unauthenticated, "Token 已过期")
-	ErrTokenInvalid       = New(codes.Unauthenticated, "Token 无效")
+	ErrInvalidCredentials  = New(codes.Unauthenticated, "用户名或密码错误")
+	ErrTokenExpired        = New(codes.Unauthenticated, "Token 已过期")
+	ErrTokenInvalid        = New(codes.Unauthenticated, "Token 无效")
 	ErrRefreshTokenInvalid = New(codes.Unauthenticated, "Refresh Token 无效")
 
 	// 用户相关
-	ErrUserNotFound      = New(codes.NotFound, "用户不存在")
-	ErrUserAlreadyExists = New(codes.AlreadyExists, "用户已存在")
-	ErrEmailAlreadyUsed  = New(codes.AlreadyExists, "邮箱已被使用")
+	ErrUserNotFound        = New(codes.NotFound, "用户不存在")
+	ErrUserAlreadyExists   = New(codes.AlreadyExists, "用户已存在")
+	ErrEmailAlreadyUsed    = New(codes.AlreadyExists, "邮箱已被使用")
 	ErrUsernameAlreadyUsed = New(codes.AlreadyExists, "用户名已被使用")
 
 	// 帖子相关
@@ -40,9 +40,9 @@ var (
 	ErrPostDeleted  = New(codes.NotFound, "帖子已删除")
 
 	// 聊天相关
-	ErrConversationNotFound = New(codes.NotFound, "会话不存在")
+	ErrConversationNotFound  = New(codes.NotFound, "会话不存在")
 	ErrNotConversationMember = New(codes.PermissionDenied, "您不是该会话的成员")
-	ErrMessageNotFound      = New(codes.NotFound, "消息不存在")
+	ErrMessageNotFound       = New(codes.NotFound, "消息不存在")
 )
 
 // AppError 应用错误，包含 gRPC 状态码
@@ -234,4 +234,45 @@ func Internalf(format string, args ...interface{}) error {
 // PermissionDeniedf 创建格式化的 PermissionDenied 错误
 func PermissionDeniedf(format string, args ...interface{}) error {
 	return status.Errorf(codes.PermissionDenied, format, args...)
+}
+
+// Unauthenticatedf 创建格式化的 Unauthenticated 错误
+func Unauthenticatedf(format string, args ...interface{}) error {
+	return status.Errorf(codes.Unauthenticated, format, args...)
+}
+
+// AlreadyExistsf 创建格式化的 AlreadyExists 错误
+func AlreadyExistsf(format string, args ...interface{}) error {
+	return status.Errorf(codes.AlreadyExists, format, args...)
+}
+
+// IsUnavailable 检查是否为 Unavailable 错误
+func IsUnavailable(err error) bool {
+	return IsCode(err, codes.Unavailable)
+}
+
+// IsDeadlineExceeded 检查是否为 DeadlineExceeded 错误
+func IsDeadlineExceeded(err error) bool {
+	return IsCode(err, codes.DeadlineExceeded)
+}
+
+// IsCanceled 检查是否为 Canceled 错误
+func IsCanceled(err error) bool {
+	return IsCode(err, codes.Canceled)
+}
+
+// IsRetryable 检查错误是否可重试
+// 可重试的错误码：Unavailable, ResourceExhausted, Aborted, DeadlineExceeded
+func IsRetryable(err error) bool {
+	if err == nil {
+		return false
+	}
+
+	code, _ := FromGRPCError(err)
+	switch code {
+	case codes.Unavailable, codes.ResourceExhausted, codes.Aborted, codes.DeadlineExceeded:
+		return true
+	default:
+		return false
+	}
 }

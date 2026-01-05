@@ -49,24 +49,23 @@
    │
    ├── Service (业务处理)
    │   ├── service/<service>/internal/handler/
-   │   └── service/<service>/internal/service/
+   │   └── service/<service>/internal/logic/
    │
    └── Chat Service (如涉及聊天功能)
-       ├── service/chat/internal/handler/grpc/
-       ├── service/chat/internal/service/
-       └── service/chat/internal/repository/
+       ├── service/chat/internal/handler/
+       ├── service/chat/internal/logic/
+       └── service/chat/internal/data_access/
 
 3. 网关配置
    └── infra/gateway/dynamic/routes.yml   # Traefik 路由规则
 
 4. 客户端
    └── Flutter
-       ├── lib/features/<module>/data/datasources/   # gRPC 数据源
-       ├── lib/features/<module>/data/models/        # 数据模型
-       ├── lib/features/<module>/data/repositories/  # 仓库实现
-       ├── lib/features/<module>/domain/entities/    # 实体
-       ├── lib/features/<module>/domain/usecases/    # 用例
-       └── lib/features/<module>/presentation/       # UI 层
+       ├── lib/features/<module>/handler/       # 业务逻辑层
+       ├── lib/features/<module>/data_access/   # 数据访问层
+       ├── lib/features/<module>/models/        # 模型层
+       ├── lib/features/<module>/pages/         # 页面
+       └── lib/features/<module>/widgets/       # 组件
 ```
 
 ### 1.3 新增路由检查清单
@@ -142,27 +141,33 @@ func (s *service) SendMessage(ctx context.Context, msg *Message) error {
 
 ### 3.3 Flutter/Dart 规范
 ```dart
-// 使用 Clean Architecture 分层: data -> domain -> presentation
+// 使用项目分层架构: pages → handler → data_access → models
 
-// Entity (Domain Layer)
-class User {
+// Model (模型层)
+class UserModel {
   final String id;
   final String username;
-  const User({required this.id, required this.username});
+  const UserModel({required this.id, required this.username});
 }
 
-// Repository Interface (Domain Layer)
-abstract class AuthRepository {
-  Future<Either<Failure, User>> login(String email, String password);
-}
-
-// Use Case (Domain Layer)
-class LoginUseCase {
-  final AuthRepository repository;
-  LoginUseCase(this.repository);
+// DataAccess (数据访问层)
+class AuthDataAccess {
+  final GrpcChannel _channel;
+  AuthDataAccess(this._channel);
   
-  Future<Either<Failure, User>> call(LoginParams params) {
-    return repository.login(params.email, params.password);
+  Future<UserModel> login(String email, String password) async {
+    // gRPC 调用
+  }
+}
+
+// Handler (业务逻辑层)
+class AuthHandler extends ChangeNotifier {
+  final AuthDataAccess _dataAccess;
+  AuthHandler(this._dataAccess);
+  
+  Future<void> login(String email, String password) async {
+    final user = await _dataAccess.login(email, password);
+    // 处理业务逻辑
   }
 }
 ```

@@ -11,7 +11,6 @@ package streaming
 import (
 	"context"
 	"io"
-	"log/slog"
 	"strings"
 	"sync"
 	"sync/atomic"
@@ -19,9 +18,11 @@ import (
 
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/metadata"
+	"google.golang.org/protobuf/reflect/protoreflect"
 
 	"github.com/funcdfs/lesser/gateway/internal/auth"
 	gwErr "github.com/funcdfs/lesser/gateway/internal/errors"
+	"github.com/funcdfs/lesser/pkg/log"
 )
 
 // ============================================================================
@@ -49,21 +50,21 @@ func DefaultProxyConfig() ProxyConfig {
 type Proxy struct {
 	jwtValidator *auth.JWTValidator
 	config       ProxyConfig
-	log          *slog.Logger
+	log          *log.Logger
 
 	// 统计信息
 	activeStreams atomic.Int64
 }
 
 // NewProxy 创建流代理
-func NewProxy(jwtValidator *auth.JWTValidator, config ProxyConfig, log *slog.Logger) *Proxy {
-	if log == nil {
-		log = slog.Default()
+func NewProxy(jwtValidator *auth.JWTValidator, config ProxyConfig, logger *log.Logger) *Proxy {
+	if logger == nil {
+		logger = log.Global()
 	}
 	return &Proxy{
 		jwtValidator: jwtValidator,
 		config:       config,
-		log:          log.With(slog.String("component", "streaming")),
+		log:          logger.With(log.String("component", "streaming")),
 	}
 }
 
@@ -95,7 +96,7 @@ func (p *Proxy) ProxyBidirectional(
 		return err
 	}
 
-	p.log.Debug("流认证成功", slog.String("user_id", userID))
+	p.log.Debug("流认证成功", log.String("user_id", userID))
 
 	// 2. 创建下游 context，注入 user_id 和 request_id
 	serverCtx := p.createServerContext(ctx, userID)
@@ -103,7 +104,7 @@ func (p *Proxy) ProxyBidirectional(
 	// 3. 创建到下游服务的双向流
 	serverStream, err := createServerStream(serverCtx)
 	if err != nil {
-		p.log.Error("创建下游流失败", slog.Any("error", err))
+		p.log.Error("创建下游流失败", log.Any("error", err))
 		return gwErr.ErrServiceUnavailable
 	}
 
@@ -119,13 +120,13 @@ func (p *Proxy) ProxyBidirectional(
 func (p *Proxy) authenticateStream(ctx context.Context) (string, error) {
 	token, err := extractTokenFromContext(ctx)
 	if err != nil {
-		p.log.Debug("提取令牌失败", slog.Any("error", err))
+		p.log.Debug("提取令牌失败", log.Any("error", err))
 		return "", err
 	}
 
 	claims, err := p.jwtValidator.ValidateToken(token)
 	if err != nil {
-		p.log.Debug("令牌验证失败", slog.Any("error", err))
+		p.log.Debug("令牌验证失败", log.Any("error", err))
 		return "", gwErr.ErrInvalidToken
 	}
 
@@ -217,8 +218,8 @@ func (p *Proxy) forwardMessages(
 		if err := src.RecvMsg(frame); err != nil {
 			if err != io.EOF {
 				p.log.Debug("接收消息失败",
-					slog.String("direction", direction),
-					slog.Any("error", err))
+					log.String("direction", direction),
+					log.Any("error", err))
 			}
 			return err
 		}
@@ -226,8 +227,8 @@ func (p *Proxy) forwardMessages(
 		// 发送原始字节
 		if err := dst.SendMsg(frame); err != nil {
 			p.log.Debug("发送消息失败",
-				slog.String("direction", direction),
-				slog.Any("error", err))
+				log.String("direction", direction),
+				log.Any("error", err))
 			return err
 		}
 	}
@@ -251,6 +252,12 @@ func (f *rawFrame) String() string {
 
 // ProtoMessage 实现 proto.Message 接口
 func (f *rawFrame) ProtoMessage() {}
+
+// ProtoReflect 实现 protoreflect.ProtoMessage 接口（protobuf v2）
+// 返回 nil 表示不支持反射，但满足接口要求
+func (f *rawFrame) ProtoReflect() protoreflect.Message {
+	return nil
+}
 
 // Marshal 序列化（返回原始字节）
 func (f *rawFrame) Marshal() ([]byte, error) {

@@ -5,13 +5,13 @@ import (
 	"log/slog"
 	"time"
 
-	"github.com/funcdfs/lesser/pkg/logger"
+	"github.com/funcdfs/lesser/pkg/log"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/status"
 )
 
 // LoggingInterceptor 创建日志拦截器
-func LoggingInterceptor(log *logger.Logger) grpc.UnaryServerInterceptor {
+func LoggingInterceptor(logger *log.Logger) grpc.UnaryServerInterceptor {
 	return func(ctx context.Context, req interface{}, info *grpc.UnaryServerInfo, handler grpc.UnaryHandler) (interface{}, error) {
 		start := time.Now()
 
@@ -23,13 +23,13 @@ func LoggingInterceptor(log *logger.Logger) grpc.UnaryServerInterceptor {
 		// 记录日志
 		if err != nil {
 			code, _ := status.FromError(err)
-			log.WithContext(ctx).Error("grpc request failed",
+			logger.WithContext(ctx).Error("grpc request failed",
 				slog.String("method", info.FullMethod),
 				slog.Duration("duration", duration),
 				slog.String("code", code.Code().String()),
 				slog.Any("error", err))
 		} else {
-			log.WithContext(ctx).Info("grpc request completed",
+			logger.WithContext(ctx).Info("grpc request completed",
 				slog.String("method", info.FullMethod),
 				slog.Duration("duration", duration))
 		}
@@ -39,7 +39,7 @@ func LoggingInterceptor(log *logger.Logger) grpc.UnaryServerInterceptor {
 }
 
 // StreamLoggingInterceptor 创建流式日志拦截器
-func StreamLoggingInterceptor(log *logger.Logger) grpc.StreamServerInterceptor {
+func StreamLoggingInterceptor(logger *log.Logger) grpc.StreamServerInterceptor {
 	return func(srv interface{}, ss grpc.ServerStream, info *grpc.StreamServerInfo, handler grpc.StreamHandler) error {
 		start := time.Now()
 
@@ -49,13 +49,13 @@ func StreamLoggingInterceptor(log *logger.Logger) grpc.StreamServerInterceptor {
 
 		if err != nil {
 			code, _ := status.FromError(err)
-			log.Error("stream request failed",
+			logger.Error("stream request failed",
 				slog.String("method", info.FullMethod),
 				slog.Duration("duration", duration),
 				slog.String("code", code.Code().String()),
 				slog.Any("error", err))
 		} else {
-			log.Info("stream request completed",
+			logger.Info("stream request completed",
 				slog.String("method", info.FullMethod),
 				slog.Duration("duration", duration))
 		}

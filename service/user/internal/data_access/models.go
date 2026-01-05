@@ -1,4 +1,4 @@
-// Package repository 提供用户服务的数据访问层
+// Package data_access 提供用户服务的数据访问层
 package data_access
 
 import (
@@ -98,27 +98,27 @@ type BlockedUser struct {
 
 // PrivacySettings 隐私设置
 type PrivacySettings struct {
-	UserID                  string
-	IsPrivateAccount        bool
-	AllowMessageFromAnyone  bool
-	ShowOnlineStatus        bool
-	ShowLastSeen            bool
-	AllowTagging            bool
-	ShowActivityStatus      bool
-	CreatedAt               time.Time
-	UpdatedAt               time.Time
+	UserID                 string
+	IsPrivateAccount       bool
+	AllowMessageFromAnyone bool
+	ShowOnlineStatus       bool
+	ShowLastSeen           bool
+	AllowTagging           bool
+	ShowActivityStatus     bool
+	CreatedAt              time.Time
+	UpdatedAt              time.Time
 }
 
 // DefaultPrivacySettings 返回默认隐私设置
 func DefaultPrivacySettings(userID string) *PrivacySettings {
 	return &PrivacySettings{
-		UserID:                  userID,
-		IsPrivateAccount:        false,
-		AllowMessageFromAnyone:  true,
-		ShowOnlineStatus:        true,
-		ShowLastSeen:            true,
-		AllowTagging:            true,
-		ShowActivityStatus:      true,
+		UserID:                 userID,
+		IsPrivateAccount:       false,
+		AllowMessageFromAnyone: true,
+		ShowOnlineStatus:       true,
+		ShowLastSeen:           true,
+		AllowTagging:           true,
+		ShowActivityStatus:     true,
 	}
 }
 
@@ -165,14 +165,14 @@ type UserSettings struct {
 
 // RelationshipStatus 两用户间的关系状态
 type RelationshipStatus struct {
-	IsFollowing   bool      // 我是否关注了他
-	IsFollowedBy  bool      // 他是否关注了我
-	IsMutual      bool      // 是否互关
-	IsBlocking    bool      // 我是否屏蔽了他
-	IsBlockedBy   bool      // 他是否屏蔽了我
-	IsMuting      bool      // 我是否静音了他（不看他的内容）
-	IsHidingFrom  bool      // 我是否对他隐藏（不让他看我）
-	MyBlockType   BlockType // 我对他的屏蔽类型
+	IsFollowing    bool      // 我是否关注了他
+	IsFollowedBy   bool      // 他是否关注了我
+	IsMutual       bool      // 是否互关
+	IsBlocking     bool      // 我是否屏蔽了他
+	IsBlockedBy    bool      // 他是否屏蔽了我
+	IsMuting       bool      // 我是否静音了他（不看他的内容）
+	IsHidingFrom   bool      // 我是否对他隐藏（不让他看我）
+	MyBlockType    BlockType // 我对他的屏蔽类型
 	TheirBlockType BlockType // 他对我的屏蔽类型
 }
 

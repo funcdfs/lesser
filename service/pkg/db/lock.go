@@ -68,9 +68,13 @@ func (l *DistributedLock) TryLock(ctx context.Context, timeout time.Duration, re
 	return ErrLockNotAcquired
 }
 
-
 // Unlock 释放锁
+// 使用独立的 context 确保即使原 context 已取消也能释放锁
 func (l *DistributedLock) Unlock(ctx context.Context) error {
+	// 使用独立的 context，确保锁能被释放
+	unlockCtx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+
 	// 使用 Lua 脚本确保只删除自己的锁
 	script := `
 		if redis.call("get", KEYS[1]) == ARGV[1] then
@@ -80,7 +84,7 @@ func (l *DistributedLock) Unlock(ctx context.Context) error {
 		end
 	`
 
-	result, err := l.client.GetClient().Eval(ctx, script, []string{l.key}, l.value).Int64()
+	result, err := l.client.GetClient().Eval(unlockCtx, script, []string{l.key}, l.value).Int64()
 	if err != nil {
 		return err
 	}

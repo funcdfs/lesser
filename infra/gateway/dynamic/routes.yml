@@ -84,6 +84,16 @@ http:
         - grpc-web-headers
         - grpc-stream-timeout
 
+    # Channel 广播频道（双向流）
+    grpc-web-channel:
+      rule: "PathPrefix(`/grpc/channel.`)"
+      service: channel-grpc
+      entryPoints:
+        - web
+      middlewares:
+        - grpc-web-headers
+        - grpc-stream-timeout
+
     # SuperUser 超级管理员
     grpc-web-superuser:
       rule: "PathPrefix(`/grpc/superuser.`)"
@@ -145,6 +155,13 @@ http:
       entryPoints:
         - grpc
 
+    # Channel 广播频道（双向流）
+    grpc-channel:
+      rule: "PathPrefix(`/channel.`)"
+      service: channel-grpc
+      entryPoints:
+        - grpc
+
     # SuperUser 独立服务
     grpc-superuser:
       rule: "PathPrefix(`/superuser.`)"
@@ -160,20 +177,27 @@ http:
     gateway-grpc:
       loadBalancer:
         servers:
-          - url: "h2c://gateway:50053"
+          - url: "h2c://gateway:50051"
 
     # Chat 双向流服务
     chat-grpc:
       loadBalancer:
         servers:
-          - url: "h2c://chat:50052"
+          - url: "h2c://chat:50060"
+        serversTransport: grpc-stream-transport
+
+    # Channel 广播频道服务（双向流）
+    channel-grpc:
+      loadBalancer:
+        servers:
+          - url: "h2c://channel:50062"
         serversTransport: grpc-stream-transport
 
     # SuperUser 超级管理员服务
     superuser-grpc:
       loadBalancer:
         servers:
-          - url: "h2c://superuser:50063"
+          - url: "h2c://superuser:50061"
 
   # ==========================================================================
   # Servers Transports - 连接配置

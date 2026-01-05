@@ -7,7 +7,7 @@
 - **纯 gRPC 架构**: Gateway + Service Cluster，无 REST API
 - **gRPC 双向流**: 替代 WebSocket 实现实时消息推送
 - **Flutter 跨平台**: 移动端 + Web 端统一代码
-- **完整功能**: 认证、Feed、帖子、搜索、通知、实时聊天
+- **完整功能**: 认证、Feed、帖子、搜索、通知、实时聊天、广播频道
 - **开发友好**: Docker 一键启动、CLI 工具管理
 - **共享公共库**: `service/pkg` 提供统一基础设施
 
@@ -29,9 +29,9 @@
             │                                │
             ▼                                ▼
 ┌─────────────────────────┐    ┌─────────────────────────────┐
-│     Go Gateway          │    │     Go Chat Service         │
-│   (JWT验签/限流/路由)    │    │   (gRPC 双向流)             │
-│      :50051             │    │      :50060                 │
+│     Go Gateway          │    │   Go Realtime Services      │
+│   (JWT验签/限流/路由)    │    │   Chat :50060 (私聊/群聊)   │
+│      :50051             │    │   Channel :50062 (广播频道) │
 └───────────┬─────────────┘    └─────────────────────────────┘
             │ gRPC
             ▼
@@ -60,7 +60,8 @@
 | 网关 | Traefik 3.x | 反向代理、负载均衡、gRPC 支持 |
 | API 网关 | Go + gRPC | JWT 验签、限流、路由转发 |
 | 业务服务 | Go + gRPC | Auth/User/Content/Comment/Interaction/Timeline/Search/Notification/SuperUser |
-| 聊天服务 | Go + gRPC 双向流 | 高性能实时聊天 |
+| 聊天服务 | Go + gRPC 双向流 | 高性能实时聊天（私聊/群聊） |
+| 频道服务 | Go + gRPC 双向流 | 广播频道（类似 Telegram Channel） |
 | 消息队列 | RabbitMQ | 异步事件（通知推送、搜索索引） |
 | 数据库 | PostgreSQL 17 + pgvector | 主数据存储 + 向量语义搜索 |
 | 缓存 | Redis 7 | JWT 公钥缓存、会话缓存、Pub/Sub |
@@ -81,8 +82,9 @@
 | Timeline | 50057 | 时间线服务 |
 | Search | 50058 | 搜索服务 |
 | Notification | 50059 | 通知服务 |
-| Chat | 50060 | 聊天服务 (gRPC 双向流) |
+| Chat | 50060 | 聊天服务 - 私聊/群聊 (gRPC 双向流) |
 | SuperUser | 50061 | 超级用户服务 |
+| Channel | 50062 | 广播频道服务 (gRPC 双向流) |
 
 ## 🚀 快速开始
 
@@ -133,7 +135,8 @@ devlesser status
 |------|------|
 | Traefik gRPC | localhost:50050 |
 | Gateway gRPC | localhost:50051 |
-| Chat gRPC (双向流) | localhost:50060 |
+| Chat gRPC (私聊/群聊) | localhost:50060 |
+| Channel gRPC (广播频道) | localhost:50062 |
 | Traefik Dashboard | http://localhost:8088 |
 | RabbitMQ Management | http://localhost:15672 |
 | Dozzle (日志) | http://localhost:9999 |

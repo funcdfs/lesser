@@ -26,7 +26,8 @@ graph TB
     end
 
     subgraph Realtime["实时服务"]
-        Chat["Chat :50060<br/>gRPC 双向流"]
+        Chat["Chat :50060<br/>私聊/群聊"]
+        Channel["Channel :50062<br/>广播频道"]
     end
 
     subgraph Data["数据层"]
@@ -38,6 +39,7 @@ graph TB
     Flutter -->|gRPC-Web| Traefik
     Traefik --> GW
     Traefik --> Chat
+    Traefik --> Channel
     GW --> Auth
     GW --> User
     GW --> Content
@@ -70,6 +72,8 @@ graph TB
     Notification --> MQ
     Chat --> PG
     Chat --> Redis
+    Channel --> PG
+    Channel --> Redis
     SuperUser --> PG
 ```
 
@@ -123,6 +127,7 @@ graph TB
     subgraph Backend["后端"]
         GW["Gateway :50051"]
         ChatSvc["Chat :50060"]
+        ChannelSvc["Channel :50062"]
     end
 
     AuthPage --> AuthHandler
@@ -157,6 +162,7 @@ graph TB
 
     Network --> GW
     Network --> ChatSvc
+    Network --> ChannelSvc
 ```
 
 ## 服务端口
@@ -174,8 +180,9 @@ graph TB
 | Timeline | 50057 | 时间线服务 |
 | Search | 50058 | 搜索服务 |
 | Notification | 50059 | 通知服务 |
-| Chat | 50060 | 聊天服务 (gRPC 双向流) |
+| Chat | 50060 | 聊天服务 - 私聊/群聊 (gRPC 双向流) |
 | SuperUser | 50061 | 超级用户服务 |
+| Channel | 50062 | 广播频道服务 (gRPC 双向流) |
 
 ## 目录结构
 
@@ -232,11 +239,13 @@ features/<name>/
 | Tab | 名称 | 后端服务 |
 |-----|------|---------|
 | 1 | 首页 | Timeline + Content + Comment + Interaction + Search |
-| 2 | 频道 | Chat (CHANNEL 类型) |
-| 3 | 聊天 | Chat + Notification |
+| 2 | 频道 | Channel (广播频道服务) |
+| 3 | 聊天 | Chat (私聊/群聊) + Notification |
 | 4 | 我的 | User |
 
 登录页独立，不在底部导航栏。
+
+> **注意**: Channel 服务已从 Chat 服务中独立出来，专门处理类似 Telegram Channel 的广播频道功能。Chat 服务现在只处理私聊 (PRIVATE) 和群聊 (GROUP) 类型的会话。
 
 ## 调用链路
 

@@ -3,21 +3,10 @@ package logic
 
 import (
 	"context"
-	"errors"
 	"unicode/utf8"
 
 	"github.com/funcdfs/lesser/content/internal/data_access"
-)
-
-// 业务错误定义（补充 errors.go 中未定义的错误）
-var (
-	ErrInvalidContent   = errors.New("内容无效")
-	ErrContentTooLong   = errors.New("内容超出长度限制")
-	ErrTitleRequired    = errors.New("标题不能为空")
-	ErrTextRequired     = errors.New("正文不能为空")
-	ErrCannotEditStory  = errors.New("Story 不支持编辑")
-	ErrNotDraft         = errors.New("只能发布草稿状态的内容")
-	ErrDraftNotAllowed  = errors.New("该内容类型不支持草稿")
+	"github.com/funcdfs/lesser/pkg/log"
 )
 
 // 内容长度限制
@@ -42,13 +31,20 @@ type EventPublisher interface {
 
 // ContentService 内容服务
 type ContentService struct {
-	contentRepo *data_access.ContentRepository
+	contentDA *data_access.ContentDataAccess
 	publisher   EventPublisher // 事件发布者（可选）
+	log         *log.Logger
 }
 
 // NewContentService 创建内容服务
-func NewContentService(contentRepo *data_access.ContentRepository) *ContentService {
-	return &ContentService{contentRepo: contentRepo}
+func NewContentService(contentDA *data_access.ContentDataAccess, logger *log.Logger) *ContentService {
+	if logger == nil {
+		logger = log.Global()
+	}
+	return &ContentService{
+		contentDA: contentDA,
+		log:         logger.With(log.String("component", "content_service")),
+	}
 }
 
 // SetPublisher 设置事件发布者（可选）
@@ -96,11 +92,11 @@ func (s *ContentService) Create(
 		CommentsDisabled: commentsDisabled,
 	}
 
-	if err := s.contentRepo.Create(content); err != nil {
+	if err := s.contentDA.Create(content); err != nil {
 		return nil, err
 	}
 
-	createdContent, err := s.contentRepo.GetByID(content.ID)
+	createdContent, err := s.contentDA.GetByID(content.ID)
 	if err != nil {
 		return nil, err
 	}
@@ -121,15 +117,16 @@ func (s *ContentService) Create(
 }
 
 // Get 获取内容
-func (s *ContentService) Get(contentID, viewerID string) (*data_access.Content, error) {
-	content, err := s.contentRepo.GetByID(contentID)
+func (s *ContentService) Get(ctx context.Context, contentID, viewerID string) (*data_access.Content, error) {
+	content, err := s.contentDA.GetByID(contentID)
 	if err != nil {
 		return nil, err
 	}
 
-	// 增加浏览量（异步处理更好，这里简化）
+	// 增加浏览量（异步处理，不阻塞主流程）
 	if viewerID != "" && viewerID != content.AuthorID {
-		go s.contentRepo.IncrementViewCount(contentID)
+		// 使用独立的 context 避免请求取消导致浏览量更新失败
+		go s.contentDA.IncrementViewCount(context.Background(), contentID)
 	}
 
 	return content, nil
@@ -144,7 +141,7 @@ func (s *ContentService) Update(
 	commentsDisabled bool,
 	mentionedUserIDs []string,
 ) (*data_access.Content, error) {
-	content, err := s.contentRepo.GetByID(contentID)
+	content, err := s.contentDA.GetByID(contentID)
 	if err != nil {
 		return nil, err
 	}
@@ -190,11 +187,11 @@ func (s *ContentService) Update(
 	}
 	content.CommentsDisabled = commentsDisabled
 
-	if err := s.contentRepo.Update(content); err != nil {
+	if err := s.contentDA.Update(content); err != nil {
 		return nil, err
 	}
 
-	updatedContent, err := s.contentRepo.GetByID(contentID)
+	updatedContent, err := s.contentDA.GetByID(contentID)
 	if err != nil {
 		return nil, err
 	}
@@ -216,7 +213,7 @@ func (s *ContentService) Update(
 
 // Delete 删除内容
 func (s *ContentService) Delete(ctx context.Context, contentID, userID string) error {
-	content, err := s.contentRepo.GetByID(contentID)
+	content, err := s.contentDA.GetByID(contentID)
 	if err != nil {
 		return err
 	}
@@ -225,7 +222,7 @@ func (s *ContentService) Delete(ctx context.Context, contentID, userID string) e
 		return ErrUnauthorized
 	}
 
-	if err := s.contentRepo.Delete(contentID); err != nil {
+	if err := s.contentDA.Delete(contentID); err != nil {
 		return err
 	}
 
@@ -239,7 +236,7 @@ func (s *ContentService) Delete(ctx context.Context, contentID, userID string) e
 
 // PublishDraft 发布草稿
 func (s *ContentService) PublishDraft(ctx context.Context, contentID, userID string) (*data_access.Content, error) {
-	content, err := s.contentRepo.GetByID(contentID)
+	content, err := s.contentDA.GetByID(contentID)
 	if err != nil {
 		return nil, err
 	}
@@ -257,11 +254,11 @@ func (s *ContentService) PublishDraft(ctx context.Context, contentID, userID str
 		return nil, err
 	}
 
-	if err := s.contentRepo.Publish(contentID); err != nil {
+	if err := s.contentDA.Publish(contentID); err != nil {
 		return nil, err
 	}
 
-	publishedContent, err := s.contentRepo.GetByID(contentID)
+	publishedContent, err := s.contentDA.GetByID(contentID)
 	if err != nil {
 		return nil, err
 	}
@@ -290,7 +287,7 @@ func (s *ContentService) List(
 	if limit > 100 {
 		limit = 100
 	}
-	return s.contentRepo.List(authorID, contentType, status, tags, limit, offset, orderBy, desc)
+	return s.contentDA.List(authorID, contentType, status, tags, limit, offset, orderBy, desc)
 }
 
 // GetUserDrafts 获取用户草稿
@@ -298,7 +295,7 @@ func (s *ContentService) GetUserDrafts(userID string, limit, offset int) ([]*dat
 	if limit <= 0 {
 		limit = 20
 	}
-	return s.contentRepo.ListDrafts(userID, limit, offset)
+	return s.contentDA.ListDrafts(userID, limit, offset)
 }
 
 // GetReplies 获取回复列表
@@ -306,22 +303,22 @@ func (s *ContentService) GetReplies(contentID string, limit, offset int) ([]*dat
 	if limit <= 0 {
 		limit = 20
 	}
-	return s.contentRepo.ListReplies(contentID, limit, offset)
+	return s.contentDA.ListReplies(contentID, limit, offset)
 }
 
 // GetUserStories 获取用户 Story
 func (s *ContentService) GetUserStories(userID string) ([]*data_access.Content, error) {
-	return s.contentRepo.ListUserStories(userID)
+	return s.contentDA.ListUserStories(userID)
 }
 
 // BatchGet 批量获取
 func (s *ContentService) BatchGet(ids []string) ([]*data_access.Content, error) {
-	return s.contentRepo.BatchGet(ids)
+	return s.contentDA.BatchGet(ids)
 }
 
 // PinContent 置顶/取消置顶
 func (s *ContentService) PinContent(contentID, userID string, pin bool) error {
-	content, err := s.contentRepo.GetByID(contentID)
+	content, err := s.contentDA.GetByID(contentID)
 	if err != nil {
 		return err
 	}
@@ -330,7 +327,7 @@ func (s *ContentService) PinContent(contentID, userID string, pin bool) error {
 		return ErrUnauthorized
 	}
 
-	return s.contentRepo.SetPinned(contentID, pin)
+	return s.contentDA.SetPinned(contentID, pin)
 }
 
 // validateContent 验证内容
@@ -377,20 +374,20 @@ func (s *ContentService) validateContent(contentType data_access.ContentType, ti
 
 // UpdateCounter 更新统计计数器
 func (s *ContentService) UpdateCounter(contentID string, counterType data_access.CounterType, delta int32) (int32, error) {
-	return s.contentRepo.UpdateCounter(contentID, counterType, delta)
+	return s.contentDA.UpdateCounter(contentID, counterType, delta)
 }
 
 // CheckContentExists 检查内容是否存在及其评论设置
 func (s *ContentService) CheckContentExists(contentID string) (exists bool, commentsDisabled bool, err error) {
-	exists, err = s.contentRepo.Exists(contentID)
+	exists, err = s.contentDA.Exists(contentID)
 	if err != nil || !exists {
 		return exists, false, err
 	}
-	commentsDisabled, err = s.contentRepo.GetCommentsDisabled(contentID)
+	commentsDisabled, err = s.contentDA.GetCommentsDisabled(contentID)
 	return exists, commentsDisabled, err
 }
 
 // GetAuthorID 获取内容作者 ID（用于通知服务）
 func (s *ContentService) GetAuthorID(contentID string) (string, error) {
-	return s.contentRepo.GetAuthorID(contentID)
+	return s.contentDA.GetAuthorID(contentID)
 }

@@ -1,102 +1,120 @@
-# 🚀 Lesser Flutter 架构与开发规约
+# Lesser Flutter 客户端
 
-本项目是一个高性能、高复杂度的社交/聊天应用。为了应对 **“超级多组件”** 的挑战，我们采用 **Feature-based DDD (领域驱动设计)** 架构。
+社交平台 Flutter 客户端，采用 gRPC 与后端通信。
 
 ---
 
-## 📂 核心目录索引 (The Structure)
+## 目录结构
 
 ```text
 lib/
-├── core/               # 【地基】完全独立，不引用任何 feature。包含 API 封装、全局主题、通用的 Utils。
-├── shared/             # 【共享】业务相关但跨模块的组件。如：UserAvatar, BaseButton, GlobalModels。
-├── features/           # 【业务】按 Tab 和功能拆分。
-│   ├── feeds/          # 动态流：包含“热门”与“关注”的双 Feed 逻辑。
-│   ├── search/         # 搜索：联想搜索、历史记录、结果过滤。
-│   ├── post_editor/    # 发布器：多媒体选择、富文本编辑。
-│   ├── chat/           # 聊天：Socket 连接、消息气泡、会话列表。
-│   ├── profile/        # 个人中心：用户主页、作品集。
-│   └── navigation/     # 导航：控制 5 个底部 Tab 的切换与状态保持。
-└── main.dart           # 入口：初始化全局配置、环境注入。
-
+├── gen_protos/         # protoc 生成代码【禁止手动修改】
+├── pkg/                # 公共库
+│   ├── constants/      # 端点、颜色常量
+│   ├── network/        # gRPC Channel 管理
+│   ├── errors/         # 异常处理
+│   ├── logs/           # 日志工具
+│   ├── ui/             # 主题、通用组件
+│   └── utils/          # 工具函数
+├── features/           # 业务模块
+│   ├── auth/           # 登录页
+│   ├── home/           # Tab 1: 首页
+│   ├── channel/        # Tab 2: 频道
+│   ├── chat/           # Tab 3: 聊天
+│   └── profile/        # Tab 4: 我的
+├── app.dart
+└── main.dart
 ```
 
 ---
 
-## 🛠 开发守则 (The Rules)
+## Feature 模块结构
 
-### 1. 组件存放的“三原色”原则
+每个 Feature 模块遵循统一分层：
 
-* **Module-Private (模块私有)**: 仅在单个功能使用的组件（如 `ChatBubble`），**严禁** 放入 `shared`，必须留在 `features/chat/widgets`。
-* **Shared (跨模块公用)**: 只有当一个组件在 3 个以上模块被用到时，才迁移至 `lib/shared/widgets`。
-* **Atomic (原子化)**: 所有的间距、颜色、字体必须引用 `core/theme` 中的常量，严禁在 Widget 中硬编码颜色的十六进制值。
+```text
+features/<name>/
+├── handler/            # 业务逻辑层（状态管理）
+├── data_access/        # 数据访问层（gRPC 调用）
+├── models/             # 模型层（业务对象）
+├── pages/              # 页面
+└── widgets/            # 组件
+```
 
-### 2. 状态管理规范 (Riverpod/Bloc)
+### 调用链路
 
-* **View 只管渲染**: UI 文件（`views/`）中不得出现 `api.post()` 或 `json.decode()`。所有的业务逻辑必须封装在 `providers/` 或 `logic/` 中。
-* **保持 State 扁平化**: 针对聊天这种高频刷新的场景，State 对象尽量拆细，避免一个变量改变导致整个页面重绘。
+```
+pages → handler → data_access → gRPC → Gateway → Service
+```
 
-### 3. 组件导出规范 (The Barrel Pattern)
+---
 
-为了避免文件头部出现“Import 海”，每个 `widgets` 文件夹必须建立 `widgets.dart` (或 `index.dart`)：
+## 各层职责
+
+| 层 | 目录 | 职责 |
+|---|------|------|
+| 页面层 | `pages/` | UI 布局、用户交互 |
+| 组件层 | `widgets/` | 可复用 UI 组件 |
+| 业务逻辑层 | `handler/` | 状态管理，连接 UI 和数据访问 |
+| 数据访问层 | `data_access/` | gRPC 调用，本地缓存 |
+| 模型层 | `models/` | 业务模型，封装 Proto 对象 |
+
+---
+
+## 开发规范
+
+### 1. 组件存放原则
+
+- **模块私有**: 仅在单个模块使用的组件，放在 `features/<name>/widgets/`
+- **跨模块公用**: 多个模块共用的组件，放在 `pkg/ui/`
+- **原子化**: 颜色、字体、间距引用 `pkg/constants/`，禁止硬编码
+
+### 2. 状态管理
+
+- 使用 Riverpod + StateNotifier
+- Handler 负责业务逻辑，Pages 只负责渲染
+- 保持 State 扁平化，避免不必要的重绘
+
+### 3. 导出规范
+
+每个目录建立 `index.dart` 统一导出：
 
 ```dart
-// 统一导出
+// widgets/index.dart
 export 'feed_card.dart';
 export 'feed_video_player.dart';
-
 ```
 
-在 View 层只引用一行：`import '../widgets/widgets.dart';`
+引用时只需一行：
+
+```dart
+import '../widgets/index.dart';
+```
 
 ---
 
-## 🧩 核心业务组件路线图 (Component Roadmap)
+## 底部导航栏
 
+| Tab | 名称 | Feature | 后端服务 |
+|-----|------|---------|---------|
+| 1 | 首页 | home | Timeline + Content + Comment + Interaction + Search |
+| 2 | 频道 | channel | Channel (广播频道服务) |
+| 3 | 聊天 | chat | Chat (私聊/群聊) + Notification |
+| 4 | 我的 | profile | User |
+
+登录页（auth）独立，不在底部导航栏。
+
+---
+
+## 运行
+
+```bash
+# 安装依赖
+flutter pub get
+
+# 生成 Proto 代码
+devlesser proto dart
+
+# 运行
+flutter run
 ```
-feed 
-   ├── feed_card.dart
-   ├── feed_video_player.dart
-   ├── feed_recommendation.dart 
-   ├── feed_following.dart
-   feed_detail
-         follwing_story widgets 
-
-search 
-   search_bar.dart
-   search_result.dart
-   search_suggestion.dart
-   search_history.dart
-   search_filter.dart
-   search_detail.dart
-   top_feed_recommendation.dart
-   search_tags.dart
-
-post_editor
-   post_editor.dart
-   post_editor_bar.dart
-   post_editor_content.dart
-   post_editor_footer.dart
-   post_editor_tags.dart
-
-chat 
-   group line four badge:
-      likepage
-      comment page 
-      bookmark_@ page 
-      new follwers page 
-   chat page:
-      group chat 
-      channel chat 
-      friends chat 
-      my follwoing my friend , my follwers
-      crate group 
-      crate channel 
-      
-settings 
-   user_card 
-   etc 
-   todo 
-
-```
-

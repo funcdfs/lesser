@@ -4,19 +4,17 @@ package main
 
 import (
 	"context"
-	"log/slog"
 	"net"
 	"os"
 	"os/signal"
 	"syscall"
 	"time"
 
-	"github.com/funcdfs/lesser/chat/internal/handler"
+	pb "github.com/funcdfs/lesser/chat/gen_protos/chat"
 	"github.com/funcdfs/lesser/chat/internal/data_access"
+	"github.com/funcdfs/lesser/chat/internal/handler"
 	"github.com/funcdfs/lesser/chat/internal/logic"
 	"github.com/funcdfs/lesser/chat/internal/remote"
-	pb "github.com/funcdfs/lesser/chat/gen_protos/chat"
-	"github.com/funcdfs/lesser/pkg/db"
 	"github.com/funcdfs/lesser/pkg/db"
 	"github.com/funcdfs/lesser/pkg/log"
 	"google.golang.org/grpc"
@@ -26,13 +24,12 @@ import (
 
 func main() {
 	// 初始化日志
-	log := log.New("chat")
-	log.SetGlobal(log)
+	logger := log.New("chat")
 
 	grpcPort := getEnv("GRPC_PORT", "50060")
 
 	// 数据库连接（Chat 使用独立数据库 lesser_chat_db）
-	dbConfig := db.Config{
+	dbConfig := db.PostgresConfig{
 		Host:     getEnv("DB_HOST", "localhost"),
 		Port:     getEnv("DB_PORT", "5432"),
 		User:     getEnv("DB_USER", "postgres"),
@@ -41,69 +38,74 @@ func main() {
 		SSLMode:  getEnv("DB_SSLMODE", "disable"),
 	}
 
-	db, err := db.NewConnection(dbConfig)
+	database, err := db.NewPostgresConnection(dbConfig)
 	if err != nil {
-		log.Fatal("数据库连接失败", slog.Any("error", err))
+		logger.Fatal("数据库连接失败", log.Any("error", err))
 	}
-	defer db.Close()
-	log.Info("数据库连接成功")
+	defer database.Close()
+	logger.Info("数据库连接成功")
 
 	// 初始化 Redis（可选）
-	var redisClient *db.Client
-	redisCfg := db.ConfigFromEnv()
-	if redisCfg.Host != "" || redisCfg.URL != "" {
-		redisClient, err = db.NewClient(redisCfg)
+	var redisClient *db.RedisClient
+	redisCfg := db.RedisConfig{
+		Host:     getEnv("REDIS_HOST", ""),
+		Port:     getEnv("REDIS_PORT", "6379"),
+		Password: getEnv("REDIS_PASSWORD", ""),
+		DB:       0,
+	}
+	if redisCfg.Host != "" {
+		redisClient, err = db.NewRedisClient(redisCfg)
 		if err != nil {
-			log.Warn("Redis 连接失败，缓存功能禁用", slog.Any("error", err))
+			logger.Warn("Redis 连接失败，缓存功能禁用", log.Any("error", err))
 		} else {
-			log.Info("Redis 连接成功")
+			logger.Info("Redis 连接成功")
 		}
 	}
 
-	// 初始化仓库层
-	conversationRepo := data_access.NewConversationRepository(db)
-	messageRepo := data_access.NewMessageRepository(db)
+	// 初始化数据访问层
+	conversationDA := data_access.NewConversationDataAccess(database)
+	messageDA := data_access.NewMessageDataAccess(database)
 
 	// 初始化 Auth gRPC 客户端
 	authGRPCAddr := getEnv("AUTH_GRPC_ADDR", "gateway:50053")
-	authClient, err := remote.NewAuthClient(authGRPCAddr, log)
+	authClient, err := remote.NewAuthClient(authGRPCAddr, logger)
 	if err != nil {
-		log.Warn("Auth gRPC 服务连接失败", slog.Any("error", err))
+		logger.Warn("Auth gRPC 服务连接失败", log.Any("error", err))
 	} else {
-		log.Info("Auth gRPC 服务连接成功", slog.String("addr", authGRPCAddr))
+		logger.Info("Auth gRPC 服务连接成功", log.String("addr", authGRPCAddr))
 	}
 
 	// 初始化用户客户端（带缓存）
-	userClient := remote.NewUserClient(authClient, redisClient, log)
+	userClient := remote.NewUserClient(authClient, redisClient, logger)
 
 	// 初始化未读数缓存服务
 	var unreadCacheService *logic.UnreadCacheService
 	if redisClient != nil {
-		unreadCacheService = logic.NewUnreadCacheService(redisClient, messageRepo)
+		unreadCacheService = logic.NewUnreadCacheService(redisClient, messageDA)
 	}
 
 	// 初始化业务服务
-	chatService := logic.NewChatService(conversationRepo, messageRepo, redisClient, userClient, unreadCacheService)
+	chatService := logic.NewChatService(conversationDA, messageDA, redisClient, userClient, unreadCacheService)
 
 	// 初始化 Handler
-	chatHandler := handler.NewChatHandler(chatService, log)
+	chatHandler := handler.NewChatHandler(chatService, logger)
 
 	// 创建 gRPC 服务器
-	grpcServer := newGRPCServer(authClient, log)
+	grpcServer := newGRPCServer(authClient, logger)
 	pb.RegisterChatServiceServer(grpcServer, chatHandler)
 	reflection.Register(grpcServer)
 
 	// 监听端口
 	lis, err := net.Listen("tcp", ":"+grpcPort)
 	if err != nil {
-		log.Fatal("端口监听失败", slog.String("port", grpcPort), slog.Any("error", err))
+		logger.Fatal("端口监听失败", log.String("port", grpcPort), log.Any("error", err))
 	}
 
 	// 启动 gRPC 服务器
 	go func() {
-		log.Info("Chat 服务已启动", slog.String("port", grpcPort))
+		logger.Info("Chat 服务已启动", log.String("port", grpcPort))
 		if err := grpcServer.Serve(lis); err != nil {
-			log.Fatal("gRPC 服务异常退出", slog.Any("error", err))
+			logger.Fatal("gRPC 服务异常退出", log.Any("error", err))
 		}
 	}()
 
@@ -113,11 +115,27 @@ func main() {
 	signal.Notify(sigCh, syscall.SIGINT, syscall.SIGTERM)
 
 	<-sigCh
-	log.Info("收到关闭信号，开始关闭...")
+	logger.Info("收到关闭信号，开始关闭...")
 	cancel()
 
-	grpcServer.GracefulStop()
-	log.Info("gRPC 服务器已停止")
+	// 设置关闭超时
+	shutdownCtx, shutdownCancel := context.WithTimeout(context.Background(), 30*time.Second)
+	defer shutdownCancel()
+
+	// 优雅停止 gRPC 服务器
+	done := make(chan struct{})
+	go func() {
+		grpcServer.GracefulStop()
+		close(done)
+	}()
+
+	select {
+	case <-done:
+		logger.Info("gRPC 服务器已停止")
+	case <-shutdownCtx.Done():
+		logger.Warn("gRPC 服务器停止超时，强制关闭")
+		grpcServer.Stop()
+	}
 
 	// 关闭 Redis 连接
 	if redisClient != nil {
@@ -130,7 +148,7 @@ func main() {
 	}
 
 	_ = ctx
-	log.Info("Chat 服务已正常退出")
+	logger.Info("Chat 服务已正常退出")
 }
 
 // newGRPCServer 创建 gRPC 服务器

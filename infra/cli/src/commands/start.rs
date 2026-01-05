@@ -51,6 +51,13 @@ const CHAT: ServiceGroup = ServiceGroup {
     emoji: "💬",
 };
 
+/// Channel 服务（广播频道）
+const CHANNEL: ServiceGroup = ServiceGroup {
+    name: "Channel",
+    services: &["channel"],
+    emoji: "📢",
+};
+
 /// 执行 start 命令
 pub async fn execute(target: StartTarget) -> Result<()> {
     let config = Config::load()?;
@@ -91,6 +98,9 @@ async fn start_all(compose: &DockerCompose, config: &Config) -> Result<()> {
     // 4. Chat
     start_group(compose, &CHAT).await?;
 
+    // 5. Channel（广播频道）
+    start_group(compose, &CHANNEL).await?;
+
     // 打印服务信息
     ui::separator();
     print_service_info(config);
@@ -127,6 +137,7 @@ async fn start_services(compose: &DockerCompose) -> Result<()> {
     start_group(compose, &GATEWAY).await?;
     start_group(compose, &SERVICES).await?;
     start_group(compose, &CHAT).await?;
+    start_group(compose, &CHANNEL).await?;
 
     ui::separator();
     ui::success("后端服务已启动");
@@ -142,6 +153,7 @@ async fn start_services(compose: &DockerCompose) -> Result<()> {
     ui::kv("Timeline gRPC", "localhost:50062");
     ui::kv("SuperUser gRPC", "localhost:50063");
     ui::kv("Chat gRPC", "localhost:50052");
+    ui::kv("Channel gRPC", "localhost:50062");
 
     Ok(())
 }
@@ -288,14 +300,14 @@ async fn start_flutter_android(config: &Config) -> Result<()> {
 
     // 设置 adb reverse 端口转发
     ui::info("设置 ADB 端口转发...");
-    let ports = ["50053", "50052"]; // Gateway 和 Chat 端口
+    let ports = ["50053", "50052", "50062"]; // Gateway, Chat, Channel 端口
     for port in ports {
         let _ = Command::new("adb")
             .args(["reverse", &format!("tcp:{}", port), &format!("tcp:{}", port)])
             .output()
             .await;
     }
-    ui::step_done("ADB 端口转发已配置 (50053, 50052)");
+    ui::step_done("ADB 端口转发已配置 (50053, 50052, 50062)");
 
     // 启动 Flutter
     ui::info("启动 Flutter Android...");
@@ -426,6 +438,7 @@ fn print_service_info(config: &Config) {
     ui::kv("    Timeline", "localhost:50062");
     ui::kv("    SuperUser", "localhost:50063");
     ui::kv("    Chat", "localhost:50052");
+    ui::kv("    Channel", "localhost:50062");
     println!();
 
     println!("  {} 管理界面", ui::style_dim("▸"));

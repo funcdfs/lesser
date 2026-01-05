@@ -1,11 +1,17 @@
-// Package service 提供 Timeline 服务的业务逻辑层
+// Package logic 提供 Timeline 服务的业务逻辑层
 package logic
 
 import (
 	"context"
-	"log/slog"
 
+	"github.com/funcdfs/lesser/pkg/log"
 	"github.com/funcdfs/lesser/timeline/internal/data_access"
+)
+
+// 分页限制常量
+const (
+	defaultLimit = 20
+	maxLimit     = 100
 )
 
 // InteractionStatus 用户对内容的交互状态
@@ -31,85 +37,90 @@ type FeedItemWithStatus struct {
 
 // TimelineService 时间线服务
 type TimelineService struct {
-	timelineRepo      *data_access.TimelineRepository
+	da                *data_access.TimelineDataAccess
 	interactionClient InteractionClient
-	log               *slog.Logger
+	log               *log.Logger
 }
 
 // NewTimelineService 创建时间线服务实例
-func NewTimelineService(timelineRepo *data_access.TimelineRepository, interactionClient InteractionClient) *TimelineService {
+func NewTimelineService(da *data_access.TimelineDataAccess, interactionClient InteractionClient) *TimelineService {
 	return &TimelineService{
-		timelineRepo:      timelineRepo,
+		da:                da,
 		interactionClient: interactionClient,
-		log:               slog.Default().With(slog.String("component", "timeline_service")),
+		log:               log.Global().With(log.String("component", "timeline_service")),
 	}
 }
 
 // GetFollowingFeed 获取关注用户的 Feed 流
 // 返回当前用户关注的所有用户发布的内容，按发布时间降序排列
 func (s *TimelineService) GetFollowingFeed(ctx context.Context, userID string, limit, offset int) ([]*FeedItemWithStatus, int, error) {
-	if limit <= 0 {
-		limit = 20
-	}
-	if limit > 100 {
-		limit = 100
-	}
+	limit = normalizeLimit(limit)
 
-	items, total, err := s.timelineRepo.GetFollowingFeed(ctx, userID, limit, offset)
+	items, total, err := s.da.GetFollowingFeed(ctx, userID, limit, offset)
 	if err != nil {
-		s.log.Error("获取关注 Feed 失败", slog.String("user_id", userID), slog.Any("error", err))
+		s.log.WithContext(ctx).Error("获取关注 Feed 失败",
+			log.String("user_id", userID),
+			log.Any("error", err))
 		return nil, 0, err
 	}
 
-	s.log.Debug("获取关注 Feed 成功", slog.String("user_id", userID), slog.Int("count", len(items)), slog.Int("total", total))
+	s.log.WithContext(ctx).Debug("获取关注 Feed 成功",
+		log.String("user_id", userID),
+		log.Int("count", len(items)),
+		log.Int("total", total))
+
 	return s.enrichWithInteractionStatus(ctx, userID, items), total, nil
 }
 
 // GetUserFeed 获取指定用户的 Feed（用户主页）
 // 置顶内容优先显示，然后按发布时间降序排列
 func (s *TimelineService) GetUserFeed(ctx context.Context, targetUserID, viewerID string, limit, offset int) ([]*FeedItemWithStatus, int, error) {
-	if limit <= 0 {
-		limit = 20
-	}
-	if limit > 100 {
-		limit = 100
-	}
+	limit = normalizeLimit(limit)
 
-	items, total, err := s.timelineRepo.GetUserFeed(ctx, targetUserID, limit, offset)
+	items, total, err := s.da.GetUserFeed(ctx, targetUserID, limit, offset)
 	if err != nil {
-		s.log.Error("获取用户 Feed 失败", slog.String("target_user_id", targetUserID), slog.Any("error", err))
+		s.log.WithContext(ctx).Error("获取用户 Feed 失败",
+			log.String("target_user_id", targetUserID),
+			log.Any("error", err))
 		return nil, 0, err
 	}
 
-	s.log.Debug("获取用户 Feed 成功", slog.String("target_user_id", targetUserID), slog.Int("count", len(items)), slog.Int("total", total))
+	s.log.WithContext(ctx).Debug("获取用户 Feed 成功",
+		log.String("target_user_id", targetUserID),
+		log.Int("count", len(items)),
+		log.Int("total", total))
+
 	return s.enrichWithInteractionStatus(ctx, viewerID, items), total, nil
 }
 
 // GetHotFeed 获取热门 Feed
 // 按互动量排序（like_count + comment_count*2 + repost_count*3）
 func (s *TimelineService) GetHotFeed(ctx context.Context, userID, timeRange string, limit, offset int) ([]*FeedItemWithStatus, int, error) {
-	if limit <= 0 {
-		limit = 20
-	}
-	if limit > 100 {
-		limit = 100
-	}
+	limit = normalizeLimit(limit)
 
-	items, total, err := s.timelineRepo.GetHotFeed(ctx, timeRange, limit, offset)
+	items, total, err := s.da.GetHotFeed(ctx, timeRange, limit, offset)
 	if err != nil {
-		s.log.Error("获取热门 Feed 失败", slog.String("time_range", timeRange), slog.Any("error", err))
+		s.log.WithContext(ctx).Error("获取热门 Feed 失败",
+			log.String("time_range", timeRange),
+			log.Any("error", err))
 		return nil, 0, err
 	}
 
-	s.log.Debug("获取热门 Feed 成功", slog.String("time_range", timeRange), slog.Int("count", len(items)), slog.Int("total", total))
+	s.log.WithContext(ctx).Debug("获取热门 Feed 成功",
+		log.String("time_range", timeRange),
+		log.Int("count", len(items)),
+		log.Int("total", total))
+
 	return s.enrichWithInteractionStatus(ctx, userID, items), total, nil
 }
 
 // GetContentDetail 获取内容详情（包含交互状态）
 func (s *TimelineService) GetContentDetail(ctx context.Context, contentID, viewerID string) (*FeedItemWithStatus, error) {
-	item, err := s.timelineRepo.GetContentByID(ctx, contentID)
+	item, err := s.da.GetContentByID(ctx, contentID)
 	if err != nil {
-		s.log.Error("获取内容详情失败", slog.String("content_id", contentID), slog.Any("error", err))
+		s.log.WithContext(ctx).Error("获取内容详情失败",
+			log.String("content_id", contentID),
+			log.Any("error", err))
 		return nil, err
 	}
 	if item == nil {
@@ -123,7 +134,10 @@ func (s *TimelineService) GetContentDetail(ctx context.Context, contentID, viewe
 		statuses, err := s.interactionClient.BatchGetInteractionStatus(ctx, viewerID, []string{contentID})
 		if err != nil {
 			// 获取交互状态失败不影响主流程，只记录日志
-			s.log.Warn("获取内容交互状态失败", slog.String("content_id", contentID), slog.String("viewer_id", viewerID), slog.Any("error", err))
+			s.log.WithContext(ctx).Warn("获取内容交互状态失败",
+				log.String("content_id", contentID),
+				log.String("viewer_id", viewerID),
+				log.Any("error", err))
 		} else if len(statuses) > 0 {
 			result.IsLiked = statuses[0].IsLiked
 			result.IsBookmarked = statuses[0].IsBookmarked
@@ -131,7 +145,7 @@ func (s *TimelineService) GetContentDetail(ctx context.Context, contentID, viewe
 		}
 	}
 
-	s.log.Debug("获取内容详情成功", slog.String("content_id", contentID))
+	s.log.WithContext(ctx).Debug("获取内容详情成功", log.String("content_id", contentID))
 	return result, nil
 }
 
@@ -149,16 +163,19 @@ func (s *TimelineService) enrichWithInteractionStatus(ctx context.Context, userI
 	}
 
 	// 批量获取交互状态
-	contentIDs := data_access.GetContentIDs(items)
+	contentIDs := data_access.ExtractContentIDs(items)
 	statuses, err := s.interactionClient.BatchGetInteractionStatus(ctx, userID, contentIDs)
 	if err != nil {
 		// 获取失败不影响主流程，只记录日志
-		s.log.Warn("批量获取交互状态失败", slog.String("user_id", userID), slog.Int("content_count", len(contentIDs)), slog.Any("error", err))
+		s.log.WithContext(ctx).Warn("批量获取交互状态失败",
+			log.String("user_id", userID),
+			log.Int("content_count", len(contentIDs)),
+			log.Any("error", err))
 		return result
 	}
 
 	// 构建状态映射
-	statusMap := make(map[string]*InteractionStatus)
+	statusMap := make(map[string]*InteractionStatus, len(statuses))
 	for _, status := range statuses {
 		statusMap[status.ContentID] = status
 	}
@@ -172,6 +189,24 @@ func (s *TimelineService) enrichWithInteractionStatus(ctx context.Context, userI
 		}
 	}
 
-	s.log.Debug("批量获取交互状态成功", slog.String("user_id", userID), slog.Int("content_count", len(contentIDs)))
+	s.log.WithContext(ctx).Debug("批量获取交互状态成功",
+		log.String("user_id", userID),
+		log.Int("content_count", len(contentIDs)))
+
 	return result
+}
+
+// ============================================================================
+// 辅助函数
+// ============================================================================
+
+// normalizeLimit 规范化分页限制
+func normalizeLimit(limit int) int {
+	if limit <= 0 {
+		return defaultLimit
+	}
+	if limit > maxLimit {
+		return maxLimit
+	}
+	return limit
 }

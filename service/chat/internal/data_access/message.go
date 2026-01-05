@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/google/uuid"
+	"github.com/lib/pq"
 )
 
 // MessageType 消息类型 (数据库中为 INTEGER)
@@ -36,18 +37,18 @@ type Message struct {
 	UpdatedAt      time.Time
 }
 
-// MessageRepository 消息仓库
-type MessageRepository struct {
+// MessageDataAccess 消息数据访问
+type MessageDataAccess struct {
 	db *sql.DB
 }
 
-// NewMessageRepository 创建消息仓库
-func NewMessageRepository(db *sql.DB) *MessageRepository {
-	return &MessageRepository{db: db}
+// NewMessageDataAccess 创建消息数据访问
+func NewMessageDataAccess(db *sql.DB) *MessageDataAccess {
+	return &MessageDataAccess{db: db}
 }
 
 // Create 创建消息
-func (r *MessageRepository) Create(ctx context.Context, msg *Message) error {
+func (r *MessageDataAccess) Create(ctx context.Context, msg *Message) error {
 	query := `
 		INSERT INTO messages (id, conversation_id, sender_id, type, content, media_url, media_type, reply_to_id, created_at, updated_at)
 		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
@@ -71,7 +72,7 @@ func (r *MessageRepository) Create(ctx context.Context, msg *Message) error {
 }
 
 // GetByID 根据 ID 获取消息
-func (r *MessageRepository) GetByID(ctx context.Context, id uuid.UUID) (*Message, error) {
+func (r *MessageDataAccess) GetByID(ctx context.Context, id uuid.UUID) (*Message, error) {
 	query := `
 		SELECT id, conversation_id, sender_id, type, content, media_url, media_type,
 			   reply_to_id, is_edited, is_deleted, created_at, updated_at
@@ -94,7 +95,7 @@ func (r *MessageRepository) GetByID(ctx context.Context, id uuid.UUID) (*Message
 }
 
 // GetByConversationID 获取会话的消息列表
-func (r *MessageRepository) GetByConversationID(ctx context.Context, conversationID uuid.UUID, page, pageSize int) ([]Message, int64, error) {
+func (r *MessageDataAccess) GetByConversationID(ctx context.Context, conversationID uuid.UUID, page, pageSize int) ([]Message, int64, error) {
 	// 统计总数
 	countQuery := `
 		SELECT COUNT(*) FROM messages
@@ -134,11 +135,15 @@ func (r *MessageRepository) GetByConversationID(ctx context.Context, conversatio
 		messages = append(messages, msg)
 	}
 
+	if err := rows.Err(); err != nil {
+		return nil, 0, fmt.Errorf("遍历消息列表失败: %w", err)
+	}
+
 	return messages, total, nil
 }
 
 // GetLatestByConversationID 获取会话的最新消息
-func (r *MessageRepository) GetLatestByConversationID(ctx context.Context, conversationID uuid.UUID) (*Message, error) {
+func (r *MessageDataAccess) GetLatestByConversationID(ctx context.Context, conversationID uuid.UUID) (*Message, error) {
 	query := `
 		SELECT id, conversation_id, sender_id, type, content, media_url, media_type,
 			   reply_to_id, is_edited, is_deleted, created_at, updated_at
@@ -163,7 +168,7 @@ func (r *MessageRepository) GetLatestByConversationID(ctx context.Context, conve
 }
 
 // GetUnreadCount 获取会话的未读消息数
-func (r *MessageRepository) GetUnreadCount(ctx context.Context, conversationID, userID uuid.UUID) (int64, error) {
+func (r *MessageDataAccess) GetUnreadCount(ctx context.Context, conversationID, userID uuid.UUID) (int64, error) {
 	query := `
 		SELECT COUNT(*)
 		FROM messages m
@@ -182,32 +187,31 @@ func (r *MessageRepository) GetUnreadCount(ctx context.Context, conversationID, 
 }
 
 // GetUnreadCountsBatch 批量获取多个会话的未读数
-func (r *MessageRepository) GetUnreadCountsBatch(ctx context.Context, userID uuid.UUID, conversationIDs []uuid.UUID) (map[uuid.UUID]int64, error) {
+// 使用 pq.Array 安全处理 UUID 数组，避免 SQL 注入
+func (r *MessageDataAccess) GetUnreadCountsBatch(ctx context.Context, userID uuid.UUID, conversationIDs []uuid.UUID) (map[uuid.UUID]int64, error) {
 	if len(conversationIDs) == 0 {
 		return make(map[uuid.UUID]int64), nil
 	}
 
-	// 构建 IN 子句的占位符
-	placeholders := "$2"
-	args := []interface{}{userID, conversationIDs[0]}
-	for i := 1; i < len(conversationIDs); i++ {
-		placeholders += fmt.Sprintf(", $%d", i+2)
-		args = append(args, conversationIDs[i])
+	// 将 UUID 转换为字符串数组
+	convIDStrings := make([]string, len(conversationIDs))
+	for i, id := range conversationIDs {
+		convIDStrings[i] = id.String()
 	}
 
-	query := fmt.Sprintf(`
+	query := `
 		SELECT m.conversation_id, COUNT(*)
 		FROM messages m
 		INNER JOIN conversation_members cm
 			ON cm.conversation_id = m.conversation_id AND cm.user_id = $1
-		WHERE m.conversation_id IN (%s)
+		WHERE m.conversation_id = ANY($2::uuid[])
 			AND m.sender_id != $1
 			AND m.is_deleted = false
 			AND m.created_at > COALESCE(cm.last_read_at, cm.joined_at, '1970-01-01')
 		GROUP BY m.conversation_id
-	`, placeholders)
+	`
 
-	rows, err := r.db.QueryContext(ctx, query, args...)
+	rows, err := r.db.QueryContext(ctx, query, userID, pq.Array(convIDStrings))
 	if err != nil {
 		return nil, fmt.Errorf("批量获取未读数失败: %w", err)
 	}
@@ -228,11 +232,15 @@ func (r *MessageRepository) GetUnreadCountsBatch(ctx context.Context, userID uui
 		counts[convID] = count
 	}
 
+	if err := rows.Err(); err != nil {
+		return nil, fmt.Errorf("遍历结果失败: %w", err)
+	}
+
 	return counts, nil
 }
 
 // Delete 删除消息（软删除）
-func (r *MessageRepository) Delete(ctx context.Context, id uuid.UUID) error {
+func (r *MessageDataAccess) Delete(ctx context.Context, id uuid.UUID) error {
 	query := `UPDATE messages SET is_deleted = true, updated_at = $1 WHERE id = $2 AND is_deleted = false`
 	result, err := r.db.ExecContext(ctx, query, time.Now().UTC(), id)
 	if err != nil {
@@ -246,7 +254,7 @@ func (r *MessageRepository) Delete(ctx context.Context, id uuid.UUID) error {
 }
 
 // DeleteByConversationID 删除会话的所有消息（软删除）
-func (r *MessageRepository) DeleteByConversationID(ctx context.Context, conversationID uuid.UUID) error {
+func (r *MessageDataAccess) DeleteByConversationID(ctx context.Context, conversationID uuid.UUID) error {
 	query := `UPDATE messages SET is_deleted = true, updated_at = $1 WHERE conversation_id = $2 AND is_deleted = false`
 	_, err := r.db.ExecContext(ctx, query, time.Now().UTC(), conversationID)
 	if err != nil {
@@ -254,7 +262,6 @@ func (r *MessageRepository) DeleteByConversationID(ctx context.Context, conversa
 	}
 	return nil
 }
-
 
 // ReadReceipt 已读回执
 type ReadReceipt struct {
@@ -273,7 +280,7 @@ type BatchReadReceipt struct {
 }
 
 // FindUnreadMessageIDsInRange 查找指定时间范围内的未读消息 ID
-func (r *MessageRepository) FindUnreadMessageIDsInRange(ctx context.Context, conversationID, userID uuid.UUID, afterTime, beforeOrEqualTime time.Time) ([]uuid.UUID, error) {
+func (r *MessageDataAccess) FindUnreadMessageIDsInRange(ctx context.Context, conversationID, userID uuid.UUID, afterTime, beforeOrEqualTime time.Time) ([]uuid.UUID, error) {
 	query := `
 		SELECT id FROM messages
 		WHERE conversation_id = $1
@@ -296,5 +303,10 @@ func (r *MessageRepository) FindUnreadMessageIDsInRange(ctx context.Context, con
 		}
 		ids = append(ids, id)
 	}
+
+	if err := rows.Err(); err != nil {
+		return nil, fmt.Errorf("遍历消息 ID 列表失败: %w", err)
+	}
+
 	return ids, nil
 }

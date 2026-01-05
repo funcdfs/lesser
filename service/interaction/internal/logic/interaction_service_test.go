@@ -6,8 +6,8 @@ import (
 	"errors"
 	"testing"
 
-	"github.com/funcdfs/lesser/interaction/internal/data_access"
 	contentpb "github.com/funcdfs/lesser/interaction/gen_protos/content"
+	"github.com/funcdfs/lesser/interaction/internal/data_access"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -65,22 +65,22 @@ func (m *mockContentClient) setContentAuthor(contentID, authorID string) {
 	m.authorMap[contentID] = authorID
 }
 
-// mockLikeRepository 模拟点赞仓库
-type mockLikeRepository struct {
-	likes    map[string]map[string]bool // userID -> contentID -> liked
+// mockLikeDataAccess 模拟点赞数据访问
+type mockLikeDataAccess struct {
+	likes     map[string]map[string]bool // userID -> contentID -> liked
 	createErr error
 	deleteErr error
 	existsErr error
 	batchErr  error
 }
 
-func newMockLikeRepository() *mockLikeRepository {
-	return &mockLikeRepository{
+func newMockLikeDataAccess() *mockLikeDataAccess {
+	return &mockLikeDataAccess{
 		likes: make(map[string]map[string]bool),
 	}
 }
 
-func (m *mockLikeRepository) Create(userID, contentID string) (bool, error) {
+func (m *mockLikeDataAccess) Create(userID, contentID string) (bool, error) {
 	if m.createErr != nil {
 		return false, m.createErr
 	}
@@ -94,7 +94,7 @@ func (m *mockLikeRepository) Create(userID, contentID string) (bool, error) {
 	return true, nil
 }
 
-func (m *mockLikeRepository) Delete(userID, contentID string) (bool, error) {
+func (m *mockLikeDataAccess) Delete(userID, contentID string) (bool, error) {
 	if m.deleteErr != nil {
 		return false, m.deleteErr
 	}
@@ -105,7 +105,7 @@ func (m *mockLikeRepository) Delete(userID, contentID string) (bool, error) {
 	return true, nil
 }
 
-func (m *mockLikeRepository) Exists(userID, contentID string) (bool, error) {
+func (m *mockLikeDataAccess) Exists(userID, contentID string) (bool, error) {
 	if m.existsErr != nil {
 		return false, m.existsErr
 	}
@@ -115,7 +115,7 @@ func (m *mockLikeRepository) Exists(userID, contentID string) (bool, error) {
 	return m.likes[userID][contentID], nil
 }
 
-func (m *mockLikeRepository) BatchExists(userID string, contentIDs []string) (map[string]bool, error) {
+func (m *mockLikeDataAccess) BatchExists(userID string, contentIDs []string) (map[string]bool, error) {
 	if m.batchErr != nil {
 		return nil, m.batchErr
 	}
@@ -129,9 +129,8 @@ func (m *mockLikeRepository) BatchExists(userID string, contentIDs []string) (ma
 	return result, nil
 }
 
-
-// mockBookmarkRepository 模拟收藏仓库
-type mockBookmarkRepository struct {
+// mockBookmarkDataAccess 模拟收藏数据访问
+type mockBookmarkDataAccess struct {
 	bookmarks map[string]map[string]bool
 	createErr error
 	deleteErr error
@@ -140,13 +139,13 @@ type mockBookmarkRepository struct {
 	listErr   error
 }
 
-func newMockBookmarkRepository() *mockBookmarkRepository {
-	return &mockBookmarkRepository{
+func newMockBookmarkDataAccess() *mockBookmarkDataAccess {
+	return &mockBookmarkDataAccess{
 		bookmarks: make(map[string]map[string]bool),
 	}
 }
 
-func (m *mockBookmarkRepository) Create(userID, contentID string) (bool, error) {
+func (m *mockBookmarkDataAccess) Create(userID, contentID string) (bool, error) {
 	if m.createErr != nil {
 		return false, m.createErr
 	}
@@ -160,7 +159,7 @@ func (m *mockBookmarkRepository) Create(userID, contentID string) (bool, error) 
 	return true, nil
 }
 
-func (m *mockBookmarkRepository) Delete(userID, contentID string) (bool, error) {
+func (m *mockBookmarkDataAccess) Delete(userID, contentID string) (bool, error) {
 	if m.deleteErr != nil {
 		return false, m.deleteErr
 	}
@@ -171,7 +170,7 @@ func (m *mockBookmarkRepository) Delete(userID, contentID string) (bool, error) 
 	return true, nil
 }
 
-func (m *mockBookmarkRepository) Exists(userID, contentID string) (bool, error) {
+func (m *mockBookmarkDataAccess) Exists(userID, contentID string) (bool, error) {
 	if m.existsErr != nil {
 		return false, m.existsErr
 	}
@@ -181,7 +180,7 @@ func (m *mockBookmarkRepository) Exists(userID, contentID string) (bool, error) 
 	return m.bookmarks[userID][contentID], nil
 }
 
-func (m *mockBookmarkRepository) BatchExists(userID string, contentIDs []string) (map[string]bool, error) {
+func (m *mockBookmarkDataAccess) BatchExists(userID string, contentIDs []string) (map[string]bool, error) {
 	if m.batchErr != nil {
 		return nil, m.batchErr
 	}
@@ -195,7 +194,7 @@ func (m *mockBookmarkRepository) BatchExists(userID string, contentIDs []string)
 	return result, nil
 }
 
-func (m *mockBookmarkRepository) List(userID string, limit, offset int) ([]*data_access.Bookmark, int, error) {
+func (m *mockBookmarkDataAccess) List(userID string, limit, offset int) ([]*data_access.Bookmark, int, error) {
 	if m.listErr != nil {
 		return nil, 0, m.listErr
 	}
@@ -203,8 +202,8 @@ func (m *mockBookmarkRepository) List(userID string, limit, offset int) ([]*data
 	return []*data_access.Bookmark{}, 0, nil
 }
 
-// mockRepostRepository 模拟转发仓库
-type mockRepostRepository struct {
+// mockRepostDataAccess 模拟转发数据访问
+type mockRepostDataAccess struct {
 	reposts   map[string]map[string]*data_access.Repost
 	createErr error
 	deleteErr error
@@ -212,13 +211,13 @@ type mockRepostRepository struct {
 	batchErr  error
 }
 
-func newMockRepostRepository() *mockRepostRepository {
-	return &mockRepostRepository{
+func newMockRepostDataAccess() *mockRepostDataAccess {
+	return &mockRepostDataAccess{
 		reposts: make(map[string]map[string]*data_access.Repost),
 	}
 }
 
-func (m *mockRepostRepository) Create(userID, contentID, quote string) (*data_access.Repost, bool, error) {
+func (m *mockRepostDataAccess) Create(userID, contentID, quote string) (*data_access.Repost, bool, error) {
 	if m.createErr != nil {
 		return nil, false, m.createErr
 	}
@@ -238,7 +237,7 @@ func (m *mockRepostRepository) Create(userID, contentID, quote string) (*data_ac
 	return repost, true, nil
 }
 
-func (m *mockRepostRepository) Delete(userID, contentID string) (bool, error) {
+func (m *mockRepostDataAccess) Delete(userID, contentID string) (bool, error) {
 	if m.deleteErr != nil {
 		return false, m.deleteErr
 	}
@@ -249,7 +248,7 @@ func (m *mockRepostRepository) Delete(userID, contentID string) (bool, error) {
 	return true, nil
 }
 
-func (m *mockRepostRepository) Exists(userID, contentID string) (bool, error) {
+func (m *mockRepostDataAccess) Exists(userID, contentID string) (bool, error) {
 	if m.existsErr != nil {
 		return false, m.existsErr
 	}
@@ -259,7 +258,7 @@ func (m *mockRepostRepository) Exists(userID, contentID string) (bool, error) {
 	return m.reposts[userID][contentID] != nil, nil
 }
 
-func (m *mockRepostRepository) BatchExists(userID string, contentIDs []string) (map[string]bool, error) {
+func (m *mockRepostDataAccess) BatchExists(userID string, contentIDs []string) (map[string]bool, error) {
 	if m.batchErr != nil {
 		return nil, m.batchErr
 	}
@@ -273,7 +272,7 @@ func (m *mockRepostRepository) BatchExists(userID string, contentIDs []string) (
 	return result, nil
 }
 
-func (m *mockRepostRepository) GetByUserAndContent(userID, contentID string) (*data_access.Repost, error) {
+func (m *mockRepostDataAccess) GetByUserAndContent(userID, contentID string) (*data_access.Repost, error) {
 	if m.reposts[userID] == nil {
 		return nil, errors.New("not found")
 	}
@@ -286,8 +285,11 @@ type mockPublisher struct {
 }
 
 type publishedEvent struct {
-	routingKey string
-	event      interface{}
+	eventType string
+	contentID string
+	authorID  string
+	userID    string
+	repostID  string
 }
 
 func newMockPublisher() *mockPublisher {
@@ -296,40 +298,63 @@ func newMockPublisher() *mockPublisher {
 	}
 }
 
-func (m *mockPublisher) PublishAsync(ctx context.Context, routingKey string, event interface{}) {
-	m.events = append(m.events, publishedEvent{routingKey: routingKey, event: event})
+func (m *mockPublisher) PublishContentLiked(ctx context.Context, contentID, contentAuthorID, likerID string) {
+	m.events = append(m.events, publishedEvent{
+		eventType: "liked",
+		contentID: contentID,
+		authorID:  contentAuthorID,
+		userID:    likerID,
+	})
 }
 
+func (m *mockPublisher) PublishContentBookmarked(ctx context.Context, contentID, contentAuthorID, bookmarkerID string) {
+	m.events = append(m.events, publishedEvent{
+		eventType: "bookmarked",
+		contentID: contentID,
+		authorID:  contentAuthorID,
+		userID:    bookmarkerID,
+	})
+}
+
+func (m *mockPublisher) PublishContentReposted(ctx context.Context, contentID, contentAuthorID, reposterID, repostID string) {
+	m.events = append(m.events, publishedEvent{
+		eventType: "reposted",
+		contentID: contentID,
+		authorID:  contentAuthorID,
+		userID:    reposterID,
+		repostID:  repostID,
+	})
+}
 
 // ==================== 辅助函数 ====================
 
 // testService 测试服务结构
 type testService struct {
-	svc          *InteractionService
+	svc           *InteractionService
 	contentClient *mockContentClient
-	likeRepo     *mockLikeRepository
-	bookmarkRepo *mockBookmarkRepository
-	repostRepo   *mockRepostRepository
-	publisher    *mockPublisher
+	likeDA      *mockLikeDataAccess
+	bookmarkDA  *mockBookmarkDataAccess
+	repostDA    *mockRepostDataAccess
+	publisher     *mockPublisher
 }
 
 // createTestService 创建测试用的服务实例
 func createTestService() *testService {
 	contentClient := newMockContentClient()
-	likeRepo := newMockLikeRepository()
-	bookmarkRepo := newMockBookmarkRepository()
-	repostRepo := newMockRepostRepository()
+	likeDA := newMockLikeDataAccess()
+	bookmarkDA := newMockBookmarkDataAccess()
+	repostDA := newMockRepostDataAccess()
 	publisher := newMockPublisher()
 
-	svc := NewInteractionService(likeRepo, bookmarkRepo, repostRepo, contentClient)
+	svc := NewInteractionService(likeDA, bookmarkDA, repostDA, contentClient)
 	svc.SetPublisher(publisher)
 
 	return &testService{
 		svc:           svc,
 		contentClient: contentClient,
-		likeRepo:      likeRepo,
-		bookmarkRepo:  bookmarkRepo,
-		repostRepo:    repostRepo,
+		likeDA:      likeDA,
+		bookmarkDA:  bookmarkDA,
+		repostDA:    repostDA,
 		publisher:     publisher,
 	}
 }
@@ -397,12 +422,12 @@ func TestLike_ContentServiceError(t *testing.T) {
 	assert.Error(t, err)
 }
 
-func TestLike_RepositoryError(t *testing.T) {
+func TestLike_DataAccessError(t *testing.T) {
 	ts := createTestService()
 	ctx := context.Background()
 
 	ts.contentClient.setContentExists("content-1", true)
-	ts.likeRepo.createErr = errors.New("database error")
+	ts.likeDA.createErr = errors.New("database error")
 
 	_, err := ts.svc.Like(ctx, "user-1", "content-1")
 	assert.Error(t, err)
@@ -439,11 +464,11 @@ func TestUnlike_NotLiked(t *testing.T) {
 	assert.Equal(t, int32(0), count)
 }
 
-func TestUnlike_RepositoryError(t *testing.T) {
+func TestUnlike_DataAccessError(t *testing.T) {
 	ts := createTestService()
 	ctx := context.Background()
 
-	ts.likeRepo.deleteErr = errors.New("database error")
+	ts.likeDA.deleteErr = errors.New("database error")
 
 	_, err := ts.svc.Unlike(ctx, "user-1", "content-1")
 	assert.Error(t, err)
@@ -460,12 +485,11 @@ func TestCheckLiked_NotLiked(t *testing.T) {
 func TestCheckLiked_Error(t *testing.T) {
 	ts := createTestService()
 
-	ts.likeRepo.existsErr = errors.New("database error")
+	ts.likeDA.existsErr = errors.New("database error")
 
 	_, err := ts.svc.CheckLiked("user-1", "content-1")
 	assert.Error(t, err)
 }
-
 
 // ==================== 收藏测试 ====================
 
@@ -522,12 +546,12 @@ func TestBookmark_ContentServiceError(t *testing.T) {
 	assert.Error(t, err)
 }
 
-func TestBookmark_RepositoryError(t *testing.T) {
+func TestBookmark_DataAccessError(t *testing.T) {
 	ts := createTestService()
 	ctx := context.Background()
 
 	ts.contentClient.setContentExists("content-1", true)
-	ts.bookmarkRepo.createErr = errors.New("database error")
+	ts.bookmarkDA.createErr = errors.New("database error")
 
 	_, err := ts.svc.Bookmark(ctx, "user-1", "content-1")
 	assert.Error(t, err)
@@ -559,11 +583,11 @@ func TestUnbookmark_NotBookmarked(t *testing.T) {
 	assert.Equal(t, int32(0), count)
 }
 
-func TestUnbookmark_RepositoryError(t *testing.T) {
+func TestUnbookmark_DataAccessError(t *testing.T) {
 	ts := createTestService()
 	ctx := context.Background()
 
-	ts.bookmarkRepo.deleteErr = errors.New("database error")
+	ts.bookmarkDA.deleteErr = errors.New("database error")
 
 	_, err := ts.svc.Unbookmark(ctx, "user-1", "content-1")
 	assert.Error(t, err)
@@ -589,15 +613,14 @@ func TestListBookmarks_MaxLimit(t *testing.T) {
 	assert.Equal(t, 0, total)
 }
 
-func TestListBookmarks_RepositoryError(t *testing.T) {
+func TestListBookmarks_DataAccessError(t *testing.T) {
 	ts := createTestService()
 
-	ts.bookmarkRepo.listErr = errors.New("database error")
+	ts.bookmarkDA.listErr = errors.New("database error")
 
 	_, _, err := ts.svc.ListBookmarks("user-1", 10, 0)
 	assert.Error(t, err)
 }
-
 
 // ==================== 转发测试 ====================
 
@@ -673,12 +696,12 @@ func TestCreateRepost_ContentServiceError(t *testing.T) {
 	assert.Error(t, err)
 }
 
-func TestCreateRepost_RepositoryError(t *testing.T) {
+func TestCreateRepost_DataAccessError(t *testing.T) {
 	ts := createTestService()
 	ctx := context.Background()
 
 	ts.contentClient.setContentExists("content-1", true)
-	ts.repostRepo.createErr = errors.New("database error")
+	ts.repostDA.createErr = errors.New("database error")
 
 	_, _, err := ts.svc.CreateRepost(ctx, "user-1", "content-1", "")
 	assert.Error(t, err)
@@ -710,16 +733,15 @@ func TestDeleteRepost_NotReposted(t *testing.T) {
 	assert.Equal(t, int32(0), count)
 }
 
-func TestDeleteRepost_RepositoryError(t *testing.T) {
+func TestDeleteRepost_DataAccessError(t *testing.T) {
 	ts := createTestService()
 	ctx := context.Background()
 
-	ts.repostRepo.deleteErr = errors.New("database error")
+	ts.repostDA.deleteErr = errors.New("database error")
 
 	_, err := ts.svc.DeleteRepost(ctx, "user-1", "content-1")
 	assert.Error(t, err)
 }
-
 
 // ==================== 批量查询测试 ====================
 
@@ -834,7 +856,7 @@ func TestBatchGetInteractionStatus_AllInteractions(t *testing.T) {
 func TestBatchGetInteractionStatus_LikeRepoError(t *testing.T) {
 	ts := createTestService()
 
-	ts.likeRepo.batchErr = errors.New("database error")
+	ts.likeDA.batchErr = errors.New("database error")
 
 	_, err := ts.svc.BatchGetInteractionStatus("user-1", []string{"content-1"})
 	assert.Error(t, err)
@@ -843,7 +865,7 @@ func TestBatchGetInteractionStatus_LikeRepoError(t *testing.T) {
 func TestBatchGetInteractionStatus_BookmarkRepoError(t *testing.T) {
 	ts := createTestService()
 
-	ts.bookmarkRepo.batchErr = errors.New("database error")
+	ts.bookmarkDA.batchErr = errors.New("database error")
 
 	_, err := ts.svc.BatchGetInteractionStatus("user-1", []string{"content-1"})
 	assert.Error(t, err)
@@ -852,7 +874,7 @@ func TestBatchGetInteractionStatus_BookmarkRepoError(t *testing.T) {
 func TestBatchGetInteractionStatus_RepostRepoError(t *testing.T) {
 	ts := createTestService()
 
-	ts.repostRepo.batchErr = errors.New("database error")
+	ts.repostDA.batchErr = errors.New("database error")
 
 	_, err := ts.svc.BatchGetInteractionStatus("user-1", []string{"content-1"})
 	assert.Error(t, err)

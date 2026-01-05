@@ -3,14 +3,16 @@ package handler
 
 import (
 	"context"
-	"log/slog"
+	"fmt"
+	
 
-	"github.com/google/uuid"
-	"github.com/funcdfs/lesser/chat/internal/logic"
 	pb "github.com/funcdfs/lesser/chat/gen_protos/chat"
-	"github.com/funcdfs/lesser/chat/gen_protos/common"
+	"github.com/funcdfs/lesser/chat/internal/data_access"
+	"github.com/funcdfs/lesser/chat/internal/logic"
 	"github.com/funcdfs/lesser/pkg/auth"
+	"github.com/funcdfs/lesser/pkg/gen_protos/common"
 	"github.com/funcdfs/lesser/pkg/log"
+	"github.com/google/uuid"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 )
@@ -20,25 +22,19 @@ type ChatHandler struct {
 	pb.UnimplementedChatServiceServer
 	chatService   *logic.ChatService
 	streamManager *StreamManager
-	log           *slog.Logger
+	log           *log.Logger
 }
 
 // NewChatHandler 创建处理器
-func NewChatHandler(chatService *logic.ChatService, log interface{}) *ChatHandler {
-	var slogger *slog.Logger
-	switch l := log.(type) {
-	case *slog.Logger:
-		slogger = l
-	case interface{ Logger() *slog.Logger }:
-		slogger = l.Logger()
-	default:
-		slogger = slog.Default()
+func NewChatHandler(chatService *logic.ChatService, logger *log.Logger) *ChatHandler {
+	if logger == nil {
+		logger = log.Global()
 	}
 
 	return &ChatHandler{
 		chatService:   chatService,
 		streamManager: NewStreamManager(chatService),
-		log:           slog.With(slog.String("component", "handler")),
+		log:           logger.With(log.String("component", "handler")),
 	}
 }
 
@@ -63,17 +59,17 @@ func (h *ChatHandler) GetConversations(ctx context.Context, req *pb.GetConversat
 	}
 
 	h.log.Debug("获取会话列表",
-		slog.String("user_id", userID.String()),
-		slog.Int("page", page),
-		slog.Int("page_size", pageSize),
+		log.String("user_id", userID.String()),
+		log.Int("page", page),
+		log.Int("page_size", pageSize),
 	)
 
 	result, err := h.chatService.GetUserConversations(ctx, userID, page, pageSize)
 	if err != nil {
 		h.log.Error("获取会话列表失败",
-			slog.String("user_id", userID.String()),
-			slog.String("trace_id", log.TraceIDFromContext(ctx)),
-			slog.Any("error", err),
+			log.String("user_id", userID.String()),
+			log.String("trace_id", log.TraceIDFromContext(ctx)),
+			log.Any("error", err),
 		)
 		return nil, logic.ToGRPCError(err)
 	}
@@ -107,9 +103,9 @@ func (h *ChatHandler) GetConversation(ctx context.Context, req *pb.GetConversati
 	conv, err := h.chatService.GetConversation(ctx, convID)
 	if err != nil {
 		h.log.Error("获取会话失败",
-			slog.String("conversation_id", convID.String()),
-			slog.String("trace_id", log.TraceIDFromContext(ctx)),
-			slog.Any("error", err),
+			log.String("conversation_id", convID.String()),
+			log.String("trace_id", log.TraceIDFromContext(ctx)),
+			log.Any("error", err),
 		)
 		return nil, logic.ToGRPCError(err)
 	}
@@ -142,10 +138,15 @@ func (h *ChatHandler) CreateConversation(ctx context.Context, req *pb.CreateConv
 
 	convType := protoToConversationType(req.GetType())
 
+	// 验证会话类型不为 CHANNEL（CHANNEL 类型已迁移到独立的 Channel 服务）
+	if convType == data_access.ConversationTypeChannel {
+		return nil, status.Error(codes.InvalidArgument, "CHANNEL 类型已迁移到独立的 Channel 服务，请使用 ChannelService")
+	}
+
 	h.log.Debug("创建会话",
-		slog.String("creator_id", creatorID.String()),
-		slog.String("type", string(convType)),
-		slog.Int("member_count", len(memberIDs)),
+		log.String("creator_id", creatorID.String()),
+		log.String("type", fmt.Sprintf("%d", convType)),
+		log.Int("member_count", len(memberIDs)),
 	)
 
 	conv, err := h.chatService.CreateConversation(ctx, logic.CreateConversationRequest{
@@ -156,9 +157,9 @@ func (h *ChatHandler) CreateConversation(ctx context.Context, req *pb.CreateConv
 	})
 	if err != nil {
 		h.log.Error("创建会话失败",
-			slog.String("creator_id", creatorID.String()),
-			slog.String("trace_id", log.TraceIDFromContext(ctx)),
-			slog.Any("error", err),
+			log.String("creator_id", creatorID.String()),
+			log.String("trace_id", log.TraceIDFromContext(ctx)),
+			log.Any("error", err),
 		)
 		return nil, logic.ToGRPCError(err)
 	}
@@ -200,10 +201,10 @@ func (h *ChatHandler) GetMessages(ctx context.Context, req *pb.GetMessagesReques
 	result, err := h.chatService.GetMessages(ctx, convID, userID, page, pageSize)
 	if err != nil {
 		h.log.Error("获取消息列表失败",
-			slog.String("conversation_id", convID.String()),
-			slog.String("user_id", userID.String()),
-			slog.String("trace_id", log.TraceIDFromContext(ctx)),
-			slog.Any("error", err),
+			log.String("conversation_id", convID.String()),
+			log.String("user_id", userID.String()),
+			log.String("trace_id", log.TraceIDFromContext(ctx)),
+			log.Any("error", err),
 		)
 		return nil, logic.ToGRPCError(err)
 	}
@@ -248,9 +249,9 @@ func (h *ChatHandler) SendMessage(ctx context.Context, req *pb.SendMessageReques
 	msgType := parseMessageType(req.GetMessageType())
 
 	h.log.Debug("发送消息",
-		slog.String("conversation_id", convID.String()),
-		slog.String("sender_id", senderID.String()),
-		slog.String("type", string(msgType)),
+		log.String("conversation_id", convID.String()),
+		log.String("sender_id", senderID.String()),
+		log.String("type", fmt.Sprintf("%d", msgType)),
 	)
 
 	msg, err := h.chatService.SendMessage(ctx, logic.SendMessageRequest{
@@ -261,10 +262,10 @@ func (h *ChatHandler) SendMessage(ctx context.Context, req *pb.SendMessageReques
 	})
 	if err != nil {
 		h.log.Error("发送消息失败",
-			slog.String("conversation_id", convID.String()),
-			slog.String("sender_id", senderID.String()),
-			slog.String("trace_id", log.TraceIDFromContext(ctx)),
-			slog.Any("error", err),
+			log.String("conversation_id", convID.String()),
+			log.String("sender_id", senderID.String()),
+			log.String("trace_id", log.TraceIDFromContext(ctx)),
+			log.Any("error", err),
 		)
 		return nil, logic.ToGRPCError(err)
 	}
@@ -297,10 +298,10 @@ func (h *ChatHandler) MarkAsRead(ctx context.Context, req *pb.MarkAsReadRequest)
 	receipt, err := h.chatService.MarkMessageAsRead(ctx, messageID, userID)
 	if err != nil {
 		h.log.Error("标记消息已读失败",
-			slog.String("message_id", messageID.String()),
-			slog.String("user_id", userID.String()),
-			slog.String("trace_id", log.TraceIDFromContext(ctx)),
-			slog.Any("error", err),
+			log.String("message_id", messageID.String()),
+			log.String("user_id", userID.String()),
+			log.String("trace_id", log.TraceIDFromContext(ctx)),
+			log.Any("error", err),
 		)
 		return nil, logic.ToGRPCError(err)
 	}
@@ -341,10 +342,10 @@ func (h *ChatHandler) MarkConversationAsRead(ctx context.Context, req *pb.MarkCo
 	receipt, err := h.chatService.MarkConversationAsRead(ctx, convID, userID)
 	if err != nil {
 		h.log.Error("标记会话已读失败",
-			slog.String("conversation_id", convID.String()),
-			slog.String("user_id", userID.String()),
-			slog.String("trace_id", log.TraceIDFromContext(ctx)),
-			slog.Any("error", err),
+			log.String("conversation_id", convID.String()),
+			log.String("user_id", userID.String()),
+			log.String("trace_id", log.TraceIDFromContext(ctx)),
+			log.Any("error", err),
 		)
 		return nil, logic.ToGRPCError(err)
 	}
@@ -391,9 +392,9 @@ func (h *ChatHandler) GetUnreadCounts(ctx context.Context, req *pb.GetUnreadCoun
 	counts, err := h.chatService.GetUnreadCounts(ctx, userID, conversationIDs)
 	if err != nil {
 		h.log.Error("获取未读数失败",
-			slog.String("user_id", userID.String()),
-			slog.String("trace_id", log.TraceIDFromContext(ctx)),
-			slog.Any("error", err),
+			log.String("user_id", userID.String()),
+			log.String("trace_id", log.TraceIDFromContext(ctx)),
+			log.Any("error", err),
 		)
 		return nil, logic.ToGRPCError(err)
 	}

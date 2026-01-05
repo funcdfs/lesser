@@ -21,6 +21,7 @@ const SERVICES: &[&str] = &[
     "search",
     "notification",
     "chat",
+    "channel",
     "superuser",
 ];
 
@@ -278,6 +279,7 @@ async fn generate_dart(project_root: &std::path::Path, proto_dir: &std::path::Pa
         "search/search.proto",
         "notification/notification.proto",
         "chat/chat.proto",
+        "channel/channel.proto",
         "gateway/gateway.proto",
         "superuser/superuser.proto",
     ];

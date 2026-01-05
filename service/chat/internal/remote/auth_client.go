@@ -130,6 +130,7 @@ func (c *AuthClient) Close() error {
 }
 
 // ValidateToken 本地验证 JWT token
+// 验证签名、过期时间、token 类型等
 func (c *AuthClient) ValidateToken(ctx context.Context, accessToken string) (uuid.UUID, error) {
 	c.mu.RLock()
 	publicKey := c.publicKey
@@ -144,7 +145,7 @@ func (c *AuthClient) ValidateToken(ctx context.Context, accessToken string) (uui
 			return nil, fmt.Errorf("不支持的签名方法: %v", token.Header["alg"])
 		}
 		return publicKey, nil
-	})
+	}, jwt.WithValidMethods([]string{"RS256", "RS384", "RS512"}))
 
 	if err != nil {
 		c.log.WithContext(ctx).Debug("解析 token 失败", "error", err)
@@ -160,19 +161,22 @@ func (c *AuthClient) ValidateToken(ctx context.Context, accessToken string) (uui
 		return uuid.Nil, fmt.Errorf("无法解析 claims")
 	}
 
-	// 检查 token 类型
-	tokenType, _ := claims["type"].(string)
-	if tokenType != "access" {
-		return uuid.Nil, fmt.Errorf("token 类型错误")
+	// 检查 token 类型（如果存在）
+	if tokenType, exists := claims["type"].(string); exists && tokenType != "access" {
+		return uuid.Nil, fmt.Errorf("token 类型错误: 期望 access，实际 %s", tokenType)
 	}
 
-	// 获取用户 ID
-	sub, ok := claims["sub"].(string)
-	if !ok {
-		return uuid.Nil, fmt.Errorf("缺少 sub claim")
+	// 获取用户 ID（优先从 user_id 获取，其次从 sub 获取）
+	var userIDStr string
+	if uid, ok := claims["user_id"].(string); ok && uid != "" {
+		userIDStr = uid
+	} else if sub, ok := claims["sub"].(string); ok && sub != "" {
+		userIDStr = sub
+	} else {
+		return uuid.Nil, fmt.Errorf("缺少用户 ID claim")
 	}
 
-	userID, err := uuid.Parse(sub)
+	userID, err := uuid.Parse(userIDStr)
 	if err != nil {
 		return uuid.Nil, fmt.Errorf("解析用户 ID 失败: %w", err)
 	}

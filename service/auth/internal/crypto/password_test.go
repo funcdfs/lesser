@@ -119,7 +119,7 @@ func TestPasswordValidator_Validate_Success(t *testing.T) {
 	validator := NewPasswordValidator(8, true, false)
 
 	// 有效密码
-	err := validate.Validate("Password123")
+	err := validator.Validate("Password123")
 	if err != nil {
 		t.Errorf("有效密码验证失败: %v", err)
 	}
@@ -129,7 +129,7 @@ func TestPasswordValidator_Validate_TooShort(t *testing.T) {
 	validator := NewPasswordValidator(8, true, false)
 
 	// 密码太短
-	err := validate.Validate("Pass1")
+	err := validator.Validate("Pass1")
 	if err == nil {
 		t.Error("太短的密码应该验证失败")
 	}
@@ -139,7 +139,7 @@ func TestPasswordValidator_Validate_NoNumber(t *testing.T) {
 	validator := NewPasswordValidator(8, true, false)
 
 	// 没有数字
-	err := validate.Validate("PasswordOnly")
+	err := validator.Validate("PasswordOnly")
 	if err == nil {
 		t.Error("没有数字的密码应该验证失败")
 	}
@@ -149,7 +149,7 @@ func TestPasswordValidator_Validate_NoMixedCase(t *testing.T) {
 	validator := NewPasswordValidator(8, true, true) // 要求大小写混合
 
 	// 没有大小写混合
-	err := validate.Validate("password123")
+	err := validator.Validate("password123")
 	if err == nil {
 		t.Error("没有大小写混合的密码应该验证失败")
 	}
@@ -159,7 +159,7 @@ func TestPasswordValidator_Validate_MixedCase_Success(t *testing.T) {
 	validator := NewPasswordValidator(8, true, true) // 要求大小写混合
 
 	// 有大小写混合
-	err := validate.Validate("Password123")
+	err := validator.Validate("Password123")
 	if err != nil {
 		t.Errorf("有大小写混合的密码验证失败: %v", err)
 	}
@@ -169,7 +169,7 @@ func TestPasswordValidator_Validate_NumberNotRequired(t *testing.T) {
 	validator := NewPasswordValidator(8, false, false) // 不要求数字
 
 	// 没有数字但应该通过
-	err := validate.Validate("PasswordOnly")
+	err := validator.Validate("PasswordOnly")
 	if err != nil {
 		t.Errorf("不要求数字时，没有数字的密码应该通过: %v", err)
 	}

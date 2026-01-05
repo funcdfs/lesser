@@ -30,12 +30,12 @@ const (
 // UserClient 用户信息客户端（带缓存）
 type UserClient struct {
 	authClient *AuthClient
-	cache      *db.Client
+	cache      *db.RedisClient
 	log        *log.Logger
 }
 
 // NewUserClient 创建用户客户端
-func NewUserClient(authClient *AuthClient, redisCache *db.Client, log *log.Logger) *UserClient {
+func NewUserClient(authClient *AuthClient, redisCache *db.RedisClient, log *log.Logger) *UserClient {
 	return &UserClient{
 		authClient: authClient,
 		cache:      redisCache,
@@ -50,7 +50,7 @@ func (c *UserClient) GetUser(ctx context.Context, userID uuid.UUID) (*UserInfo, 
 	// 尝试从缓存获取
 	if c.cache != nil {
 		var cached UserInfo
-		if err := c.db.Get(ctx, cacheKey, &cached); err == nil {
+		if err := c.cache.Get(ctx, cacheKey, &cached); err == nil {
 			c.log.WithContext(ctx).Debug("用户信息缓存命中", "user_id", userID.String())
 			return &cached, nil
 		}
@@ -68,7 +68,7 @@ func (c *UserClient) GetUser(ctx context.Context, userID uuid.UUID) (*UserInfo, 
 
 	// 写入缓存
 	if c.cache != nil {
-		if err := c.db.Set(ctx, cacheKey, user, userCacheTTL); err != nil {
+		if err := c.cache.Set(ctx, cacheKey, user, userCacheTTL); err != nil {
 			c.log.WithContext(ctx).Warn("写入用户缓存失败", "error", err)
 		}
 	}
@@ -90,7 +90,7 @@ func (c *UserClient) GetUsers(ctx context.Context, userIDs []uuid.UUID) (map[uui
 		for _, userID := range userIDs {
 			cacheKey := userCacheKey(userID)
 			var cached UserInfo
-			if err := c.db.Get(ctx, cacheKey, &cached); err == nil {
+			if err := c.cache.Get(ctx, cacheKey, &cached); err == nil {
 				result[userID] = &cached
 			} else {
 				missedIDs = append(missedIDs, userID)
@@ -124,7 +124,7 @@ func (c *UserClient) GetUsers(ctx context.Context, userIDs []uuid.UUID) (map[uui
 		// 写入缓存
 		if c.cache != nil {
 			cacheKey := userCacheKey(userID)
-			if err := c.db.Set(ctx, cacheKey, user, userCacheTTL); err != nil {
+			if err := c.cache.Set(ctx, cacheKey, user, userCacheTTL); err != nil {
 				c.log.WithContext(ctx).Warn("写入用户缓存失败", "error", err)
 			}
 		}
@@ -143,7 +143,7 @@ func (c *UserClient) InvalidateUserCache(ctx context.Context, userID uuid.UUID) 
 	if c.cache == nil {
 		return nil
 	}
-	return c.db.Delete(ctx, userCacheKey(userID))
+	return c.cache.Delete(ctx, userCacheKey(userID))
 }
 
 func userCacheKey(userID uuid.UUID) string {

@@ -4,21 +4,21 @@ package main
 
 import (
 	"context"
-	"log/slog"
+	
 	"net"
 	"os"
 	"os/signal"
 	"syscall"
 
 	"github.com/funcdfs/lesser/pkg/db"
-	"github.com/funcdfs/lesser/pkg/log"
 	"github.com/funcdfs/lesser/pkg/grpc/interceptor"
+	"github.com/funcdfs/lesser/pkg/log"
 	"github.com/funcdfs/lesser/pkg/trace"
+	pb "github.com/funcdfs/lesser/timeline/gen_protos/timeline"
 	"github.com/funcdfs/lesser/timeline/internal/data_access"
 	"github.com/funcdfs/lesser/timeline/internal/handler"
 	"github.com/funcdfs/lesser/timeline/internal/logic"
 	"github.com/funcdfs/lesser/timeline/internal/remote"
-	pb "github.com/funcdfs/lesser/timeline/gen_protos/timeline"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/reflection"
 )
@@ -34,10 +34,10 @@ func main() {
 	tracingCfg := trace.DefaultConfig("timeline")
 	shutdown, err := trace.Init(ctx, tracingCfg)
 	if err != nil {
-		pkgLog.Error("初始化 OpenTelemetry 失败", slog.Any("error", err))
+		pkgLog.Error("初始化 OpenTelemetry 失败", log.Any("error", err))
 	} else {
 		defer shutdown(ctx)
-		pkgLog.Info("OpenTelemetry 初始化成功", slog.String("endpoint", tracingCfg.Endpoint))
+		pkgLog.Info("OpenTelemetry 初始化成功", log.String("endpoint", tracingCfg.Endpoint))
 	}
 
 	// 数据库连接
@@ -52,24 +52,24 @@ func main() {
 
 	database, err := db.NewPostgresConnection(dbConfig)
 	if err != nil {
-		pkgLog.Error("数据库连接失败", slog.Any("error", err))
+		pkgLog.Error("数据库连接失败", log.Any("error", err))
 		os.Exit(1)
 	}
 	defer database.Close()
-	pkgLog.Info("数据库连接成功", slog.String("db", dbConfig.DBName))
+	pkgLog.Info("数据库连接成功", log.String("db", dbConfig.DBName))
 
 	// 初始化 Interaction Service 客户端
 	interactionClient, err := remote.NewInteractionServiceClient(interactionServiceAddr, pkgLog)
 	if err != nil {
-		pkgLog.Error("连接 Interaction Service 失败", slog.Any("error", err))
+		pkgLog.Error("连接 Interaction Service 失败", log.Any("error", err))
 		os.Exit(1)
 	}
 	defer interactionClient.Close()
-	pkgLog.Info("已连接 Interaction Service", slog.String("addr", interactionServiceAddr))
+	pkgLog.Info("已连接 Interaction Service", log.String("addr", interactionServiceAddr))
 
 	// 初始化各层
-	timelineRepo := data_access.NewTimelineRepository(database, pkgLog)
-	timelineSvc := logic.NewTimelineService(timelineRepo, interactionClient)
+	timelineDA := data_access.NewTimelineDataAccess(database, pkgLog)
+	timelineSvc := logic.NewTimelineService(timelineDA, interactionClient)
 	timelineHandler := handler.NewTimelineHandler(timelineSvc, pkgLog)
 
 	// 创建 gRPC 服务器（带拦截器）
@@ -86,7 +86,7 @@ func main() {
 	// 监听端口
 	lis, err := net.Listen("tcp", ":"+grpcPort)
 	if err != nil {
-		pkgLog.Error("端口监听失败", slog.String("port", grpcPort), slog.Any("error", err))
+		pkgLog.Error("端口监听失败", log.String("port", grpcPort), log.Any("error", err))
 		os.Exit(1)
 	}
 
@@ -101,9 +101,9 @@ func main() {
 		grpcServer.GracefulStop()
 	}()
 
-	pkgLog.Info("Timeline 服务已启动", slog.String("port", grpcPort))
+	pkgLog.Info("Timeline 服务已启动", log.String("port", grpcPort))
 	if err := grpcServer.Serve(lis); err != nil && ctx.Err() == nil {
-		pkgLog.Error("gRPC 服务异常退出", slog.Any("error", err))
+		pkgLog.Error("gRPC 服务异常退出", log.Any("error", err))
 		os.Exit(1)
 	}
 }

@@ -3,11 +3,12 @@ package logic
 
 import (
 	"context"
-	"errors"
 	"fmt"
-	"log/slog"
+	"strconv"
+	"strings"
 	"time"
 
+	"github.com/funcdfs/lesser/pkg/log"
 	"github.com/funcdfs/lesser/superuser/internal/config"
 	"github.com/funcdfs/lesser/superuser/internal/crypto"
 	"github.com/funcdfs/lesser/superuser/internal/data_access"
@@ -15,54 +16,53 @@ import (
 	"github.com/redis/go-redis/v9"
 )
 
-// 错误定义
+// 额外的错误定义（补充 errors.go 中未定义的）
 var (
-	ErrInvalidCredentials = errors.New("用户名或密码错误")
-	ErrUserNotFound       = errors.New("用户不存在")
-	ErrUserInactive       = errors.New("用户已被禁用")
-	ErrInvalidToken       = errors.New("无效的令牌")
-	ErrContentNotFound    = errors.New("内容不存在")
+	ErrUserNotFound    = data_access.ErrNotFound
+	ErrUserInactive    = ErrAccountDisabled
+	ErrInvalidToken    = ErrSessionExpired
+	ErrContentNotFound = data_access.ErrNotFound
 )
 
 // superUserServiceImpl 超级管理员服务实现
 type superUserServiceImpl struct {
-	superUserRepo  data_access.SuperUserRepository
-	auditLogRepo   data_access.AuditLogRepository
-	sessionRepo    data_access.SessionRepository
-	userRepo       data_access.UserRepository
-	contentRepo    data_access.ContentRepository
-	systemRepo     *data_access.SystemRepositoryImpl
+	superUserDA    data_access.SuperUserDataAccess
+	auditLogDA     data_access.AuditLogDataAccess
+	sessionDA      data_access.SessionDataAccess
+	userDA         data_access.UserDataAccess
+	contentDA      data_access.ContentDataAccess
+	systemDA       *data_access.SystemDataAccessImpl
 	passwordHasher *crypto.PasswordHasher
 	jwtManager     *crypto.JWTManager
 	redisClient    *redis.Client
 	config         *config.Config
-	logger         *slog.Logger
+	logger         *log.Logger
 }
 
 // ServiceDeps 服务依赖
 type ServiceDeps struct {
-	SuperUserRepo  data_access.SuperUserRepository
-	AuditLogRepo   data_access.AuditLogRepository
-	SessionRepo    data_access.SessionRepository
-	UserRepo       data_access.UserRepository
-	ContentRepo    data_access.ContentRepository
-	SystemRepo     *data_access.SystemRepositoryImpl
+	SuperUserDA    data_access.SuperUserDataAccess
+	AuditLogDA     data_access.AuditLogDataAccess
+	SessionDA      data_access.SessionDataAccess
+	UserDA         data_access.UserDataAccess
+	ContentDA      data_access.ContentDataAccess
+	SystemDA       *data_access.SystemDataAccessImpl
 	PasswordHasher *crypto.PasswordHasher
 	JWTManager     *crypto.JWTManager
 	RedisClient    *redis.Client
 	Config         *config.Config
-	Logger         *slog.Logger
+	Logger         *log.Logger
 }
 
 // NewSuperUserService 创建超级管理员服务
 func NewSuperUserService(deps ServiceDeps) SuperUserService {
 	return &superUserServiceImpl{
-		superUserRepo:  deps.SuperUserRepo,
-		auditLogRepo:   deps.AuditLogRepo,
-		sessionRepo:    deps.SessionRepo,
-		userRepo:       deps.UserRepo,
-		contentRepo:    deps.ContentRepo,
-		systemRepo:     deps.SystemRepo,
+		superUserDA:    deps.SuperUserDA,
+		auditLogDA:     deps.AuditLogDA,
+		sessionDA:      deps.SessionDA,
+		userDA:         deps.UserDA,
+		contentDA:      deps.ContentDA,
+		systemDA:       deps.SystemDA,
 		passwordHasher: deps.PasswordHasher,
 		jwtManager:     deps.JWTManager,
 		redisClient:    deps.RedisClient,
@@ -76,25 +76,25 @@ func NewSuperUserService(deps ServiceDeps) SuperUserService {
 // Login 登录
 func (s *superUserServiceImpl) Login(ctx context.Context, username, password, ip string) (*LoginResult, error) {
 	// 查找用户
-	su, err := s.superUserRepo.GetByUsername(ctx, username)
+	su, err := s.superUserDA.GetByUsername(ctx, username)
 	if err != nil {
 		return nil, fmt.Errorf("查询用户失败: %w", err)
 	}
 	if su == nil {
-		s.log.Warn("登录失败：用户不存在", slog.String("username", username))
+		s.logger.Warn("登录失败：用户不存在", log.String("username", username))
 		return nil, ErrInvalidCredentials
 	}
 
 	// 检查用户状态
 	if !su.IsActive {
-		s.log.Warn("登录失败：用户已禁用", slog.String("username", username))
+		s.logger.Warn("登录失败：用户已禁用", log.String("username", username))
 		return nil, ErrUserInactive
 	}
 
 	// 验证密码
 	valid, err := s.passwordHasher.Verify(password, su.Password)
 	if err != nil || !valid {
-		s.log.Warn("登录失败：密码错误", slog.String("username", username))
+		s.logger.Warn("登录失败：密码错误", log.String("username", username))
 		return nil, ErrInvalidCredentials
 	}
 
@@ -115,19 +115,19 @@ func (s *superUserServiceImpl) Login(ctx context.Context, username, password, ip
 		IPAddress:   &ip,
 		ExpiresAt:   time.Now().Add(s.jwtManager.GetRefreshTokenDuration()),
 	}
-	if err := s.sessionRepo.Create(ctx, session); err != nil {
-		s.log.Error("创建会话失败", slog.Any("error", err))
+	if err := s.sessionDA.Create(ctx, session); err != nil {
+		s.logger.Error("创建会话失败", log.Any("error", err))
 	}
 
 	// 更新登录信息
-	if err := s.superUserRepo.UpdateLoginInfo(ctx, su.ID, ip); err != nil {
-		s.log.Error("更新登录信息失败", slog.Any("error", err))
+	if err := s.superUserDA.UpdateLoginInfo(ctx, su.ID, ip); err != nil {
+		s.logger.Error("更新登录信息失败", log.Any("error", err))
 	}
 
 	// 记录审计日志
 	s.logAudit(ctx, su.ID, "LOGIN", nil, nil, map[string]interface{}{"ip": ip}, &ip)
 
-	s.log.Info("超级管理员登录成功", slog.String("username", username), slog.String("ip", ip))
+	s.logger.Info("超级管理员登录成功", log.String("username", username), log.String("ip", ip))
 
 	return &LoginResult{
 		SuperUser:    su,
@@ -146,14 +146,14 @@ func (s *superUserServiceImpl) Logout(ctx context.Context, accessToken string) e
 	superUserID, _ := uuid.Parse(claims.SuperUserID)
 
 	// 撤销所有会话
-	if err := s.sessionRepo.RevokeAllByUserID(ctx, superUserID); err != nil {
-		s.log.Error("撤销会话失败", slog.Any("error", err))
+	if err := s.sessionDA.RevokeAllByUserID(ctx, superUserID); err != nil {
+		s.logger.Error("撤销会话失败", log.Any("error", err))
 	}
 
 	// 记录审计日志
 	s.logAudit(ctx, superUserID, "LOGOUT", nil, nil, nil, nil)
 
-	s.log.Info("超级管理员登出", slog.String("superuser_id", claims.SuperUserID))
+	s.logger.Info("超级管理员登出", log.String("superuser_id", claims.SuperUserID))
 	return nil
 }
 
@@ -166,7 +166,7 @@ func (s *superUserServiceImpl) RefreshToken(ctx context.Context, refreshToken st
 
 	// 验证会话
 	tokenHash := crypto.HashToken(refreshToken)
-	session, err := s.sessionRepo.GetByTokenHash(ctx, tokenHash)
+	session, err := s.sessionDA.GetByTokenHash(ctx, tokenHash)
 	if err != nil || session == nil {
 		return nil, ErrInvalidToken
 	}
@@ -174,7 +174,7 @@ func (s *superUserServiceImpl) RefreshToken(ctx context.Context, refreshToken st
 	superUserID, _ := uuid.Parse(claims.SuperUserID)
 
 	// 获取用户信息
-	su, err := s.superUserRepo.GetByID(ctx, superUserID)
+	su, err := s.superUserDA.GetByID(ctx, superUserID)
 	if err != nil || su == nil {
 		return nil, ErrUserNotFound
 	}
@@ -193,14 +193,14 @@ func (s *superUserServiceImpl) RefreshToken(ctx context.Context, refreshToken st
 	}
 
 	// 撤销旧会话，创建新会话
-	_ = s.sessionRepo.Revoke(ctx, tokenHash)
+	_ = s.sessionDA.Revoke(ctx, tokenHash)
 	newSession := &data_access.Session{
 		SuperUserID: su.ID,
 		TokenHash:   crypto.HashToken(newRefreshToken),
 		IPAddress:   session.IPAddress,
 		ExpiresAt:   time.Now().Add(s.jwtManager.GetRefreshTokenDuration()),
 	}
-	_ = s.sessionRepo.Create(ctx, newSession)
+	_ = s.sessionDA.Create(ctx, newSession)
 
 	return &LoginResult{
 		SuperUser:    su,
@@ -229,12 +229,12 @@ func (s *superUserServiceImpl) ValidateToken(ctx context.Context, accessToken st
 
 // ListUsers 获取用户列表
 func (s *superUserServiceImpl) ListUsers(ctx context.Context, filter data_access.UserFilter) ([]*data_access.User, int, error) {
-	return s.userRepo.List(ctx, filter)
+	return s.userDA.List(ctx, filter)
 }
 
 // GetUser 获取用户详情
 func (s *superUserServiceImpl) GetUser(ctx context.Context, userID uuid.UUID) (*data_access.User, error) {
-	user, err := s.userRepo.GetByID(ctx, userID)
+	user, err := s.userDA.GetByID(ctx, userID)
 	if err != nil {
 		return nil, err
 	}
@@ -252,7 +252,7 @@ func (s *superUserServiceImpl) BanUser(ctx context.Context, operatorID, userID u
 		expiresAt = &t
 	}
 
-	if err := s.userRepo.Ban(ctx, userID, reason, expiresAt, operatorID); err != nil {
+	if err := s.userDA.Ban(ctx, userID, reason, expiresAt, operatorID); err != nil {
 		return err
 	}
 
@@ -262,20 +262,20 @@ func (s *superUserServiceImpl) BanUser(ctx context.Context, operatorID, userID u
 		"duration_seconds": durationSeconds,
 	}, nil)
 
-	s.log.Info("封禁用户", slog.String("user_id", userID.String()), slog.String("reason", reason))
+	s.logger.Info("封禁用户", log.String("user_id", userID.String()), log.String("reason", reason))
 	return nil
 }
 
 // UnbanUser 解封用户
 func (s *superUserServiceImpl) UnbanUser(ctx context.Context, operatorID, userID uuid.UUID) error {
-	if err := s.userRepo.Unban(ctx, userID); err != nil {
+	if err := s.userDA.Unban(ctx, userID); err != nil {
 		return err
 	}
 
 	// 记录审计日志
 	s.logAudit(ctx, operatorID, "UNBAN_USER", strPtr("USER"), &userID, nil, nil)
 
-	s.log.Info("解封用户", slog.String("user_id", userID.String()))
+	s.logger.Info("解封用户", log.String("user_id", userID.String()))
 	return nil
 }
 
@@ -283,9 +283,9 @@ func (s *superUserServiceImpl) UnbanUser(ctx context.Context, operatorID, userID
 func (s *superUserServiceImpl) DeleteUser(ctx context.Context, operatorID, userID uuid.UUID, hardDelete bool) error {
 	var err error
 	if hardDelete {
-		err = s.userRepo.HardDelete(ctx, userID)
+		err = s.userDA.HardDelete(ctx, userID)
 	} else {
-		err = s.userRepo.SoftDelete(ctx, userID)
+		err = s.userDA.SoftDelete(ctx, userID)
 	}
 	if err != nil {
 		return err
@@ -296,13 +296,13 @@ func (s *superUserServiceImpl) DeleteUser(ctx context.Context, operatorID, userI
 		"hard_delete": hardDelete,
 	}, nil)
 
-	s.log.Info("删除用户", slog.String("user_id", userID.String()), slog.Bool("hard_delete", hardDelete))
+	s.logger.Info("删除用户", log.String("user_id", userID.String()), log.Bool("hard_delete", hardDelete))
 	return nil
 }
 
 // UpdateUser 更新用户
 func (s *superUserServiceImpl) UpdateUser(ctx context.Context, operatorID uuid.UUID, user *data_access.User) (*data_access.User, error) {
-	if err := s.userRepo.Update(ctx, user); err != nil {
+	if err := s.userDA.Update(ctx, user); err != nil {
 		return nil, err
 	}
 
@@ -312,23 +312,23 @@ func (s *superUserServiceImpl) UpdateUser(ctx context.Context, operatorID uuid.U
 		"display_name": user.DisplayName,
 	}, nil)
 
-	return s.userRepo.GetByID(ctx, user.ID)
+	return s.userDA.GetByID(ctx, user.ID)
 }
 
 // ========== 内容管理 ==========
 
 // ListContents 获取内容列表
 func (s *superUserServiceImpl) ListContents(ctx context.Context, filter data_access.ContentFilter) ([]*data_access.Content, int, error) {
-	return s.contentRepo.List(ctx, filter)
+	return s.contentDA.List(ctx, filter)
 }
 
 // DeleteContent 删除内容
 func (s *superUserServiceImpl) DeleteContent(ctx context.Context, operatorID, contentID uuid.UUID, hardDelete bool) error {
 	var err error
 	if hardDelete {
-		err = s.contentRepo.HardDelete(ctx, contentID)
+		err = s.contentDA.HardDelete(ctx, contentID)
 	} else {
-		err = s.contentRepo.SoftDelete(ctx, contentID)
+		err = s.contentDA.SoftDelete(ctx, contentID)
 	}
 	if err != nil {
 		return err
@@ -339,13 +339,13 @@ func (s *superUserServiceImpl) DeleteContent(ctx context.Context, operatorID, co
 		"hard_delete": hardDelete,
 	}, nil)
 
-	s.log.Info("删除内容", slog.String("content_id", contentID.String()), slog.Bool("hard_delete", hardDelete))
+	s.logger.Info("删除内容", log.String("content_id", contentID.String()), log.Bool("hard_delete", hardDelete))
 	return nil
 }
 
 // BatchDeleteContents 批量删除内容
 func (s *superUserServiceImpl) BatchDeleteContents(ctx context.Context, operatorID uuid.UUID, contentIDs []uuid.UUID, hardDelete bool) (int, []uuid.UUID, error) {
-	deletedCount, failedIDs, err := s.contentRepo.BatchDelete(ctx, contentIDs, hardDelete)
+	deletedCount, failedIDs, err := s.contentDA.BatchDelete(ctx, contentIDs, hardDelete)
 	if err != nil {
 		return 0, nil, err
 	}
@@ -358,7 +358,7 @@ func (s *superUserServiceImpl) BatchDeleteContents(ctx context.Context, operator
 		"failed_ids":    failedIDs,
 	}, nil)
 
-	s.log.Info("批量删除内容", slog.Int("deleted_count", deletedCount), slog.Int("failed_count", len(failedIDs)))
+	s.logger.Info("批量删除内容", log.Int("deleted_count", deletedCount), log.Int("failed_count", len(failedIDs)))
 	return deletedCount, failedIDs, nil
 }
 
@@ -366,7 +366,7 @@ func (s *superUserServiceImpl) BatchDeleteContents(ctx context.Context, operator
 
 // GetSystemStats 获取系统统计
 func (s *superUserServiceImpl) GetSystemStats(ctx context.Context) (*SystemStats, error) {
-	stats, err := s.systemRepo.GetSystemStats(ctx)
+	stats, err := s.systemDA.GetSystemStats(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -384,7 +384,7 @@ func (s *superUserServiceImpl) GetSystemStats(ctx context.Context) (*SystemStats
 
 // GetDatabaseStatus 获取数据库状态
 func (s *superUserServiceImpl) GetDatabaseStatus(ctx context.Context) (*DatabaseStatus, error) {
-	status, err := s.systemRepo.GetDatabaseStatus(ctx)
+	status, err := s.systemDA.GetDatabaseStatus(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -414,19 +414,75 @@ func (s *superUserServiceImpl) GetRedisStatus(ctx context.Context) (*RedisStatus
 		return &RedisStatus{Connected: false}, nil
 	}
 
-	info, err := s.redisClient.Info(ctx, "server", "memory", "clients", "stats").Result()
-	if err != nil {
+	// 检查连接
+	if err := s.redisClient.Ping(ctx).Err(); err != nil {
 		return &RedisStatus{Connected: false}, nil
 	}
 
-	// 简单解析 Redis INFO 输出
 	status := &RedisStatus{Connected: true}
-	// 这里简化处理，实际可以更详细解析
-	_ = info
+
+	// 获取 Redis INFO
+	info, err := s.redisClient.Info(ctx, "server", "memory", "clients", "stats").Result()
+	if err == nil {
+		// 解析版本
+		if idx := strings.Index(info, "redis_version:"); idx != -1 {
+			end := strings.Index(info[idx:], "\r\n")
+			if end == -1 {
+				end = strings.Index(info[idx:], "\n")
+			}
+			if end != -1 {
+				status.Version = strings.TrimPrefix(info[idx:idx+end], "redis_version:")
+			}
+		}
+
+		// 解析内存使用
+		if idx := strings.Index(info, "used_memory:"); idx != -1 {
+			end := strings.Index(info[idx:], "\r\n")
+			if end == -1 {
+				end = strings.Index(info[idx:], "\n")
+			}
+			if end != -1 {
+				memStr := strings.TrimPrefix(info[idx:idx+end], "used_memory:")
+				if mem, err := strconv.ParseInt(memStr, 10, 64); err == nil {
+					status.UsedMemoryBytes = mem
+				}
+			}
+		}
+
+		// 解析连接客户端数
+		if idx := strings.Index(info, "connected_clients:"); idx != -1 {
+			end := strings.Index(info[idx:], "\r\n")
+			if end == -1 {
+				end = strings.Index(info[idx:], "\n")
+			}
+			if end != -1 {
+				clientsStr := strings.TrimPrefix(info[idx:idx+end], "connected_clients:")
+				if clients, err := strconv.ParseInt(clientsStr, 10, 64); err == nil {
+					status.ConnectedClients = clients
+				}
+			}
+		}
+
+		// 解析运行时间
+		if idx := strings.Index(info, "uptime_in_seconds:"); idx != -1 {
+			end := strings.Index(info[idx:], "\r\n")
+			if end == -1 {
+				end = strings.Index(info[idx:], "\n")
+			}
+			if end != -1 {
+				uptimeStr := strings.TrimPrefix(info[idx:idx+end], "uptime_in_seconds:")
+				if uptime, err := strconv.ParseFloat(uptimeStr, 64); err == nil {
+					status.UptimeSeconds = uptime
+				}
+			}
+		}
+	}
 
 	// 获取 key 数量
-	dbSize, _ := s.redisClient.DBSize(ctx).Result()
-	status.TotalKeys = dbSize
+	dbSize, err := s.redisClient.DBSize(ctx).Result()
+	if err == nil {
+		status.TotalKeys = dbSize
+	}
 
 	return status, nil
 }
@@ -444,7 +500,7 @@ func (s *superUserServiceImpl) GetRabbitMQStatus(ctx context.Context) (*RabbitMQ
 
 // ExecuteQuery 执行查询
 func (s *superUserServiceImpl) ExecuteQuery(ctx context.Context, operatorID uuid.UUID, query string, limit int) (*QueryResult, error) {
-	result, err := s.systemRepo.ExecuteQuery(ctx, query, limit)
+	result, err := s.systemDA.ExecuteQuery(ctx, query, limit)
 	if err != nil {
 		return nil, err
 	}
@@ -465,7 +521,7 @@ func (s *superUserServiceImpl) ExecuteQuery(ctx context.Context, operatorID uuid
 
 // GetTableSchema 获取表结构
 func (s *superUserServiceImpl) GetTableSchema(ctx context.Context, tableName string) (*TableSchema, error) {
-	schema, err := s.systemRepo.GetTableSchema(ctx, tableName)
+	schema, err := s.systemDA.GetTableSchema(ctx, tableName)
 	if err != nil {
 		return nil, err
 	}
@@ -499,19 +555,19 @@ func (s *superUserServiceImpl) GetTableSchema(ctx context.Context, tableName str
 
 // ListTables 获取表列表
 func (s *superUserServiceImpl) ListTables(ctx context.Context, schema string) ([]string, error) {
-	return s.systemRepo.ListTables(ctx, schema)
+	return s.systemDA.ListTables(ctx, schema)
 }
 
 // ========== 审计日志 ==========
 
 // GetAuditLogs 获取审计日志
 func (s *superUserServiceImpl) GetAuditLogs(ctx context.Context, filter data_access.AuditLogFilter) ([]*data_access.AuditLog, int, error) {
-	return s.auditLogRepo.List(ctx, filter)
+	return s.auditLogDA.List(ctx, filter)
 }
 
 // logAudit 记录审计日志
 func (s *superUserServiceImpl) logAudit(ctx context.Context, superUserID uuid.UUID, action string, targetType *string, targetID *uuid.UUID, details map[string]interface{}, ip *string) {
-	log := &data_access.AuditLog{
+	auditLog := &data_access.AuditLog{
 		SuperUserID: superUserID,
 		Action:      action,
 		TargetType:  targetType,
@@ -519,8 +575,8 @@ func (s *superUserServiceImpl) logAudit(ctx context.Context, superUserID uuid.UU
 		Details:     details,
 		IPAddress:   ip,
 	}
-	if err := s.auditLogRepo.Create(ctx, log); err != nil {
-		s.log.Error("记录审计日志失败", slog.Any("error", err))
+	if err := s.auditLogDA.Create(ctx, auditLog); err != nil {
+		s.logger.Error("记录审计日志失败", log.Any("error", err))
 	}
 }
 

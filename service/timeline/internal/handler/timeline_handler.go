@@ -3,13 +3,13 @@ package handler
 
 import (
 	"context"
-	"log/slog"
 
+	contentpb "github.com/funcdfs/lesser/content/gen_protos/content"
 	"github.com/funcdfs/lesser/pkg/gen_protos/common"
 	"github.com/funcdfs/lesser/pkg/log"
-	"github.com/funcdfs/lesser/timeline/internal/logic"
-	contentpb "github.com/funcdfs/lesser/content/gen_protos/content"
+	"github.com/funcdfs/lesser/pkg/page"
 	pb "github.com/funcdfs/lesser/timeline/gen_protos/timeline"
+	"github.com/funcdfs/lesser/timeline/internal/logic"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 )
@@ -18,20 +18,17 @@ import (
 type TimelineHandler struct {
 	pb.UnimplementedTimelineServiceServer
 	svc *logic.TimelineService
-	log *slog.Logger
+	log *log.Logger
 }
 
 // NewTimelineHandler 创建处理器
 func NewTimelineHandler(svc *logic.TimelineService, logger *log.Logger) *TimelineHandler {
-	var slogger *slog.Logger
-	if logger != nil {
-		slogger = logger.Logger
-	} else {
-		slogger = slog.Default()
+	if logger == nil {
+		logger = log.Global()
 	}
 	return &TimelineHandler{
 		svc: svc,
-		log: slogger.With(slog.String("component", "handler")),
+		log: logger.With(log.String("component", "handler")),
 	}
 }
 
@@ -41,29 +38,21 @@ func (h *TimelineHandler) GetFollowingFeed(ctx context.Context, req *pb.GetFollo
 		return nil, status.Error(codes.InvalidArgument, "user_id 不能为空")
 	}
 
-	page, pageSize := int32(1), int32(20)
-	if req.Pagination != nil {
-		if req.Pagination.Page > 0 {
-			page = req.Pagination.Page
-		}
-		if req.Pagination.PageSize > 0 {
-			pageSize = req.Pagination.PageSize
-		}
-	}
+	pageReq := extractPagination(req.Pagination)
+	limit, offset := int(pageReq.Limit()), int(pageReq.Offset())
 
-	items, total, err := h.svc.GetFollowingFeed(ctx, req.UserId, int(pageSize), int((page-1)*pageSize))
+	items, total, err := h.svc.GetFollowingFeed(ctx, req.UserId, limit, offset)
 	if err != nil {
-		h.log.Error("获取关注 Feed 失败",
-			slog.String("user_id", req.UserId),
-			slog.String("trace_id", log.TraceIDFromContext(ctx)),
-			slog.Any("error", err),
+		h.log.WithContext(ctx).Error("获取关注 Feed 失败",
+			log.String("user_id", req.UserId),
+			log.Any("error", err),
 		)
 		return nil, logic.ToGRPCError(err)
 	}
 
 	return &pb.GetFollowingFeedResponse{
 		Items:      feedItemsToProto(items),
-		Pagination: &common.Pagination{Page: page, PageSize: pageSize, Total: int32(total)},
+		Pagination: &common.Pagination{Page: pageReq.Page, PageSize: pageReq.PageSize, Total: int32(total)},
 	}, nil
 }
 
@@ -78,63 +67,47 @@ func (h *TimelineHandler) GetUserFeed(ctx context.Context, req *pb.GetUserFeedRe
 		return nil, status.Error(codes.InvalidArgument, "user_id 不能为空")
 	}
 
-	page, pageSize := int32(1), int32(20)
-	if req.Pagination != nil {
-		if req.Pagination.Page > 0 {
-			page = req.Pagination.Page
-		}
-		if req.Pagination.PageSize > 0 {
-			pageSize = req.Pagination.PageSize
-		}
-	}
+	pageReq := extractPagination(req.Pagination)
+	limit, offset := int(pageReq.Limit()), int(pageReq.Offset())
 
-	items, total, err := h.svc.GetUserFeed(ctx, req.UserId, req.ViewerId, int(pageSize), int((page-1)*pageSize))
+	items, total, err := h.svc.GetUserFeed(ctx, req.UserId, req.ViewerId, limit, offset)
 	if err != nil {
-		h.log.Error("获取用户 Feed 失败",
-			slog.String("user_id", req.UserId),
-			slog.String("trace_id", log.TraceIDFromContext(ctx)),
-			slog.Any("error", err),
+		h.log.WithContext(ctx).Error("获取用户 Feed 失败",
+			log.String("user_id", req.UserId),
+			log.Any("error", err),
 		)
 		return nil, logic.ToGRPCError(err)
 	}
 
 	return &pb.GetUserFeedResponse{
 		Items:      feedItemsToProto(items),
-		Pagination: &common.Pagination{Page: page, PageSize: pageSize, Total: int32(total)},
+		Pagination: &common.Pagination{Page: pageReq.Page, PageSize: pageReq.PageSize, Total: int32(total)},
 	}, nil
 }
 
 // GetHotFeed 获取热门 Feed
 func (h *TimelineHandler) GetHotFeed(ctx context.Context, req *pb.GetHotFeedRequest) (*pb.GetHotFeedResponse, error) {
-	page, pageSize := int32(1), int32(20)
-	if req.Pagination != nil {
-		if req.Pagination.Page > 0 {
-			page = req.Pagination.Page
-		}
-		if req.Pagination.PageSize > 0 {
-			pageSize = req.Pagination.PageSize
-		}
-	}
+	pageReq := extractPagination(req.Pagination)
+	limit, offset := int(pageReq.Limit()), int(pageReq.Offset())
 
 	timeRange := req.TimeRange
 	if timeRange == "" {
 		timeRange = "week"
 	}
 
-	items, total, err := h.svc.GetHotFeed(ctx, req.UserId, timeRange, int(pageSize), int((page-1)*pageSize))
+	items, total, err := h.svc.GetHotFeed(ctx, req.UserId, timeRange, limit, offset)
 	if err != nil {
-		h.log.Error("获取热门 Feed 失败",
-			slog.String("user_id", req.UserId),
-			slog.String("time_range", timeRange),
-			slog.String("trace_id", log.TraceIDFromContext(ctx)),
-			slog.Any("error", err),
+		h.log.WithContext(ctx).Error("获取热门 Feed 失败",
+			log.String("user_id", req.UserId),
+			log.String("time_range", timeRange),
+			log.Any("error", err),
 		)
 		return nil, logic.ToGRPCError(err)
 	}
 
 	return &pb.GetHotFeedResponse{
 		Items:      feedItemsToProto(items),
-		Pagination: &common.Pagination{Page: page, PageSize: pageSize, Total: int32(total)},
+		Pagination: &common.Pagination{Page: pageReq.Page, PageSize: pageReq.PageSize, Total: int32(total)},
 	}, nil
 }
 
@@ -146,10 +119,9 @@ func (h *TimelineHandler) GetContentDetail(ctx context.Context, req *pb.GetConte
 
 	item, err := h.svc.GetContentDetail(ctx, req.ContentId, req.ViewerId)
 	if err != nil {
-		h.log.Error("获取内容详情失败",
-			slog.String("content_id", req.ContentId),
-			slog.String("trace_id", log.TraceIDFromContext(ctx)),
-			slog.Any("error", err),
+		h.log.WithContext(ctx).Error("获取内容详情失败",
+			log.String("content_id", req.ContentId),
+			log.Any("error", err),
 		)
 		return nil, logic.ToGRPCError(err)
 	}
@@ -160,10 +132,22 @@ func (h *TimelineHandler) GetContentDetail(ctx context.Context, req *pb.GetConte
 }
 
 // ============================================================================
-// 转换函数
+// 辅助函数
 // ============================================================================
 
+// extractPagination 从 proto 分页参数提取并规范化
+func extractPagination(pagination *common.Pagination) *page.Request {
+	if pagination == nil {
+		return page.NewRequest(1, 20)
+	}
+	return page.NewRequest(pagination.Page, pagination.PageSize)
+}
+
+// feedItemsToProto 批量转换 Feed 条目为 proto 消息
 func feedItemsToProto(items []*logic.FeedItemWithStatus) []*pb.FeedItem {
+	if len(items) == 0 {
+		return []*pb.FeedItem{}
+	}
 	result := make([]*pb.FeedItem, len(items))
 	for i, item := range items {
 		result[i] = feedItemToProto(item)
@@ -171,6 +155,7 @@ func feedItemsToProto(items []*logic.FeedItemWithStatus) []*pb.FeedItem {
 	return result
 }
 
+// feedItemToProto 转换单个 Feed 条目为 proto 消息
 func feedItemToProto(item *logic.FeedItemWithStatus) *pb.FeedItem {
 	if item == nil || item.FeedItem == nil {
 		return nil

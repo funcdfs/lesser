@@ -8,7 +8,7 @@ import (
 	"log/slog"
 	"sync"
 
-	"github.com/funcdfs/lesser/pkg/logger"
+	"github.com/funcdfs/lesser/pkg/log"
 	"go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
@@ -19,15 +19,15 @@ type Pool struct {
 	conns   map[string]*grpc.ClientConn
 	configs map[string]Config
 	mu      sync.RWMutex
-	log     *logger.Logger
+	log     *log.Logger
 }
 
 // NewPool 创建客户端连接池
-func NewPool(log *logger.Logger) *Pool {
+func NewPool(logger *log.Logger) *Pool {
 	return &Pool{
 		conns:   make(map[string]*grpc.ClientConn),
 		configs: make(map[string]Config),
-		log:     log,
+		log:     logger,
 	}
 }
 
@@ -88,6 +88,7 @@ func (p *Pool) GetConn(ctx context.Context, name string) (*grpc.ClientConn, erro
 
 // dial 创建 gRPC 连接
 // 添加 OpenTelemetry 拦截器用于分布式追踪
+// 使用 grpc.NewClient（推荐）替代已弃用的 grpc.DialContext
 func (p *Pool) dial(ctx context.Context, cfg Config) (*grpc.ClientConn, error) {
 	// 创建 OpenTelemetry gRPC 统计处理器
 	otelStatsHandler := otelgrpc.NewClientHandler()
@@ -107,11 +108,8 @@ func (p *Pool) dial(ctx context.Context, cfg Config) (*grpc.ClientConn, error) {
 		opts = append(opts, grpc.WithTransportCredentials(insecure.NewCredentials()))
 	}
 
-	// 使用带超时的 context
-	dialCtx, cancel := context.WithTimeout(ctx, cfg.Timeout)
-	defer cancel()
-
-	return grpc.DialContext(dialCtx, cfg.Target, opts...)
+	// 使用 grpc.NewClient（Go 1.21+ 推荐方式）
+	return grpc.NewClient(cfg.Target, opts...)
 }
 
 // Close 关闭所有连接

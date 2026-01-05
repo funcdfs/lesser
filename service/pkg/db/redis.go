@@ -53,7 +53,6 @@ func (c *RedisClient) Close() error {
 	return c.client.Close()
 }
 
-
 // Get 获取值并反序列化到 target
 func (c *RedisClient) Get(ctx context.Context, key string, target interface{}) error {
 	data, err := c.client.Get(ctx, key).Bytes()
@@ -156,7 +155,6 @@ func (c *RedisClient) Subscribe(ctx context.Context, channels ...string) *redis.
 	return c.client.Subscribe(ctx, channels...)
 }
 
-
 // ---- Hash 操作 ----
 
 // HGet 获取 Hash 字段值
@@ -253,7 +251,6 @@ func (c *RedisClient) SIsMember(ctx context.Context, key string, member interfac
 func (c *RedisClient) SCard(ctx context.Context, key string) (int64, error) {
 	return c.client.SCard(ctx, key).Result()
 }
-
 
 // ---- Sorted Set 操作 ----
 

@@ -3,7 +3,7 @@ package interceptor
 import (
 	"context"
 
-	"github.com/funcdfs/lesser/pkg/logger"
+	"github.com/funcdfs/lesser/pkg/log"
 	"github.com/google/uuid"
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/attribute"
@@ -32,7 +32,7 @@ func TraceInterceptor() grpc.UnaryServerInterceptor {
 		}
 
 		// 注入 trace_id 到 context（用于日志）
-		ctx = logger.ContextWithTraceID(ctx, traceID)
+		ctx = log.ContextWithTraceID(ctx, traceID)
 
 		// 创建 OpenTelemetry Span
 		tracer := otel.Tracer("grpc-server")
@@ -109,7 +109,7 @@ func StreamTraceInterceptor() grpc.StreamServerInterceptor {
 		}
 
 		// 注入 trace_id 到 context（用于日志）
-		ctx = logger.ContextWithTraceID(ctx, traceID)
+		ctx = log.ContextWithTraceID(ctx, traceID)
 
 		// 创建 OpenTelemetry Span
 		tracer := otel.Tracer("grpc-server")

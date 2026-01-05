@@ -1,4 +1,4 @@
-// Package repository 提供 Chat 服务的数据访问层
+// Package data_access 提供 Chat 服务的数据访问层
 package data_access
 
 import (
@@ -17,6 +17,9 @@ type ConversationType int
 const (
 	ConversationTypePrivate ConversationType = 1 // 私聊
 	ConversationTypeGroup   ConversationType = 2 // 群聊
+	// ConversationTypeChannel 已废弃，仅用于过滤旧数据
+	// CHANNEL 类型已迁移到独立的 Channel 服务
+	ConversationTypeChannel ConversationType = 3 // 频道（已废弃）
 )
 
 // MemberRole 成员角色 (数据库中为 INTEGER)
@@ -55,18 +58,18 @@ type ConversationMember struct {
 	AvatarURL   *string
 }
 
-// ConversationRepository 会话仓库
-type ConversationRepository struct {
+// ConversationDataAccess 会话数据访问
+type ConversationDataAccess struct {
 	db *sql.DB
 }
 
-// NewConversationRepository 创建会话仓库
-func NewConversationRepository(db *sql.DB) *ConversationRepository {
-	return &ConversationRepository{db: db}
+// NewConversationDataAccess 创建会话数据访问
+func NewConversationDataAccess(db *sql.DB) *ConversationDataAccess {
+	return &ConversationDataAccess{db: db}
 }
 
 // Create 创建会话
-func (r *ConversationRepository) Create(ctx context.Context, conv *Conversation, memberIDs []uuid.UUID) error {
+func (r *ConversationDataAccess) Create(ctx context.Context, conv *Conversation, memberIDs []uuid.UUID) error {
 	tx, err := r.db.BeginTx(ctx, nil)
 	if err != nil {
 		return fmt.Errorf("开始事务失败: %w", err)
@@ -110,7 +113,7 @@ func (r *ConversationRepository) Create(ctx context.Context, conv *Conversation,
 }
 
 // GetByID 根据 ID 获取会话
-func (r *ConversationRepository) GetByID(ctx context.Context, id uuid.UUID) (*Conversation, error) {
+func (r *ConversationDataAccess) GetByID(ctx context.Context, id uuid.UUID) (*Conversation, error) {
 	query := `
 		SELECT id, type, name, creator_id, created_at, updated_at
 		FROM conversations
@@ -138,30 +141,31 @@ func (r *ConversationRepository) GetByID(ctx context.Context, id uuid.UUID) (*Co
 }
 
 // GetByUserID 获取用户的会话列表
-func (r *ConversationRepository) GetByUserID(ctx context.Context, userID uuid.UUID, page, pageSize int) ([]Conversation, int64, error) {
-	// 统计总数
+// 注意：排除 CHANNEL 类型（type = 3），CHANNEL 类型已迁移到独立的 Channel 服务
+func (r *ConversationDataAccess) GetByUserID(ctx context.Context, userID uuid.UUID, page, pageSize int) ([]Conversation, int64, error) {
+	// 统计总数（排除 CHANNEL 类型）
 	countQuery := `
 		SELECT COUNT(*)
 		FROM conversations c
 		INNER JOIN conversation_members m ON c.id = m.conversation_id
-		WHERE m.user_id = $1
+		WHERE m.user_id = $1 AND c.type != $2
 	`
 	var total int64
-	if err := r.db.QueryRowContext(ctx, countQuery, userID).Scan(&total); err != nil {
+	if err := r.db.QueryRowContext(ctx, countQuery, userID, int(ConversationTypeChannel)).Scan(&total); err != nil {
 		return nil, 0, fmt.Errorf("统计会话数量失败: %w", err)
 	}
 
-	// 查询会话列表
+	// 查询会话列表（排除 CHANNEL 类型）
 	offset := (page - 1) * pageSize
 	query := `
 		SELECT c.id, c.type, c.name, c.creator_id, c.created_at, c.updated_at
 		FROM conversations c
 		INNER JOIN conversation_members m ON c.id = m.conversation_id
-		WHERE m.user_id = $1
+		WHERE m.user_id = $1 AND c.type != $2
 		ORDER BY c.updated_at DESC
-		LIMIT $2 OFFSET $3
+		LIMIT $3 OFFSET $4
 	`
-	rows, err := r.db.QueryContext(ctx, query, userID, pageSize, offset)
+	rows, err := r.db.QueryContext(ctx, query, userID, int(ConversationTypeChannel), pageSize, offset)
 	if err != nil {
 		return nil, 0, fmt.Errorf("获取会话列表失败: %w", err)
 	}
@@ -184,11 +188,16 @@ func (r *ConversationRepository) GetByUserID(ctx context.Context, userID uuid.UU
 		conversations = append(conversations, conv)
 	}
 
+	// 检查遍历过程中是否有错误
+	if err := rows.Err(); err != nil {
+		return nil, 0, fmt.Errorf("遍历会话列表失败: %w", err)
+	}
+
 	return conversations, total, nil
 }
 
 // GetPrivateConversation 获取两个用户之间的私聊会话
-func (r *ConversationRepository) GetPrivateConversation(ctx context.Context, userID1, userID2 uuid.UUID) (*Conversation, error) {
+func (r *ConversationDataAccess) GetPrivateConversation(ctx context.Context, userID1, userID2 uuid.UUID) (*Conversation, error) {
 	query := `
 		SELECT c.id, c.type, c.name, c.creator_id, c.created_at, c.updated_at
 		FROM conversations c
@@ -222,7 +231,7 @@ func (r *ConversationRepository) GetPrivateConversation(ctx context.Context, use
 }
 
 // IsMember 检查用户是否为会话成员
-func (r *ConversationRepository) IsMember(ctx context.Context, conversationID, userID uuid.UUID) (bool, error) {
+func (r *ConversationDataAccess) IsMember(ctx context.Context, conversationID, userID uuid.UUID) (bool, error) {
 	query := `
 		SELECT COUNT(*) FROM conversation_members
 		WHERE conversation_id = $1 AND user_id = $2
@@ -235,7 +244,7 @@ func (r *ConversationRepository) IsMember(ctx context.Context, conversationID, u
 }
 
 // GetMember 获取成员信息
-func (r *ConversationRepository) GetMember(ctx context.Context, conversationID, userID uuid.UUID) (*ConversationMember, error) {
+func (r *ConversationDataAccess) GetMember(ctx context.Context, conversationID, userID uuid.UUID) (*ConversationMember, error) {
 	query := `
 		SELECT conversation_id, user_id, role, joined_at, last_read_at
 		FROM conversation_members
@@ -255,7 +264,7 @@ func (r *ConversationRepository) GetMember(ctx context.Context, conversationID, 
 }
 
 // GetMemberIDs 获取会话的所有成员 ID
-func (r *ConversationRepository) GetMemberIDs(ctx context.Context, conversationID uuid.UUID) ([]uuid.UUID, error) {
+func (r *ConversationDataAccess) GetMemberIDs(ctx context.Context, conversationID uuid.UUID) ([]uuid.UUID, error) {
 	query := `SELECT user_id FROM conversation_members WHERE conversation_id = $1`
 	rows, err := r.db.QueryContext(ctx, query, conversationID)
 	if err != nil {
@@ -271,11 +280,16 @@ func (r *ConversationRepository) GetMemberIDs(ctx context.Context, conversationI
 		}
 		ids = append(ids, id)
 	}
+
+	if err := rows.Err(); err != nil {
+		return nil, fmt.Errorf("遍历成员列表失败: %w", err)
+	}
+
 	return ids, nil
 }
 
 // AddMember 添加成员
-func (r *ConversationRepository) AddMember(ctx context.Context, conversationID, userID uuid.UUID, role MemberRole) error {
+func (r *ConversationDataAccess) AddMember(ctx context.Context, conversationID, userID uuid.UUID, role MemberRole) error {
 	query := `
 		INSERT INTO conversation_members (conversation_id, user_id, role, joined_at)
 		VALUES ($1, $2, $3, $4)
@@ -291,7 +305,7 @@ func (r *ConversationRepository) AddMember(ctx context.Context, conversationID, 
 }
 
 // RemoveMember 移除成员
-func (r *ConversationRepository) RemoveMember(ctx context.Context, conversationID, userID uuid.UUID) error {
+func (r *ConversationDataAccess) RemoveMember(ctx context.Context, conversationID, userID uuid.UUID) error {
 	query := `DELETE FROM conversation_members WHERE conversation_id = $1 AND user_id = $2`
 	result, err := r.db.ExecContext(ctx, query, conversationID, userID)
 	if err != nil {
@@ -305,7 +319,7 @@ func (r *ConversationRepository) RemoveMember(ctx context.Context, conversationI
 }
 
 // UpdateTimestamp 更新会话时间戳
-func (r *ConversationRepository) UpdateTimestamp(ctx context.Context, conversationID uuid.UUID) error {
+func (r *ConversationDataAccess) UpdateTimestamp(ctx context.Context, conversationID uuid.UUID) error {
 	query := `UPDATE conversations SET updated_at = $1 WHERE id = $2`
 	_, err := r.db.ExecContext(ctx, query, time.Now().UTC(), conversationID)
 	if err != nil {
@@ -315,7 +329,7 @@ func (r *ConversationRepository) UpdateTimestamp(ctx context.Context, conversati
 }
 
 // UpdateLastReadAt 更新成员的最后已读时间
-func (r *ConversationRepository) UpdateLastReadAt(ctx context.Context, conversationID, userID uuid.UUID, readAt time.Time) error {
+func (r *ConversationDataAccess) UpdateLastReadAt(ctx context.Context, conversationID, userID uuid.UUID, readAt time.Time) error {
 	query := `
 		UPDATE conversation_members
 		SET last_read_at = $1
@@ -333,7 +347,7 @@ func (r *ConversationRepository) UpdateLastReadAt(ctx context.Context, conversat
 }
 
 // Delete 删除会话
-func (r *ConversationRepository) Delete(ctx context.Context, id uuid.UUID) error {
+func (r *ConversationDataAccess) Delete(ctx context.Context, id uuid.UUID) error {
 	tx, err := r.db.BeginTx(ctx, nil)
 	if err != nil {
 		return fmt.Errorf("开始事务失败: %w", err)
@@ -360,7 +374,7 @@ func (r *ConversationRepository) Delete(ctx context.Context, id uuid.UUID) error
 }
 
 // getMembers 获取会话的所有成员
-func (r *ConversationRepository) getMembers(ctx context.Context, conversationID uuid.UUID) ([]ConversationMember, error) {
+func (r *ConversationDataAccess) getMembers(ctx context.Context, conversationID uuid.UUID) ([]ConversationMember, error) {
 	query := `
 		SELECT conversation_id, user_id, role, joined_at, last_read_at
 		FROM conversation_members
@@ -380,5 +394,10 @@ func (r *ConversationRepository) getMembers(ctx context.Context, conversationID 
 		}
 		members = append(members, m)
 	}
+
+	if err := rows.Err(); err != nil {
+		return nil, fmt.Errorf("遍历成员列表失败: %w", err)
+	}
+
 	return members, nil
 }

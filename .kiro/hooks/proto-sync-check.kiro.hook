@@ -1,0 +1,16 @@
+{
+  "enabled": true,
+  "name": "Proto 同步检查",
+  "description": "当 proto 文件修改后，自动检查相关的 Flutter (gen_protos) 和 Service (gen_protos) 代码是否需要同步更新，并提醒运行 devlesser proto 命令重新生成代码",
+  "version": "1",
+  "when": {
+    "type": "fileEdited",
+    "patterns": [
+      "protos/**/*.proto"
+    ]
+  },
+  "then": {
+    "type": "askAgent",
+    "prompt": "Proto 文件已修改。请执行以下检查：\n\n1. 分析修改的 proto 文件内容变化\n2. 检查 `client/mobile_flutter/lib/gen_protos/` 下对应的 Dart 生成代码是否需要更新\n3. 检查 `service/*/gen_protos/` 下对应的 Go 生成代码是否需要更新\n4. 提醒用户运行 `devlesser proto` 命令来同步生成代码\n5. 如果 proto 中有新增的 message 或 rpc 方法，列出可能需要在 Flutter 和 Service 中实现的相关代码位置"
+  }
+}

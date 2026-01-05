@@ -1,13 +1,13 @@
 // Package handler 提供 Interaction 服务的 gRPC 处理器
+// 负责协议对接、参数验证和响应转换
 package handler
 
 import (
 	"context"
-	"log/slog"
 
+	pb "github.com/funcdfs/lesser/interaction/gen_protos/interaction"
 	"github.com/funcdfs/lesser/interaction/internal/data_access"
 	"github.com/funcdfs/lesser/interaction/internal/logic"
-	pb "github.com/funcdfs/lesser/interaction/gen_protos/interaction"
 	"github.com/funcdfs/lesser/pkg/gen_protos/common"
 	"github.com/funcdfs/lesser/pkg/log"
 	"google.golang.org/grpc/codes"
@@ -15,20 +15,21 @@ import (
 )
 
 // InteractionHandler gRPC 处理器
+// 实现 InteractionServiceServer 接口
 type InteractionHandler struct {
 	pb.UnimplementedInteractionServiceServer
 	svc *logic.InteractionService
-	log *slog.Logger
+	log *log.Logger
 }
 
-// NewInteractionHandler 创建处理器
-func NewInteractionHandler(svc *logic.InteractionService, log *slog.Logger) *InteractionHandler {
-	if log == nil {
-		log = slog.Default()
+// NewInteractionHandler 创建处理器实例
+func NewInteractionHandler(svc *logic.InteractionService, logger *log.Logger) *InteractionHandler {
+	if logger == nil {
+		logger = log.Global()
 	}
 	return &InteractionHandler{
 		svc: svc,
-		log: log.With(slog.String("component", "handler")),
+		log: logger.With(log.String("component", "handler")),
 	}
 }
 
@@ -42,15 +43,15 @@ func (h *InteractionHandler) Like(ctx context.Context, req *pb.LikeRequest) (*pb
 		return nil, status.Error(codes.InvalidArgument, "user_id 和 content_id 不能为空")
 	}
 
-	h.log.Debug("点赞", slog.String("user_id", req.UserId), slog.String("content_id", req.ContentId))
+	h.log.Debug("点赞", log.String("user_id", req.UserId), log.String("content_id", req.ContentId))
 
 	count, err := h.svc.Like(ctx, req.UserId, req.ContentId)
 	if err != nil {
 		h.log.Error("点赞失败",
-			slog.String("user_id", req.UserId),
-			slog.String("content_id", req.ContentId),
-			slog.String("trace_id", log.TraceIDFromContext(ctx)),
-			slog.Any("error", err),
+			log.String("user_id", req.UserId),
+			log.String("content_id", req.ContentId),
+			log.String("trace_id", log.TraceIDFromContext(ctx)),
+			log.Any("error", err),
 		)
 		return nil, logic.ToGRPCError(err)
 	}
@@ -64,15 +65,15 @@ func (h *InteractionHandler) Unlike(ctx context.Context, req *pb.UnlikeRequest) 
 		return nil, status.Error(codes.InvalidArgument, "user_id 和 content_id 不能为空")
 	}
 
-	h.log.Debug("取消点赞", slog.String("user_id", req.UserId), slog.String("content_id", req.ContentId))
+	h.log.Debug("取消点赞", log.String("user_id", req.UserId), log.String("content_id", req.ContentId))
 
 	count, err := h.svc.Unlike(ctx, req.UserId, req.ContentId)
 	if err != nil {
 		h.log.Error("取消点赞失败",
-			slog.String("user_id", req.UserId),
-			slog.String("content_id", req.ContentId),
-			slog.String("trace_id", log.TraceIDFromContext(ctx)),
-			slog.Any("error", err),
+			log.String("user_id", req.UserId),
+			log.String("content_id", req.ContentId),
+			log.String("trace_id", log.TraceIDFromContext(ctx)),
+			log.Any("error", err),
 		)
 		return nil, logic.ToGRPCError(err)
 	}
@@ -89,10 +90,10 @@ func (h *InteractionHandler) CheckLiked(ctx context.Context, req *pb.CheckLikedR
 	isLiked, err := h.svc.CheckLiked(req.UserId, req.ContentId)
 	if err != nil {
 		h.log.Error("检查是否已点赞失败",
-			slog.String("user_id", req.UserId),
-			slog.String("content_id", req.ContentId),
-			slog.String("trace_id", log.TraceIDFromContext(ctx)),
-			slog.Any("error", err),
+			log.String("user_id", req.UserId),
+			log.String("content_id", req.ContentId),
+			log.String("trace_id", log.TraceIDFromContext(ctx)),
+			log.Any("error", err),
 		)
 		return nil, logic.ToGRPCError(err)
 	}
@@ -110,15 +111,15 @@ func (h *InteractionHandler) Bookmark(ctx context.Context, req *pb.BookmarkReque
 		return nil, status.Error(codes.InvalidArgument, "user_id 和 content_id 不能为空")
 	}
 
-	h.log.Debug("收藏", slog.String("user_id", req.UserId), slog.String("content_id", req.ContentId))
+	h.log.Debug("收藏", log.String("user_id", req.UserId), log.String("content_id", req.ContentId))
 
 	count, err := h.svc.Bookmark(ctx, req.UserId, req.ContentId)
 	if err != nil {
 		h.log.Error("收藏失败",
-			slog.String("user_id", req.UserId),
-			slog.String("content_id", req.ContentId),
-			slog.String("trace_id", log.TraceIDFromContext(ctx)),
-			slog.Any("error", err),
+			log.String("user_id", req.UserId),
+			log.String("content_id", req.ContentId),
+			log.String("trace_id", log.TraceIDFromContext(ctx)),
+			log.Any("error", err),
 		)
 		return nil, logic.ToGRPCError(err)
 	}
@@ -132,15 +133,15 @@ func (h *InteractionHandler) Unbookmark(ctx context.Context, req *pb.UnbookmarkR
 		return nil, status.Error(codes.InvalidArgument, "user_id 和 content_id 不能为空")
 	}
 
-	h.log.Debug("取消收藏", slog.String("user_id", req.UserId), slog.String("content_id", req.ContentId))
+	h.log.Debug("取消收藏", log.String("user_id", req.UserId), log.String("content_id", req.ContentId))
 
 	count, err := h.svc.Unbookmark(ctx, req.UserId, req.ContentId)
 	if err != nil {
 		h.log.Error("取消收藏失败",
-			slog.String("user_id", req.UserId),
-			slog.String("content_id", req.ContentId),
-			slog.String("trace_id", log.TraceIDFromContext(ctx)),
-			slog.Any("error", err),
+			log.String("user_id", req.UserId),
+			log.String("content_id", req.ContentId),
+			log.String("trace_id", log.TraceIDFromContext(ctx)),
+			log.Any("error", err),
 		)
 		return nil, logic.ToGRPCError(err)
 	}
@@ -167,9 +168,9 @@ func (h *InteractionHandler) ListBookmarks(ctx context.Context, req *pb.ListBook
 	bookmarks, total, err := h.svc.ListBookmarks(req.UserId, int(pageSize), int((page-1)*pageSize))
 	if err != nil {
 		h.log.Error("获取收藏列表失败",
-			slog.String("user_id", req.UserId),
-			slog.String("trace_id", log.TraceIDFromContext(ctx)),
-			slog.Any("error", err),
+			log.String("user_id", req.UserId),
+			log.String("trace_id", log.TraceIDFromContext(ctx)),
+			log.Any("error", err),
 		)
 		return nil, logic.ToGRPCError(err)
 	}
@@ -190,15 +191,15 @@ func (h *InteractionHandler) CreateRepost(ctx context.Context, req *pb.CreateRep
 		return nil, status.Error(codes.InvalidArgument, "user_id 和 content_id 不能为空")
 	}
 
-	h.log.Debug("转发", slog.String("user_id", req.UserId), slog.String("content_id", req.ContentId))
+	h.log.Debug("转发", log.String("user_id", req.UserId), log.String("content_id", req.ContentId))
 
 	repost, count, err := h.svc.CreateRepost(ctx, req.UserId, req.ContentId, req.Quote)
 	if err != nil {
 		h.log.Error("转发失败",
-			slog.String("user_id", req.UserId),
-			slog.String("content_id", req.ContentId),
-			slog.String("trace_id", log.TraceIDFromContext(ctx)),
-			slog.Any("error", err),
+			log.String("user_id", req.UserId),
+			log.String("content_id", req.ContentId),
+			log.String("trace_id", log.TraceIDFromContext(ctx)),
+			log.Any("error", err),
 		)
 		return nil, logic.ToGRPCError(err)
 	}
@@ -215,15 +216,15 @@ func (h *InteractionHandler) DeleteRepost(ctx context.Context, req *pb.DeleteRep
 		return nil, status.Error(codes.InvalidArgument, "user_id 和 content_id 不能为空")
 	}
 
-	h.log.Debug("删除转发", slog.String("user_id", req.UserId), slog.String("content_id", req.ContentId))
+	h.log.Debug("删除转发", log.String("user_id", req.UserId), log.String("content_id", req.ContentId))
 
 	count, err := h.svc.DeleteRepost(ctx, req.UserId, req.ContentId)
 	if err != nil {
 		h.log.Error("删除转发失败",
-			slog.String("user_id", req.UserId),
-			slog.String("content_id", req.ContentId),
-			slog.String("trace_id", log.TraceIDFromContext(ctx)),
-			slog.Any("error", err),
+			log.String("user_id", req.UserId),
+			log.String("content_id", req.ContentId),
+			log.String("trace_id", log.TraceIDFromContext(ctx)),
+			log.Any("error", err),
 		)
 		return nil, logic.ToGRPCError(err)
 	}
@@ -244,9 +245,9 @@ func (h *InteractionHandler) BatchGetInteractionStatus(ctx context.Context, req 
 	statuses, err := h.svc.BatchGetInteractionStatus(req.UserId, req.ContentIds)
 	if err != nil {
 		h.log.Error("批量获取交互状态失败",
-			slog.String("user_id", req.UserId),
-			slog.String("trace_id", log.TraceIDFromContext(ctx)),
-			slog.Any("error", err),
+			log.String("user_id", req.UserId),
+			log.String("trace_id", log.TraceIDFromContext(ctx)),
+			log.Any("error", err),
 		)
 		return nil, logic.ToGRPCError(err)
 	}
@@ -258,9 +259,14 @@ func (h *InteractionHandler) BatchGetInteractionStatus(ctx context.Context, req 
 
 // ============================================================================
 // 转换函数
+// 将内部数据结构转换为 Proto 消息
 // ============================================================================
 
+// bookmarksToProto 将收藏列表转换为 Proto 消息
 func bookmarksToProto(bookmarks []*data_access.Bookmark) []*pb.Bookmark {
+	if bookmarks == nil {
+		return []*pb.Bookmark{}
+	}
 	result := make([]*pb.Bookmark, len(bookmarks))
 	for i, b := range bookmarks {
 		result[i] = &pb.Bookmark{
@@ -273,6 +279,7 @@ func bookmarksToProto(bookmarks []*data_access.Bookmark) []*pb.Bookmark {
 	return result
 }
 
+// repostToProto 将转发记录转换为 Proto 消息
 func repostToProto(r *data_access.Repost) *pb.Repost {
 	if r == nil {
 		return nil
@@ -286,7 +293,11 @@ func repostToProto(r *data_access.Repost) *pb.Repost {
 	}
 }
 
+// statusesToProto 将交互状态列表转换为 Proto 消息
 func statusesToProto(statuses []*logic.InteractionStatus) []*pb.UserInteractionStatus {
+	if statuses == nil {
+		return []*pb.UserInteractionStatus{}
+	}
 	result := make([]*pb.UserInteractionStatus, len(statuses))
 	for i, s := range statuses {
 		result[i] = &pb.UserInteractionStatus{

@@ -4,9 +4,10 @@ package logic
 import (
 	"context"
 	"errors"
+	"unicode/utf8"
 
-	"github.com/funcdfs/lesser/comment/internal/data_access"
 	contentpb "github.com/funcdfs/lesser/comment/gen_protos/content"
+	"github.com/funcdfs/lesser/comment/internal/data_access"
 )
 
 // 业务错误定义
@@ -22,7 +23,7 @@ var (
 	ErrNotLiked         = errors.New("未点赞")
 )
 
-// 评论长度限制
+// 评论长度限制（Unicode 字符数）
 const MaxCommentLength = 2000
 
 // SortBy 排序方式（与 proto 对应）
@@ -52,8 +53,8 @@ type EventPublisher interface {
 	PublishUserMentioned(ctx context.Context, mentionedUserID, mentionerID, commentID string)
 }
 
-// CommentRepository 评论仓库接口
-type CommentRepository interface {
+// CommentDataAccess 评论数据访问接口
+type CommentDataAccess interface {
 	Create(ctx context.Context, comment *data_access.Comment) error
 	GetByID(ctx context.Context, id string) (*data_access.Comment, error)
 	Delete(ctx context.Context, id string) (*data_access.Comment, error)
@@ -68,15 +69,15 @@ type CommentRepository interface {
 
 // CommentService 评论服务
 type CommentService struct {
-	commentRepo   CommentRepository
+	commentDA     CommentDataAccess
 	contentClient ContentClient
 	publisher     EventPublisher // 可选，为 nil 时不发布事件
 }
 
 // NewCommentService 创建评论服务实例
-func NewCommentService(commentRepo CommentRepository, contentClient ContentClient) *CommentService {
+func NewCommentService(commentDA CommentDataAccess, contentClient ContentClient) *CommentService {
 	return &CommentService{
-		commentRepo:   commentRepo,
+		commentDA:     commentDA,
 		contentClient: contentClient,
 	}
 }
@@ -86,13 +87,13 @@ func (s *CommentService) SetPublisher(publisher EventPublisher) {
 	s.publisher = publisher
 }
 
-
 // CreateComment 创建评论
 func (s *CommentService) CreateComment(ctx context.Context, authorID, contentID, parentID, text string, mentionedUserIDs []string) (*data_access.Comment, int32, error) {
 	if text == "" {
 		return nil, 0, ErrEmptyText
 	}
-	if len(text) > MaxCommentLength {
+	// 使用 Unicode 字符数而非字节数进行长度验证
+	if utf8.RuneCountInString(text) > MaxCommentLength {
 		return nil, 0, ErrTextTooLong
 	}
 
@@ -110,7 +111,7 @@ func (s *CommentService) CreateComment(ctx context.Context, authorID, contentID,
 	// 如果是回复，获取父评论信息
 	var parentAuthorID string
 	if parentID != "" {
-		parentComment, err := s.commentRepo.GetByID(ctx, parentID)
+		parentComment, err := s.commentDA.GetByID(ctx, parentID)
 		if err != nil {
 			return nil, 0, ErrInvalidParent
 		}
@@ -123,7 +124,7 @@ func (s *CommentService) CreateComment(ctx context.Context, authorID, contentID,
 		ParentID:  parentID,
 		Text:      text,
 	}
-	if err := s.commentRepo.Create(ctx, comment); err != nil {
+	if err := s.commentDA.Create(ctx, comment); err != nil {
 		if err == data_access.ErrInvalidParent {
 			return nil, 0, ErrInvalidParent
 		}
@@ -132,7 +133,7 @@ func (s *CommentService) CreateComment(ctx context.Context, authorID, contentID,
 
 	count, _ := s.contentClient.UpdateCounter(ctx, contentID, contentpb.CounterType_COUNTER_COMMENT, 1)
 
-	createdComment, err := s.commentRepo.GetByID(ctx, comment.ID)
+	createdComment, err := s.commentDA.GetByID(ctx, comment.ID)
 	if err != nil {
 		createdComment = comment
 	}
@@ -156,7 +157,7 @@ func (s *CommentService) CreateComment(ctx context.Context, authorID, contentID,
 
 // GetComment 获取单条评论
 func (s *CommentService) GetComment(ctx context.Context, commentID string) (*data_access.Comment, error) {
-	comment, err := s.commentRepo.GetByID(ctx, commentID)
+	comment, err := s.commentDA.GetByID(ctx, commentID)
 	if err != nil {
 		if err == data_access.ErrCommentNotFound {
 			return nil, ErrCommentNotFound
@@ -173,7 +174,7 @@ func (s *CommentService) GetComment(ctx context.Context, commentID string) (*dat
 
 // DeleteComment 删除评论
 func (s *CommentService) DeleteComment(ctx context.Context, commentID, userID string) (int32, error) {
-	comment, err := s.commentRepo.GetByID(ctx, commentID)
+	comment, err := s.commentDA.GetByID(ctx, commentID)
 	if err != nil {
 		if err == data_access.ErrCommentNotFound {
 			return 0, ErrCommentNotFound
@@ -189,7 +190,7 @@ func (s *CommentService) DeleteComment(ctx context.Context, commentID, userID st
 		return 0, ErrCommentNotFound
 	}
 
-	deletedComment, err := s.commentRepo.Delete(ctx, commentID)
+	deletedComment, err := s.commentDA.Delete(ctx, commentID)
 	if err != nil {
 		return 0, err
 	}
@@ -198,7 +199,6 @@ func (s *CommentService) DeleteComment(ctx context.Context, commentID, userID st
 
 	return count, nil
 }
-
 
 // ListComments 获取评论列表（支持排序）
 func (s *CommentService) ListComments(ctx context.Context, contentID, parentID string, sortBy SortBy, limit, offset int) ([]*data_access.Comment, int, error) {
@@ -212,17 +212,17 @@ func (s *CommentService) ListComments(ctx context.Context, contentID, parentID s
 		offset = 0
 	}
 
-	return s.commentRepo.List(ctx, contentID, parentID, data_access.SortBy(sortBy), limit, offset)
+	return s.commentDA.List(ctx, contentID, parentID, data_access.SortBy(sortBy), limit, offset)
 }
 
 // GetCommentCount 获取评论数量
 func (s *CommentService) GetCommentCount(ctx context.Context, contentID string) (int32, error) {
-	return s.commentRepo.GetCount(ctx, contentID)
+	return s.commentDA.GetCount(ctx, contentID)
 }
 
 // BatchGetCommentCount 批量获取评论数量
 func (s *CommentService) BatchGetCommentCount(ctx context.Context, contentIDs []string) (map[string]int32, error) {
-	return s.commentRepo.BatchGetCount(ctx, contentIDs)
+	return s.commentDA.BatchGetCount(ctx, contentIDs)
 }
 
 // ============================================================================
@@ -232,7 +232,7 @@ func (s *CommentService) BatchGetCommentCount(ctx context.Context, contentIDs []
 // LikeComment 点赞评论
 func (s *CommentService) LikeComment(ctx context.Context, userID, commentID string) (int32, error) {
 	// 先获取评论信息（用于发送通知）
-	comment, err := s.commentRepo.GetByID(ctx, commentID)
+	comment, err := s.commentDA.GetByID(ctx, commentID)
 	if err != nil {
 		if err == data_access.ErrCommentNotFound {
 			return 0, ErrCommentNotFound
@@ -240,7 +240,7 @@ func (s *CommentService) LikeComment(ctx context.Context, userID, commentID stri
 		return 0, err
 	}
 
-	count, err := s.commentRepo.LikeComment(ctx, userID, commentID)
+	count, err := s.commentDA.LikeComment(ctx, userID, commentID)
 	if err != nil {
 		if err == data_access.ErrCommentNotFound {
 			return 0, ErrCommentNotFound
@@ -262,7 +262,7 @@ func (s *CommentService) LikeComment(ctx context.Context, userID, commentID stri
 
 // UnlikeComment 取消点赞评论
 func (s *CommentService) UnlikeComment(ctx context.Context, userID, commentID string) (int32, error) {
-	count, err := s.commentRepo.UnlikeComment(ctx, userID, commentID)
+	count, err := s.commentDA.UnlikeComment(ctx, userID, commentID)
 	if err != nil {
 		if err == data_access.ErrNotLiked {
 			return 0, ErrNotLiked
@@ -274,14 +274,13 @@ func (s *CommentService) UnlikeComment(ctx context.Context, userID, commentID st
 
 // CheckLiked 检查用户是否已点赞评论
 func (s *CommentService) CheckLiked(ctx context.Context, userID, commentID string) (bool, error) {
-	return s.commentRepo.CheckLiked(ctx, userID, commentID)
+	return s.commentDA.CheckLiked(ctx, userID, commentID)
 }
 
 // BatchCheckLiked 批量检查用户是否已点赞评论
 func (s *CommentService) BatchCheckLiked(ctx context.Context, userID string, commentIDs []string) (map[string]bool, error) {
-	return s.commentRepo.BatchCheckLiked(ctx, userID, commentIDs)
+	return s.commentDA.BatchCheckLiked(ctx, userID, commentIDs)
 }
-
 
 // ============================================================================
 // 辅助函数

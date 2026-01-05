@@ -9,18 +9,18 @@ package server
 
 import (
 	"context"
-	"log/slog"
 	"time"
 
 	"google.golang.org/grpc"
 
+	authpb "github.com/funcdfs/lesser/gateway/gen_protos/auth"
+	pb "github.com/funcdfs/lesser/gateway/gen_protos/gateway"
 	"github.com/funcdfs/lesser/gateway/internal/auth"
 	"github.com/funcdfs/lesser/gateway/internal/interceptor"
 	"github.com/funcdfs/lesser/gateway/internal/ratelimit"
 	"github.com/funcdfs/lesser/gateway/internal/router"
 	"github.com/funcdfs/lesser/gateway/internal/streaming"
-	authpb "github.com/funcdfs/lesser/gateway/gen_protos/auth"
-	pb "github.com/funcdfs/lesser/gateway/gen_protos/gateway"
+	"github.com/funcdfs/lesser/pkg/log"
 )
 
 // ============================================================================
@@ -37,6 +37,7 @@ type Config struct {
 	CommentServiceAddr      string
 	TimelineServiceAddr     string
 	ChatServiceAddr         string
+	ChannelServiceAddr      string
 	SearchServiceAddr       string
 	NotificationServiceAddr string
 
@@ -60,15 +61,15 @@ type GatewayServer struct {
 	streamingProxy *streaming.Proxy
 
 	// 日志
-	log *slog.Logger
+	log *log.Logger
 }
 
 // NewGatewayServer 创建 Gateway 服务器
-func NewGatewayServer(cfg Config, log *slog.Logger) (*GatewayServer, error) {
-	if log == nil {
-		log = slog.Default()
+func NewGatewayServer(cfg Config, logger *log.Logger) (*GatewayServer, error) {
+	if logger == nil {
+		logger = log.Global()
 	}
-	log = log.With(slog.String("component", "gateway"))
+	logger = logger.With(log.String("component", "gateway"))
 
 	// 创建限流器
 	rateLimiter := ratelimit.NewLimiter(ratelimit.Config{
@@ -85,25 +86,26 @@ func NewGatewayServer(cfg Config, log *slog.Logger) (*GatewayServer, error) {
 		CommentAddr:      cfg.CommentServiceAddr,
 		TimelineAddr:     cfg.TimelineServiceAddr,
 		ChatAddr:         cfg.ChatServiceAddr,
+		ChannelAddr:      cfg.ChannelServiceAddr,
 		SearchAddr:       cfg.SearchServiceAddr,
 		NotificationAddr: cfg.NotificationServiceAddr,
-	}, log)
+	}, logger)
 	if err != nil {
 		return nil, err
 	}
 
 	// 创建 JWT 验签器
-	jwtValidator := auth.NewJWTValidator(auth.DefaultValidatorConfig(), log)
+	jwtValidator := auth.NewJWTValidator(auth.DefaultValidatorConfig(), logger)
 
 	// 创建流代理
-	streamingProxy := streaming.NewProxy(jwtValidator, streaming.DefaultProxyConfig(), log)
+	streamingProxy := streaming.NewProxy(jwtValidator, streaming.DefaultProxyConfig(), logger)
 
 	return &GatewayServer{
 		jwtValidator:   jwtValidator,
 		rateLimiter:    rateLimiter,
 		router:         r,
 		streamingProxy: streamingProxy,
-		log:            log,
+		log:            logger,
 	}, nil
 }
 
@@ -122,7 +124,7 @@ func (s *GatewayServer) Start(ctx context.Context) error {
 
 	// 启动 JWT 验签器（带重试）
 	if err := s.startJWTValidatorWithRetry(ctx, adapter); err != nil {
-		s.log.Warn("JWT 验签器启动失败", slog.Any("error", err))
+		s.log.Warn("JWT 验签器启动失败", log.Any("error", err))
 		// 启动后台重试协程
 		go s.backgroundJWTValidatorRetry(adapter)
 		return nil
@@ -144,10 +146,10 @@ func (s *GatewayServer) startJWTValidatorWithRetry(ctx context.Context, adapter 
 			lastErr = err
 			delay := baseDelay * time.Duration(1<<i) // 指数退避
 			s.log.Warn("JWT 验签器启动失败，准备重试",
-				slog.Int("attempt", i+1),
-				slog.Int("max_retries", maxRetries),
-				slog.Duration("delay", delay),
-				slog.Any("error", err))
+				log.Int("attempt", i+1),
+				log.Int("max_retries", maxRetries),
+				log.Duration("delay", delay),
+				log.Any("error", err))
 
 			select {
 			case <-ctx.Done():
@@ -179,8 +181,8 @@ func (s *GatewayServer) backgroundJWTValidatorRetry(adapter *authClientAdapter) 
 		ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 		if err := s.jwtValidator.Start(ctx, adapter); err != nil {
 			s.log.Debug("后台重试 JWT 验签器失败",
-				slog.Int("attempt", i+1),
-				slog.Any("error", err))
+				log.Int("attempt", i+1),
+				log.Any("error", err))
 		} else {
 			s.log.Info("后台重试 JWT 验签器成功")
 			cancel()

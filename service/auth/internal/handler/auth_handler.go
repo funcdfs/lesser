@@ -3,15 +3,15 @@ package handler
 
 import (
 	"context"
-	"log/slog"
 	"time"
 
 	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/metadata"
 	"google.golang.org/grpc/status"
 
+	pb "github.com/funcdfs/lesser/auth/gen_protos/auth"
 	"github.com/funcdfs/lesser/auth/internal/data_access"
 	"github.com/funcdfs/lesser/auth/internal/logic"
-	pb "github.com/funcdfs/lesser/auth/gen_protos/auth"
 	"github.com/funcdfs/lesser/pkg/gen_protos/common"
 	"github.com/funcdfs/lesser/pkg/log"
 )
@@ -20,14 +20,14 @@ import (
 type AuthHandler struct {
 	pb.UnimplementedAuthServiceServer
 	authService logic.AuthService
-	log         *slog.Logger
+	log         *log.Logger
 }
 
 // NewAuthHandler 创建认证处理器
-func NewAuthHandler(authService logic.AuthService, log *slog.Logger) *AuthHandler {
+func NewAuthHandler(authService logic.AuthService, logger *log.Logger) *AuthHandler {
 	return &AuthHandler{
 		authService: authService,
-		log:         log.With(slog.String("component", "handler")),
+		log:         logger.With(log.String("component", "handler")),
 	}
 }
 
@@ -47,10 +47,10 @@ func (h *AuthHandler) Register(ctx context.Context, req *pb.RegisterRequest) (*p
 	result, err := h.authService.Register(ctx, req.Username, req.Email, req.Password, req.DisplayName)
 	if err != nil {
 		h.log.Error("注册失败",
-			slog.String("username", req.Username),
-			slog.String("email", req.Email),
-			slog.String("trace_id", log.TraceIDFromContext(ctx)),
-			slog.Any("error", err),
+			log.String("username", req.Username),
+			log.String("email", req.Email),
+			log.String("trace_id", log.TraceIDFromContext(ctx)),
+			log.Any("error", err),
 		)
 		return nil, logic.ToGRPCError(err)
 	}
@@ -75,9 +75,9 @@ func (h *AuthHandler) Login(ctx context.Context, req *pb.LoginRequest) (*pb.Auth
 	result, err := h.authService.Login(ctx, req.Email, req.Password)
 	if err != nil {
 		h.log.Error("登录失败",
-			slog.String("email", req.Email),
-			slog.String("trace_id", log.TraceIDFromContext(ctx)),
-			slog.Any("error", err),
+			log.String("email", req.Email),
+			log.String("trace_id", log.TraceIDFromContext(ctx)),
+			log.Any("error", err),
 		)
 		return nil, logic.ToGRPCError(err)
 	}
@@ -96,7 +96,7 @@ func (h *AuthHandler) Logout(ctx context.Context, req *pb.LogoutRequest) (*commo
 	}
 
 	if err := h.authService.Logout(ctx, req.AccessToken); err != nil {
-		h.log.Warn("登出处理失败", slog.Any("error", err))
+		h.log.Warn("登出处理失败", log.Any("error", err))
 		// 登出失败不返回错误，允许客户端继续
 	}
 
@@ -112,8 +112,8 @@ func (h *AuthHandler) RefreshToken(ctx context.Context, req *pb.RefreshRequest) 
 	result, err := h.authService.RefreshToken(ctx, req.RefreshToken)
 	if err != nil {
 		h.log.Error("刷新 Token 失败",
-			slog.String("trace_id", log.TraceIDFromContext(ctx)),
-			slog.Any("error", err),
+			log.String("trace_id", log.TraceIDFromContext(ctx)),
+			log.Any("error", err),
 		)
 		return nil, logic.ToGRPCError(err)
 	}
@@ -151,19 +151,34 @@ func (h *AuthHandler) BanUser(ctx context.Context, req *pb.BanUserRequest) (*pb.
 		duration = time.Duration(req.DurationSeconds) * time.Second
 	}
 
-	// TODO: 从 context 获取操作者 ID
-	operatorID := ""
+	// 从 context 获取操作者 ID（由 Gateway 注入）
+	operatorID := getOperatorIDFromContext(ctx)
 
 	if err := h.authService.BanUser(ctx, req.UserId, req.Reason, duration, operatorID); err != nil {
 		h.log.Error("封禁用户失败",
-			slog.String("user_id", req.UserId),
-			slog.String("trace_id", log.TraceIDFromContext(ctx)),
-			slog.Any("error", err),
+			log.String("user_id", req.UserId),
+			log.String("operator_id", operatorID),
+			log.String("trace_id", log.TraceIDFromContext(ctx)),
+			log.Any("error", err),
 		)
 		return nil, logic.ToGRPCError(err)
 	}
 
 	return &pb.BanUserResponse{Success: true}, nil
+}
+
+// getOperatorIDFromContext 从 context 获取操作者 ID
+func getOperatorIDFromContext(ctx context.Context) string {
+	md, ok := metadata.FromIncomingContext(ctx)
+	if !ok {
+		return ""
+	}
+	// Gateway 会将验证后的用户 ID 注入到 x-user-id header
+	values := md.Get("x-user-id")
+	if len(values) > 0 {
+		return values[0]
+	}
+	return ""
 }
 
 // CheckBanned 检查封禁状态
@@ -175,9 +190,9 @@ func (h *AuthHandler) CheckBanned(ctx context.Context, req *pb.CheckBannedReques
 	info, err := h.authService.CheckBanned(ctx, req.UserId)
 	if err != nil {
 		h.log.Error("检查封禁状态失败",
-			slog.String("user_id", req.UserId),
-			slog.String("trace_id", log.TraceIDFromContext(ctx)),
-			slog.Any("error", err),
+			log.String("user_id", req.UserId),
+			log.String("trace_id", log.TraceIDFromContext(ctx)),
+			log.Any("error", err),
 		)
 		return nil, logic.ToGRPCError(err)
 	}
@@ -198,9 +213,9 @@ func (h *AuthHandler) GetUser(ctx context.Context, req *pb.GetUserRequest) (*pb.
 	user, err := h.authService.GetUser(ctx, req.UserId)
 	if err != nil {
 		h.log.Error("获取用户失败",
-			slog.String("user_id", req.UserId),
-			slog.String("trace_id", log.TraceIDFromContext(ctx)),
-			slog.Any("error", err),
+			log.String("user_id", req.UserId),
+			log.String("trace_id", log.TraceIDFromContext(ctx)),
+			log.Any("error", err),
 		)
 		return nil, logic.ToGRPCError(err)
 	}

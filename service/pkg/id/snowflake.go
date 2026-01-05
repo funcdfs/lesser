@@ -68,7 +68,6 @@ func MustNewSnowflake(datacenterID, workerID int64) *Snowflake {
 	return sf
 }
 
-
 // Generate 生成雪花 ID
 func (s *Snowflake) Generate() (int64, error) {
 	s.mu.Lock()

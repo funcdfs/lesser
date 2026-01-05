@@ -4,7 +4,6 @@ package main
 
 import (
 	"context"
-	"log/slog"
 	"net"
 	"os"
 	"os/signal"
@@ -15,19 +14,21 @@ import (
 	"google.golang.org/grpc/reflection"
 
 	"github.com/funcdfs/lesser/gateway/internal/server"
+	"github.com/funcdfs/lesser/pkg/log"
 )
 
 func main() {
 	// 初始化日志
-	log := initLogger()
+	logger := log.New("gateway")
+	log.SetGlobal(logger)
 
 	// 加载配置
 	cfg := loadConfig()
 
 	// 创建 Gateway 服务器
-	gatewayServer, err := server.NewGatewayServer(cfg, log)
+	gatewayServer, err := server.NewGatewayServer(cfg, logger)
 	if err != nil {
-		log.Error("创建 Gateway 服务器失败", slog.Any("error", err))
+		logger.Error("创建 Gateway 服务器失败", log.Any("error", err))
 		os.Exit(1)
 	}
 
@@ -36,7 +37,7 @@ func main() {
 	defer cancel()
 
 	if err := gatewayServer.Start(ctx); err != nil {
-		log.Error("启动 Gateway 失败", slog.Any("error", err))
+		logger.Error("启动 Gateway 失败", log.Any("error", err))
 		os.Exit(1)
 	}
 
@@ -48,55 +49,37 @@ func main() {
 
 	// 注册服务
 	server.RegisterGatewayServer(grpcServer, gatewayServer)
-	registerProxyServices(grpcServer, gatewayServer, log)
+	registerProxyServices(grpcServer, gatewayServer, logger)
 	reflection.Register(grpcServer)
 
 	// 监听端口
 	grpcPort := getEnv("GRPC_PORT", "50051")
 	lis, err := net.Listen("tcp", ":"+grpcPort)
 	if err != nil {
-		log.Error("监听端口失败", slog.String("port", grpcPort), slog.Any("error", err))
+		logger.Error("监听端口失败", log.String("port", grpcPort), log.Any("error", err))
 		os.Exit(1)
 	}
 
 	// 优雅关闭
-	go gracefulShutdown(cancel, grpcServer, gatewayServer, log)
+	go gracefulShutdown(cancel, grpcServer, gatewayServer, logger)
 
-	log.Info("Gateway 服务已启动",
-		slog.String("port", grpcPort),
-		slog.String("auth", cfg.AuthServiceAddr),
-		slog.String("user", cfg.UserServiceAddr),
-		slog.String("content", cfg.ContentServiceAddr),
-		slog.String("interaction", cfg.InteractionServiceAddr),
-		slog.String("comment", cfg.CommentServiceAddr),
-		slog.String("timeline", cfg.TimelineServiceAddr),
-		slog.String("chat", cfg.ChatServiceAddr),
-		slog.String("search", cfg.SearchServiceAddr),
-		slog.String("notification", cfg.NotificationServiceAddr))
+	logger.Info("Gateway 服务已启动",
+		log.String("port", grpcPort),
+		log.String("auth", cfg.AuthServiceAddr),
+		log.String("user", cfg.UserServiceAddr),
+		log.String("content", cfg.ContentServiceAddr),
+		log.String("interaction", cfg.InteractionServiceAddr),
+		log.String("comment", cfg.CommentServiceAddr),
+		log.String("timeline", cfg.TimelineServiceAddr),
+		log.String("chat", cfg.ChatServiceAddr),
+		log.String("channel", cfg.ChannelServiceAddr),
+		log.String("search", cfg.SearchServiceAddr),
+		log.String("notification", cfg.NotificationServiceAddr))
 
 	if err := grpcServer.Serve(lis); err != nil {
-		log.Error("gRPC 服务异常退出", slog.Any("error", err))
+		logger.Error("gRPC 服务异常退出", log.Any("error", err))
 		os.Exit(1)
 	}
-}
-
-// initLogger 初始化日志
-func initLogger() *slog.Logger {
-	var handler slog.Handler
-
-	if os.Getenv("ENV") == "production" {
-		handler = slog.NewJSONHandler(os.Stdout, &slog.HandlerOptions{
-			Level:     slog.LevelInfo,
-			AddSource: true,
-		})
-	} else {
-		handler = slog.NewTextHandler(os.Stdout, &slog.HandlerOptions{
-			Level:     slog.LevelDebug,
-			AddSource: true,
-		})
-	}
-
-	return slog.New(handler).With(slog.String("service", "gateway"))
 }
 
 // loadConfig 加载配置
@@ -111,79 +94,80 @@ func loadConfig() server.Config {
 		SearchServiceAddr:       getEnv("SEARCH_SERVICE_ADDR", "search:50058"),
 		NotificationServiceAddr: getEnv("NOTIFICATION_SERVICE_ADDR", "notification:50059"),
 		ChatServiceAddr:         getEnv("CHAT_SERVICE_ADDR", "chat:50060"),
+		ChannelServiceAddr:      getEnv("CHANNEL_SERVICE_ADDR", "channel:50062"),
 		RateLimitRate:           getEnvFloat("RATE_LIMIT_RATE", 100),
 		RateLimitBurst:          getEnvInt("RATE_LIMIT_BURST", 200),
 	}
 }
 
 // registerProxyServices 注册代理服务
-func registerProxyServices(grpcServer *grpc.Server, gatewayServer *server.GatewayServer, log *slog.Logger) {
+func registerProxyServices(grpcServer *grpc.Server, gatewayServer *server.GatewayServer, logger *log.Logger) {
 	router := gatewayServer.GetRouter()
 
 	// 注册 Auth 代理
 	if authConn := router.GetAuthConn(); authConn != nil {
-		server.RegisterAuthProxyServer(grpcServer, authConn, log)
+		server.RegisterAuthProxyServer(grpcServer, authConn, logger)
 	} else {
-		log.Warn("Auth 服务不可用，代理未注册")
+		logger.Warn("Auth 服务不可用，代理未注册")
 	}
 
 	// 注册 User 代理
 	if userConn := router.GetUserConn(); userConn != nil {
-		server.RegisterUserProxyServer(grpcServer, userConn, log)
+		server.RegisterUserProxyServer(grpcServer, userConn, logger)
 	} else {
-		log.Warn("User 服务不可用，代理未注册")
+		logger.Warn("User 服务不可用，代理未注册")
 	}
 
 	// 注册 Content 代理
 	if contentConn := router.GetContentConn(); contentConn != nil {
-		server.RegisterContentProxyServer(grpcServer, contentConn, log)
+		server.RegisterContentProxyServer(grpcServer, contentConn, logger)
 	} else {
-		log.Warn("Content 服务不可用，代理未注册")
+		logger.Warn("Content 服务不可用，代理未注册")
 	}
 
 	// 注册 Interaction 代理
 	if interactionConn := router.GetInteractionConn(); interactionConn != nil {
-		server.RegisterInteractionProxyServer(grpcServer, interactionConn, log)
+		server.RegisterInteractionProxyServer(grpcServer, interactionConn, logger)
 	} else {
-		log.Warn("Interaction 服务不可用，代理未注册")
+		logger.Warn("Interaction 服务不可用，代理未注册")
 	}
 
 	// 注册 Comment 代理
 	if commentConn := router.GetCommentConn(); commentConn != nil {
-		server.RegisterCommentProxyServer(grpcServer, commentConn, log)
+		server.RegisterCommentProxyServer(grpcServer, commentConn, logger)
 	} else {
-		log.Warn("Comment 服务不可用，代理未注册")
+		logger.Warn("Comment 服务不可用，代理未注册")
 	}
 
 	// 注册 Timeline 代理
 	if timelineConn := router.GetTimelineConn(); timelineConn != nil {
-		server.RegisterTimelineProxyServer(grpcServer, timelineConn, log)
+		server.RegisterTimelineProxyServer(grpcServer, timelineConn, logger)
 	} else {
-		log.Warn("Timeline 服务不可用，代理未注册")
+		logger.Warn("Timeline 服务不可用，代理未注册")
 	}
 
 	// 注册 Search 代理
 	if searchConn := router.GetSearchConn(); searchConn != nil {
-		server.RegisterSearchProxyServer(grpcServer, searchConn, log)
+		server.RegisterSearchProxyServer(grpcServer, searchConn, logger)
 	} else {
-		log.Warn("Search 服务不可用，代理未注册")
+		logger.Warn("Search 服务不可用，代理未注册")
 	}
 
 	// 注册 Notification 代理
 	if notificationConn := router.GetNotificationConn(); notificationConn != nil {
-		server.RegisterNotificationProxyServer(grpcServer, notificationConn, log)
+		server.RegisterNotificationProxyServer(grpcServer, notificationConn, logger)
 	} else {
-		log.Warn("Notification 服务不可用，代理未注册")
+		logger.Warn("Notification 服务不可用，代理未注册")
 	}
 }
 
 // gracefulShutdown 优雅关闭
-func gracefulShutdown(cancel context.CancelFunc, grpcServer *grpc.Server, gatewayServer *server.GatewayServer, log *slog.Logger) {
+func gracefulShutdown(cancel context.CancelFunc, grpcServer *grpc.Server, gatewayServer *server.GatewayServer, logger *log.Logger) {
 	sigCh := make(chan os.Signal, 1)
 	signal.Notify(sigCh, syscall.SIGINT, syscall.SIGTERM)
 	<-sigCh
 
-	log.Info("收到关闭信号，开始关闭...")
+	logger.Info("收到关闭信号，开始关闭...")
 	cancel()
 	grpcServer.GracefulStop()
 	gatewayServer.Stop()

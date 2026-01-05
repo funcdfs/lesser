@@ -136,6 +136,7 @@ services:
       - SEARCH_SERVICE_ADDR=search:50058
       - NOTIFICATION_SERVICE_ADDR=notification:50059
       - CHAT_SERVICE_ADDR=chat:50060
+      - CHANNEL_SERVICE_ADDR=channel:50062
       - REDIS_URL=redis://:${REDIS_PASSWORD}@redis:6379/0
     expose:
       - "50051"
@@ -467,6 +468,43 @@ services:
       start_period: 30s
     deploy:
       replicas: 2
+
+  channel:
+    build:
+      context: ../service
+      dockerfile: Dockerfile
+      args:
+        SERVICE_NAME: channel
+        GRPC_PORT: 50062
+    container_name: channel
+    restart: always
+    environment:
+      - ENV=production
+      - GRPC_PORT=50062
+      - DB_HOST=postgres
+      - DB_PORT=5432
+      - DB_USER=${POSTGRES_USER}
+      - DB_PASSWORD=${POSTGRES_PASSWORD}
+      - DB_NAME=${POSTGRES_DB}
+      - DB_SSLMODE=require
+      - REDIS_URL=redis://:${REDIS_PASSWORD}@redis:6379/3
+      - OTEL_EXPORTER_OTLP_ENDPOINT=${OTEL_EXPORTER_OTLP_ENDPOINT:-jaeger:4317}
+      - OTEL_SERVICE_NAME=channel
+    expose:
+      - "50062"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      - app-network
+    healthcheck:
+      test: ["CMD", "nc", "-z", "localhost", "50062"]
+      interval: 30s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
 
   superuser:
     build:

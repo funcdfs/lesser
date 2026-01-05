@@ -36,15 +36,15 @@ type propertyTestContent struct {
 	isPinned    bool
 }
 
-// propertyTestTimelineRepo 用于属性测试的 Timeline 仓库模拟
-type propertyTestTimelineRepo struct {
+// propertyTestTimelineDA 用于属性测试的 Timeline 数据访问模拟
+type propertyTestTimelineDA struct {
 	contents  []*propertyTestContent
 	follows   []propertyTestFollowRelation
 	userFeeds map[string][]*propertyTestContent // userID -> contents
 }
 
-func newPropertyTestTimelineRepo() *propertyTestTimelineRepo {
-	return &propertyTestTimelineRepo{
+func newPropertyTestTimelineDA() *propertyTestTimelineDA {
+	return &propertyTestTimelineDA{
 		contents:  make([]*propertyTestContent, 0),
 		follows:   make([]propertyTestFollowRelation, 0),
 		userFeeds: make(map[string][]*propertyTestContent),
@@ -52,7 +52,7 @@ func newPropertyTestTimelineRepo() *propertyTestTimelineRepo {
 }
 
 // addContent 添加内容
-func (r *propertyTestTimelineRepo) addContent(content *propertyTestContent) {
+func (r *propertyTestTimelineDA) addContent(content *propertyTestContent) {
 	r.contents = append(r.contents, content)
 	// 添加到用户 Feed
 	if _, ok := r.userFeeds[content.authorID]; !ok {
@@ -62,7 +62,7 @@ func (r *propertyTestTimelineRepo) addContent(content *propertyTestContent) {
 }
 
 // addFollow 添加关注关系
-func (r *propertyTestTimelineRepo) addFollow(followerID, followingID string) {
+func (r *propertyTestTimelineDA) addFollow(followerID, followingID string) {
 	r.follows = append(r.follows, propertyTestFollowRelation{
 		followerID:  followerID,
 		followingID: followingID,
@@ -70,7 +70,7 @@ func (r *propertyTestTimelineRepo) addFollow(followerID, followingID string) {
 }
 
 // isFollowing 检查是否关注
-func (r *propertyTestTimelineRepo) isFollowing(followerID, followingID string) bool {
+func (r *propertyTestTimelineDA) isFollowing(followerID, followingID string) bool {
 	for _, f := range r.follows {
 		if f.followerID == followerID && f.followingID == followingID {
 			return true
@@ -80,7 +80,7 @@ func (r *propertyTestTimelineRepo) isFollowing(followerID, followingID string) b
 }
 
 // getFollowingIDs 获取关注的用户 ID 列表
-func (r *propertyTestTimelineRepo) getFollowingIDs(userID string) []string {
+func (r *propertyTestTimelineDA) getFollowingIDs(userID string) []string {
 	var result []string
 	for _, f := range r.follows {
 		if f.followerID == userID {
@@ -91,7 +91,7 @@ func (r *propertyTestTimelineRepo) getFollowingIDs(userID string) []string {
 }
 
 // getFollowingFeed 获取关注用户的 Feed
-func (r *propertyTestTimelineRepo) getFollowingFeed(userID string, limit, offset int) []*propertyTestContent {
+func (r *propertyTestTimelineDA) getFollowingFeed(userID string, limit, offset int) []*propertyTestContent {
 	followingIDs := r.getFollowingIDs(userID)
 	followingSet := make(map[string]bool)
 	for _, id := range followingIDs {
@@ -123,7 +123,7 @@ func (r *propertyTestTimelineRepo) getFollowingFeed(userID string, limit, offset
 }
 
 // getUserFeed 获取用户主页 Feed（置顶优先）
-func (r *propertyTestTimelineRepo) getUserFeed(targetUserID string, limit, offset int) []*propertyTestContent {
+func (r *propertyTestTimelineDA) getUserFeed(targetUserID string, limit, offset int) []*propertyTestContent {
 	contents, ok := r.userFeeds[targetUserID]
 	if !ok {
 		return []*propertyTestContent{}
@@ -165,7 +165,7 @@ func TestProperty21_FollowingFeedOnlyFromFollowedUsers(t *testing.T) {
 	// 属性：关注 Feed 中的所有内容都来自关注的用户
 	properties.Property("following feed only contains content from followed users", prop.ForAll(
 		func(numUsers, numContents, numFollows int) bool {
-			repo := newPropertyTestTimelineRepo()
+			da := newPropertyTestTimelineDA()
 
 			// 生成用户 ID
 			userIDs := make([]string, numUsers)
@@ -178,14 +178,14 @@ func TestProperty21_FollowingFeedOnlyFromFollowedUsers(t *testing.T) {
 
 			// 随机添加关注关系
 			for i := 0; i < numFollows && i < numUsers; i++ {
-				repo.addFollow(currentUserID, userIDs[i%numUsers])
+				da.addFollow(currentUserID, userIDs[i%numUsers])
 			}
 
 			// 生成内容
 			baseTime := time.Now()
 			for i := 0; i < numContents; i++ {
 				authorID := userIDs[i%numUsers]
-				repo.addContent(&propertyTestContent{
+				da.addContent(&propertyTestContent{
 					id:          "content-" + string(rune('0'+i)),
 					authorID:    authorID,
 					publishedAt: baseTime.Add(-time.Duration(i) * time.Hour),
@@ -194,20 +194,20 @@ func TestProperty21_FollowingFeedOnlyFromFollowedUsers(t *testing.T) {
 			}
 
 			// 获取关注 Feed
-			feed := repo.getFollowingFeed(currentUserID, 100, 0)
+			feed := da.getFollowingFeed(currentUserID, 100, 0)
 
 			// 验证：所有内容都来自关注的用户
 			for _, content := range feed {
-				if !repo.isFollowing(currentUserID, content.authorID) {
+				if !da.isFollowing(currentUserID, content.authorID) {
 					return false
 				}
 			}
 
 			return true
 		},
-		gen.IntRange(1, 10),  // numUsers: 1-10 个用户
-		gen.IntRange(0, 50),  // numContents: 0-50 条内容
-		gen.IntRange(0, 10),  // numFollows: 0-10 个关注关系
+		gen.IntRange(1, 10), // numUsers: 1-10 个用户
+		gen.IntRange(0, 50), // numContents: 0-50 条内容
+		gen.IntRange(0, 10), // numFollows: 0-10 个关注关系
 	))
 
 	properties.TestingRun(t)
@@ -226,18 +226,18 @@ func TestProperty21_FollowingFeedSortedByPublishedAt(t *testing.T) {
 	// 属性：关注 Feed 按发布时间降序排列
 	properties.Property("following feed is sorted by published_at descending", prop.ForAll(
 		func(numContents int) bool {
-			repo := newPropertyTestTimelineRepo()
+			da := newPropertyTestTimelineDA()
 
 			currentUserID := "current-user"
 			followedUserID := "followed-user"
-			repo.addFollow(currentUserID, followedUserID)
+			da.addFollow(currentUserID, followedUserID)
 
 			// 生成内容（随机时间）
 			baseTime := time.Now()
 			for i := 0; i < numContents; i++ {
 				// 使用不同的时间偏移
 				offset := time.Duration(i*17%100) * time.Hour // 伪随机时间
-				repo.addContent(&propertyTestContent{
+				da.addContent(&propertyTestContent{
 					id:          "content-" + string(rune('0'+i)),
 					authorID:    followedUserID,
 					publishedAt: baseTime.Add(-offset),
@@ -246,7 +246,7 @@ func TestProperty21_FollowingFeedSortedByPublishedAt(t *testing.T) {
 			}
 
 			// 获取关注 Feed
-			feed := repo.getFollowingFeed(currentUserID, 100, 0)
+			feed := da.getFollowingFeed(currentUserID, 100, 0)
 
 			// 验证：按发布时间降序排列
 			for i := 1; i < len(feed); i++ {
@@ -276,7 +276,7 @@ func TestProperty21_FollowingFeedExcludesUnfollowedUsers(t *testing.T) {
 	// 属性：关注 Feed 不包含未关注用户的内容
 	properties.Property("following feed excludes content from unfollowed users", prop.ForAll(
 		func(numFollowed, numUnfollowed, numContentsPerUser int) bool {
-			repo := newPropertyTestTimelineRepo()
+			da := newPropertyTestTimelineDA()
 
 			currentUserID := "current-user"
 
@@ -284,7 +284,7 @@ func TestProperty21_FollowingFeedExcludesUnfollowedUsers(t *testing.T) {
 			followedUsers := make([]string, numFollowed)
 			for i := 0; i < numFollowed; i++ {
 				followedUsers[i] = "followed-" + string(rune('A'+i))
-				repo.addFollow(currentUserID, followedUsers[i])
+				da.addFollow(currentUserID, followedUsers[i])
 			}
 
 			// 创建未关注的用户
@@ -299,7 +299,7 @@ func TestProperty21_FollowingFeedExcludesUnfollowedUsers(t *testing.T) {
 			contentIndex := 0
 			for _, userID := range followedUsers {
 				for j := 0; j < numContentsPerUser; j++ {
-					repo.addContent(&propertyTestContent{
+					da.addContent(&propertyTestContent{
 						id:          "content-" + string(rune('0'+contentIndex)),
 						authorID:    userID,
 						publishedAt: baseTime.Add(-time.Duration(contentIndex) * time.Hour),
@@ -310,7 +310,7 @@ func TestProperty21_FollowingFeedExcludesUnfollowedUsers(t *testing.T) {
 			}
 			for _, userID := range unfollowedUsers {
 				for j := 0; j < numContentsPerUser; j++ {
-					repo.addContent(&propertyTestContent{
+					da.addContent(&propertyTestContent{
 						id:          "content-" + string(rune('0'+contentIndex)),
 						authorID:    userID,
 						publishedAt: baseTime.Add(-time.Duration(contentIndex) * time.Hour),
@@ -321,7 +321,7 @@ func TestProperty21_FollowingFeedExcludesUnfollowedUsers(t *testing.T) {
 			}
 
 			// 获取关注 Feed
-			feed := repo.getFollowingFeed(currentUserID, 1000, 0)
+			feed := da.getFollowingFeed(currentUserID, 1000, 0)
 
 			// 验证：不包含未关注用户的内容
 			unfollowedSet := make(map[string]bool)
@@ -364,7 +364,7 @@ func TestProperty21_EmptyFollowingFeedWhenNoFollows(t *testing.T) {
 	// 属性：没有关注任何人时，关注 Feed 为空
 	properties.Property("following feed is empty when user follows no one", prop.ForAll(
 		func(numContents int) bool {
-			repo := newPropertyTestTimelineRepo()
+			da := newPropertyTestTimelineDA()
 
 			currentUserID := "current-user"
 			// 不添加任何关注关系
@@ -372,7 +372,7 @@ func TestProperty21_EmptyFollowingFeedWhenNoFollows(t *testing.T) {
 			// 生成其他用户的内容
 			baseTime := time.Now()
 			for i := 0; i < numContents; i++ {
-				repo.addContent(&propertyTestContent{
+				da.addContent(&propertyTestContent{
 					id:          "content-" + string(rune('0'+i)),
 					authorID:    "other-user-" + string(rune('A'+i%5)),
 					publishedAt: baseTime.Add(-time.Duration(i) * time.Hour),
@@ -381,7 +381,7 @@ func TestProperty21_EmptyFollowingFeedWhenNoFollows(t *testing.T) {
 			}
 
 			// 获取关注 Feed
-			feed := repo.getFollowingFeed(currentUserID, 100, 0)
+			feed := da.getFollowingFeed(currentUserID, 100, 0)
 
 			// 验证：Feed 为空
 			return len(feed) == 0
@@ -412,14 +412,14 @@ func TestProperty22_UserFeedPinnedItemsFirst(t *testing.T) {
 	// 属性：置顶内容出现在非置顶内容之前
 	properties.Property("pinned items appear before non-pinned items", prop.ForAll(
 		func(numPinned, numNonPinned int) bool {
-			repo := newPropertyTestTimelineRepo()
+			da := newPropertyTestTimelineDA()
 
 			targetUserID := "target-user"
 			baseTime := time.Now()
 
 			// 添加置顶内容
 			for i := 0; i < numPinned; i++ {
-				repo.addContent(&propertyTestContent{
+				da.addContent(&propertyTestContent{
 					id:          "pinned-" + string(rune('0'+i)),
 					authorID:    targetUserID,
 					publishedAt: baseTime.Add(-time.Duration(i*10) * time.Hour),
@@ -429,7 +429,7 @@ func TestProperty22_UserFeedPinnedItemsFirst(t *testing.T) {
 
 			// 添加非置顶内容
 			for i := 0; i < numNonPinned; i++ {
-				repo.addContent(&propertyTestContent{
+				da.addContent(&propertyTestContent{
 					id:          "normal-" + string(rune('0'+i)),
 					authorID:    targetUserID,
 					publishedAt: baseTime.Add(-time.Duration(i) * time.Hour),
@@ -438,7 +438,7 @@ func TestProperty22_UserFeedPinnedItemsFirst(t *testing.T) {
 			}
 
 			// 获取用户 Feed
-			feed := repo.getUserFeed(targetUserID, 1000, 0)
+			feed := da.getUserFeed(targetUserID, 1000, 0)
 
 			// 验证：所有置顶内容出现在非置顶内容之前
 			foundNonPinned := false
@@ -474,7 +474,7 @@ func TestProperty22_UserFeedPinnedSortedByPublishedAt(t *testing.T) {
 	// 属性：置顶内容组内按发布时间降序排列
 	properties.Property("pinned items are sorted by published_at descending", prop.ForAll(
 		func(numPinned int) bool {
-			repo := newPropertyTestTimelineRepo()
+			da := newPropertyTestTimelineDA()
 
 			targetUserID := "target-user"
 			baseTime := time.Now()
@@ -482,7 +482,7 @@ func TestProperty22_UserFeedPinnedSortedByPublishedAt(t *testing.T) {
 			// 添加置顶内容（使用伪随机时间）
 			for i := 0; i < numPinned; i++ {
 				offset := time.Duration(i*17%100) * time.Hour // 伪随机时间
-				repo.addContent(&propertyTestContent{
+				da.addContent(&propertyTestContent{
 					id:          "pinned-" + string(rune('0'+i)),
 					authorID:    targetUserID,
 					publishedAt: baseTime.Add(-offset),
@@ -491,7 +491,7 @@ func TestProperty22_UserFeedPinnedSortedByPublishedAt(t *testing.T) {
 			}
 
 			// 获取用户 Feed
-			feed := repo.getUserFeed(targetUserID, 1000, 0)
+			feed := da.getUserFeed(targetUserID, 1000, 0)
 
 			// 筛选置顶内容
 			var pinnedItems []*propertyTestContent
@@ -529,7 +529,7 @@ func TestProperty22_UserFeedNonPinnedSortedByPublishedAt(t *testing.T) {
 	// 属性：非置顶内容组内按发布时间降序排列
 	properties.Property("non-pinned items are sorted by published_at descending", prop.ForAll(
 		func(numNonPinned int) bool {
-			repo := newPropertyTestTimelineRepo()
+			da := newPropertyTestTimelineDA()
 
 			targetUserID := "target-user"
 			baseTime := time.Now()
@@ -537,7 +537,7 @@ func TestProperty22_UserFeedNonPinnedSortedByPublishedAt(t *testing.T) {
 			// 添加非置顶内容（使用伪随机时间）
 			for i := 0; i < numNonPinned; i++ {
 				offset := time.Duration(i*17%100) * time.Hour // 伪随机时间
-				repo.addContent(&propertyTestContent{
+				da.addContent(&propertyTestContent{
 					id:          "normal-" + string(rune('0'+i)),
 					authorID:    targetUserID,
 					publishedAt: baseTime.Add(-offset),
@@ -546,7 +546,7 @@ func TestProperty22_UserFeedNonPinnedSortedByPublishedAt(t *testing.T) {
 			}
 
 			// 获取用户 Feed
-			feed := repo.getUserFeed(targetUserID, 1000, 0)
+			feed := da.getUserFeed(targetUserID, 1000, 0)
 
 			// 筛选非置顶内容
 			var nonPinnedItems []*propertyTestContent
@@ -584,7 +584,7 @@ func TestProperty22_UserFeedMixedContentCorrectOrder(t *testing.T) {
 	// 属性：混合内容正确排序（置顶优先，各组内按时间降序）
 	properties.Property("mixed content is correctly ordered", prop.ForAll(
 		func(numPinned, numNonPinned int) bool {
-			repo := newPropertyTestTimelineRepo()
+			da := newPropertyTestTimelineDA()
 
 			targetUserID := "target-user"
 			baseTime := time.Now()
@@ -592,7 +592,7 @@ func TestProperty22_UserFeedMixedContentCorrectOrder(t *testing.T) {
 			// 添加置顶内容（使用伪随机时间）
 			for i := 0; i < numPinned; i++ {
 				offset := time.Duration(i*13%50) * time.Hour
-				repo.addContent(&propertyTestContent{
+				da.addContent(&propertyTestContent{
 					id:          "pinned-" + string(rune('0'+i)),
 					authorID:    targetUserID,
 					publishedAt: baseTime.Add(-offset),
@@ -603,7 +603,7 @@ func TestProperty22_UserFeedMixedContentCorrectOrder(t *testing.T) {
 			// 添加非置顶内容（使用伪随机时间）
 			for i := 0; i < numNonPinned; i++ {
 				offset := time.Duration(i*17%100) * time.Hour
-				repo.addContent(&propertyTestContent{
+				da.addContent(&propertyTestContent{
 					id:          "normal-" + string(rune('0'+i)),
 					authorID:    targetUserID,
 					publishedAt: baseTime.Add(-offset),
@@ -612,7 +612,7 @@ func TestProperty22_UserFeedMixedContentCorrectOrder(t *testing.T) {
 			}
 
 			// 获取用户 Feed
-			feed := repo.getUserFeed(targetUserID, 1000, 0)
+			feed := da.getUserFeed(targetUserID, 1000, 0)
 
 			// 分离置顶和非置顶内容
 			var pinnedItems, nonPinnedItems []*propertyTestContent

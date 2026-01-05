@@ -17,6 +17,9 @@ var (
 	ErrCannotAddToPrivate   = errors.New("无法向私聊会话添加成员")
 	ErrCannotMarkOwnMessage = errors.New("不能标记自己发送的消息为已读")
 
+	// CHANNEL 类型错误（CHANNEL 类型已迁移到独立的 Channel 服务）
+	ErrChannelTypeNotSupported = errors.New("CHANNEL 类型已迁移到独立的 Channel 服务，请使用 ChannelService")
+
 	// 资源不存在错误
 	ErrMessageNotFound      = errors.New("消息不存在")
 	ErrConversationNotFound = errors.New("会话不存在")
@@ -48,7 +51,6 @@ var (
 	ErrGetMessageFailed         = errors.New("获取消息失败")
 )
 
-
 // ToGRPCError 将业务错误转换为 gRPC 错误
 // 确保所有错误消息为中文
 func ToGRPCError(err error) error {
@@ -69,6 +71,10 @@ func ToGRPCError(err error) error {
 
 	// 业务逻辑层错误转换
 	switch {
+	// CHANNEL 类型错误
+	case errors.Is(err, ErrChannelTypeNotSupported):
+		return status.Error(codes.InvalidArgument, "CHANNEL 类型已迁移到独立的 Channel 服务，请使用 ChannelService")
+
 	// 权限相关
 	case errors.Is(err, ErrNotMember):
 		return status.Error(codes.PermissionDenied, "您不是该会话的成员")

@@ -204,8 +204,8 @@ func TestErrorTypes(t *testing.T) {
 	}
 }
 
-func TestRepositoryErrorTypes(t *testing.T) {
-	// 验证 repository 层错误类型存在
+func TestDataAccessErrorTypes(t *testing.T) {
+	// 验证 data_access 层错误类型存在
 	errors := []error{
 		data_access.ErrContentNotFound,
 		data_access.ErrUnauthorized,
@@ -213,7 +213,7 @@ func TestRepositoryErrorTypes(t *testing.T) {
 
 	for _, err := range errors {
 		if err == nil {
-			t.Error("repository 错误类型不应该为 nil")
+			t.Error("data_access 错误类型不应该为 nil")
 		}
 	}
 }

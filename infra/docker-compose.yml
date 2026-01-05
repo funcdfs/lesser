@@ -210,6 +210,7 @@ services:
       - SEARCH_SERVICE_ADDR=search:50058
       - NOTIFICATION_SERVICE_ADDR=notification:50059
       - CHAT_SERVICE_ADDR=chat:50060
+      - CHANNEL_SERVICE_ADDR=channel:50062
       - REDIS_URL=redis://redis:6379/0
     volumes:
       - ../service:/app
@@ -575,6 +576,50 @@ services:
       - app-network
     healthcheck:
       test: ["CMD", "nc", "-z", "localhost", "50060"]
+      interval: 30s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+
+  # --------------------------------------------------------------------------
+  # Channel Service (50062) - 广播频道服务 - 类似 Telegram Channel
+  # --------------------------------------------------------------------------
+  channel:
+    build:
+      context: ../service
+      dockerfile: Dockerfile.dev
+      args:
+        SERVICE_NAME: channel
+        GRPC_PORT: 50062
+    container_name: channel
+    restart: unless-stopped
+    environment:
+      - GRPC_PORT=50062
+      - DB_HOST=postgres
+      - DB_PORT=5432
+      - DB_USER=${POSTGRES_USER:-lesser}
+      - DB_PASSWORD=${POSTGRES_PASSWORD:-lesser_dev_password}
+      - DB_NAME=${POSTGRES_DB:-lesser_db}
+      - DB_SSLMODE=disable
+      - REDIS_URL=redis://redis:6379/3
+      - OTEL_EXPORTER_OTLP_ENDPOINT=jaeger:4317
+      - OTEL_SERVICE_NAME=channel
+    volumes:
+      - ../service:/app
+      - go_mod_cache:/go/pkg/mod
+    ports:
+      - "50062:50062"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      jaeger:
+        condition: service_healthy
+    networks:
+      - app-network
+    healthcheck:
+      test: ["CMD", "nc", "-z", "localhost", "50062"]
       interval: 30s
       timeout: 5s
       retries: 5

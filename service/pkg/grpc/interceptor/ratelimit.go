@@ -65,6 +65,7 @@ type PerKeyRateLimiter struct {
 	capacity float64
 	buckets  map[string]*TokenBucket
 	mu       sync.RWMutex
+	stopCh   chan struct{}
 }
 
 // NewPerKeyRateLimiter 创建按 key 限流器
@@ -73,12 +74,18 @@ func NewPerKeyRateLimiter(rate, capacity float64) *PerKeyRateLimiter {
 		rate:     rate,
 		capacity: capacity,
 		buckets:  make(map[string]*TokenBucket),
+		stopCh:   make(chan struct{}),
 	}
 
 	// 启动清理协程
 	go limiter.cleanup()
 
 	return limiter
+}
+
+// Close 关闭限流器，停止清理协程
+func (l *PerKeyRateLimiter) Close() {
+	close(l.stopCh)
 }
 
 // Allow 检查指定 key 是否允许请求
@@ -105,18 +112,23 @@ func (l *PerKeyRateLimiter) cleanup() {
 	ticker := time.NewTicker(5 * time.Minute)
 	defer ticker.Stop()
 
-	for range ticker.C {
-		l.mu.Lock()
-		now := time.Now()
-		for key, bucket := range l.buckets {
-			bucket.mu.Lock()
-			// 如果超过 10 分钟没有请求，删除桶
-			if now.Sub(bucket.lastUpdate) > 10*time.Minute {
-				delete(l.buckets, key)
+	for {
+		select {
+		case <-l.stopCh:
+			return
+		case <-ticker.C:
+			l.mu.Lock()
+			now := time.Now()
+			for key, bucket := range l.buckets {
+				bucket.mu.Lock()
+				// 如果超过 10 分钟没有请求，删除桶
+				if now.Sub(bucket.lastUpdate) > 10*time.Minute {
+					delete(l.buckets, key)
+				}
+				bucket.mu.Unlock()
 			}
-			bucket.mu.Unlock()
+			l.mu.Unlock()
 		}
-		l.mu.Unlock()
 	}
 }
 

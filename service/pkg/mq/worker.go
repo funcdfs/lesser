@@ -11,7 +11,7 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/funcdfs/lesser/pkg/logger"
+	"github.com/funcdfs/lesser/pkg/log"
 	amqp "github.com/rabbitmq/amqp091-go"
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/attribute"
@@ -44,7 +44,7 @@ type Worker struct {
 	url        string
 	conn       *amqp.Connection
 	channel    *amqp.Channel
-	log        *logger.Logger
+	log        *log.Logger
 	configs    []Config
 	stopCh     chan struct{}
 	wg         sync.WaitGroup
@@ -53,15 +53,14 @@ type Worker struct {
 }
 
 // NewWorker 创建新的 Worker 实例
-func NewWorker(url string, log *logger.Logger) *Worker {
+func NewWorker(url string, logger *log.Logger) *Worker {
 	return &Worker{
 		url:        url,
-		log:        log,
+		log:        logger,
 		stopCh:     make(chan struct{}),
 		reconnectC: make(chan struct{}, 1),
 	}
 }
-
 
 // Start 启动 Worker，阻塞直到收到停止信号
 func (w *Worker) Start(ctx context.Context, configs ...Config) error {
@@ -178,8 +177,8 @@ func (w *Worker) reconnect() {
 			continue
 		}
 
-		// 重新启动所有消费者
-		ctx := context.Background()
+		// 重新启动所有消费者，使用带超时的 context
+		ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 		for _, cfg := range w.configs {
 			if err := w.startConsumer(ctx, cfg); err != nil {
 				w.log.Error("failed to restart consumer",
@@ -187,14 +186,16 @@ func (w *Worker) reconnect() {
 					slog.Any("error", err))
 			}
 		}
+		cancel()
 
 		w.log.Info("reconnected successfully")
 		return
 	}
 
-	w.log.Fatal("max reconnection attempts reached, giving up")
+	// 达到最大重试次数，记录错误但不退出进程
+	// 让调用方决定如何处理（可能触发告警或重启服务）
+	w.log.Error("max reconnection attempts reached, worker entering degraded state")
 }
-
 
 // startConsumer 启动单个队列的消费者
 func (w *Worker) startConsumer(ctx context.Context, cfg Config) error {
@@ -278,7 +279,7 @@ func (w *Worker) consume(ctx context.Context, queue string, msgs <-chan amqp.Del
 			// 创建消息处理 context，注入 trace_id
 			msgCtx := ctx
 			if traceID != "" {
-				msgCtx = logger.ContextWithTraceID(ctx, traceID)
+				msgCtx = log.ContextWithTraceID(ctx, traceID)
 			}
 
 			// 创建 OpenTelemetry Span
@@ -328,7 +329,7 @@ func (w *Worker) Publish(ctx context.Context, routingKey string, body []byte) er
 	w.mu.RUnlock()
 
 	// 从 context 中提取 trace_id
-	traceID := logger.TraceIDFromContext(ctx)
+	traceID := log.TraceIDFromContext(ctx)
 
 	headers := amqp.Table{}
 	if traceID != "" {

@@ -41,7 +41,7 @@ func NewBanCache(cache *db.RedisClient, ttl time.Duration) *BanCache {
 func (c *BanCache) Get(ctx context.Context, userID string) (*BanCacheEntry, error) {
 	key := banCachePrefix + userID
 	var entry BanCacheEntry
-	err := c.db.Get(ctx, key, &entry)
+	err := c.cache.Get(ctx, key, &entry)
 	if err == db.ErrKeyNotFound {
 		return nil, nil
 	}
@@ -54,13 +54,13 @@ func (c *BanCache) Get(ctx context.Context, userID string) (*BanCacheEntry, erro
 // Set 设置封禁状态缓存
 func (c *BanCache) Set(ctx context.Context, userID string, entry *BanCacheEntry) error {
 	key := banCachePrefix + userID
-	return c.db.Set(ctx, key, entry, c.ttl)
+	return c.cache.Set(ctx, key, entry, c.ttl)
 }
 
 // Delete 删除封禁状态缓存
 func (c *BanCache) Delete(ctx context.Context, userID string) error {
 	key := banCachePrefix + userID
-	return c.db.Delete(ctx, key)
+	return c.cache.Delete(ctx, key)
 }
 
 // LoginAttemptCache 登录尝试缓存
@@ -82,14 +82,14 @@ func (c *LoginAttemptCache) IncrementFailure(ctx context.Context, userID string)
 	key := loginAttemptPrefix + userID
 
 	// 使用 Redis INCR 原子操作
-	count, err := c.db.Incr(ctx, key)
+	count, err := c.cache.Incr(ctx, key)
 	if err != nil {
 		return 0, fmt.Errorf("增加登录尝试次数失败: %w", err)
 	}
 
 	// 首次设置时添加过期时间
 	if count == 1 {
-		if _, err := c.db.Expire(ctx, key, c.window); err != nil {
+		if _, err := c.cache.Expire(ctx, key, c.window); err != nil {
 			// 过期时间设置失败不影响主流程，仅记录
 			return int(count), nil
 		}
@@ -102,7 +102,7 @@ func (c *LoginAttemptCache) IncrementFailure(ctx context.Context, userID string)
 func (c *LoginAttemptCache) GetFailureCount(ctx context.Context, userID string) (int, error) {
 	key := loginAttemptPrefix + userID
 	// 使用 GetString 获取原始值，因为 Incr 存储的是纯数字
-	result, err := c.db.GetString(ctx, key)
+	result, err := c.cache.GetString(ctx, key)
 	if err == db.ErrKeyNotFound {
 		return 0, nil
 	}
@@ -120,7 +120,7 @@ func (c *LoginAttemptCache) GetFailureCount(ctx context.Context, userID string) 
 // ClearFailures 清除失败记录
 func (c *LoginAttemptCache) ClearFailures(ctx context.Context, userID string) error {
 	key := loginAttemptPrefix + userID
-	return c.db.Delete(ctx, key)
+	return c.cache.Delete(ctx, key)
 }
 
 // IsLocked 检查是否被锁定

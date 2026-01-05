@@ -9,7 +9,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/funcdfs/lesser/pkg/cache"
+	"github.com/funcdfs/lesser/pkg/db"
 )
 
 // Status 健康状态
@@ -142,7 +142,7 @@ func DatabaseCheck(db *sql.DB) func(ctx context.Context) error {
 }
 
 // RedisCheck 创建 Redis 健康检查
-func RedisCheck(client *cache.Client) func(ctx context.Context) error {
+func RedisCheck(client *db.RedisClient) func(ctx context.Context) error {
 	return func(ctx context.Context) error {
 		return client.GetClient().Ping(ctx).Err()
 	}

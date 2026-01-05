@@ -1,4 +1,4 @@
-// Package repository SuperUser 仓库接口定义
+// Package data_access SuperUser 数据访问接口定义
 package data_access
 
 import (
@@ -49,8 +49,8 @@ type Session struct {
 	RevokedAt   *time.Time
 }
 
-// SuperUserRepository 超级管理员仓库接口
-type SuperUserRepository interface {
+// SuperUserDataAccess 超级管理员数据访问接口
+type SuperUserDataAccess interface {
 	// 创建超级管理员
 	Create(ctx context.Context, su *SuperUser) error
 	// 根据 ID 获取
@@ -69,8 +69,8 @@ type SuperUserRepository interface {
 	ExistsByEmail(ctx context.Context, email string) (bool, error)
 }
 
-// AuditLogRepository 审计日志仓库接口
-type AuditLogRepository interface {
+// AuditLogDataAccess 审计日志数据访问接口
+type AuditLogDataAccess interface {
 	// 创建审计日志
 	Create(ctx context.Context, log *AuditLog) error
 	// 获取审计日志列表
@@ -87,8 +87,8 @@ type AuditLogFilter struct {
 	PageSize    int
 }
 
-// SessionRepository 会话仓库接口
-type SessionRepository interface {
+// SessionDataAccess 会话数据访问接口
+type SessionDataAccess interface {
 	// 创建会话
 	Create(ctx context.Context, session *Session) error
 	// 根据 Token 哈希获取会话
@@ -101,8 +101,8 @@ type SessionRepository interface {
 	CleanExpired(ctx context.Context) error
 }
 
-// UserRepository 用户仓库接口（用于管理普通用户）
-type UserRepository interface {
+// UserDataAccess 用户数据访问接口（用于管理普通用户）
+type UserDataAccess interface {
 	// 获取用户列表
 	List(ctx context.Context, filter UserFilter) ([]*User, int, error)
 	// 根据 ID 获取用户
@@ -148,8 +148,8 @@ type UserFilter struct {
 	PageSize  int
 }
 
-// ContentRepository 内容仓库接口（用于管理内容）
-type ContentRepository interface {
+// ContentDataAccess 内容数据访问接口（用于管理内容）
+type ContentDataAccess interface {
 	// 获取内容列表
 	List(ctx context.Context, filter ContentFilter) ([]*Content, int, error)
 	// 根据 ID 获取内容

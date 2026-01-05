@@ -4,7 +4,7 @@ import (
 	"context"
 	"errors"
 	"math"
-	"math/rand"
+	"math/rand/v2"
 	"time"
 )
 
@@ -167,10 +167,11 @@ func RetryWithResult[T any](ctx context.Context, fn func() (T, error), opts ...R
 }
 
 // calculateRetryDelay 计算延迟时间
+// 使用 math/rand/v2 提供并发安全的随机数生成
 func calculateRetryDelay(cfg RetryConfig, attempt int) time.Duration {
 	delay := float64(cfg.InitialDelay) * math.Pow(cfg.Multiplier, float64(attempt))
 
-	// 添加抖动
+	// 添加抖动（使用并发安全的 rand/v2）
 	if cfg.Jitter > 0 {
 		jitter := delay * cfg.Jitter * (rand.Float64()*2 - 1)
 		delay += jitter

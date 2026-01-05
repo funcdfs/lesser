@@ -2,7 +2,6 @@ package main
 
 import (
 	"context"
-	"log/slog"
 	"strings"
 	"time"
 
@@ -58,14 +57,14 @@ func authUnaryInterceptor(authClient *remote.AuthClient) grpc.UnaryServerInterce
 }
 
 // loggingUnaryInterceptor 日志拦截器
-func loggingUnaryInterceptor(log *log.Logger) grpc.UnaryServerInterceptor {
+func loggingUnaryInterceptor(logger *log.Logger) grpc.UnaryServerInterceptor {
 	return func(ctx context.Context, req interface{}, info *grpc.UnaryServerInfo, handler grpc.UnaryHandler) (interface{}, error) {
 		start := time.Now()
 
 		// Panic 恢复
 		defer func() {
 			if r := recover(); r != nil {
-				log.LogPanic(ctx, r)
+				logger.LogPanic(ctx, r)
 			}
 		}()
 
@@ -78,11 +77,11 @@ func loggingUnaryInterceptor(log *log.Logger) grpc.UnaryServerInterceptor {
 		}
 
 		// 记录请求日志
-		log.Info("gRPC request",
-			slog.String("method", info.FullMethod),
-			slog.String("status", statusCode.String()),
-			slog.Duration("duration", duration),
-			slog.Any("error", err),
+		logger.Info("gRPC request",
+			log.String("method", info.FullMethod),
+			log.String("status", statusCode.String()),
+			log.Duration("duration", duration),
+			log.Any("error", err),
 		)
 
 		return resp, err
@@ -90,14 +89,14 @@ func loggingUnaryInterceptor(log *log.Logger) grpc.UnaryServerInterceptor {
 }
 
 // loggingStreamInterceptor 流日志拦截器
-func loggingStreamInterceptor(log *log.Logger) grpc.StreamServerInterceptor {
+func loggingStreamInterceptor(logger *log.Logger) grpc.StreamServerInterceptor {
 	return func(srv interface{}, ss grpc.ServerStream, info *grpc.StreamServerInfo, handler grpc.StreamHandler) error {
 		start := time.Now()
 
 		// Panic 恢复
 		defer func() {
 			if r := recover(); r != nil {
-				log.LogPanic(ss.Context(), r)
+				logger.LogPanic(ss.Context(), r)
 			}
 		}()
 
@@ -110,11 +109,11 @@ func loggingStreamInterceptor(log *log.Logger) grpc.StreamServerInterceptor {
 		}
 
 		// 记录流请求日志
-		log.Info("gRPC stream",
-			slog.String("method", info.FullMethod),
-			slog.String("status", statusCode.String()),
-			slog.Duration("duration", duration),
-			slog.Any("error", err),
+		logger.Info("gRPC stream",
+			log.String("method", info.FullMethod),
+			log.String("status", statusCode.String()),
+			log.Duration("duration", duration),
+			log.Any("error", err),
 		)
 
 		return err

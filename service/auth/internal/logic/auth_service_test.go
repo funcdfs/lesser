@@ -4,34 +4,33 @@ package logic
 import (
 	"context"
 	"errors"
-	"log/slog"
-	"os"
 	"testing"
 	"time"
 
 	"github.com/funcdfs/lesser/auth/internal/config"
 	"github.com/funcdfs/lesser/auth/internal/crypto"
 	"github.com/funcdfs/lesser/auth/internal/data_access"
+	"github.com/funcdfs/lesser/pkg/log"
 )
 
 // ==================== Mock 实现 ====================
 
-// mockUserRepository 用户仓库 Mock
-type mockUserRepository struct {
+// mockUserDataAccess 用户数据访问 Mock
+type mockUserDataAccess struct {
 	users       map[string]*data_access.User
 	emailIndex  map[string]string // email -> userID
 	usernameIdx map[string]string // username -> userID
 }
 
-func newMockUserRepository() *mockUserRepository {
-	return &mockUserRepository{
+func newMockUserDataAccess() *mockUserDataAccess {
+	return &mockUserDataAccess{
 		users:       make(map[string]*data_access.User),
 		emailIndex:  make(map[string]string),
 		usernameIdx: make(map[string]string),
 	}
 }
 
-func (m *mockUserRepository) Create(ctx context.Context, user *data_access.User) error {
+func (m *mockUserDataAccess) Create(ctx context.Context, user *data_access.User) error {
 	if _, exists := m.emailIndex[user.Email]; exists {
 		return data_access.ErrUserExists
 	}
@@ -44,7 +43,7 @@ func (m *mockUserRepository) Create(ctx context.Context, user *data_access.User)
 	return nil
 }
 
-func (m *mockUserRepository) GetByID(ctx context.Context, id string) (*data_access.User, error) {
+func (m *mockUserDataAccess) GetByID(ctx context.Context, id string) (*data_access.User, error) {
 	user, ok := m.users[id]
 	if !ok {
 		return nil, data_access.ErrUserNotFound
@@ -52,7 +51,7 @@ func (m *mockUserRepository) GetByID(ctx context.Context, id string) (*data_acce
 	return user, nil
 }
 
-func (m *mockUserRepository) GetByEmail(ctx context.Context, email string) (*data_access.User, error) {
+func (m *mockUserDataAccess) GetByEmail(ctx context.Context, email string) (*data_access.User, error) {
 	id, ok := m.emailIndex[email]
 	if !ok {
 		return nil, data_access.ErrUserNotFound
@@ -60,7 +59,7 @@ func (m *mockUserRepository) GetByEmail(ctx context.Context, email string) (*dat
 	return m.users[id], nil
 }
 
-func (m *mockUserRepository) GetByUsername(ctx context.Context, username string) (*data_access.User, error) {
+func (m *mockUserDataAccess) GetByUsername(ctx context.Context, username string) (*data_access.User, error) {
 	id, ok := m.usernameIdx[username]
 	if !ok {
 		return nil, data_access.ErrUserNotFound
@@ -68,13 +67,13 @@ func (m *mockUserRepository) GetByUsername(ctx context.Context, username string)
 	return m.users[id], nil
 }
 
-func (m *mockUserRepository) ExistsByEmailOrUsername(ctx context.Context, email, username string) (bool, error) {
+func (m *mockUserDataAccess) ExistsByEmailOrUsername(ctx context.Context, email, username string) (bool, error) {
 	_, emailExists := m.emailIndex[email]
 	_, usernameExists := m.usernameIdx[username]
 	return emailExists || usernameExists, nil
 }
 
-func (m *mockUserRepository) UpdatePassword(ctx context.Context, userID, hashedPassword string) error {
+func (m *mockUserDataAccess) UpdatePassword(ctx context.Context, userID, hashedPassword string) error {
 	user, ok := m.users[userID]
 	if !ok {
 		return data_access.ErrUserNotFound
@@ -83,7 +82,7 @@ func (m *mockUserRepository) UpdatePassword(ctx context.Context, userID, hashedP
 	return nil
 }
 
-func (m *mockUserRepository) UpdateLastLogin(ctx context.Context, userID string) error {
+func (m *mockUserDataAccess) UpdateLastLogin(ctx context.Context, userID string) error {
 	user, ok := m.users[userID]
 	if !ok {
 		return data_access.ErrUserNotFound
@@ -92,23 +91,23 @@ func (m *mockUserRepository) UpdateLastLogin(ctx context.Context, userID string)
 	return nil
 }
 
-// mockBanRepository 封禁仓库 Mock
-type mockBanRepository struct {
+// mockBanDataAccess 封禁数据访问 Mock
+type mockBanDataAccess struct {
 	bans map[string]*data_access.Ban // userID -> ban
 }
 
-func newMockBanRepository() *mockBanRepository {
-	return &mockBanRepository{
+func newMockBanDataAccess() *mockBanDataAccess {
+	return &mockBanDataAccess{
 		bans: make(map[string]*data_access.Ban),
 	}
 }
 
-func (m *mockBanRepository) Create(ctx context.Context, ban *data_access.Ban) error {
+func (m *mockBanDataAccess) Create(ctx context.Context, ban *data_access.Ban) error {
 	m.bans[ban.UserID] = ban
 	return nil
 }
 
-func (m *mockBanRepository) GetByUserID(ctx context.Context, userID string) (*data_access.Ban, error) {
+func (m *mockBanDataAccess) GetByUserID(ctx context.Context, userID string) (*data_access.Ban, error) {
 	ban, ok := m.bans[userID]
 	if !ok {
 		return nil, nil
@@ -116,12 +115,12 @@ func (m *mockBanRepository) GetByUserID(ctx context.Context, userID string) (*da
 	return ban, nil
 }
 
-func (m *mockBanRepository) Delete(ctx context.Context, userID string) error {
+func (m *mockBanDataAccess) Delete(ctx context.Context, userID string) error {
 	delete(m.bans, userID)
 	return nil
 }
 
-func (m *mockBanRepository) IsUserBanned(ctx context.Context, userID string) (bool, *data_access.Ban, error) {
+func (m *mockBanDataAccess) IsUserBanned(ctx context.Context, userID string) (bool, *data_access.Ban, error) {
 	ban, ok := m.bans[userID]
 	if !ok {
 		return false, nil, nil
@@ -158,11 +157,11 @@ func (m *mockTokenBlacklist) IsBlacklisted(ctx context.Context, tokenID string) 
 // ==================== 测试辅助函数 ====================
 
 // createTestAuthService 创建测试用的 AuthService
-func createTestAuthService(t *testing.T) (AuthService, *mockUserRepository, *mockBanRepository, *mockTokenBlacklist) {
+func createTestAuthService(t *testing.T) (AuthService, *mockUserDataAccess, *mockBanDataAccess, *mockTokenBlacklist) {
 	t.Helper()
 
-	userRepo := newMockUserRepository()
-	banRepo := newMockBanRepository()
+	userRepo := newMockUserDataAccess()
+	banRepo := newMockBanDataAccess()
 	tokenBlacklist := newMockTokenBlacklist()
 
 	// 创建密码哈希器（使用较低参数加速测试）
@@ -194,8 +193,8 @@ func createTestAuthService(t *testing.T) (AuthService, *mockUserRepository, *moc
 		MaxLoginAttempts: 5,
 	}
 
-	// 创建日志
-	logger := slog.New(slog.NewTextHandler(os.Stdout, &slog.HandlerOptions{Level: slog.LevelError}))
+	// 创建日志（使用 pkg/log）
+	logger := log.New("auth-test")
 
 	// 创建服务
 	svc := NewAuthService(AuthServiceDeps{
@@ -242,7 +241,7 @@ func TestRegister_Success(t *testing.T) {
 		t.Error("Refresh Token 为空")
 	}
 
-	// 验证用户已保存到仓库
+	// 验证用户已保存到数据访问层
 	savedUser, err := userRepo.GetByEmail(ctx, "test@example.com")
 	if err != nil {
 		t.Fatalf("获取保存的用户失败: %v", err)

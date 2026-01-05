@@ -3,15 +3,16 @@ package handler
 import (
 	"context"
 	"io"
-	"log/slog"
 	"sync"
+	"sync/atomic"
 	"time"
 
-	"github.com/google/uuid"
+	pb "github.com/funcdfs/lesser/chat/gen_protos/chat"
 	"github.com/funcdfs/lesser/chat/internal/data_access"
 	"github.com/funcdfs/lesser/chat/internal/logic"
-	pb "github.com/funcdfs/lesser/chat/gen_protos/chat"
-	"github.com/funcdfs/lesser/chat/gen_protos/common"
+	"github.com/funcdfs/lesser/pkg/gen_protos/common"
+	"github.com/funcdfs/lesser/pkg/log"
+	"github.com/google/uuid"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/metadata"
 	"google.golang.org/grpc/status"
@@ -31,6 +32,7 @@ type StreamClient struct {
 	subscriptions map[string]bool // conversationID -> subscribed
 	mu            sync.RWMutex
 	done          chan struct{}
+	closed        atomic.Bool // 标记连接是否已关闭，避免重复关闭
 }
 
 // NewStreamManager 创建流管理器
@@ -49,7 +51,7 @@ func (m *StreamManager) HandleStreamEvents(stream pb.ChatService_StreamEventsSer
 		return err
 	}
 
-	slog.Info("用户连接", slog.String("user_id", userID))
+	log.Info("用户连接", log.String("user_id", userID))
 
 	// 创建客户端
 	client := &StreamClient{
@@ -62,7 +64,10 @@ func (m *StreamManager) HandleStreamEvents(stream pb.ChatService_StreamEventsSer
 	// 注册客户端（如果已存在则关闭旧连接）
 	m.mu.Lock()
 	if oldClient, exists := m.clients[userID]; exists {
-		close(oldClient.done)
+		// 使用 atomic 避免重复关闭
+		if oldClient.closed.CompareAndSwap(false, true) {
+			close(oldClient.done)
+		}
 	}
 	m.clients[userID] = client
 	m.mu.Unlock()
@@ -73,29 +78,42 @@ func (m *StreamManager) HandleStreamEvents(stream pb.ChatService_StreamEventsSer
 			delete(m.clients, userID)
 		}
 		m.mu.Unlock()
-		slog.Info("用户断开连接", slog.String("user_id", userID))
+		// 标记当前客户端已关闭
+		client.closed.Store(true)
+		log.Info("用户断开连接", log.String("user_id", userID))
 	}()
 
 	// 处理客户端事件
-	for {
+	// 使用 goroutine 监听 done 和 context 取消，主循环阻塞在 Recv
+	errCh := make(chan error, 1)
+	go func() {
 		select {
 		case <-client.done:
-			return nil
+			errCh <- nil
 		case <-stream.Context().Done():
-			return stream.Context().Err()
-		default:
-			event, err := stream.Recv()
-			if err == io.EOF {
-				return nil
-			}
-			if err != nil {
+			errCh <- stream.Context().Err()
+		}
+	}()
+
+	for {
+		// stream.Recv() 是阻塞调用，不会导致 CPU 空转
+		event, err := stream.Recv()
+		if err == io.EOF {
+			return nil
+		}
+		if err != nil {
+			// 检查是否是因为 done 或 context 取消导致的错误
+			select {
+			case e := <-errCh:
+				return e
+			default:
 				return err
 			}
+		}
 
-			if err := m.handleClientEvent(client, event); err != nil {
-				slog.Error("处理事件失败", slog.Any("error", err))
-				client.SendError("INTERNAL_ERROR", err.Error(), "")
-			}
+		if err := m.handleClientEvent(client, event); err != nil {
+			log.Error("处理事件失败", log.Any("error", err))
+			client.SendError("INTERNAL_ERROR", err.Error(), "")
 		}
 	}
 }
@@ -124,9 +142,9 @@ func (m *StreamManager) handleSubscribe(client *StreamClient, req *pb.SubscribeR
 	client.subscriptions[req.ConversationId] = true
 	client.mu.Unlock()
 
-	slog.Debug("用户订阅会话",
-		slog.String("user_id", client.userID),
-		slog.String("conversation_id", req.ConversationId),
+	log.Debug("用户订阅会话",
+		log.String("user_id", client.userID),
+		log.String("conversation_id", req.ConversationId),
 	)
 
 	return client.stream.Send(&pb.ServerEvent{
@@ -142,9 +160,9 @@ func (m *StreamManager) handleUnsubscribe(client *StreamClient, req *pb.Unsubscr
 	delete(client.subscriptions, req.ConversationId)
 	client.mu.Unlock()
 
-	slog.Debug("用户取消订阅会话",
-		slog.String("user_id", client.userID),
-		slog.String("conversation_id", req.ConversationId),
+	log.Debug("用户取消订阅会话",
+		log.String("user_id", client.userID),
+		log.String("conversation_id", req.ConversationId),
 	)
 
 	return client.stream.Send(&pb.ServerEvent{
@@ -241,10 +259,14 @@ func (m *StreamManager) BroadcastNewMessage(conversationID string, msg *data_acc
 	for _, client := range targets {
 		// 使用 goroutine 异步发送，避免单个客户端阻塞影响其他客户端
 		go func(c *StreamClient) {
+			// 跳过已关闭的连接
+			if c.closed.Load() {
+				return
+			}
 			if err := c.stream.Send(event); err != nil {
-				slog.Warn("发送消息失败",
-					slog.String("user_id", c.userID),
-					slog.Any("error", err))
+				log.Warn("发送消息失败",
+					log.String("user_id", c.userID),
+					log.Any("error", err))
 			}
 		}(client)
 	}
@@ -303,10 +325,13 @@ func (m *StreamManager) BroadcastTyping(conversationID, userID string, isTyping 
 
 	for _, client := range targets {
 		go func(c *StreamClient) {
+			if c.closed.Load() {
+				return
+			}
 			if err := c.stream.Send(event); err != nil {
-				slog.Warn("发送输入状态失败",
-					slog.String("user_id", c.userID),
-					slog.Any("error", err))
+				log.Warn("发送输入状态失败",
+					log.String("user_id", c.userID),
+					log.Any("error", err))
 			}
 		}(client)
 	}
@@ -344,17 +369,24 @@ func (m *StreamManager) BroadcastMessageRead(conversationID, readerID string, me
 
 	for _, client := range targets {
 		go func(c *StreamClient) {
+			if c.closed.Load() {
+				return
+			}
 			if err := c.stream.Send(event); err != nil {
-				slog.Warn("发送已读状态失败",
-					slog.String("user_id", c.userID),
-					slog.Any("error", err))
+				log.Warn("发送已读状态失败",
+					log.String("user_id", c.userID),
+					log.Any("error", err))
 			}
 		}(client)
 	}
 }
 
 // SendError 发送错误事件
+// 检查客户端是否已关闭，避免向已关闭的流发送数据
 func (c *StreamClient) SendError(code, message, action string) {
+	if c.closed.Load() {
+		return
+	}
 	c.stream.Send(&pb.ServerEvent{
 		Event: &pb.ServerEvent_Error{
 			Error: &pb.ErrorEvent{Code: code, Message: message, Action: action},

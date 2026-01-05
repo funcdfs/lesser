@@ -4,8 +4,8 @@ package logic
 import (
 	"errors"
 
-	"github.com/funcdfs/lesser/user/internal/data_access"
 	pkgerrors "github.com/funcdfs/lesser/pkg/errors"
+	"github.com/funcdfs/lesser/user/internal/data_access"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 )

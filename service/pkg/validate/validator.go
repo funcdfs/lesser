@@ -3,6 +3,7 @@
 package validate
 
 import (
+	"fmt"
 	"net/mail"
 	"regexp"
 	"strings"
@@ -113,7 +114,7 @@ func (v *Validator) RequiredInt64(field string, value int64) *Validator {
 // MinLength 验证最小长度
 func (v *Validator) MinLength(field, value string, min int) *Validator {
 	if utf8.RuneCountInString(value) < min {
-		v.addError(field, "长度不能少于"+string(rune('0'+min))+"个字符")
+		v.addError(field, fmt.Sprintf("长度不能少于 %d 个字符", min))
 	}
 	return v
 }
@@ -121,7 +122,7 @@ func (v *Validator) MinLength(field, value string, min int) *Validator {
 // MaxLength 验证最大长度
 func (v *Validator) MaxLength(field, value string, max int) *Validator {
 	if utf8.RuneCountInString(value) > max {
-		v.addError(field, "长度不能超过"+string(rune('0'+max))+"个字符")
+		v.addError(field, fmt.Sprintf("长度不能超过 %d 个字符", max))
 	}
 	return v
 }

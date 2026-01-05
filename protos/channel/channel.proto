@@ -1,0 +1,405 @@
+syntax = "proto3";
+package channel;
+
+option go_package = "github.com/funcdfs/lesser/channel/gen_protos/channel";
+
+import "common/common.proto";
+
+// ChannelService 广播频道服务
+// 处理频道管理、内容发布、订阅管理
+// 类似 Telegram Channel，支持单向广播模式
+service ChannelService {
+  // ============================================================================
+  // 频道管理
+  // ============================================================================
+  
+  // 创建频道
+  rpc CreateChannel(CreateChannelRequest) returns (Channel);
+  // 获取频道信息
+  rpc GetChannel(GetChannelRequest) returns (Channel);
+  // 更新频道信息（仅管理员）
+  rpc UpdateChannel(UpdateChannelRequest) returns (Channel);
+  // 删除频道（仅所有者）
+  rpc DeleteChannel(DeleteChannelRequest) returns (common.Empty);
+  // 获取用户订阅的频道列表
+  rpc GetSubscribedChannels(GetSubscribedChannelsRequest) returns (ChannelsResponse);
+  // 获取用户管理的频道列表
+  rpc GetOwnedChannels(GetOwnedChannelsRequest) returns (ChannelsResponse);
+  // 搜索频道
+  rpc SearchChannels(SearchChannelsRequest) returns (ChannelsResponse);
+  
+  // ============================================================================
+  // 订阅管理
+  // ============================================================================
+  
+  // 订阅频道
+  rpc Subscribe(SubscribeRequest) returns (common.Empty);
+  // 取消订阅
+  rpc Unsubscribe(UnsubscribeRequest) returns (common.Empty);
+  // 获取频道订阅者列表
+  rpc GetSubscribers(GetSubscribersRequest) returns (SubscribersResponse);
+  // 检查是否已订阅
+  rpc CheckSubscription(CheckSubscriptionRequest) returns (CheckSubscriptionResponse);
+  
+  // ============================================================================
+  // 管理员管理
+  // ============================================================================
+  
+  // 添加管理员（仅所有者）
+  rpc AddAdmin(AddAdminRequest) returns (common.Empty);
+  // 移除管理员（仅所有者）
+  rpc RemoveAdmin(RemoveAdminRequest) returns (common.Empty);
+  // 获取管理员列表
+  rpc GetAdmins(GetAdminsRequest) returns (AdminsResponse);
+  
+  // ============================================================================
+  // 内容发布
+  // ============================================================================
+  
+  // 发布频道内容（仅管理员）
+  rpc PublishPost(PublishPostRequest) returns (ChannelPost);
+  // 获取频道内容列表
+  rpc GetPosts(GetPostsRequest) returns (PostsResponse);
+  // 获取单个内容详情
+  rpc GetPost(GetPostRequest) returns (ChannelPost);
+  // 编辑频道内容（仅作者或管理员）
+  rpc EditPost(EditPostRequest) returns (ChannelPost);
+  // 删除频道内容（仅作者或管理员）
+  rpc DeletePost(DeletePostRequest) returns (common.Empty);
+  // 置顶内容（仅管理员）
+  rpc PinPost(PinPostRequest) returns (common.Empty);
+  // 取消置顶（仅管理员）
+  rpc UnpinPost(UnpinPostRequest) returns (common.Empty);
+  
+  // ============================================================================
+  // 实时更新
+  // ============================================================================
+  
+  // 双向流：实时频道更新
+  rpc StreamUpdates(stream ChannelClientEvent) returns (stream ChannelServerEvent);
+}
+
+// ============================================================================
+// 频道实体
+// ============================================================================
+
+// Channel 频道实体
+message Channel {
+  string id = 1;                      // 频道 ID
+  string name = 2;                    // 频道名称
+  string description = 3;             // 频道描述
+  string avatar_url = 4;              // 频道头像 URL
+  string owner_id = 5;                // 所有者 ID
+  repeated string admin_ids = 6;      // 管理员 ID 列表
+  int64 subscriber_count = 7;         // 订阅者数量
+  int64 post_count = 8;               // 内容数量
+  common.Timestamp created_at = 9;    // 创建时间
+  common.Timestamp updated_at = 10;   // 更新时间
+  bool is_subscribed = 11;            // 当前用户是否已订阅
+  bool is_admin = 12;                 // 当前用户是否为管理员
+  bool is_owner = 13;                 // 当前用户是否为所有者
+  ChannelPost pinned_post = 14;       // 置顶内容
+  string username = 15;               // 频道用户名（用于链接分享，如 @channel_name）
+  bool is_public = 16;                // 是否公开频道
+}
+
+// ChannelPost 频道内容
+message ChannelPost {
+  string id = 1;                      // 内容 ID
+  string channel_id = 2;              // 所属频道 ID
+  string author_id = 3;               // 作者 ID（发布者）
+  string content = 4;                 // 文本内容
+  repeated string media_urls = 5;     // 媒体文件 URL 列表
+  int64 view_count = 6;               // 浏览次数
+  common.Timestamp created_at = 7;    // 创建时间
+  common.Timestamp updated_at = 8;    // 更新时间
+  bool is_pinned = 9;                 // 是否置顶
+  bool is_edited = 10;                // 是否已编辑
+  string author_name = 11;            // 作者名称（冗余字段，方便展示）
+}
+
+// Subscriber 订阅者信息
+message Subscriber {
+  string user_id = 1;                 // 用户 ID
+  string username = 2;                // 用户名
+  string avatar_url = 3;              // 头像 URL
+  common.Timestamp subscribed_at = 4; // 订阅时间
+}
+
+// Admin 管理员信息
+message Admin {
+  string user_id = 1;                 // 用户 ID
+  string username = 2;                // 用户名
+  string avatar_url = 3;              // 头像 URL
+  bool is_owner = 4;                  // 是否为所有者
+  common.Timestamp added_at = 5;      // 添加时间
+}
+
+// ============================================================================
+// 频道管理请求/响应
+// ============================================================================
+
+// CreateChannelRequest 创建频道请求
+message CreateChannelRequest {
+  string name = 1;                    // 频道名称
+  string description = 2;             // 频道描述
+  string avatar_url = 3;              // 频道头像 URL
+  string username = 4;                // 频道用户名（可选，用于链接分享）
+  bool is_public = 5;                 // 是否公开频道
+}
+
+// GetChannelRequest 获取频道请求
+message GetChannelRequest {
+  string channel_id = 1;              // 频道 ID
+}
+
+// UpdateChannelRequest 更新频道请求
+message UpdateChannelRequest {
+  string channel_id = 1;              // 频道 ID
+  string name = 2;                    // 新名称（可选）
+  string description = 3;             // 新描述（可选）
+  string avatar_url = 4;              // 新头像 URL（可选）
+  string username = 5;                // 新用户名（可选）
+  bool is_public = 6;                 // 是否公开（可选）
+}
+
+// DeleteChannelRequest 删除频道请求
+message DeleteChannelRequest {
+  string channel_id = 1;              // 频道 ID
+}
+
+// GetSubscribedChannelsRequest 获取订阅频道列表请求
+message GetSubscribedChannelsRequest {
+  string user_id = 1;                 // 用户 ID
+  common.Pagination pagination = 2;   // 分页参数
+}
+
+// GetOwnedChannelsRequest 获取管理频道列表请求
+message GetOwnedChannelsRequest {
+  string user_id = 1;                 // 用户 ID
+  common.Pagination pagination = 2;   // 分页参数
+}
+
+// SearchChannelsRequest 搜索频道请求
+message SearchChannelsRequest {
+  string query = 1;                   // 搜索关键词
+  common.Pagination pagination = 2;   // 分页参数
+}
+
+// ChannelsResponse 频道列表响应
+message ChannelsResponse {
+  repeated Channel channels = 1;      // 频道列表
+  common.Pagination pagination = 2;   // 分页信息
+}
+
+// ============================================================================
+// 订阅管理请求/响应
+// ============================================================================
+
+// SubscribeRequest 订阅频道请求
+message SubscribeRequest {
+  string channel_id = 1;              // 频道 ID
+}
+
+// UnsubscribeRequest 取消订阅请求
+message UnsubscribeRequest {
+  string channel_id = 1;              // 频道 ID
+}
+
+// GetSubscribersRequest 获取订阅者列表请求
+message GetSubscribersRequest {
+  string channel_id = 1;              // 频道 ID
+  common.Pagination pagination = 2;   // 分页参数
+}
+
+// SubscribersResponse 订阅者列表响应
+message SubscribersResponse {
+  repeated Subscriber subscribers = 1; // 订阅者列表
+  common.Pagination pagination = 2;    // 分页信息
+}
+
+// CheckSubscriptionRequest 检查订阅状态请求
+message CheckSubscriptionRequest {
+  string channel_id = 1;              // 频道 ID
+}
+
+// CheckSubscriptionResponse 检查订阅状态响应
+message CheckSubscriptionResponse {
+  bool is_subscribed = 1;             // 是否已订阅
+}
+
+// ============================================================================
+// 管理员管理请求/响应
+// ============================================================================
+
+// AddAdminRequest 添加管理员请求
+message AddAdminRequest {
+  string channel_id = 1;              // 频道 ID
+  string user_id = 2;                 // 要添加的用户 ID
+}
+
+// RemoveAdminRequest 移除管理员请求
+message RemoveAdminRequest {
+  string channel_id = 1;              // 频道 ID
+  string user_id = 2;                 // 要移除的用户 ID
+}
+
+// GetAdminsRequest 获取管理员列表请求
+message GetAdminsRequest {
+  string channel_id = 1;              // 频道 ID
+}
+
+// AdminsResponse 管理员列表响应
+message AdminsResponse {
+  repeated Admin admins = 1;          // 管理员列表
+}
+
+// ============================================================================
+// 内容发布请求/响应
+// ============================================================================
+
+// PublishPostRequest 发布内容请求
+message PublishPostRequest {
+  string channel_id = 1;              // 频道 ID
+  string content = 2;                 // 文本内容
+  repeated string media_urls = 3;     // 媒体文件 URL 列表
+}
+
+// GetPostsRequest 获取内容列表请求
+message GetPostsRequest {
+  string channel_id = 1;              // 频道 ID
+  common.Pagination pagination = 2;   // 分页参数
+}
+
+// GetPostRequest 获取单个内容请求
+message GetPostRequest {
+  string post_id = 1;                 // 内容 ID
+}
+
+// EditPostRequest 编辑内容请求
+message EditPostRequest {
+  string post_id = 1;                 // 内容 ID
+  string content = 2;                 // 新文本内容
+  repeated string media_urls = 3;     // 新媒体文件 URL 列表
+}
+
+// DeletePostRequest 删除内容请求
+message DeletePostRequest {
+  string post_id = 1;                 // 内容 ID
+}
+
+// PinPostRequest 置顶内容请求
+message PinPostRequest {
+  string post_id = 1;                 // 内容 ID
+}
+
+// UnpinPostRequest 取消置顶请求
+message UnpinPostRequest {
+  string post_id = 1;                 // 内容 ID
+}
+
+// PostsResponse 内容列表响应
+message PostsResponse {
+  repeated ChannelPost posts = 1;     // 内容列表
+  common.Pagination pagination = 2;   // 分页信息
+}
+
+// ============================================================================
+// 双向流事件消息
+// ============================================================================
+
+// ChannelClientEvent 客户端发送的事件
+message ChannelClientEvent {
+  oneof event {
+    ChannelSubscribeEvent subscribe = 1;       // 订阅频道更新
+    ChannelUnsubscribeEvent unsubscribe = 2;   // 取消订阅更新
+    ChannelPingEvent ping = 3;                 // 心跳
+  }
+}
+
+// ChannelSubscribeEvent 订阅频道更新事件
+message ChannelSubscribeEvent {
+  string channel_id = 1;              // 频道 ID
+}
+
+// ChannelUnsubscribeEvent 取消订阅更新事件
+message ChannelUnsubscribeEvent {
+  string channel_id = 1;              // 频道 ID
+}
+
+// ChannelPingEvent 心跳事件
+message ChannelPingEvent {}
+
+// ChannelServerEvent 服务端推送的事件
+message ChannelServerEvent {
+  oneof event {
+    NewPostEvent new_post = 1;                 // 新内容发布
+    PostEditedEvent post_edited = 2;           // 内容已编辑
+    PostDeletedEvent post_deleted = 3;         // 内容已删除
+    PostPinnedEvent post_pinned = 4;           // 内容已置顶
+    PostUnpinnedEvent post_unpinned = 5;       // 内容已取消置顶
+    ChannelUpdatedEvent channel_updated = 6;   // 频道信息更新
+    ChannelDeletedEvent channel_deleted = 7;   // 频道已删除
+    ChannelSubscribedEvent subscribed = 8;     // 订阅成功
+    ChannelUnsubscribedEvent unsubscribed = 9; // 取消订阅成功
+    ChannelPongEvent pong = 10;                // 心跳响应
+    ChannelErrorEvent error = 11;              // 错误事件
+  }
+}
+
+// NewPostEvent 新内容发布事件
+message NewPostEvent {
+  ChannelPost post = 1;               // 新发布的内容
+}
+
+// PostEditedEvent 内容已编辑事件
+message PostEditedEvent {
+  ChannelPost post = 1;               // 编辑后的内容
+}
+
+// PostDeletedEvent 内容已删除事件
+message PostDeletedEvent {
+  string post_id = 1;                 // 被删除的内容 ID
+  string channel_id = 2;              // 所属频道 ID
+}
+
+// PostPinnedEvent 内容已置顶事件
+message PostPinnedEvent {
+  ChannelPost post = 1;               // 被置顶的内容
+}
+
+// PostUnpinnedEvent 内容已取消置顶事件
+message PostUnpinnedEvent {
+  string post_id = 1;                 // 被取消置顶的内容 ID
+  string channel_id = 2;              // 所属频道 ID
+}
+
+// ChannelUpdatedEvent 频道信息更新事件
+message ChannelUpdatedEvent {
+  Channel channel = 1;                // 更新后的频道信息
+}
+
+// ChannelDeletedEvent 频道已删除事件
+message ChannelDeletedEvent {
+  string channel_id = 1;              // 被删除的频道 ID
+}
+
+// ChannelSubscribedEvent 订阅成功事件
+message ChannelSubscribedEvent {
+  string channel_id = 1;              // 频道 ID
+}
+
+// ChannelUnsubscribedEvent 取消订阅成功事件
+message ChannelUnsubscribedEvent {
+  string channel_id = 1;              // 频道 ID
+}
+
+// ChannelPongEvent 心跳响应
+message ChannelPongEvent {}
+
+// ChannelErrorEvent 错误事件
+message ChannelErrorEvent {
+  string code = 1;                    // 错误码
+  string message = 2;                 // 错误消息
+  string action = 3;                  // 触发错误的操作
+}

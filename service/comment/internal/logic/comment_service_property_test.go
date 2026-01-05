@@ -8,8 +8,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/funcdfs/lesser/comment/internal/data_access"
 	contentpb "github.com/funcdfs/lesser/comment/gen_protos/content"
+	"github.com/funcdfs/lesser/comment/internal/data_access"
 	"github.com/leanovate/gopter"
 	"github.com/leanovate/gopter/gen"
 	"github.com/leanovate/gopter/prop"
@@ -26,18 +26,18 @@ const PropertyTestIterations = 100
 // **Validates: Requirements 5.4**
 // ============================================================================
 
-// propertyTestCommentRepo 用于属性测试的评论仓库
-type propertyTestCommentRepo struct {
+// propertyTestCommentDA 用于属性测试的评论数据访问
+type propertyTestCommentDA struct {
 	comments map[string]*data_access.Comment
 }
 
-func newPropertyTestCommentRepo() *propertyTestCommentRepo {
-	return &propertyTestCommentRepo{
+func newPropertyTestCommentRepo() *propertyTestCommentDA {
+	return &propertyTestCommentDA{
 		comments: make(map[string]*data_access.Comment),
 	}
 }
 
-func (r *propertyTestCommentRepo) Create(ctx context.Context, comment *data_access.Comment) error {
+func (r *propertyTestCommentDA) Create(ctx context.Context, comment *data_access.Comment) error {
 	comment.ID = "comment-" + time.Now().Format("20060102150405.000000000")
 	comment.CreatedAt = time.Now()
 	comment.UpdatedAt = time.Now()
@@ -45,7 +45,7 @@ func (r *propertyTestCommentRepo) Create(ctx context.Context, comment *data_acce
 	return nil
 }
 
-func (r *propertyTestCommentRepo) GetByID(ctx context.Context, id string) (*data_access.Comment, error) {
+func (r *propertyTestCommentDA) GetByID(ctx context.Context, id string) (*data_access.Comment, error) {
 	comment, exists := r.comments[id]
 	if !exists {
 		return nil, data_access.ErrCommentNotFound
@@ -53,7 +53,7 @@ func (r *propertyTestCommentRepo) GetByID(ctx context.Context, id string) (*data
 	return comment, nil
 }
 
-func (r *propertyTestCommentRepo) Delete(ctx context.Context, id string) (*data_access.Comment, error) {
+func (r *propertyTestCommentDA) Delete(ctx context.Context, id string) (*data_access.Comment, error) {
 	comment, exists := r.comments[id]
 	if !exists {
 		return nil, data_access.ErrCommentNotFound
@@ -62,7 +62,7 @@ func (r *propertyTestCommentRepo) Delete(ctx context.Context, id string) (*data_
 	return comment, nil
 }
 
-func (r *propertyTestCommentRepo) List(ctx context.Context, contentID, parentID string, sortBy data_access.SortBy, limit, offset int) ([]*data_access.Comment, int, error) {
+func (r *propertyTestCommentDA) List(ctx context.Context, contentID, parentID string, sortBy data_access.SortBy, limit, offset int) ([]*data_access.Comment, int, error) {
 	var result []*data_access.Comment
 	for _, c := range r.comments {
 		if c.ContentID == contentID && !c.IsDeleted {
@@ -106,7 +106,7 @@ func (r *propertyTestCommentRepo) List(ctx context.Context, contentID, parentID 
 	return result[offset:end], total, nil
 }
 
-func (r *propertyTestCommentRepo) GetCount(ctx context.Context, contentID string) (int32, error) {
+func (r *propertyTestCommentDA) GetCount(ctx context.Context, contentID string) (int32, error) {
 	var count int32
 	for _, c := range r.comments {
 		if c.ContentID == contentID && !c.IsDeleted {
@@ -116,7 +116,7 @@ func (r *propertyTestCommentRepo) GetCount(ctx context.Context, contentID string
 	return count, nil
 }
 
-func (r *propertyTestCommentRepo) BatchGetCount(ctx context.Context, contentIDs []string) (map[string]int32, error) {
+func (r *propertyTestCommentDA) BatchGetCount(ctx context.Context, contentIDs []string) (map[string]int32, error) {
 	result := make(map[string]int32)
 	for _, id := range contentIDs {
 		result[id] = 0
@@ -131,7 +131,7 @@ func (r *propertyTestCommentRepo) BatchGetCount(ctx context.Context, contentIDs 
 	return result, nil
 }
 
-func (r *propertyTestCommentRepo) LikeComment(ctx context.Context, userID, commentID string) (int32, error) {
+func (r *propertyTestCommentDA) LikeComment(ctx context.Context, userID, commentID string) (int32, error) {
 	comment, exists := r.comments[commentID]
 	if !exists {
 		return 0, data_access.ErrCommentNotFound
@@ -140,7 +140,7 @@ func (r *propertyTestCommentRepo) LikeComment(ctx context.Context, userID, comme
 	return comment.LikeCount, nil
 }
 
-func (r *propertyTestCommentRepo) UnlikeComment(ctx context.Context, userID, commentID string) (int32, error) {
+func (r *propertyTestCommentDA) UnlikeComment(ctx context.Context, userID, commentID string) (int32, error) {
 	comment, exists := r.comments[commentID]
 	if !exists {
 		return 0, data_access.ErrCommentNotFound
@@ -151,11 +151,11 @@ func (r *propertyTestCommentRepo) UnlikeComment(ctx context.Context, userID, com
 	return comment.LikeCount, nil
 }
 
-func (r *propertyTestCommentRepo) CheckLiked(ctx context.Context, userID, commentID string) (bool, error) {
+func (r *propertyTestCommentDA) CheckLiked(ctx context.Context, userID, commentID string) (bool, error) {
 	return false, nil
 }
 
-func (r *propertyTestCommentRepo) BatchCheckLiked(ctx context.Context, userID string, commentIDs []string) (map[string]bool, error) {
+func (r *propertyTestCommentDA) BatchCheckLiked(ctx context.Context, userID string, commentIDs []string) (map[string]bool, error) {
 	result := make(map[string]bool)
 	for _, id := range commentIDs {
 		result[id] = false
@@ -177,7 +177,6 @@ func (c *propertyTestContentClient) UpdateCounter(ctx context.Context, contentID
 func (c *propertyTestContentClient) GetContentAuthorID(ctx context.Context, contentID string) (string, error) {
 	return "author-1", nil
 }
-
 
 // TestProperty17_CommentSortingNewest 测试评论按最新排序
 func TestProperty17_CommentSortingNewest(t *testing.T) {
@@ -404,7 +403,6 @@ func TestProperty17_SortingPreservesAllComments(t *testing.T) {
 	properties.TestingRun(t)
 }
 
-
 // ============================================================================
 // Property 18: Comment like/unlike round-trip maintains consistency
 // *For any* comment, liking then unliking SHALL result in the same like_count
@@ -412,20 +410,20 @@ func TestProperty17_SortingPreservesAllComments(t *testing.T) {
 // **Validates: Requirements 5.5, 5.6**
 // ============================================================================
 
-// propertyTestCommentRepoWithLikes 用于属性测试的评论仓库（支持点赞）
-type propertyTestCommentRepoWithLikes struct {
+// propertyTestCommentDAWithLikes 用于属性测试的评论数据访问（支持点赞）
+type propertyTestCommentDAWithLikes struct {
 	comments     map[string]*data_access.Comment
 	commentLikes map[string]map[string]bool // commentID -> userID -> liked
 }
 
-func newPropertyTestCommentRepoWithLikes() *propertyTestCommentRepoWithLikes {
-	return &propertyTestCommentRepoWithLikes{
+func newPropertyTestCommentRepoWithLikes() *propertyTestCommentDAWithLikes {
+	return &propertyTestCommentDAWithLikes{
 		comments:     make(map[string]*data_access.Comment),
 		commentLikes: make(map[string]map[string]bool),
 	}
 }
 
-func (r *propertyTestCommentRepoWithLikes) Create(ctx context.Context, comment *data_access.Comment) error {
+func (r *propertyTestCommentDAWithLikes) Create(ctx context.Context, comment *data_access.Comment) error {
 	comment.ID = "comment-" + time.Now().Format("20060102150405.000000000")
 	comment.CreatedAt = time.Now()
 	comment.UpdatedAt = time.Now()
@@ -433,7 +431,7 @@ func (r *propertyTestCommentRepoWithLikes) Create(ctx context.Context, comment *
 	return nil
 }
 
-func (r *propertyTestCommentRepoWithLikes) GetByID(ctx context.Context, id string) (*data_access.Comment, error) {
+func (r *propertyTestCommentDAWithLikes) GetByID(ctx context.Context, id string) (*data_access.Comment, error) {
 	comment, exists := r.comments[id]
 	if !exists {
 		return nil, data_access.ErrCommentNotFound
@@ -441,7 +439,7 @@ func (r *propertyTestCommentRepoWithLikes) GetByID(ctx context.Context, id strin
 	return comment, nil
 }
 
-func (r *propertyTestCommentRepoWithLikes) Delete(ctx context.Context, id string) (*data_access.Comment, error) {
+func (r *propertyTestCommentDAWithLikes) Delete(ctx context.Context, id string) (*data_access.Comment, error) {
 	comment, exists := r.comments[id]
 	if !exists {
 		return nil, data_access.ErrCommentNotFound
@@ -450,7 +448,7 @@ func (r *propertyTestCommentRepoWithLikes) Delete(ctx context.Context, id string
 	return comment, nil
 }
 
-func (r *propertyTestCommentRepoWithLikes) List(ctx context.Context, contentID, parentID string, sortBy data_access.SortBy, limit, offset int) ([]*data_access.Comment, int, error) {
+func (r *propertyTestCommentDAWithLikes) List(ctx context.Context, contentID, parentID string, sortBy data_access.SortBy, limit, offset int) ([]*data_access.Comment, int, error) {
 	var result []*data_access.Comment
 	for _, c := range r.comments {
 		if c.ContentID == contentID && !c.IsDeleted && c.ParentID == parentID {
@@ -460,7 +458,7 @@ func (r *propertyTestCommentRepoWithLikes) List(ctx context.Context, contentID, 
 	return result, len(result), nil
 }
 
-func (r *propertyTestCommentRepoWithLikes) GetCount(ctx context.Context, contentID string) (int32, error) {
+func (r *propertyTestCommentDAWithLikes) GetCount(ctx context.Context, contentID string) (int32, error) {
 	var count int32
 	for _, c := range r.comments {
 		if c.ContentID == contentID && !c.IsDeleted {
@@ -470,7 +468,7 @@ func (r *propertyTestCommentRepoWithLikes) GetCount(ctx context.Context, content
 	return count, nil
 }
 
-func (r *propertyTestCommentRepoWithLikes) BatchGetCount(ctx context.Context, contentIDs []string) (map[string]int32, error) {
+func (r *propertyTestCommentDAWithLikes) BatchGetCount(ctx context.Context, contentIDs []string) (map[string]int32, error) {
 	result := make(map[string]int32)
 	for _, id := range contentIDs {
 		result[id] = 0
@@ -478,7 +476,7 @@ func (r *propertyTestCommentRepoWithLikes) BatchGetCount(ctx context.Context, co
 	return result, nil
 }
 
-func (r *propertyTestCommentRepoWithLikes) LikeComment(ctx context.Context, userID, commentID string) (int32, error) {
+func (r *propertyTestCommentDAWithLikes) LikeComment(ctx context.Context, userID, commentID string) (int32, error) {
 	comment, exists := r.comments[commentID]
 	if !exists || comment.IsDeleted {
 		return 0, data_access.ErrCommentNotFound
@@ -494,7 +492,7 @@ func (r *propertyTestCommentRepoWithLikes) LikeComment(ctx context.Context, user
 	return comment.LikeCount, nil
 }
 
-func (r *propertyTestCommentRepoWithLikes) UnlikeComment(ctx context.Context, userID, commentID string) (int32, error) {
+func (r *propertyTestCommentDAWithLikes) UnlikeComment(ctx context.Context, userID, commentID string) (int32, error) {
 	comment, exists := r.comments[commentID]
 	if !exists {
 		return 0, data_access.ErrCommentNotFound
@@ -509,14 +507,14 @@ func (r *propertyTestCommentRepoWithLikes) UnlikeComment(ctx context.Context, us
 	return comment.LikeCount, nil
 }
 
-func (r *propertyTestCommentRepoWithLikes) CheckLiked(ctx context.Context, userID, commentID string) (bool, error) {
+func (r *propertyTestCommentDAWithLikes) CheckLiked(ctx context.Context, userID, commentID string) (bool, error) {
 	if r.commentLikes[commentID] == nil {
 		return false, nil
 	}
 	return r.commentLikes[commentID][userID], nil
 }
 
-func (r *propertyTestCommentRepoWithLikes) BatchCheckLiked(ctx context.Context, userID string, commentIDs []string) (map[string]bool, error) {
+func (r *propertyTestCommentDAWithLikes) BatchCheckLiked(ctx context.Context, userID string, commentIDs []string) (map[string]bool, error) {
 	result := make(map[string]bool)
 	for _, id := range commentIDs {
 		if r.commentLikes[id] != nil {

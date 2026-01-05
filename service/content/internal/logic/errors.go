@@ -12,6 +12,7 @@ import (
 
 // 业务错误定义
 var (
+	// 内容相关
 	ErrContentNotFound  = errors.New("内容不存在")
 	ErrUnauthorized     = errors.New("无权限操作")
 	ErrInvalidInput     = errors.New("无效输入")
@@ -20,6 +21,15 @@ var (
 	ErrInvalidStatus    = errors.New("无效的内容状态")
 	ErrContentExpired   = errors.New("内容已过期")
 	ErrAlreadyPublished = errors.New("内容已发布")
+
+	// 内容验证相关
+	ErrInvalidContent  = errors.New("内容无效")
+	ErrContentTooLong  = errors.New("内容超出长度限制")
+	ErrTitleRequired   = errors.New("标题不能为空")
+	ErrTextRequired    = errors.New("正文不能为空")
+	ErrCannotEditStory = errors.New("Story 不支持编辑")
+	ErrNotDraft        = errors.New("只能发布草稿状态的内容")
+	ErrDraftNotAllowed = errors.New("该内容类型不支持草稿")
 )
 
 // ToGRPCError 将业务错误转换为 gRPC 错误
@@ -51,7 +61,7 @@ func ToGRPCError(err error) error {
 		return status.Error(codes.InvalidArgument, "无效输入")
 	case errors.Is(err, ErrEmptyText):
 		return status.Error(codes.InvalidArgument, "内容不能为空")
-	case errors.Is(err, ErrTextTooLong):
+	case errors.Is(err, ErrTextTooLong), errors.Is(err, ErrContentTooLong):
 		return status.Error(codes.InvalidArgument, "内容超出长度限制")
 	case errors.Is(err, ErrInvalidStatus):
 		return status.Error(codes.InvalidArgument, "无效的内容状态")
@@ -59,6 +69,20 @@ func ToGRPCError(err error) error {
 		return status.Error(codes.NotFound, "内容已过期")
 	case errors.Is(err, ErrAlreadyPublished):
 		return status.Error(codes.FailedPrecondition, "内容已发布")
+
+	// 内容验证相关
+	case errors.Is(err, ErrInvalidContent):
+		return status.Error(codes.InvalidArgument, "内容无效")
+	case errors.Is(err, ErrTitleRequired):
+		return status.Error(codes.InvalidArgument, "标题不能为空")
+	case errors.Is(err, ErrTextRequired):
+		return status.Error(codes.InvalidArgument, "正文不能为空")
+	case errors.Is(err, ErrCannotEditStory):
+		return status.Error(codes.FailedPrecondition, "Story 不支持编辑")
+	case errors.Is(err, ErrNotDraft):
+		return status.Error(codes.FailedPrecondition, "只能发布草稿状态的内容")
+	case errors.Is(err, ErrDraftNotAllowed):
+		return status.Error(codes.InvalidArgument, "该内容类型不支持草稿")
 
 	// 数据访问层错误转换
 	case errors.Is(err, data_access.ErrContentNotFound):

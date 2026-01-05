@@ -67,13 +67,13 @@ var allowedInternalDirs = map[string]bool{
 	"messaging":   true,
 	"crypto":      true,
 	"config":      true,
-	"router":      true,      // gateway 专用
-	"auth":        true,      // gateway 专用
-	"errors":      true,      // gateway 专用
-	"interceptor": true,      // gateway 专用
-	"ratelimit":   true,      // gateway 专用
-	"server":      true,      // gateway 专用
-	"streaming":   true,      // gateway 专用
+	"router":      true, // gateway 专用
+	"auth":        true, // gateway 专用
+	"errors":      true, // gateway 专用
+	"interceptor": true, // gateway 专用
+	"ratelimit":   true, // gateway 专用
+	"server":      true, // gateway 专用
+	"streaming":   true, // gateway 专用
 }
 
 // 文件命名模式（更宽松，适应现有代码）
@@ -82,7 +82,7 @@ var fileNamingPatterns = map[string]*regexp.Regexp{
 	"handler": regexp.MustCompile(`^[a-z][a-z0-9_]*\.go$`),
 	// logic: 允许 _service.go, interfaces.go, errors.go, _cache.go 等
 	"logic": regexp.MustCompile(`^[a-z][a-z0-9_]*\.go$`),
-	// data_access: 允许 _repository.go, _cache.go, errors.go 等
+	// data_access: 允许 _data_access.go, _cache.go, errors.go 等
 	"data_access": regexp.MustCompile(`^[a-z][a-z0-9_]*\.go$`),
 	// remote: 必须以 _client.go 结尾
 	"remote": regexp.MustCompile(`^[a-z][a-z0-9_]*_client\.go$`),

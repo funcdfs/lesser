@@ -7,8 +7,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/funcdfs/lesser/comment/internal/data_access"
 	contentpb "github.com/funcdfs/lesser/comment/gen_protos/content"
+	"github.com/funcdfs/lesser/comment/internal/data_access"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -74,8 +74,8 @@ func (m *mockContentClient) setContentAuthor(contentID, authorID string) {
 	m.authorMap[contentID] = authorID
 }
 
-// mockCommentRepository 模拟评论仓库
-type mockCommentRepository struct {
+// mockCommentDataAccess 模拟评论数据访问
+type mockCommentDataAccess struct {
 	comments     map[string]*data_access.Comment
 	commentLikes map[string]map[string]bool // commentID -> userID -> liked
 	createErr    error
@@ -86,14 +86,14 @@ type mockCommentRepository struct {
 	unlikeErr    error
 }
 
-func newMockCommentRepository() *mockCommentRepository {
-	return &mockCommentRepository{
+func newMockCommentDataAccess() *mockCommentDataAccess {
+	return &mockCommentDataAccess{
 		comments:     make(map[string]*data_access.Comment),
 		commentLikes: make(map[string]map[string]bool),
 	}
 }
 
-func (m *mockCommentRepository) Create(ctx context.Context, comment *data_access.Comment) error {
+func (m *mockCommentDataAccess) Create(ctx context.Context, comment *data_access.Comment) error {
 	if m.createErr != nil {
 		return m.createErr
 	}
@@ -112,7 +112,7 @@ func (m *mockCommentRepository) Create(ctx context.Context, comment *data_access
 	return nil
 }
 
-func (m *mockCommentRepository) GetByID(ctx context.Context, id string) (*data_access.Comment, error) {
+func (m *mockCommentDataAccess) GetByID(ctx context.Context, id string) (*data_access.Comment, error) {
 	if m.getErr != nil {
 		return nil, m.getErr
 	}
@@ -123,7 +123,7 @@ func (m *mockCommentRepository) GetByID(ctx context.Context, id string) (*data_a
 	return comment, nil
 }
 
-func (m *mockCommentRepository) Delete(ctx context.Context, id string) (*data_access.Comment, error) {
+func (m *mockCommentDataAccess) Delete(ctx context.Context, id string) (*data_access.Comment, error) {
 	if m.deleteErr != nil {
 		return nil, m.deleteErr
 	}
@@ -146,7 +146,7 @@ func (m *mockCommentRepository) Delete(ctx context.Context, id string) (*data_ac
 	return comment, nil
 }
 
-func (m *mockCommentRepository) List(ctx context.Context, contentID, parentID string, sortBy data_access.SortBy, limit, offset int) ([]*data_access.Comment, int, error) {
+func (m *mockCommentDataAccess) List(ctx context.Context, contentID, parentID string, sortBy data_access.SortBy, limit, offset int) ([]*data_access.Comment, int, error) {
 	if m.listErr != nil {
 		return nil, 0, m.listErr
 	}
@@ -172,7 +172,7 @@ func (m *mockCommentRepository) List(ctx context.Context, contentID, parentID st
 	return result[offset:end], total, nil
 }
 
-func (m *mockCommentRepository) GetCount(ctx context.Context, contentID string) (int32, error) {
+func (m *mockCommentDataAccess) GetCount(ctx context.Context, contentID string) (int32, error) {
 	var count int32
 	for _, c := range m.comments {
 		if c.ContentID == contentID && !c.IsDeleted {
@@ -182,7 +182,7 @@ func (m *mockCommentRepository) GetCount(ctx context.Context, contentID string) 
 	return count, nil
 }
 
-func (m *mockCommentRepository) BatchGetCount(ctx context.Context, contentIDs []string) (map[string]int32, error) {
+func (m *mockCommentDataAccess) BatchGetCount(ctx context.Context, contentIDs []string) (map[string]int32, error) {
 	result := make(map[string]int32)
 	for _, id := range contentIDs {
 		result[id] = 0
@@ -197,7 +197,7 @@ func (m *mockCommentRepository) BatchGetCount(ctx context.Context, contentIDs []
 	return result, nil
 }
 
-func (m *mockCommentRepository) LikeComment(ctx context.Context, userID, commentID string) (int32, error) {
+func (m *mockCommentDataAccess) LikeComment(ctx context.Context, userID, commentID string) (int32, error) {
 	if m.likeErr != nil {
 		return 0, m.likeErr
 	}
@@ -216,7 +216,7 @@ func (m *mockCommentRepository) LikeComment(ctx context.Context, userID, comment
 	return comment.LikeCount, nil
 }
 
-func (m *mockCommentRepository) UnlikeComment(ctx context.Context, userID, commentID string) (int32, error) {
+func (m *mockCommentDataAccess) UnlikeComment(ctx context.Context, userID, commentID string) (int32, error) {
 	if m.unlikeErr != nil {
 		return 0, m.unlikeErr
 	}
@@ -234,14 +234,14 @@ func (m *mockCommentRepository) UnlikeComment(ctx context.Context, userID, comme
 	return comment.LikeCount, nil
 }
 
-func (m *mockCommentRepository) CheckLiked(ctx context.Context, userID, commentID string) (bool, error) {
+func (m *mockCommentDataAccess) CheckLiked(ctx context.Context, userID, commentID string) (bool, error) {
 	if m.commentLikes[commentID] == nil {
 		return false, nil
 	}
 	return m.commentLikes[commentID][userID], nil
 }
 
-func (m *mockCommentRepository) BatchCheckLiked(ctx context.Context, userID string, commentIDs []string) (map[string]bool, error) {
+func (m *mockCommentDataAccess) BatchCheckLiked(ctx context.Context, userID string, commentIDs []string) (map[string]bool, error) {
 	result := make(map[string]bool)
 	for _, id := range commentIDs {
 		if m.commentLikes[id] != nil {
@@ -293,21 +293,20 @@ func (m *mockPublisher) PublishUserMentioned(ctx context.Context, mentionedUserI
 	}})
 }
 
-
 // ==================== 辅助函数 ====================
 
 // testService 测试服务结构
 type testService struct {
 	svc           *CommentService
 	contentClient *mockContentClient
-	commentRepo   *mockCommentRepository
+	commentRepo   *mockCommentDataAccess
 	publisher     *mockPublisher
 }
 
 // createTestService 创建测试用的服务实例
 func createTestService() *testService {
 	contentClient := newMockContentClient()
-	commentRepo := newMockCommentRepository()
+	commentRepo := newMockCommentDataAccess()
 	publisher := newMockPublisher()
 
 	svc := NewCommentService(commentRepo, contentClient)
@@ -403,7 +402,7 @@ func TestCreateComment_ContentServiceError(t *testing.T) {
 	assert.Error(t, err)
 }
 
-func TestCreateComment_RepositoryError(t *testing.T) {
+func TestCreateComment_DataAccessError(t *testing.T) {
 	ts := createTestService()
 	ctx := context.Background()
 
@@ -571,7 +570,6 @@ func TestDeleteComment_AlreadyDeleted(t *testing.T) {
 	assert.ErrorIs(t, err, ErrCommentNotFound)
 }
 
-
 // ==================== 评论列表测试 ====================
 
 func TestListComments_Success(t *testing.T) {
@@ -655,7 +653,7 @@ func TestListComments_Replies(t *testing.T) {
 	assert.Equal(t, 2, total)
 }
 
-func TestListComments_RepositoryError(t *testing.T) {
+func TestListComments_DataAccessError(t *testing.T) {
 	ts := createTestService()
 	ctx := context.Background()
 

@@ -15,7 +15,7 @@ use anyhow::{bail, Result};
 use crate::ui;
 
 use super::grpc;
-use super::{auth, chat, comment, content, database, gateway, interaction, notification, search, superuser, timeline, user};
+use super::{auth, channel, chat, comment, content, database, gateway, interaction, notification, search, superuser, timeline, user};
 
 /// 测试目标
 #[derive(Clone, Debug, PartialEq)]
@@ -40,6 +40,8 @@ pub enum TestTarget {
     Notification,
     /// Chat 服务测试
     Chat,
+    /// Channel 服务测试（广播频道）
+    Channel,
     /// Gateway 路由测试
     Gateway,
     /// SuperUser 服务测试
@@ -71,6 +73,7 @@ impl std::fmt::Display for TestTarget {
             TestTarget::Search => write!(f, "Search 服务"),
             TestTarget::Notification => write!(f, "Notification 服务"),
             TestTarget::Chat => write!(f, "Chat 服务"),
+            TestTarget::Channel => write!(f, "Channel 服务"),
             TestTarget::Gateway => write!(f, "Gateway 服务"),
             TestTarget::Superuser => write!(f, "SuperUser 服务"),
             TestTarget::Db => write!(f, "数据库验证"),
@@ -98,6 +101,7 @@ impl std::str::FromStr for TestTarget {
             "search" => Ok(TestTarget::Search),
             "notification" => Ok(TestTarget::Notification),
             "chat" => Ok(TestTarget::Chat),
+            "channel" => Ok(TestTarget::Channel),
             "gateway" => Ok(TestTarget::Gateway),
             "superuser" | "su" => Ok(TestTarget::Superuser),
             "db" => Ok(TestTarget::Db),
@@ -581,6 +585,12 @@ pub async fn execute(target: TestTarget) -> Result<()> {
             update_progress(None, Some("Chat"), None);
             stats = chat::run_tests().await?;
         }
+        TestTarget::Channel => {
+            ui::info("运行 Channel 服务测试");
+            println!();
+            update_progress(None, Some("Channel"), None);
+            stats = channel::run_tests().await?;
+        }
         TestTarget::Gateway => {
             ui::info("运行 Gateway 路由测试");
             println!();
@@ -675,14 +685,15 @@ fn estimate_test_count(target: &TestTarget) -> u32 {
         TestTarget::Search => 5,
         TestTarget::Notification => 5,
         TestTarget::Chat => 12,
+        TestTarget::Channel => 11,  // Channel 服务测试
         TestTarget::Gateway => 10,
         TestTarget::Superuser => 10,
         TestTarget::Db => 25,  // 数据库表验证
         TestTarget::Integration => 5,  // 5 个联动测试场景
-        TestTarget::Round1 => 130,  // 一轮测试
-        TestTarget::Round2 => 130,
-        TestTarget::Round3 => 130,
-        TestTarget::Full => 400,  // 三轮测试
+        TestTarget::Round1 => 140,  // 一轮测试（含 Channel）
+        TestTarget::Round2 => 140,
+        TestTarget::Round3 => 140,
+        TestTarget::Full => 420,  // 三轮测试
     }
 }
 
@@ -698,7 +709,7 @@ fn print_test_header(title: &str) {
 
 /// 运行所有服务测试
 /// 
-/// 按顺序执行所有 11 个服务的测试，并显示实时进度
+/// 按顺序执行所有 12 个服务的测试，并显示实时进度
 /// Requirements: 2.1, 8.1
 async fn run_all_service_tests() -> Result<TestStats> {
     let mut stats = TestStats::default();
@@ -712,6 +723,7 @@ async fn run_all_service_tests() -> Result<TestStats> {
         ("Search", "search"),
         ("Notification", "notification"),
         ("Chat", "chat"),
+        ("Channel", "channel"),
         ("Gateway", "gateway"),
         ("SuperUser", "superuser"),
     ];
@@ -731,6 +743,7 @@ async fn run_all_service_tests() -> Result<TestStats> {
             "Search" => search::run_tests().await?,
             "Notification" => notification::run_tests().await?,
             "Chat" => chat::run_tests().await?,
+            "Channel" => channel::run_tests().await?,
             "Gateway" => gateway::run_tests().await?,
             "SuperUser" => superuser::run_tests().await?,
             _ => TestStats::default(),
@@ -774,6 +787,7 @@ mod tests {
     fn test_test_target_from_str() {
         assert_eq!("all".parse::<TestTarget>().unwrap(), TestTarget::All);
         assert_eq!("auth".parse::<TestTarget>().unwrap(), TestTarget::Auth);
+        assert_eq!("channel".parse::<TestTarget>().unwrap(), TestTarget::Channel);
         assert_eq!("db".parse::<TestTarget>().unwrap(), TestTarget::Db);
         assert_eq!("integration".parse::<TestTarget>().unwrap(), TestTarget::Integration);
         assert_eq!("round1".parse::<TestTarget>().unwrap(), TestTarget::Round1);
@@ -788,6 +802,7 @@ mod tests {
     #[test]
     fn test_test_target_display() {
         assert_eq!(format!("{}", TestTarget::All), "所有服务");
+        assert_eq!(format!("{}", TestTarget::Channel), "Channel 服务");
         assert_eq!(format!("{}", TestTarget::Db), "数据库验证");
         assert_eq!(format!("{}", TestTarget::Integration), "联动测试");
         assert_eq!(format!("{}", TestTarget::Round1), "第一轮测试");
@@ -910,6 +925,7 @@ mod property_tests {
             Just(TestTarget::Search),
             Just(TestTarget::Notification),
             Just(TestTarget::Chat),
+            Just(TestTarget::Channel),
             Just(TestTarget::Gateway),
             Just(TestTarget::Superuser),
             Just(TestTarget::Db),

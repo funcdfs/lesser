@@ -13,7 +13,7 @@ import (
 
 func TestGetProfile_Success(t *testing.T) {
 	// 测试获取用户资料成功的场景
-	// 由于 UserService 依赖真实的 repository，这里测试业务逻辑
+	// 由于 UserService 依赖真实的 data_access，这里测试业务逻辑
 	ctx := context.Background()
 
 	// 验证 GetProfile 方法存在且签名正确
