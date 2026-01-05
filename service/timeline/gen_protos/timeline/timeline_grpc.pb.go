@@ -26,7 +26,7 @@ const (
 	TimelineService_GetContentDetail_FullMethodName = "/timeline.TimelineService/GetContentDetail"
 )
 
-// TimelineServiceClient is the client API for TimelineService logic.
+// TimelineServiceClient is the client API for TimelineService service.
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 //
@@ -103,7 +103,7 @@ func (c *timelineServiceClient) GetContentDetail(ctx context.Context, in *GetCon
 	return out, nil
 }
 
-// TimelineServiceServer is the server API for TimelineService logic.
+// TimelineServiceServer is the server API for TimelineService service.
 // All implementations must embed UnimplementedTimelineServiceServer
 // for forward compatibility.
 //
@@ -148,7 +148,7 @@ func (UnimplementedTimelineServiceServer) GetContentDetail(context.Context, *Get
 func (UnimplementedTimelineServiceServer) mustEmbedUnimplementedTimelineServiceServer() {}
 func (UnimplementedTimelineServiceServer) testEmbeddedByValue()                         {}
 
-// UnsafeTimelineServiceServer may be embedded to opt out of forward compatibility for this logic.
+// UnsafeTimelineServiceServer may be embedded to opt out of forward compatibility for this service.
 // Use of this interface is not recommended, as added methods to TimelineServiceServer will
 // result in compilation errors.
 type UnsafeTimelineServiceServer interface {
@@ -256,7 +256,7 @@ func _TimelineService_GetContentDetail_Handler(srv interface{}, ctx context.Cont
 	return interceptor(ctx, in, info, handler)
 }
 
-// TimelineService_ServiceDesc is the grpc.ServiceDesc for TimelineService logic.
+// TimelineService_ServiceDesc is the grpc.ServiceDesc for TimelineService service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
 var TimelineService_ServiceDesc = grpc.ServiceDesc{

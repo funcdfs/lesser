@@ -11,7 +11,6 @@ import (
 	"github.com/funcdfs/lesser/superuser/internal/config"
 	"github.com/funcdfs/lesser/superuser/internal/crypto"
 	"github.com/funcdfs/lesser/superuser/internal/data_access"
-	"github.com/funcdfs/lesser/superuser/internal/data_access/postgres"
 	"github.com/google/uuid"
 	"github.com/redis/go-redis/v9"
 )
@@ -32,7 +31,7 @@ type superUserServiceImpl struct {
 	sessionRepo    data_access.SessionRepository
 	userRepo       data_access.UserRepository
 	contentRepo    data_access.ContentRepository
-	systemRepo     *postgres.SystemRepository
+	systemRepo     *data_access.SystemRepositoryImpl
 	passwordHasher *crypto.PasswordHasher
 	jwtManager     *crypto.JWTManager
 	redisClient    *redis.Client
@@ -47,7 +46,7 @@ type ServiceDeps struct {
 	SessionRepo    data_access.SessionRepository
 	UserRepo       data_access.UserRepository
 	ContentRepo    data_access.ContentRepository
-	SystemRepo     *postgres.SystemRepository
+	SystemRepo     *data_access.SystemRepositoryImpl
 	PasswordHasher *crypto.PasswordHasher
 	JWTManager     *crypto.JWTManager
 	RedisClient    *redis.Client
@@ -82,20 +81,20 @@ func (s *superUserServiceImpl) Login(ctx context.Context, username, password, ip
 		return nil, fmt.Errorf("查询用户失败: %w", err)
 	}
 	if su == nil {
-		s.logger.Warn("登录失败：用户不存在", slog.String("username", username))
+		s.log.Warn("登录失败：用户不存在", slog.String("username", username))
 		return nil, ErrInvalidCredentials
 	}
 
 	// 检查用户状态
 	if !su.IsActive {
-		s.logger.Warn("登录失败：用户已禁用", slog.String("username", username))
+		s.log.Warn("登录失败：用户已禁用", slog.String("username", username))
 		return nil, ErrUserInactive
 	}
 
 	// 验证密码
 	valid, err := s.passwordHasher.Verify(password, su.Password)
 	if err != nil || !valid {
-		s.logger.Warn("登录失败：密码错误", slog.String("username", username))
+		s.log.Warn("登录失败：密码错误", slog.String("username", username))
 		return nil, ErrInvalidCredentials
 	}
 
@@ -117,18 +116,18 @@ func (s *superUserServiceImpl) Login(ctx context.Context, username, password, ip
 		ExpiresAt:   time.Now().Add(s.jwtManager.GetRefreshTokenDuration()),
 	}
 	if err := s.sessionRepo.Create(ctx, session); err != nil {
-		s.logger.Error("创建会话失败", slog.Any("error", err))
+		s.log.Error("创建会话失败", slog.Any("error", err))
 	}
 
 	// 更新登录信息
 	if err := s.superUserRepo.UpdateLoginInfo(ctx, su.ID, ip); err != nil {
-		s.logger.Error("更新登录信息失败", slog.Any("error", err))
+		s.log.Error("更新登录信息失败", slog.Any("error", err))
 	}
 
 	// 记录审计日志
 	s.logAudit(ctx, su.ID, "LOGIN", nil, nil, map[string]interface{}{"ip": ip}, &ip)
 
-	s.logger.Info("超级管理员登录成功", slog.String("username", username), slog.String("ip", ip))
+	s.log.Info("超级管理员登录成功", slog.String("username", username), slog.String("ip", ip))
 
 	return &LoginResult{
 		SuperUser:    su,
@@ -148,13 +147,13 @@ func (s *superUserServiceImpl) Logout(ctx context.Context, accessToken string) e
 
 	// 撤销所有会话
 	if err := s.sessionRepo.RevokeAllByUserID(ctx, superUserID); err != nil {
-		s.logger.Error("撤销会话失败", slog.Any("error", err))
+		s.log.Error("撤销会话失败", slog.Any("error", err))
 	}
 
 	// 记录审计日志
 	s.logAudit(ctx, superUserID, "LOGOUT", nil, nil, nil, nil)
 
-	s.logger.Info("超级管理员登出", slog.String("superuser_id", claims.SuperUserID))
+	s.log.Info("超级管理员登出", slog.String("superuser_id", claims.SuperUserID))
 	return nil
 }
 
@@ -263,7 +262,7 @@ func (s *superUserServiceImpl) BanUser(ctx context.Context, operatorID, userID u
 		"duration_seconds": durationSeconds,
 	}, nil)
 
-	s.logger.Info("封禁用户", slog.String("user_id", userID.String()), slog.String("reason", reason))
+	s.log.Info("封禁用户", slog.String("user_id", userID.String()), slog.String("reason", reason))
 	return nil
 }
 
@@ -276,7 +275,7 @@ func (s *superUserServiceImpl) UnbanUser(ctx context.Context, operatorID, userID
 	// 记录审计日志
 	s.logAudit(ctx, operatorID, "UNBAN_USER", strPtr("USER"), &userID, nil, nil)
 
-	s.logger.Info("解封用户", slog.String("user_id", userID.String()))
+	s.log.Info("解封用户", slog.String("user_id", userID.String()))
 	return nil
 }
 
@@ -297,7 +296,7 @@ func (s *superUserServiceImpl) DeleteUser(ctx context.Context, operatorID, userI
 		"hard_delete": hardDelete,
 	}, nil)
 
-	s.logger.Info("删除用户", slog.String("user_id", userID.String()), slog.Bool("hard_delete", hardDelete))
+	s.log.Info("删除用户", slog.String("user_id", userID.String()), slog.Bool("hard_delete", hardDelete))
 	return nil
 }
 
@@ -340,7 +339,7 @@ func (s *superUserServiceImpl) DeleteContent(ctx context.Context, operatorID, co
 		"hard_delete": hardDelete,
 	}, nil)
 
-	s.logger.Info("删除内容", slog.String("content_id", contentID.String()), slog.Bool("hard_delete", hardDelete))
+	s.log.Info("删除内容", slog.String("content_id", contentID.String()), slog.Bool("hard_delete", hardDelete))
 	return nil
 }
 
@@ -359,7 +358,7 @@ func (s *superUserServiceImpl) BatchDeleteContents(ctx context.Context, operator
 		"failed_ids":    failedIDs,
 	}, nil)
 
-	s.logger.Info("批量删除内容", slog.Int("deleted_count", deletedCount), slog.Int("failed_count", len(failedIDs)))
+	s.log.Info("批量删除内容", slog.Int("deleted_count", deletedCount), slog.Int("failed_count", len(failedIDs)))
 	return deletedCount, failedIDs, nil
 }
 
@@ -521,7 +520,7 @@ func (s *superUserServiceImpl) logAudit(ctx context.Context, superUserID uuid.UU
 		IPAddress:   ip,
 	}
 	if err := s.auditLogRepo.Create(ctx, log); err != nil {
-		s.logger.Error("记录审计日志失败", slog.Any("error", err))
+		s.log.Error("记录审计日志失败", slog.Any("error", err))
 	}
 }
 

@@ -1,0 +1,437 @@
+# Implementation Plan: Service Refactoring
+
+## Overview
+
+本实现计划将 Lesser 后端服务进行全面重构，包括服务命名规范化、独立 Channel 服务、Jaeger 分布式追踪集成、Remote Client 规范化和错误处理统一。
+
+## Tasks
+
+- [x] 1. 添加 OpenTelemetry/Jaeger 追踪基础设施
+  - [x] 1.1 创建 service/pkg/tracing/tracer.go 初始化 OTEL
+    - 实现 InitTracer 函数，配置 OTLP gRPC Exporter
+    - 支持 OTEL_EXPORTER_OTLP_ENDPOINT 环境变量
+    - 返回 shutdown 函数用于优雅关闭
+    - _Requirements: 4.8, 8.5_
+  - [x] 1.2 增强 service/pkg/middleware/grpc.go 的 TraceInterceptor
+    - 创建 OpenTelemetry Span
+    - 设置 Span 属性（trace_id, rpc.method）
+    - 记录错误到 Span
+    - _Requirements: 4.1, 4.2_
+  - [x] 1.3 增强 service/pkg/broker/publisher.go 的 TraceID 传播
+    - 在消息头中添加 trace_id
+    - 记录发布日志包含 trace_id
+    - _Requirements: 4.3, 4.6_
+  - [x] 1.4 增强 service/pkg/broker/worker.go 的 TraceID 提取
+    - 从消息头提取 trace_id
+    - 注入到 handler context
+    - _Requirements: 4.7_
+  - [x] 1.5 编写 TraceID 传播属性测试
+    - **Property 8: TraceID Propagation in gRPC**
+    - **Property 9: TraceID Propagation in Messages**
+    - **Validates: Requirements 4.2, 4.3, 4.6, 4.7**
+
+- [x] 2. 规范化 Remote Client 实现
+  - [x] 2.1 增强 service/pkg/grpcclient/pool.go 连接池
+    - 添加 OpenTelemetry 拦截器
+    - 确保 TraceInterceptor 正确传递 trace_id
+    - _Requirements: 5.1, 5.2_
+  - [x] 2.2 重构 service/timeline/internal/remote/interaction_client.go
+    - 使用 grpcclient.Pool 替代直接连接
+    - 添加 Close 方法
+    - _Requirements: 5.1, 5.5_
+  - [x] 2.3 重构 service/comment/internal/remote/content_client.go
+    - 使用 grpcclient.Pool 替代直接连接
+    - 添加 Close 方法
+    - _Requirements: 5.1, 5.5_
+  - [x] 2.4 重构 service/interaction/internakasdmmmm fd,saf njj,l/remote/content_client.go
+    - 使用 grpcclient.Pool 替代直接连接
+    - 添加 Close 方法
+    - _Requirements: 5.1, 5.5_
+  - [x] 2.5 重构 service/chat/internal/remote/auth_client.go 和 user_client.go
+    - 使用 grpcclient.Pool 替代直接连接
+    - 添加 Close 方法
+    - _Requirements: 5.1, 5.5_
+  - [x] 2.6 编写 Remote Client 重试属性测试
+    - **Property 11: Remote Client Retry**
+    - **Validates: Requirements 5.3**
+
+- [x] 3. Checkpoint - 确保追踪和 Remote Client 测试通过
+  - 运行所有测试，确保 TraceID 传播正常
+  - 如有问题请询问用户
+
+- [x] 4. 规范化服务命名和目录结构
+  - [x] 4.1 重命名 service/chat/internal/logic/chat.go 为 chat_service.go
+    - 保持类型名 ChatService 不变
+    - _Requirements: 1.5_
+  - [x] 4.2 重命名 service/auth/internal/logic/auth_service_impl.go 为 auth_service.go
+    - 将私有类型 authServiceImpl 改为公开类型 AuthService
+    - 更新 interfaces.go 中的引用
+    - _Requirements: 1.5_
+  - [x] 4.3 统一 service/auth/internal/data_access 目录结构
+    - 将 postgres/ 和 redis/ 子目录内容合并到 data_access/
+    - 重命名为 user_repository.go 和 token_repository.go
+    - _Requirements: 1.1, 1.6_
+  - [x] 4.4 统一 service/superuser/internal/data_access 目录结构
+    - 将 postgres/ 子目录内容合并到 data_access/
+    - 重命名为 superuser_repository.go
+    - _Requirements: 1.1, 1.6_
+  - [x] 4.5 移动 service/auth/internal/crypto 到 service/pkg/auth
+    - 检查是否与现有 service/pkg/auth 重复
+    - 合并或重用现有实现
+    - _Requirements: 7.2_
+  - [x] 4.6 移动 service/superuser/internal/crypto 到 service/pkg/auth
+    - 检查是否与现有实现重复
+    - 合并或重用现有实现
+    - _Requirements: 7.2_
+  - [x] 4.7 编写目录结构和命名规范属性测试
+    - **Property 1: Service Directory Structure Compliance**
+    - **Property 2: File Naming Convention Compliance**
+    - **Validates: Requirements 1.1, 1.4, 1.5, 1.6, 1.7, 1.8**
+
+- [x] 5. 规范化错误处理
+  - [x] 5.1 为每个服务的 data_access 层添加 errors.go
+    - 定义 ErrNotFound, ErrDuplicate, ErrInvalidInput
+    - 检查现有错误定义，统一格式
+    - _Requirements: 6.1_
+  - [x] 5.2 为每个服务的 logic 层添加 ToGRPCError 函数
+    - 实现错误转换逻辑
+    - 确保中文错误消息
+    - _Requirements: 6.2, 6.3, 6.5_
+  - [x] 5.3 统一 Handler 层错误处理
+    - 使用 logic.ToGRPCError 替代 handleError 方法
+    - 确保所有错误都记录 trace_id
+    - _Requirements: 6.3, 6.4_
+  - [x] 5.4 编写错误处理属性测试
+    - **Property 12: Error Handling Consistency**
+    - **Validates: Requirements 6.2, 6.3, 6.4, 6.5**
+
+- [x] 6. Checkpoint - 确保命名规范和错误处理测试通过
+  - 运行所有测试
+  - 如有问题请询问用户
+
+- [x] 7. 重构 pkg 包结构 - 创建新目录结构
+  - [x] 7.1 创建 service/pkg/grpc/ 目录结构
+    - 创建 grpc/client/ 子目录
+    - 创建 grpc/server/ 子目录
+    - 创建 grpc/interceptor/ 子目录
+    - _Requirements: 9.1, 9.5_
+  - [x] 7.2 迁移 grpcclient 到 grpc/client
+    - 复制 pool.go, config.go, interceptors.go
+    - 更新包名和导入路径
+    - 在原位置添加类型别名（向后兼容）
+    - _Requirements: 9.1, 9.6_
+  - [x] 7.3 迁移 grpcserver 到 grpc/server
+    - 复制 server.go
+    - 更新包名和导入路径
+    - 在原位置添加类型别名
+    - _Requirements: 9.1, 9.6_
+  - [x] 7.4 迁移 middleware 到 grpc/interceptor
+    - 拆分 grpc.go 为 recovery.go, logging.go, trace.go
+    - 移动 ratelimit.go
+    - 更新包名和导入路径
+    - _Requirements: 9.1, 9.5_
+
+- [x] 8. 重构 pkg 包结构 - 数据存储和消息队列
+  - [x] 8.1 创建 service/pkg/db/ 目录
+    - 合并 database/postgres.go 和 cache/redis.go, lock.go, config.go
+    - 统一命名为 postgres.go, redis.go, lock.go, config.go
+    - _Requirements: 9.1_
+  - [x] 8.2 重命名 broker 为 mq
+    - 创建 service/pkg/mq/ 目录
+    - 移动 publisher.go, worker.go, events.go
+    - 在原位置添加类型别名
+    - _Requirements: 9.1_
+  - [x] 8.3 重命名 tracing 为 trace
+    - 创建 service/pkg/trace/ 目录
+    - 移动 tracer.go
+    - 在原位置添加类型别名
+    - _Requirements: 9.1_
+  - [x] 8.4 重命名 logger 为 log
+    - 创建 service/pkg/log/ 目录
+    - 移动 logger.go
+    - 在原位置添加类型别名
+    - _Requirements: 9.1_
+
+- [x] 9. 重构 pkg 包结构 - 工具包清理
+  - [x] 9.1 重命名 validator 为 validate
+    - 创建 service/pkg/validate/ 目录
+    - 移动 validator.go
+    - 在原位置添加类型别名
+    - _Requirements: 9.1, 9.4_
+  - [x] 9.2 重命名 pagination 为 page
+    - 创建 service/pkg/page/ 目录
+    - 移动 pagination.go
+    - 在原位置添加类型别名
+    - _Requirements: 9.1, 9.4_
+  - [x] 9.3 删除 convert 包
+    - 检查使用情况，替换为标准库或泛型
+    - 移除 service/pkg/convert/ 目录
+    - _Requirements: 9.3_
+  - [x] 9.4 删除 timeutil 包
+    - 检查使用情况，替换为标准库 time
+    - 移除 service/pkg/timeutil/ 目录
+    - _Requirements: 9.3_
+  - [x] 9.5 合并 retry 到 grpc/client
+    - 将 retry.go 中的逻辑合并到 grpc/client/retry.go
+    - 移除 service/pkg/retry/ 目录
+    - _Requirements: 9.6_
+
+- [x] 10. 重构 pkg 包结构 - 测试包处理
+  - [x] 10.1 移动 structure 测试到 pkg_test
+    - 创建 service/pkg/pkg_test/ 目录
+    - 移动 structure_property_test.go
+    - 更新测试导入路径
+    - _Requirements: 9.2_
+  - [x] 10.2 移动 integration 测试到 pkg_test
+    - 移动 service_communication_test.go
+    - 更新测试导入路径
+    - _Requirements: 9.2_
+  - [x] 10.3 更新 errors 包测试
+    - 移动 errors_property_test.go 到 pkg_test
+    - 更新测试导入路径
+    - _Requirements: 9.2_
+
+- [-] 11. 更新所有服务的 import 路径
+  - [x] 11.1 更新 auth 服务 import
+    - 替换 grpcclient -> grpc/client
+    - 替换 middleware -> grpc/interceptor
+    - 替换 logger -> log
+    - 替换 cache -> db
+    - 替换 database -> db
+    - _Requirements: 9.1_
+  - [x] 11.2 更新 user 服务 import
+    - 同上
+    - _Requirements: 9.1_
+  - [ ] 11.3 更新 content 服务 import
+    - import 路径已更新，需要修复 proto 字段引用
+    - _Requirements: 9.1_
+  - [-] 11.4 更新 comment 服务 import
+    - import 路径已更新，需要修复 client.Pool 等函数名
+    - _Requirements: 9.1_
+  - [-] 11.5 更新 interaction 服务 import
+    - import 路径已更新，需要修复 client.Pool 等函数名
+    - _Requirements: 9.1_
+  - [-] 11.6 更新 timeline 服务 import
+    - import 路径已更新，需要修复 client.Pool 等函数名和 log 变量冲突
+    - _Requirements: 9.1_
+  - [ ] 11.7 更新 search 服务 import
+    - 同上
+    - _Requirements: 9.1_
+  - [ ] 11.8 更新 notification 服务 import
+    - 同上
+    - _Requirements: 9.1_
+  - [ ] 11.9 更新 chat 服务 import
+    - 同上
+    - _Requirements: 9.1_
+  - [ ] 11.10 更新 superuser 服务 import
+    - 同上
+    - _Requirements: 9.1_
+  - [ ] 11.11 更新 gateway 服务 import
+    - 同上
+    - _Requirements: 9.1_
+
+- [ ] 12. Checkpoint - 确保 pkg 重构后所有测试通过
+  - 运行 go build ./... 确保编译通过
+  - 运行所有属性测试
+  - 如有问题请询问用户
+
+- [ ] 13. 删除旧的 pkg 包目录
+  - [ ] 13.1 删除旧的 grpcclient 目录
+    - 确认所有服务已更新 import
+    - 删除 service/pkg/grpcclient/
+    - _Requirements: 9.1_
+  - [ ] 13.2 删除旧的 grpcserver 目录
+    - 删除 service/pkg/grpcserver/
+    - _Requirements: 9.1_
+  - [ ] 13.3 删除旧的 middleware 目录
+    - 删除 service/pkg/middleware/
+    - _Requirements: 9.1_
+  - [ ] 13.4 删除旧的 database 和 cache 目录
+    - 删除 service/pkg/database/
+    - 删除 service/pkg/cache/
+    - _Requirements: 9.1_
+  - [ ] 13.5 删除旧的 broker, tracing, logger 目录
+    - 删除 service/pkg/broker/
+    - 删除 service/pkg/tracing/
+    - 删除 service/pkg/logger/
+    - _Requirements: 9.1_
+  - [ ] 13.6 删除旧的 validator, pagination, retry 目录
+    - 删除 service/pkg/validator/
+    - 删除 service/pkg/pagination/
+    - 删除 service/pkg/retry/
+    - _Requirements: 9.1_
+  - [ ] 13.7 删除旧的 structure, integration 目录
+    - 删除 service/pkg/structure/
+    - 删除 service/pkg/integration/
+    - _Requirements: 9.2_
+
+- [ ] 14. 更新 pkg README 文档
+  - [ ] 14.1 更新 service/pkg/README.md
+    - 更新包列表和说明
+    - 更新使用示例
+    - 添加迁移说明
+    - _Requirements: 9.1_
+
+- [ ] 15. Checkpoint - pkg 重构完成验证
+  - 运行 go build ./... 确保编译通过
+  - 运行 go test ./... 确保所有测试通过
+  - 如有问题请询问用户
+
+- [ ] 16. 创建 Channel 服务 Proto 定义
+  - [ ] 7.1 创建 protos/channel/channel.proto
+    - 定义 ChannelService RPC 方法
+    - 定义 Channel, ChannelPost 等消息类型
+    - 定义 StreamUpdates 双向流
+    - _Requirements: 3.4_
+  - [ ] 7.2 更新 protos/chat/chat.proto
+    - 移除 CHANNEL 类型相关定义（保留 PRIVATE 和 GROUP）
+    - 更新注释说明
+    - _Requirements: 3.3_
+  - [ ] 7.3 运行 devlesser proto 生成代码
+    - 生成 Go 和 Dart 代码
+    - 验证生成成功
+    - _Requirements: 3.4_
+
+- [ ] 8. 创建 Channel 服务基础结构
+  - [ ] 8.1 创建 service/channel 目录结构
+    - cmd/server/main.go
+    - internal/handler/
+    - internal/logic/
+    - internal/data_access/
+    - internal/remote/
+    - go.mod, go.sum
+    - _Requirements: 3.1_
+  - [ ] 8.2 实现 Channel 服务 main.go
+    - 初始化数据库连接
+    - 初始化 Redis 连接
+    - 初始化 OpenTelemetry
+    - 启动 gRPC 服务器
+    - _Requirements: 3.1, 4.8_
+  - [ ] 8.3 实现 channel_repository.go
+    - Create, GetByID, Update, Delete, List 方法
+    - _Requirements: 3.1, 2.3_
+  - [ ] 8.4 实现 subscription_repository.go
+    - Subscribe, Unsubscribe, GetSubscribers, IsSubscribed 方法
+    - _Requirements: 3.1_
+  - [ ] 8.5 实现 post_repository.go
+    - Create, GetByID, Delete, ListByChannel 方法
+    - _Requirements: 3.1_
+
+- [ ] 9. 实现 Channel 服务业务逻辑
+  - [ ] 9.1 实现 channel_service.go
+    - CreateChannel, GetChannel, UpdateChannel, DeleteChannel
+    - Subscribe, Unsubscribe, GetSubscribers
+    - PublishPost, GetPosts, DeletePost
+    - _Requirements: 3.1, 3.5, 3.6_
+  - [ ] 9.2 实现 errors.go
+    - 定义 ErrNotChannelAdmin, ErrAlreadySubscribed 等错误
+    - 实现 ToGRPCError 函数
+    - _Requirements: 6.1, 6.2_
+  - [ ] 9.3 实现 channel_handler.go
+    - 实现所有 gRPC 方法
+    - 参数验证和错误处理
+    - _Requirements: 3.1_
+  - [ ] 9.4 实现 stream.go 双向流处理
+    - 实现 StreamUpdates 方法
+    - 使用 Redis Pub/Sub 广播更新
+    - _Requirements: 3.8_
+  - [ ] 9.5 编写 Channel 访问控制属性测试
+    - **Property 5: Channel Access Control**
+    - **Validates: Requirements 3.5**
+  - [ ] 9.6 编写 Channel 广播属性测试
+    - **Property 6: Channel Broadcast**
+    - **Validates: Requirements 3.6**
+
+- [ ] 10. 更新 Chat 服务移除 CHANNEL 类型
+  - [ ] 10.1 更新 service/chat/internal/logic/chat_service.go
+    - 移除 CHANNEL 类型处理逻辑
+    - 添加 CHANNEL 类型请求的错误返回
+    - _Requirements: 3.3_
+  - [ ] 10.2 更新 service/chat/internal/handler/chat_handler.go
+    - 验证会话类型不为 CHANNEL
+    - 返回适当错误消息
+    - _Requirements: 3.3_
+  - [ ] 10.3 更新 service/chat/internal/data_access/conversation.go
+    - 过滤查询排除 CHANNEL 类型
+    - _Requirements: 3.3_
+
+- [ ] 11. 更新基础设施配置
+  - [ ] 11.1 更新 infra/docker-compose.yml
+    - 添加 Channel 服务容器配置
+    - 配置端口 50062
+    - 添加 OTEL_EXPORTER_OTLP_ENDPOINT 环境变量
+    - _Requirements: 3.1, 4.8_
+  - [ ] 11.2 更新 infra/docker-compose.prod.yml
+    - 添加 Channel 服务生产配置
+    - _Requirements: 3.1_
+  - [ ] 11.3 更新 infra/gateway/dynamic/routes.yml
+    - 添加 Channel 服务路由规则
+    - _Requirements: 3.1_
+  - [ ] 11.4 更新 service/gateway 路由配置
+    - 添加 Channel 服务转发
+    - _Requirements: 3.1_
+
+- [ ] 12. Checkpoint - 确保 Channel 服务测试通过
+  - 运行 Channel 服务单元测试
+  - 运行属性测试
+  - 如有问题请询问用户
+
+- [ ] 13. 代码质量清理
+  - [ ] 13.1 统一日志库使用
+    - 所有服务使用 logger.Logger
+    - 移除直接使用 slog 的代码
+    - _Requirements: 7.4_
+  - [ ] 13.2 添加缺失的中文注释
+    - 检查所有导出的函数和类型
+    - 添加中文注释
+    - _Requirements: 7.4_
+  - [ ] 13.3 运行 gofmt 格式化所有代码
+    - 确保代码格式一致
+    - _Requirements: 7.3_
+  - [ ] 13.4 运行 go vet 检查未使用的代码
+    - 移除未使用的导入和变量
+    - _Requirements: 7.1_
+  - [ ] 13.5 编写代码质量属性测试
+    - **Property 13: Code Quality**
+    - **Validates: Requirements 7.1, 7.3, 7.4**
+
+- [ ] 14. 更新架构文档
+  - [ ] 14.1 更新 .kiro/steering/structure.md
+    - 添加 Channel 服务到架构图
+    - 更新端口列表
+    - _Requirements: 3.1_
+  - [ ] 14.2 更新 .kiro/steering/product.md
+    - 添加 Channel 服务说明
+    - 更新服务端口表
+    - _Requirements: 3.1_
+  - [ ] 14.3 更新 docs/架构梳理.md
+    - 添加 Channel 服务到架构图
+    - 更新 Messaging 层说明
+    - _Requirements: 3.1_
+  - [ ] 14.4 更新 README.md
+    - 添加 Channel 服务到服务列表
+    - 更新端口说明
+    - _Requirements: 3.1_
+
+- [ ] 15. 更新 CLI 工具
+  - [ ] 15.1 更新 infra/cli/src/commands/test.rs
+    - 添加 channel 服务测试命令
+    - _Requirements: 3.1_
+  - [ ] 15.2 更新 infra/cli/src/commands/start.rs
+    - 确保 Channel 服务正确启动
+    - _Requirements: 3.1_
+
+- [ ] 16. Final Checkpoint - 完整测试
+  - 运行 devlesser test full 完整测试
+  - 验证所有服务正常启动
+  - 验证 Jaeger UI 可以看到追踪数据
+  - 如有问题请询问用户
+
+## Notes
+
+- 每个任务引用具体的需求以便追溯
+- Checkpoint 任务确保增量验证
+- 属性测试验证通用正确性属性
+- 单元测试验证具体示例和边界情况
+- 所有测试任务均为必需，确保从一开始就全面测试
+

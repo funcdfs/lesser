@@ -30,7 +30,7 @@ const (
 	InteractionService_BatchGetInteractionStatus_FullMethodName = "/interaction.InteractionService/BatchGetInteractionStatus"
 )
 
-// InteractionServiceClient is the client API for InteractionService logic.
+// InteractionServiceClient is the client API for InteractionService service.
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 //
@@ -150,7 +150,7 @@ func (c *interactionServiceClient) BatchGetInteractionStatus(ctx context.Context
 	return out, nil
 }
 
-// InteractionServiceServer is the server API for InteractionService logic.
+// InteractionServiceServer is the server API for InteractionService service.
 // All implementations must embed UnimplementedInteractionServiceServer
 // for forward compatibility.
 //
@@ -210,7 +210,7 @@ func (UnimplementedInteractionServiceServer) BatchGetInteractionStatus(context.C
 func (UnimplementedInteractionServiceServer) mustEmbedUnimplementedInteractionServiceServer() {}
 func (UnimplementedInteractionServiceServer) testEmbeddedByValue()                            {}
 
-// UnsafeInteractionServiceServer may be embedded to opt out of forward compatibility for this logic.
+// UnsafeInteractionServiceServer may be embedded to opt out of forward compatibility for this service.
 // Use of this interface is not recommended, as added methods to InteractionServiceServer will
 // result in compilation errors.
 type UnsafeInteractionServiceServer interface {
@@ -390,7 +390,7 @@ func _InteractionService_BatchGetInteractionStatus_Handler(srv interface{}, ctx 
 	return interceptor(ctx, in, info, handler)
 }
 
-// InteractionService_ServiceDesc is the grpc.ServiceDesc for InteractionService logic.
+// InteractionService_ServiceDesc is the grpc.ServiceDesc for InteractionService service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
 var InteractionService_ServiceDesc = grpc.ServiceDesc{

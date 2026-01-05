@@ -7,7 +7,7 @@
 package comment
 
 import (
-	common "github.com/funcdfs/lesser/gateway/gen_protos/common"
+	common "github.com/funcdfs/lesser/pkg/gen_protos/common"
 	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
 	protoimpl "google.golang.org/protobuf/runtime/protoimpl"
 	reflect "reflect"
@@ -223,13 +223,14 @@ func (x *Comment) GetIsLiked() bool {
 
 // CreateCommentRequest 创建评论请求
 type CreateCommentRequest struct {
-	state         protoimpl.MessageState `protogen:"open.v1"`
-	AuthorId      string                 `protobuf:"bytes,1,opt,name=author_id,json=authorId,proto3" json:"author_id,omitempty"`
-	ContentId     string                 `protobuf:"bytes,2,opt,name=content_id,json=contentId,proto3" json:"content_id,omitempty"`
-	ParentId      string                 `protobuf:"bytes,3,opt,name=parent_id,json=parentId,proto3" json:"parent_id,omitempty"` // 可选，回复评论时使用
-	Text          string                 `protobuf:"bytes,4,opt,name=text,proto3" json:"text,omitempty"`
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
+	state            protoimpl.MessageState `protogen:"open.v1"`
+	AuthorId         string                 `protobuf:"bytes,1,opt,name=author_id,json=authorId,proto3" json:"author_id,omitempty"`
+	ContentId        string                 `protobuf:"bytes,2,opt,name=content_id,json=contentId,proto3" json:"content_id,omitempty"`
+	ParentId         string                 `protobuf:"bytes,3,opt,name=parent_id,json=parentId,proto3" json:"parent_id,omitempty"` // 可选，回复评论时使用
+	Text             string                 `protobuf:"bytes,4,opt,name=text,proto3" json:"text,omitempty"`
+	MentionedUserIds []string               `protobuf:"bytes,5,rep,name=mentioned_user_ids,json=mentionedUserIds,proto3" json:"mentioned_user_ids,omitempty"` // @ 提及的用户 ID 列表
+	unknownFields    protoimpl.UnknownFields
+	sizeCache        protoimpl.SizeCache
 }
 
 func (x *CreateCommentRequest) Reset() {
@@ -288,6 +289,13 @@ func (x *CreateCommentRequest) GetText() string {
 		return x.Text
 	}
 	return ""
+}
+
+func (x *CreateCommentRequest) GetMentionedUserIds() []string {
+	if x != nil {
+		return x.MentionedUserIds
+	}
+	return nil
 }
 
 // CreateCommentResponse 创建评论响应
@@ -1131,13 +1139,14 @@ const file_comment_comment_proto_rawDesc = "" +
 	" \x01(\x05R\tlikeCount\x12'\n" +
 	"\x0fauthor_username\x18\v \x01(\tR\x0eauthorUsername\x12#\n" +
 	"\rauthor_avatar\x18\f \x01(\tR\fauthorAvatar\x12\x19\n" +
-	"\bis_liked\x18\r \x01(\bR\aisLiked\"\x83\x01\n" +
+	"\bis_liked\x18\r \x01(\bR\aisLiked\"\xb1\x01\n" +
 	"\x14CreateCommentRequest\x12\x1b\n" +
 	"\tauthor_id\x18\x01 \x01(\tR\bauthorId\x12\x1d\n" +
 	"\n" +
 	"content_id\x18\x02 \x01(\tR\tcontentId\x12\x1b\n" +
 	"\tparent_id\x18\x03 \x01(\tR\bparentId\x12\x12\n" +
-	"\x04text\x18\x04 \x01(\tR\x04text\"h\n" +
+	"\x04text\x18\x04 \x01(\tR\x04text\x12,\n" +
+	"\x12mentioned_user_ids\x18\x05 \x03(\tR\x10mentionedUserIds\"h\n" +
 	"\x15CreateCommentResponse\x12*\n" +
 	"\acomment\x18\x01 \x01(\v2\x10.comment.CommentR\acomment\x12#\n" +
 	"\rcomment_count\x18\x02 \x01(\x05R\fcommentCount\"2\n" +
@@ -1211,7 +1220,7 @@ const file_comment_comment_proto_rawDesc = "" +
 	"\x0fGetCommentCount\x12\x1f.comment.GetCommentCountRequest\x1a .comment.GetCommentCountResponse\x12c\n" +
 	"\x14BatchGetCommentCount\x12$.comment.BatchGetCommentCountRequest\x1a%.comment.BatchGetCommentCountResponse\x12H\n" +
 	"\vLikeComment\x12\x1b.comment.LikeCommentRequest\x1a\x1c.comment.LikeCommentResponse\x12N\n" +
-	"\rUnlikeComment\x12\x1d.comment.UnlikeCommentRequest\x1a\x1e.comment.UnlikeCommentResponseB1Z/github.com/funcdfs/lesser/comment/gen_protos/commentb\x06proto3"
+	"\rUnlikeComment\x12\x1d.comment.UnlikeCommentRequest\x1a\x1e.comment.UnlikeCommentResponseB6Z4github.com/funcdfs/lesser/comment/gen_protos/commentb\x06proto3"
 
 var (
 	file_comment_comment_proto_rawDescOnce sync.Once

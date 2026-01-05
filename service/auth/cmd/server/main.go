@@ -15,14 +15,11 @@ import (
 
 	"github.com/funcdfs/lesser/auth/internal/config"
 	"github.com/funcdfs/lesser/auth/internal/crypto"
-	"github.com/funcdfs/lesser/auth/internal/handler"
 	"github.com/funcdfs/lesser/auth/internal/data_access"
-	"github.com/funcdfs/lesser/auth/internal/data_access/postgres"
-	redisRepo "github.com/funcdfs/lesser/auth/internal/data_access/redis"
+	"github.com/funcdfs/lesser/auth/internal/handler"
 	"github.com/funcdfs/lesser/auth/internal/logic"
 	pb "github.com/funcdfs/lesser/auth/gen_protos/auth"
-	"github.com/funcdfs/lesser/pkg/cache"
-	"github.com/funcdfs/lesser/pkg/database"
+	"github.com/funcdfs/lesser/pkg/db"
 )
 
 func main() {
@@ -36,7 +33,7 @@ func main() {
 		slog.String("port", cfg.GRPCPort))
 
 	// 初始化数据库
-	db, err := database.NewConnection(database.Config{
+	pgDB, err := db.NewPostgresConnection(db.PostgresConfig{
 		Host:     cfg.DBHost,
 		Port:     cfg.DBPort,
 		User:     cfg.DBUser,
@@ -48,13 +45,13 @@ func main() {
 		log.Error("连接数据库失败", slog.Any("error", err))
 		os.Exit(1)
 	}
-	defer db.Close()
+	defer pgDB.Close()
 	log.Info("数据库连接成功")
 
 	// 初始化 Redis（可选）
-	var redisClient *cache.Client
+	var redisClient *db.RedisClient
 	if cfg.RedisURL != "" {
-		redisClient, err = cache.NewClient(cache.Config{URL: cfg.RedisURL})
+		redisClient, err = db.NewRedisClient(db.RedisConfig{URL: cfg.RedisURL})
 		if err != nil {
 			log.Warn("连接 Redis 失败，部分功能将不可用", slog.Any("error", err))
 		} else {
@@ -64,17 +61,17 @@ func main() {
 	}
 
 	// 创建仓库
-	var userRepo data_access.UserRepository = postgres.NewUserRepository(db)
-	var banRepo data_access.BanRepository = postgres.NewBanRepository(db)
+	var userRepo data_access.UserRepository = data_access.NewUserRepository(pgDB)
+	var banRepo data_access.BanRepository = data_access.NewBanRepository(pgDB)
 
 	// 创建 Redis 仓库（如果可用）
 	var tokenBlacklist data_access.TokenBlacklistRepository
-	var banCache *redisRepo.BanCache
-	var loginAttemptCache *redisRepo.LoginAttemptCache
+	var banCache *data_access.BanCache
+	var loginAttemptCache *data_access.LoginAttemptCache
 	if redisClient != nil {
-		tokenBlacklist = redisRepo.NewTokenBlacklistRepository(redisClient)
-		banCache = redisRepo.NewBanCache(redisClient, cfg.BanCacheTTL)
-		loginAttemptCache = redisRepo.NewLoginAttemptCache(redisClient, cfg.LoginLockoutTime)
+		tokenBlacklist = data_access.NewTokenBlacklistRepository(redisClient)
+		banCache = data_access.NewBanCache(redisClient, cfg.BanCacheTTL)
+		loginAttemptCache = data_access.NewLoginAttemptCache(redisClient, cfg.LoginLockoutTime)
 	}
 
 	// 创建密码哈希器

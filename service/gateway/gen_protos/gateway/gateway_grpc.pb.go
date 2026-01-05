@@ -22,7 +22,7 @@ const (
 	GatewayService_Health_FullMethodName = "/gateway.GatewayService/Health"
 )
 
-// GatewayServiceClient is the client API for GatewayService logic.
+// GatewayServiceClient is the client API for GatewayService service.
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 //
@@ -52,7 +52,7 @@ func (c *gatewayServiceClient) Health(ctx context.Context, in *HealthRequest, op
 	return out, nil
 }
 
-// GatewayServiceServer is the server API for GatewayService logic.
+// GatewayServiceServer is the server API for GatewayService service.
 // All implementations must embed UnimplementedGatewayServiceServer
 // for forward compatibility.
 //
@@ -78,7 +78,7 @@ func (UnimplementedGatewayServiceServer) Health(context.Context, *HealthRequest)
 func (UnimplementedGatewayServiceServer) mustEmbedUnimplementedGatewayServiceServer() {}
 func (UnimplementedGatewayServiceServer) testEmbeddedByValue()                        {}
 
-// UnsafeGatewayServiceServer may be embedded to opt out of forward compatibility for this logic.
+// UnsafeGatewayServiceServer may be embedded to opt out of forward compatibility for this service.
 // Use of this interface is not recommended, as added methods to GatewayServiceServer will
 // result in compilation errors.
 type UnsafeGatewayServiceServer interface {
@@ -114,7 +114,7 @@ func _GatewayService_Health_Handler(srv interface{}, ctx context.Context, dec fu
 	return interceptor(ctx, in, info, handler)
 }
 
-// GatewayService_ServiceDesc is the grpc.ServiceDesc for GatewayService logic.
+// GatewayService_ServiceDesc is the grpc.ServiceDesc for GatewayService service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
 var GatewayService_ServiceDesc = grpc.ServiceDesc{

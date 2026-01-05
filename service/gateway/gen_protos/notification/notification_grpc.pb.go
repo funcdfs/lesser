@@ -8,7 +8,7 @@ package notification
 
 import (
 	context "context"
-	common "github.com/funcdfs/lesser/gateway/gen_protos/common"
+	common "github.com/funcdfs/lesser/pkg/gen_protos/common"
 	grpc "google.golang.org/grpc"
 	codes "google.golang.org/grpc/codes"
 	status "google.golang.org/grpc/status"
@@ -26,7 +26,7 @@ const (
 	NotificationService_GetUnreadCount_FullMethodName = "/notification.NotificationService/GetUnreadCount"
 )
 
-// NotificationServiceClient is the client API for NotificationService logic.
+// NotificationServiceClient is the client API for NotificationService service.
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 //
@@ -86,7 +86,7 @@ func (c *notificationServiceClient) GetUnreadCount(ctx context.Context, in *GetU
 	return out, nil
 }
 
-// NotificationServiceServer is the server API for NotificationService logic.
+// NotificationServiceServer is the server API for NotificationService service.
 // All implementations must embed UnimplementedNotificationServiceServer
 // for forward compatibility.
 //
@@ -121,7 +121,7 @@ func (UnimplementedNotificationServiceServer) GetUnreadCount(context.Context, *G
 func (UnimplementedNotificationServiceServer) mustEmbedUnimplementedNotificationServiceServer() {}
 func (UnimplementedNotificationServiceServer) testEmbeddedByValue()                             {}
 
-// UnsafeNotificationServiceServer may be embedded to opt out of forward compatibility for this logic.
+// UnsafeNotificationServiceServer may be embedded to opt out of forward compatibility for this service.
 // Use of this interface is not recommended, as added methods to NotificationServiceServer will
 // result in compilation errors.
 type UnsafeNotificationServiceServer interface {
@@ -211,7 +211,7 @@ func _NotificationService_GetUnreadCount_Handler(srv interface{}, ctx context.Co
 	return interceptor(ctx, in, info, handler)
 }
 
-// NotificationService_ServiceDesc is the grpc.ServiceDesc for NotificationService logic.
+// NotificationService_ServiceDesc is the grpc.ServiceDesc for NotificationService service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
 var NotificationService_ServiceDesc = grpc.ServiceDesc{

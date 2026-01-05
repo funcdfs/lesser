@@ -68,7 +68,7 @@ func AuthInterceptor(validator *auth.JWTValidator, limiter *ratelimit.Limiter, l
 			return nil, err
 		}
 
-		claims, err := validator.ValidateToken(token)
+		claims, err := validate.ValidateToken(token)
 		if err != nil {
 			log.Debug("令牌验证失败", slog.Any("error", err), slog.String("method", info.FullMethod))
 			return nil, gwErr.ErrInvalidToken
@@ -106,7 +106,7 @@ func StreamAuthInterceptor(validator *auth.JWTValidator, limiter *ratelimit.Limi
 			return err
 		}
 
-		claims, err := validator.ValidateToken(token)
+		claims, err := validate.ValidateToken(token)
 		if err != nil {
 			log.Debug("流令牌验证失败", slog.Any("error", err), slog.String("method", info.FullMethod))
 			return gwErr.ErrInvalidToken

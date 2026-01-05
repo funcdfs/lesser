@@ -269,8 +269,28 @@ func newMockPublisher() *mockPublisher {
 	}
 }
 
-func (m *mockPublisher) PublishAsync(ctx context.Context, routingKey string, event interface{}) {
-	m.events = append(m.events, publishedEvent{routingKey: routingKey, event: event})
+func (m *mockPublisher) PublishCommentCreated(ctx context.Context, commentID, authorID, contentID, contentAuthorID, parentID, parentAuthorID, text string) {
+	m.events = append(m.events, publishedEvent{routingKey: "comment.created", event: map[string]string{
+		"comment_id": commentID,
+		"author_id":  authorID,
+		"content_id": contentID,
+	}})
+}
+
+func (m *mockPublisher) PublishCommentLiked(ctx context.Context, commentID, commentAuthorID, likerID string) {
+	m.events = append(m.events, publishedEvent{routingKey: "comment.liked", event: map[string]string{
+		"comment_id":        commentID,
+		"comment_author_id": commentAuthorID,
+		"liker_id":          likerID,
+	}})
+}
+
+func (m *mockPublisher) PublishUserMentioned(ctx context.Context, mentionedUserID, mentionerID, commentID string) {
+	m.events = append(m.events, publishedEvent{routingKey: "user.mentioned", event: map[string]string{
+		"mentioned_user_id": mentionedUserID,
+		"mentioner_id":      mentionerID,
+		"comment_id":        commentID,
+	}})
 }
 
 
@@ -312,7 +332,7 @@ func TestCreateComment_Success(t *testing.T) {
 	ts.contentClient.setContentAuthor("content-1", "author-1")
 
 	// 创建评论
-	comment, count, err := ts.svc.CreateComment(ctx, "user-1", "content-1", "", "这是一条评论")
+	comment, count, err := ts.svc.CreateComment(ctx, "user-1", "content-1", "", "这是一条评论", nil)
 	require.NoError(t, err)
 	assert.NotNil(t, comment)
 	assert.Equal(t, "user-1", comment.AuthorID)
@@ -331,7 +351,7 @@ func TestCreateComment_EmptyText(t *testing.T) {
 	ts.contentClient.setContentExists("content-1", true)
 
 	// 空文本
-	_, _, err := ts.svc.CreateComment(ctx, "user-1", "content-1", "", "")
+	_, _, err := ts.svc.CreateComment(ctx, "user-1", "content-1", "", "", nil)
 	assert.ErrorIs(t, err, ErrEmptyText)
 }
 
@@ -346,7 +366,7 @@ func TestCreateComment_TextTooLong(t *testing.T) {
 	for i := range longText {
 		longText[i] = 'a'
 	}
-	_, _, err := ts.svc.CreateComment(ctx, "user-1", "content-1", "", string(longText))
+	_, _, err := ts.svc.CreateComment(ctx, "user-1", "content-1", "", string(longText), nil)
 	assert.ErrorIs(t, err, ErrTextTooLong)
 }
 
@@ -357,7 +377,7 @@ func TestCreateComment_ContentNotFound(t *testing.T) {
 	// 内容不存在
 	ts.contentClient.setContentExists("content-1", false)
 
-	_, _, err := ts.svc.CreateComment(ctx, "user-1", "content-1", "", "评论")
+	_, _, err := ts.svc.CreateComment(ctx, "user-1", "content-1", "", "评论", nil)
 	assert.ErrorIs(t, err, ErrContentNotFound)
 }
 
@@ -369,7 +389,7 @@ func TestCreateComment_CommentsDisabled(t *testing.T) {
 	ts.contentClient.setContentExists("content-1", true)
 	ts.contentClient.setCommentsDisabled("content-1", true)
 
-	_, _, err := ts.svc.CreateComment(ctx, "user-1", "content-1", "", "评论")
+	_, _, err := ts.svc.CreateComment(ctx, "user-1", "content-1", "", "评论", nil)
 	assert.ErrorIs(t, err, ErrCommentsDisabled)
 }
 
@@ -379,7 +399,7 @@ func TestCreateComment_ContentServiceError(t *testing.T) {
 
 	ts.contentClient.checkErr = errors.New("service unavailable")
 
-	_, _, err := ts.svc.CreateComment(ctx, "user-1", "content-1", "", "评论")
+	_, _, err := ts.svc.CreateComment(ctx, "user-1", "content-1", "", "评论", nil)
 	assert.Error(t, err)
 }
 
@@ -390,7 +410,7 @@ func TestCreateComment_RepositoryError(t *testing.T) {
 	ts.contentClient.setContentExists("content-1", true)
 	ts.commentRepo.createErr = errors.New("database error")
 
-	_, _, err := ts.svc.CreateComment(ctx, "user-1", "content-1", "", "评论")
+	_, _, err := ts.svc.CreateComment(ctx, "user-1", "content-1", "", "评论", nil)
 	assert.Error(t, err)
 }
 
@@ -404,11 +424,11 @@ func TestCreateReply_Success(t *testing.T) {
 	ts.contentClient.setContentAuthor("content-1", "author-1")
 
 	// 先创建父评论
-	parentComment, _, err := ts.svc.CreateComment(ctx, "user-1", "content-1", "", "父评论")
+	parentComment, _, err := ts.svc.CreateComment(ctx, "user-1", "content-1", "", "父评论", nil)
 	require.NoError(t, err)
 
 	// 创建回复
-	reply, count, err := ts.svc.CreateComment(ctx, "user-2", "content-1", parentComment.ID, "这是回复")
+	reply, count, err := ts.svc.CreateComment(ctx, "user-2", "content-1", parentComment.ID, "这是回复", nil)
 	require.NoError(t, err)
 	assert.NotNil(t, reply)
 	assert.Equal(t, parentComment.ID, reply.ParentID)
@@ -426,7 +446,7 @@ func TestCreateReply_InvalidParent(t *testing.T) {
 	ts.contentClient.setContentExists("content-1", true)
 
 	// 父评论不存在
-	_, _, err := ts.svc.CreateComment(ctx, "user-1", "content-1", "nonexistent-parent", "回复")
+	_, _, err := ts.svc.CreateComment(ctx, "user-1", "content-1", "nonexistent-parent", "回复", nil)
 	assert.ErrorIs(t, err, ErrInvalidParent)
 }
 
@@ -437,7 +457,7 @@ func TestCreateReply_DeletedParent(t *testing.T) {
 	ts.contentClient.setContentExists("content-1", true)
 
 	// 创建父评论
-	parentComment, _, err := ts.svc.CreateComment(ctx, "user-1", "content-1", "", "父评论")
+	parentComment, _, err := ts.svc.CreateComment(ctx, "user-1", "content-1", "", "父评论", nil)
 	require.NoError(t, err)
 
 	// 删除父评论
@@ -445,7 +465,7 @@ func TestCreateReply_DeletedParent(t *testing.T) {
 	require.NoError(t, err)
 
 	// 尝试回复已删除的评论
-	_, _, err = ts.svc.CreateComment(ctx, "user-2", "content-1", parentComment.ID, "回复")
+	_, _, err = ts.svc.CreateComment(ctx, "user-2", "content-1", parentComment.ID, "回复", nil)
 	assert.ErrorIs(t, err, ErrInvalidParent)
 }
 
@@ -458,7 +478,7 @@ func TestGetComment_Success(t *testing.T) {
 	ts.contentClient.setContentExists("content-1", true)
 
 	// 创建评论
-	created, _, err := ts.svc.CreateComment(ctx, "user-1", "content-1", "", "测试评论")
+	created, _, err := ts.svc.CreateComment(ctx, "user-1", "content-1", "", "测试评论", nil)
 	require.NoError(t, err)
 
 	// 获取评论
@@ -483,7 +503,7 @@ func TestGetComment_Deleted(t *testing.T) {
 	ts.contentClient.setContentExists("content-1", true)
 
 	// 创建并删除评论
-	created, _, err := ts.svc.CreateComment(ctx, "user-1", "content-1", "", "测试评论")
+	created, _, err := ts.svc.CreateComment(ctx, "user-1", "content-1", "", "测试评论", nil)
 	require.NoError(t, err)
 	_, err = ts.svc.DeleteComment(ctx, created.ID, "user-1")
 	require.NoError(t, err)
@@ -502,7 +522,7 @@ func TestDeleteComment_Success(t *testing.T) {
 	ts.contentClient.setContentExists("content-1", true)
 
 	// 创建评论
-	created, _, err := ts.svc.CreateComment(ctx, "user-1", "content-1", "", "测试评论")
+	created, _, err := ts.svc.CreateComment(ctx, "user-1", "content-1", "", "测试评论", nil)
 	require.NoError(t, err)
 
 	// 删除评论
@@ -526,7 +546,7 @@ func TestDeleteComment_Unauthorized(t *testing.T) {
 	ts.contentClient.setContentExists("content-1", true)
 
 	// 创建评论
-	created, _, err := ts.svc.CreateComment(ctx, "user-1", "content-1", "", "测试评论")
+	created, _, err := ts.svc.CreateComment(ctx, "user-1", "content-1", "", "测试评论", nil)
 	require.NoError(t, err)
 
 	// 其他用户尝试删除
@@ -541,7 +561,7 @@ func TestDeleteComment_AlreadyDeleted(t *testing.T) {
 	ts.contentClient.setContentExists("content-1", true)
 
 	// 创建并删除评论
-	created, _, err := ts.svc.CreateComment(ctx, "user-1", "content-1", "", "测试评论")
+	created, _, err := ts.svc.CreateComment(ctx, "user-1", "content-1", "", "测试评论", nil)
 	require.NoError(t, err)
 	_, err = ts.svc.DeleteComment(ctx, created.ID, "user-1")
 	require.NoError(t, err)
@@ -561,9 +581,9 @@ func TestListComments_Success(t *testing.T) {
 	ts.contentClient.setContentExists("content-1", true)
 
 	// 创建多条评论
-	_, _, err := ts.svc.CreateComment(ctx, "user-1", "content-1", "", "评论1")
+	_, _, err := ts.svc.CreateComment(ctx, "user-1", "content-1", "", "评论1", nil)
 	require.NoError(t, err)
-	_, _, err = ts.svc.CreateComment(ctx, "user-2", "content-1", "", "评论2")
+	_, _, err = ts.svc.CreateComment(ctx, "user-2", "content-1", "", "评论2", nil)
 	require.NoError(t, err)
 
 	// 获取列表
@@ -581,7 +601,7 @@ func TestListComments_WithPagination(t *testing.T) {
 
 	// 创建多条评论
 	for i := 0; i < 5; i++ {
-		_, _, err := ts.svc.CreateComment(ctx, "user-1", "content-1", "", "评论")
+		_, _, err := ts.svc.CreateComment(ctx, "user-1", "content-1", "", "评论", nil)
 		require.NoError(t, err)
 	}
 
@@ -619,13 +639,13 @@ func TestListComments_Replies(t *testing.T) {
 	ts.contentClient.setContentExists("content-1", true)
 
 	// 创建父评论
-	parent, _, err := ts.svc.CreateComment(ctx, "user-1", "content-1", "", "父评论")
+	parent, _, err := ts.svc.CreateComment(ctx, "user-1", "content-1", "", "父评论", nil)
 	require.NoError(t, err)
 
 	// 创建回复
-	_, _, err = ts.svc.CreateComment(ctx, "user-2", "content-1", parent.ID, "回复1")
+	_, _, err = ts.svc.CreateComment(ctx, "user-2", "content-1", parent.ID, "回复1", nil)
 	require.NoError(t, err)
-	_, _, err = ts.svc.CreateComment(ctx, "user-3", "content-1", parent.ID, "回复2")
+	_, _, err = ts.svc.CreateComment(ctx, "user-3", "content-1", parent.ID, "回复2", nil)
 	require.NoError(t, err)
 
 	// 获取回复列表
@@ -654,9 +674,9 @@ func TestGetCommentCount_Success(t *testing.T) {
 	ts.contentClient.setContentExists("content-1", true)
 
 	// 创建评论
-	_, _, err := ts.svc.CreateComment(ctx, "user-1", "content-1", "", "评论1")
+	_, _, err := ts.svc.CreateComment(ctx, "user-1", "content-1", "", "评论1", nil)
 	require.NoError(t, err)
-	_, _, err = ts.svc.CreateComment(ctx, "user-2", "content-1", "", "评论2")
+	_, _, err = ts.svc.CreateComment(ctx, "user-2", "content-1", "", "评论2", nil)
 	require.NoError(t, err)
 
 	// 获取计数
@@ -673,11 +693,11 @@ func TestBatchGetCommentCount_Success(t *testing.T) {
 	ts.contentClient.setContentExists("content-2", true)
 
 	// 创建评论
-	_, _, err := ts.svc.CreateComment(ctx, "user-1", "content-1", "", "评论1")
+	_, _, err := ts.svc.CreateComment(ctx, "user-1", "content-1", "", "评论1", nil)
 	require.NoError(t, err)
-	_, _, err = ts.svc.CreateComment(ctx, "user-2", "content-1", "", "评论2")
+	_, _, err = ts.svc.CreateComment(ctx, "user-2", "content-1", "", "评论2", nil)
 	require.NoError(t, err)
-	_, _, err = ts.svc.CreateComment(ctx, "user-1", "content-2", "", "评论3")
+	_, _, err = ts.svc.CreateComment(ctx, "user-1", "content-2", "", "评论3", nil)
 	require.NoError(t, err)
 
 	// 批量获取计数
@@ -697,7 +717,7 @@ func TestLikeComment_Success(t *testing.T) {
 	ts.contentClient.setContentExists("content-1", true)
 
 	// 创建评论
-	comment, _, err := ts.svc.CreateComment(ctx, "user-1", "content-1", "", "测试评论")
+	comment, _, err := ts.svc.CreateComment(ctx, "user-1", "content-1", "", "测试评论", nil)
 	require.NoError(t, err)
 
 	// 点赞
@@ -721,7 +741,7 @@ func TestLikeComment_AlreadyLiked(t *testing.T) {
 	ts.contentClient.setContentExists("content-1", true)
 
 	// 创建评论
-	comment, _, err := ts.svc.CreateComment(ctx, "user-1", "content-1", "", "测试评论")
+	comment, _, err := ts.svc.CreateComment(ctx, "user-1", "content-1", "", "测试评论", nil)
 	require.NoError(t, err)
 
 	// 第一次点赞
@@ -748,7 +768,7 @@ func TestLikeComment_NoEventWhenSelfLike(t *testing.T) {
 	ts.contentClient.setContentExists("content-1", true)
 
 	// 创建评论
-	comment, _, err := ts.svc.CreateComment(ctx, "user-1", "content-1", "", "测试评论")
+	comment, _, err := ts.svc.CreateComment(ctx, "user-1", "content-1", "", "测试评论", nil)
 	require.NoError(t, err)
 
 	// 清空事件
@@ -769,7 +789,7 @@ func TestUnlikeComment_Success(t *testing.T) {
 	ts.contentClient.setContentExists("content-1", true)
 
 	// 创建评论
-	comment, _, err := ts.svc.CreateComment(ctx, "user-1", "content-1", "", "测试评论")
+	comment, _, err := ts.svc.CreateComment(ctx, "user-1", "content-1", "", "测试评论", nil)
 	require.NoError(t, err)
 
 	// 点赞
@@ -794,7 +814,7 @@ func TestUnlikeComment_NotLiked(t *testing.T) {
 	ts.contentClient.setContentExists("content-1", true)
 
 	// 创建评论
-	comment, _, err := ts.svc.CreateComment(ctx, "user-1", "content-1", "", "测试评论")
+	comment, _, err := ts.svc.CreateComment(ctx, "user-1", "content-1", "", "测试评论", nil)
 	require.NoError(t, err)
 
 	// 未点赞就取消
@@ -809,7 +829,7 @@ func TestCheckLiked_NotLiked(t *testing.T) {
 	ts.contentClient.setContentExists("content-1", true)
 
 	// 创建评论
-	comment, _, err := ts.svc.CreateComment(ctx, "user-1", "content-1", "", "测试评论")
+	comment, _, err := ts.svc.CreateComment(ctx, "user-1", "content-1", "", "测试评论", nil)
 	require.NoError(t, err)
 
 	// 检查未点赞状态
@@ -825,9 +845,9 @@ func TestBatchCheckLiked_Success(t *testing.T) {
 	ts.contentClient.setContentExists("content-1", true)
 
 	// 创建评论
-	comment1, _, err := ts.svc.CreateComment(ctx, "user-1", "content-1", "", "评论1")
+	comment1, _, err := ts.svc.CreateComment(ctx, "user-1", "content-1", "", "评论1", nil)
 	require.NoError(t, err)
-	comment2, _, err := ts.svc.CreateComment(ctx, "user-1", "content-1", "", "评论2")
+	comment2, _, err := ts.svc.CreateComment(ctx, "user-1", "content-1", "", "评论2", nil)
 	require.NoError(t, err)
 
 	// 点赞第一条

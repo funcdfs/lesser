@@ -7,7 +7,7 @@
 package notification
 
 import (
-	common "github.com/funcdfs/lesser/gateway/gen_protos/common"
+	common "github.com/funcdfs/lesser/pkg/gen_protos/common"
 	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
 	protoimpl "google.golang.org/protobuf/runtime/protoimpl"
 	reflect "reflect"
@@ -644,7 +644,7 @@ const file_notification_notification_proto_rawDesc = "" +
 	"\x04List\x12&.notification.ListNotificationsRequest\x1a'.notification.ListNotificationsResponse\x12<\n" +
 	"\x04Read\x12%.notification.ReadNotificationRequest\x1a\r.common.Empty\x12C\n" +
 	"\aReadAll\x12).notification.ReadAllNotificationsRequest\x1a\r.common.Empty\x12X\n" +
-	"\x0eGetUnreadCount\x12#.notification.GetUnreadCountRequest\x1a!.notification.UnreadCountResponseB;Z9github.com/funcdfs/lesser/notification/gen_protos/notificationb\x06proto3"
+	"\x0eGetUnreadCount\x12#.notification.GetUnreadCountRequest\x1a!.notification.UnreadCountResponseB@Z>github.com/funcdfs/lesser/notification/gen_protos/notificationb\x06proto3"
 
 var (
 	file_notification_notification_proto_rawDescOnce sync.Once

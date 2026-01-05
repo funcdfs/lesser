@@ -1,7 +1,7 @@
 syntax = "proto3";
 package interaction;
 
-option go_package = "github.com/funcdfs/lesser/interaction/proto/interaction";
+option go_package = "github.com/funcdfs/lesser/interaction/gen_protos/interaction";
 
 import "common/common.proto";
 

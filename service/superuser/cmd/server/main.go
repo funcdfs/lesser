@@ -13,12 +13,11 @@ import (
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/reflection"
 
-	"github.com/funcdfs/lesser/pkg/database"
+	"github.com/funcdfs/lesser/pkg/db"
 	"github.com/funcdfs/lesser/superuser/internal/config"
 	"github.com/funcdfs/lesser/superuser/internal/crypto"
-	"github.com/funcdfs/lesser/superuser/internal/handler"
 	"github.com/funcdfs/lesser/superuser/internal/data_access"
-	"github.com/funcdfs/lesser/superuser/internal/data_access/postgres"
+	"github.com/funcdfs/lesser/superuser/internal/handler"
 	"github.com/funcdfs/lesser/superuser/internal/logic"
 	pb "github.com/funcdfs/lesser/superuser/gen_protos/superuser"
 	"github.com/redis/go-redis/v9"
@@ -35,7 +34,7 @@ func main() {
 		slog.String("port", cfg.GRPCPort))
 
 	// 初始化数据库
-	db, err := database.NewConnection(database.Config{
+	db, err := db.NewConnection(db.Config{
 		Host:     cfg.DBHost,
 		Port:     cfg.DBPort,
 		User:     cfg.DBUser,
@@ -69,12 +68,12 @@ func main() {
 	}
 
 	// 创建仓库
-	superUserRepo := postgres.NewSuperUserRepository(db)
-	auditLogRepo := postgres.NewAuditLogRepository(db)
-	sessionRepo := postgres.NewSessionRepository(db)
-	userRepo := postgres.NewUserRepository(db)
-	contentRepo := postgres.NewContentRepository(db)
-	systemRepo := postgres.NewSystemRepository(db)
+	superUserRepo := data_access.NewSuperUserRepository(db)
+	auditLogRepo := data_access.NewAuditLogRepository(db)
+	sessionRepo := data_access.NewSessionRepository(db)
+	userRepo := data_access.NewUserRepository(db)
+	contentRepo := data_access.NewContentRepository(db)
+	systemRepo := data_access.NewSystemRepository(db)
 
 	// 创建密码哈希器
 	passwordHasher := crypto.NewPasswordHasher(&crypto.Argon2Params{

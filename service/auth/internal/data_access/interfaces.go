@@ -1,18 +1,10 @@
-// Package repository 定义数据访问层接口
+// Package data_access 定义数据访问层接口
 // 遵循依赖倒置原则，便于测试和替换实现
 package data_access
 
 import (
 	"context"
-	"errors"
 	"time"
-)
-
-// 通用错误定义
-var (
-	ErrUserNotFound = errors.New("用户不存在")
-	ErrUserExists   = errors.New("用户已存在")
-	ErrBanNotFound  = errors.New("封禁记录不存在")
 )
 
 // User 用户实体

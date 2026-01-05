@@ -836,7 +836,7 @@ const file_search_search_proto_rawDesc = "" +
 	"\vSearchPosts\x12\x1a.search.SearchPostsRequest\x1a\x1b.search.SearchPostsResponse\x12F\n" +
 	"\vSearchUsers\x12\x1a.search.SearchUsersRequest\x1a\x1b.search.SearchUsersResponse\x12O\n" +
 	"\x0eSearchComments\x12\x1d.search.SearchCommentsRequest\x1a\x1e.search.SearchCommentsResponse\x12@\n" +
-	"\tSearchAll\x12\x18.search.SearchAllRequest\x1a\x19.search.SearchAllResponseB/Z-github.com/funcdfs/lesser/search/gen_protos/searchb\x06proto3"
+	"\tSearchAll\x12\x18.search.SearchAllRequest\x1a\x19.search.SearchAllResponseB4Z2github.com/funcdfs/lesser/search/gen_protos/searchb\x06proto3"
 
 var (
 	file_search_search_proto_rawDescOnce sync.Once

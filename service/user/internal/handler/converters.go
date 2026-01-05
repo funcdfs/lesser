@@ -4,13 +4,10 @@ package handler
 import (
 	"context"
 
-	"github.com/funcdfs/lesser/pkg/errors"
 	"github.com/funcdfs/lesser/pkg/gen_protos/common"
 	"github.com/funcdfs/lesser/user/internal/data_access"
 	"github.com/funcdfs/lesser/user/internal/logic"
 	pb "github.com/funcdfs/lesser/user/gen_protos/user"
-	"google.golang.org/grpc/codes"
-	"google.golang.org/grpc/status"
 )
 
 // ============================================================================
@@ -233,24 +230,5 @@ func getPagination(p *common.Pagination) (page, pageSize int32) {
 
 // handleError 处理错误并转换为 gRPC 错误
 func (h *UserHandler) handleError(err error) error {
-	if err == nil {
-		return nil
-	}
-
-	// 检查是否为预定义错误
-	switch err {
-	case data_access.ErrUserNotFound, data_access.ErrUsernameNotFound:
-		return status.Error(codes.NotFound, err.Error())
-	case data_access.ErrCannotFollowSelf, data_access.ErrCannotBlockSelf, data_access.ErrInvalidBlockType:
-		return status.Error(codes.InvalidArgument, err.Error())
-	case data_access.ErrAlreadyFollowing, data_access.ErrAlreadyBlocked, data_access.ErrFollowRequestExists:
-		return status.Error(codes.AlreadyExists, err.Error())
-	case data_access.ErrNotFollowing, data_access.ErrNotBlocked:
-		return status.Error(codes.NotFound, err.Error())
-	case data_access.ErrFollowBlocked:
-		return status.Error(codes.PermissionDenied, err.Error())
-	}
-
-	// 使用 pkg/errors 转换
-	return errors.ToGRPCError(err)
+	return logic.ToGRPCError(err)
 }

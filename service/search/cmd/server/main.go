@@ -10,8 +10,8 @@ import (
 	"os/signal"
 	"syscall"
 
-	"github.com/funcdfs/lesser/pkg/database"
-	"github.com/funcdfs/lesser/pkg/logger"
+	"github.com/funcdfs/lesser/pkg/db"
+	"github.com/funcdfs/lesser/pkg/log"
 	"github.com/funcdfs/lesser/search/internal/data_access"
 	"github.com/funcdfs/lesser/search/internal/handler"
 	"github.com/funcdfs/lesser/search/internal/logic"
@@ -23,13 +23,13 @@ import (
 
 func main() {
 	// 初始化日志
-	log := logger.New("search")
+	pkgLog := log.New("search")
 
 	grpcPort := getEnv("GRPC_PORT", "50058")
 	rabbitURL := getEnv("RABBITMQ_URL", "amqp://superuser:superuser@rabbitmq:5672/")
 
 	// 数据库配置
-	dbConfig := database.Config{
+	dbConfig := db.PostgresConfig{
 		Host:     getEnv("DB_HOST", "localhost"),
 		Port:     getEnv("DB_PORT", "5432"),
 		User:     getEnv("DB_USER", "postgres"),
@@ -38,17 +38,17 @@ func main() {
 		SSLMode:  getEnv("DB_SSLMODE", "disable"),
 	}
 
-	db, err := database.NewConnection(dbConfig)
+	database, err := db.NewPostgresConnection(dbConfig)
 	if err != nil {
-		log.Fatal("数据库连接失败", slog.Any("error", err))
+		pkgLog.Fatal("数据库连接失败", slog.Any("error", err))
 	}
-	defer db.Close()
-	log.Info("数据库连接成功", slog.String("db", dbConfig.DBName))
+	defer database.Close()
+	pkgLog.Info("数据库连接成功", slog.String("db", dbConfig.DBName))
 
 	// 初始化服务层
-	searchRepo := data_access.NewSearchRepository(db)
+	searchRepo := data_access.NewSearchRepository(database)
 	searchSvc := logic.NewSearchService(searchRepo)
-	searchHandler := handler.NewSearchHandler(searchSvc)
+	searchHandler := handler.NewSearchHandler(searchSvc, pkgLog.Logger)
 
 	// 创建 gRPC 服务器
 	grpcServer := grpc.NewServer()
@@ -58,18 +58,18 @@ func main() {
 	// 监听端口
 	lis, err := net.Listen("tcp", ":"+grpcPort)
 	if err != nil {
-		log.Fatal("端口监听失败", slog.String("port", grpcPort), slog.Any("error", err))
+		pkgLog.Fatal("端口监听失败", slog.String("port", grpcPort), slog.Any("error", err))
 	}
 
 	// 创建上下文用于优雅停机
 	ctx, cancel := context.WithCancel(context.Background())
 
 	// 启动 RabbitMQ 事件消费者（消费内容索引事件）
-	eventWorker := messaging.NewEventWorker(searchSvc, rabbitURL, log)
+	eventWorker := messaging.NewEventWorker(searchSvc, rabbitURL, pkgLog)
 	go func() {
-		log.Info("启动 RabbitMQ 事件消费者（内容索引）")
+		pkgLog.Info("启动 RabbitMQ 事件消费者（内容索引）")
 		if err := eventWorker.Start(ctx); err != nil {
-			log.Error("事件消费者启动失败", slog.Any("error", err))
+			pkgLog.Error("事件消费者启动失败", slog.Any("error", err))
 		}
 	}()
 
@@ -78,15 +78,15 @@ func main() {
 		sigCh := make(chan os.Signal, 1)
 		signal.Notify(sigCh, syscall.SIGINT, syscall.SIGTERM)
 		<-sigCh
-		log.Info("收到停机信号，正在关闭...")
+		pkgLog.Info("收到停机信号，正在关闭...")
 		cancel()
 		eventWorker.Stop()
 		grpcServer.GracefulStop()
 	}()
 
-	log.Info("Search 服务已启动", slog.String("port", grpcPort))
+	pkgLog.Info("Search 服务已启动", slog.String("port", grpcPort))
 	if err := grpcServer.Serve(lis); err != nil && ctx.Err() == nil {
-		log.Fatal("gRPC 服务异常退出", slog.Any("error", err))
+		pkgLog.Fatal("gRPC 服务异常退出", slog.Any("error", err))
 	}
 }
 

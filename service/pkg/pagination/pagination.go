@@ -1,207 +1,84 @@
 // Package pagination 提供统一的分页处理
-// 支持偏移分页和游标分页
+// Deprecated: 请使用 github.com/funcdfs/lesser/pkg/page 包
 package pagination
 
 import (
-	"encoding/base64"
-	"encoding/json"
-	"fmt"
 	"time"
+
+	"github.com/funcdfs/lesser/pkg/page"
 )
 
 // 默认分页参数
 const (
-	DefaultPage     = 1
-	DefaultPageSize = 20
-	MaxPageSize     = 100
+	DefaultPage     = page.DefaultPage
+	DefaultPageSize = page.DefaultPageSize
+	MaxPageSize     = page.MaxPageSize
 )
 
+// ---- 类型别名（向后兼容）----
+
 // PageRequest 分页请求参数
-type PageRequest struct {
-	Page     int32 `json:"page"`
-	PageSize int32 `json:"page_size"`
-}
+// Deprecated: 请使用 page.Request
+type PageRequest = page.Request
 
 // PageResponse 分页响应
-type PageResponse struct {
-	Page       int32 `json:"page"`
-	PageSize   int32 `json:"page_size"`
-	Total      int64 `json:"total"`
-	TotalPages int32 `json:"total_pages"`
-	HasMore    bool  `json:"has_more"`
-}
-
-// Normalize 规范化分页参数
-func (p *PageRequest) Normalize() {
-	if p.Page <= 0 {
-		p.Page = DefaultPage
-	}
-	if p.PageSize <= 0 {
-		p.PageSize = DefaultPageSize
-	}
-	if p.PageSize > MaxPageSize {
-		p.PageSize = MaxPageSize
-	}
-}
-
-// Offset 计算偏移量
-func (p *PageRequest) Offset() int32 {
-	return (p.Page - 1) * p.PageSize
-}
-
-// Limit 返回限制数量
-func (p *PageRequest) Limit() int32 {
-	return p.PageSize
-}
-
-// NewPageRequest 创建分页请求
-func NewPageRequest(page, pageSize int32) *PageRequest {
-	req := &PageRequest{
-		Page:     page,
-		PageSize: pageSize,
-	}
-	req.Normalize()
-	return req
-}
-
-// NewPageResponse 创建分页响应
-func NewPageResponse(page, pageSize int32, total int64) *PageResponse {
-	totalPages := int32(total / int64(pageSize))
-	if total%int64(pageSize) > 0 {
-		totalPages++
-	}
-
-	return &PageResponse{
-		Page:       page,
-		PageSize:   pageSize,
-		Total:      total,
-		TotalPages: totalPages,
-		HasMore:    page < totalPages,
-	}
-}
-
-// ---- 游标分页 ----
+// Deprecated: 请使用 page.Response
+type PageResponse = page.Response
 
 // CursorRequest 游标分页请求
-type CursorRequest struct {
-	Cursor string `json:"cursor"`
-	Limit  int32  `json:"limit"`
-}
+// Deprecated: 请使用 page.CursorRequest
+type CursorRequest = page.CursorRequest
 
 // CursorResponse 游标分页响应
-type CursorResponse struct {
-	NextCursor string `json:"next_cursor,omitempty"`
-	HasMore    bool   `json:"has_more"`
-}
+// Deprecated: 请使用 page.CursorResponse
+type CursorResponse = page.CursorResponse
 
 // Cursor 游标数据
-type Cursor struct {
-	ID        string    `json:"id"`
-	CreatedAt time.Time `json:"created_at"`
-	Score     float64   `json:"score,omitempty"`
-}
+// Deprecated: 请使用 page.Cursor
+type Cursor = page.Cursor
 
-// Normalize 规范化游标分页参数
-func (c *CursorRequest) Normalize() {
-	if c.Limit <= 0 {
-		c.Limit = DefaultPageSize
-	}
-	if c.Limit > MaxPageSize {
-		c.Limit = MaxPageSize
-	}
-}
+// SQLPagination SQL 分页参数
+// Deprecated: 请使用 page.SQLPagination
+type SQLPagination = page.SQLPagination
 
-// GetLimit 返回限制数量
-func (c *CursorRequest) GetLimit() int32 {
-	return c.Limit
-}
+// ---- 函数别名 ----
+
+// NewPageRequest 创建分页请求
+// Deprecated: 请使用 page.NewRequest
+var NewPageRequest = page.NewRequest
+
+// NewPageResponse 创建分页响应
+// Deprecated: 请使用 page.NewResponse
+var NewPageResponse = page.NewResponse
 
 // NewCursorRequest 创建游标分页请求
-func NewCursorRequest(cursor string, limit int32) *CursorRequest {
-	req := &CursorRequest{
-		Cursor: cursor,
-		Limit:  limit,
-	}
-	req.Normalize()
-	return req
-}
+// Deprecated: 请使用 page.NewCursorRequest
+var NewCursorRequest = page.NewCursorRequest
+
+// NewCursorResponse 创建游标分页响应
+// Deprecated: 请使用 page.NewCursorResponse
+var NewCursorResponse = page.NewCursorResponse
 
 // EncodeCursor 编码游标
-func EncodeCursor(cursor *Cursor) (string, error) {
-	data, err := json.Marshal(cursor)
-	if err != nil {
-		return "", fmt.Errorf("编码游标失败: %w", err)
-	}
-	return base64.URLEncoding.EncodeToString(data), nil
-}
+// Deprecated: 请使用 page.EncodeCursor
+var EncodeCursor = page.EncodeCursor
 
 // DecodeCursor 解码游标
-func DecodeCursor(encoded string) (*Cursor, error) {
-	if encoded == "" {
-		return nil, nil
-	}
-
-	data, err := base64.URLEncoding.DecodeString(encoded)
-	if err != nil {
-		return nil, fmt.Errorf("解码游标失败: %w", err)
-	}
-
-	var cursor Cursor
-	if err := json.Unmarshal(data, &cursor); err != nil {
-		return nil, fmt.Errorf("解析游标失败: %w", err)
-	}
-
-	return &cursor, nil
-}
+// Deprecated: 请使用 page.DecodeCursor
+var DecodeCursor = page.DecodeCursor
 
 // EncodeIDCursor 编码简单 ID 游标
+// Deprecated: 请使用 page.EncodeIDCursor
 func EncodeIDCursor(id string, createdAt time.Time) string {
-	cursor := &Cursor{
-		ID:        id,
-		CreatedAt: createdAt,
-	}
-	encoded, _ := EncodeCursor(cursor)
-	return encoded
+	return page.EncodeIDCursor(id, createdAt)
 }
 
 // DecodeIDCursor 解码简单 ID 游标
+// Deprecated: 请使用 page.DecodeIDCursor
 func DecodeIDCursor(encoded string) (id string, createdAt time.Time, err error) {
-	cursor, err := DecodeCursor(encoded)
-	if err != nil {
-		return "", time.Time{}, err
-	}
-	if cursor == nil {
-		return "", time.Time{}, nil
-	}
-	return cursor.ID, cursor.CreatedAt, nil
-}
-
-// NewCursorResponse 创建游标分页响应
-func NewCursorResponse(nextCursor string, hasMore bool) *CursorResponse {
-	return &CursorResponse{
-		NextCursor: nextCursor,
-		HasMore:    hasMore,
-	}
-}
-
-// ---- SQL 辅助 ----
-
-// SQLPagination SQL 分页参数
-type SQLPagination struct {
-	Offset int32
-	Limit  int32
-}
-
-// ToSQL 转换为 SQL 分页参数
-func (p *PageRequest) ToSQL() SQLPagination {
-	return SQLPagination{
-		Offset: p.Offset(),
-		Limit:  p.Limit(),
-	}
+	return page.DecodeIDCursor(encoded)
 }
 
 // BuildLimitOffset 构建 LIMIT OFFSET 子句
-func BuildLimitOffset(page, pageSize int32) (limit, offset int32) {
-	req := NewPageRequest(page, pageSize)
-	return req.Limit(), req.Offset()
-}
+// Deprecated: 请使用 page.BuildLimitOffset
+var BuildLimitOffset = page.BuildLimitOffset

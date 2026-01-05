@@ -94,17 +94,17 @@ func TestJWTValidator_ValidateToken_Success(t *testing.T) {
 
 	// 启动验签器
 	ctx := context.Background()
-	if err := validator.Start(ctx, mockClient); err != nil {
+	if err := validate.Start(ctx, mockClient); err != nil {
 		t.Fatalf("启动验签器失败: %v", err)
 	}
-	defer validator.Stop()
+	defer validate.Stop()
 
 	// 生成有效令牌
 	userID := "user-123"
 	token := generateTestToken(t, privateKey, keyID, userID, "access", time.Hour)
 
 	// 验证令牌
-	claims, err := validator.ValidateToken(token)
+	claims, err := validate.ValidateToken(token)
 	if err != nil {
 		t.Fatalf("验证令牌失败: %v", err)
 	}
@@ -134,16 +134,16 @@ func TestJWTValidator_ValidateToken_ExpiredToken(t *testing.T) {
 
 	// 启动验签器
 	ctx := context.Background()
-	if err := validator.Start(ctx, mockClient); err != nil {
+	if err := validate.Start(ctx, mockClient); err != nil {
 		t.Fatalf("启动验签器失败: %v", err)
 	}
-	defer validator.Stop()
+	defer validate.Stop()
 
 	// 生成过期令牌
 	token := generateTestToken(t, privateKey, keyID, "user-123", "access", -time.Hour)
 
 	// 验证令牌应该失败
-	_, err := validator.ValidateToken(token)
+	_, err := validate.ValidateToken(token)
 	if err == nil {
 		t.Error("期望验证过期令牌失败，但成功了")
 	}
@@ -165,16 +165,16 @@ func TestJWTValidator_ValidateToken_InvalidTokenType(t *testing.T) {
 
 	// 启动验签器
 	ctx := context.Background()
-	if err := validator.Start(ctx, mockClient); err != nil {
+	if err := validate.Start(ctx, mockClient); err != nil {
 		t.Fatalf("启动验签器失败: %v", err)
 	}
-	defer validator.Stop()
+	defer validate.Stop()
 
 	// 生成 refresh 类型令牌（应该被拒绝）
 	token := generateTestToken(t, privateKey, keyID, "user-123", "refresh", time.Hour)
 
 	// 验证令牌应该失败
-	_, err := validator.ValidateToken(token)
+	_, err := validate.ValidateToken(token)
 	if err != ErrInvalidTokenType {
 		t.Errorf("期望错误 ErrInvalidTokenType, 实际: %v", err)
 	}
@@ -185,7 +185,7 @@ func TestJWTValidator_ValidateToken_PublicKeyNotLoaded(t *testing.T) {
 	validator := NewJWTValidator(DefaultValidatorConfig(), nil)
 
 	// 验证令牌应该失败
-	_, err := validator.ValidateToken("some-token")
+	_, err := validate.ValidateToken("some-token")
 	if err != ErrPublicKeyNotLoaded {
 		t.Errorf("期望错误 ErrPublicKeyNotLoaded, 实际: %v", err)
 	}
@@ -206,19 +206,19 @@ func TestJWTValidator_IsReady(t *testing.T) {
 	validator := NewJWTValidator(DefaultValidatorConfig(), nil)
 
 	// 未启动时应该不就绪
-	if validator.IsReady() {
+	if validate.IsReady() {
 		t.Error("未启动时验签器不应该就绪")
 	}
 
 	// 启动验签器
 	ctx := context.Background()
-	if err := validator.Start(ctx, mockClient); err != nil {
+	if err := validate.Start(ctx, mockClient); err != nil {
 		t.Fatalf("启动验签器失败: %v", err)
 	}
-	defer validator.Stop()
+	defer validate.Stop()
 
 	// 启动后应该就绪
-	if !validator.IsReady() {
+	if !validate.IsReady() {
 		t.Error("启动后验签器应该就绪")
 	}
 }
@@ -238,20 +238,20 @@ func TestJWTValidator_GetPublicKeyID(t *testing.T) {
 	validator := NewJWTValidator(DefaultValidatorConfig(), nil)
 
 	// 未启动时应该返回空
-	if validator.GetPublicKeyID() != "" {
+	if validate.GetPublicKeyID() != "" {
 		t.Error("未启动时应该返回空 Key ID")
 	}
 
 	// 启动验签器
 	ctx := context.Background()
-	if err := validator.Start(ctx, mockClient); err != nil {
+	if err := validate.Start(ctx, mockClient); err != nil {
 		t.Fatalf("启动验签器失败: %v", err)
 	}
-	defer validator.Stop()
+	defer validate.Stop()
 
 	// 启动后应该返回正确的 Key ID
-	if validator.GetPublicKeyID() != keyID {
-		t.Errorf("Key ID 不匹配: 期望 %s, 实际 %s", keyID, validator.GetPublicKeyID())
+	if validate.GetPublicKeyID() != keyID {
+		t.Errorf("Key ID 不匹配: 期望 %s, 实际 %s", keyID, validate.GetPublicKeyID())
 	}
 }
 
@@ -270,12 +270,12 @@ func TestJWTValidator_Stop_Idempotent(t *testing.T) {
 
 	// 启动验签器
 	ctx := context.Background()
-	if err := validator.Start(ctx, mockClient); err != nil {
+	if err := validate.Start(ctx, mockClient); err != nil {
 		t.Fatalf("启动验签器失败: %v", err)
 	}
 
 	// 多次调用 Stop 不应该 panic
-	validator.Stop()
-	validator.Stop()
-	validator.Stop()
+	validate.Stop()
+	validate.Stop()
+	validate.Stop()
 }

@@ -3,11 +3,12 @@ package handler
 
 import (
 	"context"
+	"log/slog"
 
-	"github.com/funcdfs/lesser/pkg/logger"
-	"github.com/funcdfs/lesser/pkg/pagination"
+	"github.com/funcdfs/lesser/pkg/log"
+	"github.com/funcdfs/lesser/pkg/page"
 	"github.com/funcdfs/lesser/pkg/gen_protos/common"
-	"github.com/funcdfs/lesser/pkg/validator"
+	"github.com/funcdfs/lesser/pkg/validate"
 	"github.com/funcdfs/lesser/user/internal/data_access"
 	"github.com/funcdfs/lesser/user/internal/logic"
 	pb "github.com/funcdfs/lesser/user/gen_protos/user"
@@ -19,14 +20,22 @@ import (
 type UserHandler struct {
 	pb.UnimplementedUserServiceServer
 	userService *logic.UserService
-	log         *logger.Logger
+	log         *log.Logger
+	slog        *slog.Logger
 }
 
 // NewUserHandler 创建用户处理器实例
-func NewUserHandler(userService *logic.UserService, log *logger.Logger) *UserHandler {
+func NewUserHandler(userService *logic.UserService, logger *log.Logger) *UserHandler {
+	var slogger *slog.Logger
+	if logger != nil {
+		slogger = logger.Logger
+	} else {
+		slogger = slog.Default()
+	}
 	return &UserHandler{
 		userService: userService,
-		log:         log,
+		log:         logger,
+		slog:        slogger.With(slog.String("component", "handler")),
 	}
 }
 
@@ -37,12 +46,17 @@ func NewUserHandler(userService *logic.UserService, log *logger.Logger) *UserHan
 // GetProfile 获取用户资料
 func (h *UserHandler) GetProfile(ctx context.Context, req *pb.GetProfileRequest) (*pb.Profile, error) {
 	// 参数验证
-	if err := validator.ValidateUUID("user_id", req.UserId); err != nil {
+	if err := validate.UUID("user_id", req.UserId); err != nil {
 		return nil, err
 	}
 
 	user, relationship, err := h.userService.GetProfileWithRelationship(ctx, req.UserId, req.ViewerId)
 	if err != nil {
+		h.slog.Error("获取用户资料失败",
+			slog.String("user_id", req.UserId),
+			slog.String("trace_id", log.TraceIDFromContext(ctx)),
+			slog.Any("error", err),
+		)
 		return nil, h.handleError(err)
 	}
 
@@ -52,12 +66,17 @@ func (h *UserHandler) GetProfile(ctx context.Context, req *pb.GetProfileRequest)
 // GetProfileByUsername 通过用户名获取资料
 func (h *UserHandler) GetProfileByUsername(ctx context.Context, req *pb.GetProfileByUsernameRequest) (*pb.Profile, error) {
 	// 参数验证
-	if err := validator.ValidateRequired("username", req.Username); err != nil {
+	if err := validate.Required("username", req.Username); err != nil {
 		return nil, err
 	}
 
 	user, err := h.userService.GetProfileByUsername(ctx, req.Username)
 	if err != nil {
+		h.slog.Error("通过用户名获取资料失败",
+			slog.String("username", req.Username),
+			slog.String("trace_id", log.TraceIDFromContext(ctx)),
+			slog.Any("error", err),
+		)
 		return nil, h.handleError(err)
 	}
 
@@ -73,7 +92,7 @@ func (h *UserHandler) GetProfileByUsername(ctx context.Context, req *pb.GetProfi
 // UpdateProfile 更新用户资料
 func (h *UserHandler) UpdateProfile(ctx context.Context, req *pb.UpdateProfileRequest) (*pb.Profile, error) {
 	// 参数验证
-	if err := validator.ValidateUUID("user_id", req.UserId); err != nil {
+	if err := validate.UUID("user_id", req.UserId); err != nil {
 		return nil, err
 	}
 
@@ -100,6 +119,11 @@ func (h *UserHandler) UpdateProfile(ctx context.Context, req *pb.UpdateProfileRe
 
 	user, err := h.userService.UpdateProfile(ctx, req.UserId, updates)
 	if err != nil {
+		h.slog.Error("更新用户资料失败",
+			slog.String("user_id", req.UserId),
+			slog.String("trace_id", log.TraceIDFromContext(ctx)),
+			slog.Any("error", err),
+		)
 		return nil, h.handleError(err)
 	}
 
@@ -114,6 +138,10 @@ func (h *UserHandler) BatchGetProfiles(ctx context.Context, req *pb.BatchGetProf
 
 	users, err := h.userService.BatchGetProfiles(ctx, req.UserIds)
 	if err != nil {
+		h.slog.Error("批量获取用户资料失败",
+			slog.String("trace_id", log.TraceIDFromContext(ctx)),
+			slog.Any("error", err),
+		)
 		return nil, h.handleError(err)
 	}
 
@@ -132,7 +160,7 @@ func (h *UserHandler) BatchGetProfiles(ctx context.Context, req *pb.BatchGetProf
 // Follow 关注用户
 func (h *UserHandler) Follow(ctx context.Context, req *pb.FollowRequest) (*common.Empty, error) {
 	// 参数验证
-	v := validator.New()
+	v := validate.New()
 	v.Required("follower_id", req.FollowerId).UUID("follower_id", req.FollowerId)
 	v.Required("following_id", req.FollowingId).UUID("following_id", req.FollowingId)
 	if err := v.ToGRPCError(); err != nil {
@@ -140,6 +168,12 @@ func (h *UserHandler) Follow(ctx context.Context, req *pb.FollowRequest) (*commo
 	}
 
 	if err := h.userService.Follow(ctx, req.FollowerId, req.FollowingId); err != nil {
+		h.slog.Error("关注用户失败",
+			slog.String("follower_id", req.FollowerId),
+			slog.String("following_id", req.FollowingId),
+			slog.String("trace_id", log.TraceIDFromContext(ctx)),
+			slog.Any("error", err),
+		)
 		return nil, h.handleError(err)
 	}
 
@@ -149,7 +183,7 @@ func (h *UserHandler) Follow(ctx context.Context, req *pb.FollowRequest) (*commo
 // Unfollow 取消关注
 func (h *UserHandler) Unfollow(ctx context.Context, req *pb.UnfollowRequest) (*common.Empty, error) {
 	// 参数验证
-	v := validator.New()
+	v := validate.New()
 	v.Required("follower_id", req.FollowerId).UUID("follower_id", req.FollowerId)
 	v.Required("following_id", req.FollowingId).UUID("following_id", req.FollowingId)
 	if err := v.ToGRPCError(); err != nil {
@@ -157,6 +191,12 @@ func (h *UserHandler) Unfollow(ctx context.Context, req *pb.UnfollowRequest) (*c
 	}
 
 	if err := h.userService.Unfollow(ctx, req.FollowerId, req.FollowingId); err != nil {
+		h.slog.Error("取消关注失败",
+			slog.String("follower_id", req.FollowerId),
+			slog.String("following_id", req.FollowingId),
+			slog.String("trace_id", log.TraceIDFromContext(ctx)),
+			slog.Any("error", err),
+		)
 		return nil, h.handleError(err)
 	}
 
@@ -166,49 +206,59 @@ func (h *UserHandler) Unfollow(ctx context.Context, req *pb.UnfollowRequest) (*c
 // GetFollowers 获取粉丝列表
 func (h *UserHandler) GetFollowers(ctx context.Context, req *pb.GetFollowersRequest) (*pb.FollowListResponse, error) {
 	// 参数验证
-	if err := validator.ValidateUUID("user_id", req.UserId); err != nil {
+	if err := validate.UUID("user_id", req.UserId); err != nil {
 		return nil, err
 	}
 
-	page, pageSize := getPagination(req.Pagination)
-	limit, offset := pagination.BuildLimitOffset(page, pageSize)
+	pageNum, pageSize := getPagination(req.Pagination)
+	limit, offset := page.BuildLimitOffset(pageNum, pageSize)
 
 	users, total, err := h.userService.GetFollowers(ctx, req.UserId, int(limit), int(offset))
 	if err != nil {
+		h.slog.Error("获取粉丝列表失败",
+			slog.String("user_id", req.UserId),
+			slog.String("trace_id", log.TraceIDFromContext(ctx)),
+			slog.Any("error", err),
+		)
 		return nil, h.handleError(err)
 	}
 
 	return &pb.FollowListResponse{
 		Users:      usersToProto(users, req.ViewerId, h.userService),
-		Pagination: &common.Pagination{Page: page, PageSize: pageSize, Total: int32(total)},
+		Pagination: &common.Pagination{Page: pageNum, PageSize: pageSize, Total: int32(total)},
 	}, nil
 }
 
 // GetFollowing 获取关注列表
 func (h *UserHandler) GetFollowing(ctx context.Context, req *pb.GetFollowingRequest) (*pb.FollowListResponse, error) {
 	// 参数验证
-	if err := validator.ValidateUUID("user_id", req.UserId); err != nil {
+	if err := validate.UUID("user_id", req.UserId); err != nil {
 		return nil, err
 	}
 
-	page, pageSize := getPagination(req.Pagination)
-	limit, offset := pagination.BuildLimitOffset(page, pageSize)
+	pageNum, pageSize := getPagination(req.Pagination)
+	limit, offset := page.BuildLimitOffset(pageNum, pageSize)
 
 	users, total, err := h.userService.GetFollowing(ctx, req.UserId, int(limit), int(offset))
 	if err != nil {
+		h.slog.Error("获取关注列表失败",
+			slog.String("user_id", req.UserId),
+			slog.String("trace_id", log.TraceIDFromContext(ctx)),
+			slog.Any("error", err),
+		)
 		return nil, h.handleError(err)
 	}
 
 	return &pb.FollowListResponse{
 		Users:      usersToProto(users, req.ViewerId, h.userService),
-		Pagination: &common.Pagination{Page: page, PageSize: pageSize, Total: int32(total)},
+		Pagination: &common.Pagination{Page: pageNum, PageSize: pageSize, Total: int32(total)},
 	}, nil
 }
 
 // CheckFollowing 检查是否关注
 func (h *UserHandler) CheckFollowing(ctx context.Context, req *pb.CheckFollowingRequest) (*pb.CheckFollowingResponse, error) {
 	// 参数验证
-	v := validator.New()
+	v := validate.New()
 	v.Required("follower_id", req.FollowerId).UUID("follower_id", req.FollowerId)
 	v.Required("following_id", req.FollowingId).UUID("following_id", req.FollowingId)
 	if err := v.ToGRPCError(); err != nil {
@@ -217,6 +267,12 @@ func (h *UserHandler) CheckFollowing(ctx context.Context, req *pb.CheckFollowing
 
 	isFollowing, err := h.userService.CheckFollowing(ctx, req.FollowerId, req.FollowingId)
 	if err != nil {
+		h.slog.Error("检查是否关注失败",
+			slog.String("follower_id", req.FollowerId),
+			slog.String("following_id", req.FollowingId),
+			slog.String("trace_id", log.TraceIDFromContext(ctx)),
+			slog.Any("error", err),
+		)
 		return nil, h.handleError(err)
 	}
 
@@ -226,7 +282,7 @@ func (h *UserHandler) CheckFollowing(ctx context.Context, req *pb.CheckFollowing
 // GetRelationship 获取两用户间关系
 func (h *UserHandler) GetRelationship(ctx context.Context, req *pb.GetRelationshipRequest) (*pb.GetRelationshipResponse, error) {
 	// 参数验证
-	v := validator.New()
+	v := validate.New()
 	v.Required("user_id", req.UserId).UUID("user_id", req.UserId)
 	v.Required("target_id", req.TargetId).UUID("target_id", req.TargetId)
 	if err := v.ToGRPCError(); err != nil {
@@ -235,6 +291,12 @@ func (h *UserHandler) GetRelationship(ctx context.Context, req *pb.GetRelationsh
 
 	relationship, err := h.userService.GetRelationship(ctx, req.UserId, req.TargetId)
 	if err != nil {
+		h.slog.Error("获取用户关系失败",
+			slog.String("user_id", req.UserId),
+			slog.String("target_id", req.TargetId),
+			slog.String("trace_id", log.TraceIDFromContext(ctx)),
+			slog.Any("error", err),
+		)
 		return nil, h.handleError(err)
 	}
 
@@ -246,24 +308,30 @@ func (h *UserHandler) GetRelationship(ctx context.Context, req *pb.GetRelationsh
 // GetMutualFollowers 获取共同关注
 func (h *UserHandler) GetMutualFollowers(ctx context.Context, req *pb.GetMutualFollowersRequest) (*pb.FollowListResponse, error) {
 	// 参数验证
-	v := validator.New()
+	v := validate.New()
 	v.Required("user_id", req.UserId).UUID("user_id", req.UserId)
 	v.Required("target_id", req.TargetId).UUID("target_id", req.TargetId)
 	if err := v.ToGRPCError(); err != nil {
 		return nil, err
 	}
 
-	page, pageSize := getPagination(req.Pagination)
-	limit, offset := pagination.BuildLimitOffset(page, pageSize)
+	pageNum, pageSize := getPagination(req.Pagination)
+	limit, offset := page.BuildLimitOffset(pageNum, pageSize)
 
 	users, total, err := h.userService.GetMutualFollowers(ctx, req.UserId, req.TargetId, int(limit), int(offset))
 	if err != nil {
+		h.slog.Error("获取共同关注失败",
+			slog.String("user_id", req.UserId),
+			slog.String("target_id", req.TargetId),
+			slog.String("trace_id", log.TraceIDFromContext(ctx)),
+			slog.Any("error", err),
+		)
 		return nil, h.handleError(err)
 	}
 
 	return &pb.FollowListResponse{
 		Users:      usersToProto(users, req.UserId, h.userService),
-		Pagination: &common.Pagination{Page: page, PageSize: pageSize, Total: int32(total)},
+		Pagination: &common.Pagination{Page: pageNum, PageSize: pageSize, Total: int32(total)},
 	}, nil
 }
 
@@ -274,7 +342,7 @@ func (h *UserHandler) GetMutualFollowers(ctx context.Context, req *pb.GetMutualF
 // Block 屏蔽用户
 func (h *UserHandler) Block(ctx context.Context, req *pb.BlockRequest) (*common.Empty, error) {
 	// 参数验证
-	v := validator.New()
+	v := validate.New()
 	v.Required("blocker_id", req.BlockerId).UUID("blocker_id", req.BlockerId)
 	v.Required("blocked_id", req.BlockedId).UUID("blocked_id", req.BlockedId)
 	if err := v.ToGRPCError(); err != nil {
@@ -287,6 +355,12 @@ func (h *UserHandler) Block(ctx context.Context, req *pb.BlockRequest) (*common.
 	}
 
 	if err := h.userService.Block(ctx, req.BlockerId, req.BlockedId, blockType); err != nil {
+		h.slog.Error("屏蔽用户失败",
+			slog.String("blocker_id", req.BlockerId),
+			slog.String("blocked_id", req.BlockedId),
+			slog.String("trace_id", log.TraceIDFromContext(ctx)),
+			slog.Any("error", err),
+		)
 		return nil, h.handleError(err)
 	}
 
@@ -296,7 +370,7 @@ func (h *UserHandler) Block(ctx context.Context, req *pb.BlockRequest) (*common.
 // Unblock 取消屏蔽
 func (h *UserHandler) Unblock(ctx context.Context, req *pb.UnblockRequest) (*common.Empty, error) {
 	// 参数验证
-	v := validator.New()
+	v := validate.New()
 	v.Required("blocker_id", req.BlockerId).UUID("blocker_id", req.BlockerId)
 	v.Required("blocked_id", req.BlockedId).UUID("blocked_id", req.BlockedId)
 	if err := v.ToGRPCError(); err != nil {
@@ -309,6 +383,12 @@ func (h *UserHandler) Unblock(ctx context.Context, req *pb.UnblockRequest) (*com
 	}
 
 	if err := h.userService.Unblock(ctx, req.BlockerId, req.BlockedId, blockType); err != nil {
+		h.slog.Error("取消屏蔽失败",
+			slog.String("blocker_id", req.BlockerId),
+			slog.String("blocked_id", req.BlockedId),
+			slog.String("trace_id", log.TraceIDFromContext(ctx)),
+			slog.Any("error", err),
+		)
 		return nil, h.handleError(err)
 	}
 
@@ -318,29 +398,34 @@ func (h *UserHandler) Unblock(ctx context.Context, req *pb.UnblockRequest) (*com
 // GetBlockList 获取屏蔽列表
 func (h *UserHandler) GetBlockList(ctx context.Context, req *pb.GetBlockListRequest) (*pb.BlockListResponse, error) {
 	// 参数验证
-	if err := validator.ValidateUUID("user_id", req.UserId); err != nil {
+	if err := validate.UUID("user_id", req.UserId); err != nil {
 		return nil, err
 	}
 
-	page, pageSize := getPagination(req.Pagination)
-	limit, offset := pagination.BuildLimitOffset(page, pageSize)
+	pageNum, pageSize := getPagination(req.Pagination)
+	limit, offset := page.BuildLimitOffset(pageNum, pageSize)
 
 	blockType := protoToBlockType(req.BlockType)
 	blockedUsers, total, err := h.userService.GetBlockList(ctx, req.UserId, blockType, int(limit), int(offset))
 	if err != nil {
+		h.slog.Error("获取屏蔽列表失败",
+			slog.String("user_id", req.UserId),
+			slog.String("trace_id", log.TraceIDFromContext(ctx)),
+			slog.Any("error", err),
+		)
 		return nil, h.handleError(err)
 	}
 
 	return &pb.BlockListResponse{
 		Users:      blockedUsersToProto(blockedUsers),
-		Pagination: &common.Pagination{Page: page, PageSize: pageSize, Total: int32(total)},
+		Pagination: &common.Pagination{Page: pageNum, PageSize: pageSize, Total: int32(total)},
 	}, nil
 }
 
 // CheckBlocked 检查屏蔽状态
 func (h *UserHandler) CheckBlocked(ctx context.Context, req *pb.CheckBlockedRequest) (*pb.CheckBlockedResponse, error) {
 	// 参数验证
-	v := validator.New()
+	v := validate.New()
 	v.Required("user_id", req.UserId).UUID("user_id", req.UserId)
 	v.Required("target_id", req.TargetId).UUID("target_id", req.TargetId)
 	if err := v.ToGRPCError(); err != nil {
@@ -349,6 +434,12 @@ func (h *UserHandler) CheckBlocked(ctx context.Context, req *pb.CheckBlockedRequ
 
 	relationship, err := h.userService.CheckBlocked(ctx, req.UserId, req.TargetId)
 	if err != nil {
+		h.slog.Error("检查屏蔽状态失败",
+			slog.String("user_id", req.UserId),
+			slog.String("target_id", req.TargetId),
+			slog.String("trace_id", log.TraceIDFromContext(ctx)),
+			slog.Any("error", err),
+		)
 		return nil, h.handleError(err)
 	}
 
@@ -369,12 +460,17 @@ func (h *UserHandler) CheckBlocked(ctx context.Context, req *pb.CheckBlockedRequ
 // GetUserSettings 获取用户设置
 func (h *UserHandler) GetUserSettings(ctx context.Context, req *pb.GetUserSettingsRequest) (*pb.UserSettings, error) {
 	// 参数验证
-	if err := validator.ValidateUUID("user_id", req.UserId); err != nil {
+	if err := validate.UUID("user_id", req.UserId); err != nil {
 		return nil, err
 	}
 
 	settings, err := h.userService.GetUserSettings(ctx, req.UserId)
 	if err != nil {
+		h.slog.Error("获取用户设置失败",
+			slog.String("user_id", req.UserId),
+			slog.String("trace_id", log.TraceIDFromContext(ctx)),
+			slog.Any("error", err),
+		)
 		return nil, h.handleError(err)
 	}
 
@@ -384,7 +480,7 @@ func (h *UserHandler) GetUserSettings(ctx context.Context, req *pb.GetUserSettin
 // UpdateUserSettings 更新用户设置
 func (h *UserHandler) UpdateUserSettings(ctx context.Context, req *pb.UpdateUserSettingsRequest) (*pb.UserSettings, error) {
 	// 参数验证
-	if err := validator.ValidateUUID("user_id", req.UserId); err != nil {
+	if err := validate.UUID("user_id", req.UserId); err != nil {
 		return nil, err
 	}
 
@@ -392,6 +488,11 @@ func (h *UserHandler) UpdateUserSettings(ctx context.Context, req *pb.UpdateUser
 	if req.Privacy != nil {
 		privacySettings := protoToPrivacySettings(req.UserId, req.Privacy)
 		if err := h.userService.UpdatePrivacySettings(ctx, req.UserId, privacySettings); err != nil {
+			h.slog.Error("更新隐私设置失败",
+				slog.String("user_id", req.UserId),
+				slog.String("trace_id", log.TraceIDFromContext(ctx)),
+				slog.Any("error", err),
+			)
 			return nil, h.handleError(err)
 		}
 	}
@@ -400,6 +501,11 @@ func (h *UserHandler) UpdateUserSettings(ctx context.Context, req *pb.UpdateUser
 	if req.Notification != nil {
 		notificationSettings := protoToNotificationSettings(req.UserId, req.Notification)
 		if err := h.userService.UpdateNotificationSettings(ctx, req.UserId, notificationSettings); err != nil {
+			h.slog.Error("更新通知设置失败",
+				slog.String("user_id", req.UserId),
+				slog.String("trace_id", log.TraceIDFromContext(ctx)),
+				slog.Any("error", err),
+			)
 			return nil, h.handleError(err)
 		}
 	}
@@ -407,6 +513,11 @@ func (h *UserHandler) UpdateUserSettings(ctx context.Context, req *pb.UpdateUser
 	// 返回更新后的设置
 	settings, err := h.userService.GetUserSettings(ctx, req.UserId)
 	if err != nil {
+		h.slog.Error("获取更新后的用户设置失败",
+			slog.String("user_id", req.UserId),
+			slog.String("trace_id", log.TraceIDFromContext(ctx)),
+			slog.Any("error", err),
+		)
 		return nil, h.handleError(err)
 	}
 
@@ -420,20 +531,25 @@ func (h *UserHandler) UpdateUserSettings(ctx context.Context, req *pb.UpdateUser
 // SearchUsers 搜索用户
 func (h *UserHandler) SearchUsers(ctx context.Context, req *pb.SearchUsersRequest) (*pb.SearchUsersResponse, error) {
 	// 参数验证
-	if err := validator.ValidateRequired("query", req.Query); err != nil {
+	if err := validate.Required("query", req.Query); err != nil {
 		return nil, err
 	}
 
-	page, pageSize := getPagination(req.Pagination)
-	limit, offset := pagination.BuildLimitOffset(page, pageSize)
+	pageNum, pageSize := getPagination(req.Pagination)
+	limit, offset := page.BuildLimitOffset(pageNum, pageSize)
 
 	users, total, err := h.userService.SearchUsers(ctx, req.Query, int(limit), int(offset))
 	if err != nil {
+		h.slog.Error("搜索用户失败",
+			slog.String("query", req.Query),
+			slog.String("trace_id", log.TraceIDFromContext(ctx)),
+			slog.Any("error", err),
+		)
 		return nil, h.handleError(err)
 	}
 
 	return &pb.SearchUsersResponse{
 		Users:      usersToProto(users, req.ViewerId, h.userService),
-		Pagination: &common.Pagination{Page: page, PageSize: pageSize, Total: int32(total)},
+		Pagination: &common.Pagination{Page: pageNum, PageSize: pageSize, Total: int32(total)},
 	}, nil
 }

@@ -30,7 +30,7 @@ const (
 	ChatService_StreamEvents_FullMethodName           = "/chat.ChatService/StreamEvents"
 )
 
-// ChatServiceClient is the client API for ChatService logic.
+// ChatServiceClient is the client API for ChatService service.
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 //
@@ -159,7 +159,7 @@ func (c *chatServiceClient) StreamEvents(ctx context.Context, opts ...grpc.CallO
 // This type alias is provided for backwards compatibility with existing code that references the prior non-generic stream type by name.
 type ChatService_StreamEventsClient = grpc.BidiStreamingClient[ClientEvent, ServerEvent]
 
-// ChatServiceServer is the server API for ChatService logic.
+// ChatServiceServer is the server API for ChatService service.
 // All implementations must embed UnimplementedChatServiceServer
 // for forward compatibility.
 //
@@ -225,7 +225,7 @@ func (UnimplementedChatServiceServer) StreamEvents(grpc.BidiStreamingServer[Clie
 func (UnimplementedChatServiceServer) mustEmbedUnimplementedChatServiceServer() {}
 func (UnimplementedChatServiceServer) testEmbeddedByValue()                     {}
 
-// UnsafeChatServiceServer may be embedded to opt out of forward compatibility for this logic.
+// UnsafeChatServiceServer may be embedded to opt out of forward compatibility for this service.
 // Use of this interface is not recommended, as added methods to ChatServiceServer will
 // result in compilation errors.
 type UnsafeChatServiceServer interface {
@@ -394,7 +394,7 @@ func _ChatService_StreamEvents_Handler(srv interface{}, stream grpc.ServerStream
 // This type alias is provided for backwards compatibility with existing code that references the prior non-generic stream type by name.
 type ChatService_StreamEventsServer = grpc.BidiStreamingServer[ClientEvent, ServerEvent]
 
-// ChatService_ServiceDesc is the grpc.ServiceDesc for ChatService logic.
+// ChatService_ServiceDesc is the grpc.ServiceDesc for ChatService service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
 var ChatService_ServiceDesc = grpc.ServiceDesc{

@@ -3352,7 +3352,7 @@ const file_superuser_superuser_proto_rawDesc = "" +
 	"\x0eGetTableSchema\x12 .superuser.GetTableSchemaRequest\x1a\x16.superuser.TableSchema\x12I\n" +
 	"\n" +
 	"ListTables\x12\x1c.superuser.ListTablesRequest\x1a\x1d.superuser.ListTablesResponse\x12L\n" +
-	"\fGetAuditLogs\x12\x1e.superuser.GetAuditLogsRequest\x1a\x1c.superuser.AuditLogsResponseB5Z3github.com/funcdfs/lesser/superuser/gen_protos/superuserb\x06proto3"
+	"\fGetAuditLogs\x12\x1e.superuser.GetAuditLogsRequest\x1a\x1c.superuser.AuditLogsResponseB:Z8github.com/funcdfs/lesser/superuser/gen_protos/superuserb\x06proto3"
 
 var (
 	file_superuser_superuser_proto_rawDescOnce sync.Once

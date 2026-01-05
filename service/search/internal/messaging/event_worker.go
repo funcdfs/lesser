@@ -7,8 +7,8 @@ import (
 	"fmt"
 	"log/slog"
 
-	"github.com/funcdfs/lesser/pkg/broker"
-	"github.com/funcdfs/lesser/pkg/logger"
+	"github.com/funcdfs/lesser/pkg/mq"
+	"github.com/funcdfs/lesser/pkg/log"
 	"github.com/funcdfs/lesser/search/internal/logic"
 )
 
@@ -16,15 +16,15 @@ import (
 // 负责消费 RabbitMQ 中的内容索引事件
 type EventWorker struct {
 	searchService *logic.SearchService
-	worker        *broker.Worker
-	log           *logger.Logger
+	worker        *mq.Worker
+	log           *log.Logger
 }
 
 // NewEventWorker 创建事件消费者实例
-func NewEventWorker(searchService *logic.SearchService, rabbitURL string, log *logger.Logger) *EventWorker {
+func NewEventWorker(searchService *logic.SearchService, rabbitURL string, log *log.Logger) *EventWorker {
 	return &EventWorker{
 		searchService: searchService,
-		worker:        broker.NewWorker(rabbitURL, log),
+		worker:        mq.NewWorker(rabbitURL, log),
 		log:           log,
 	}
 }
@@ -32,20 +32,20 @@ func NewEventWorker(searchService *logic.SearchService, rabbitURL string, log *l
 // Start 启动事件消费者
 // 订阅内容索引相关的事件队列
 func (w *EventWorker) Start(ctx context.Context) error {
-	configs := []broker.Config{
+	configs := []mq.Config{
 		{
 			Queue:      "search.content.created",
-			RoutingKey: broker.EventContentCreated,
+			RoutingKey: mq.EventContentCreated,
 			Handler:    w.handleContentCreated,
 		},
 		{
 			Queue:      "search.content.updated",
-			RoutingKey: broker.EventContentUpdated,
+			RoutingKey: mq.EventContentUpdated,
 			Handler:    w.handleContentUpdated,
 		},
 		{
 			Queue:      "search.content.deleted",
-			RoutingKey: broker.EventContentDeleted,
+			RoutingKey: mq.EventContentDeleted,
 			Handler:    w.handleContentDeleted,
 		},
 	}
@@ -60,7 +60,7 @@ func (w *EventWorker) Stop() {
 
 // handleContentCreated 处理内容创建事件
 func (w *EventWorker) handleContentCreated(ctx context.Context, body []byte) error {
-	var event broker.ContentIndexEvent
+	var event mq.ContentIndexEvent
 	if err := json.Unmarshal(body, &event); err != nil {
 		w.log.WithContext(ctx).Error("解析 ContentIndexEvent 失败",
 			slog.Any("error", err),
@@ -90,7 +90,7 @@ func (w *EventWorker) handleContentCreated(ctx context.Context, body []byte) err
 
 // handleContentUpdated 处理内容更新事件
 func (w *EventWorker) handleContentUpdated(ctx context.Context, body []byte) error {
-	var event broker.ContentIndexEvent
+	var event mq.ContentIndexEvent
 	if err := json.Unmarshal(body, &event); err != nil {
 		w.log.WithContext(ctx).Error("解析 ContentIndexEvent 失败",
 			slog.Any("error", err),
@@ -117,7 +117,7 @@ func (w *EventWorker) handleContentUpdated(ctx context.Context, body []byte) err
 
 // handleContentDeleted 处理内容删除事件
 func (w *EventWorker) handleContentDeleted(ctx context.Context, body []byte) error {
-	var event broker.ContentIndexEvent
+	var event mq.ContentIndexEvent
 	if err := json.Unmarshal(body, &event); err != nil {
 		w.log.WithContext(ctx).Error("解析 ContentIndexEvent 失败",
 			slog.Any("error", err),

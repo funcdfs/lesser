@@ -131,6 +131,11 @@ async fn generate_go(project_root: &std::path::Path, proto_dir: &std::path::Path
 
     let spinner = Spinner::new("生成中...");
 
+    // 首先为 pkg 生成 common proto（所有服务共享）
+    let pkg_proto_out = project_root.join("service/pkg/gen_protos");
+    tokio::fs::create_dir_all(&pkg_proto_out).await?;
+    let _ = generate_proto_go(proto_dir, &pkg_proto_out, "common/common.proto").await;
+
     for service in SERVICES {
         let service_dir = project_root.join("service").join(service);
         let proto_out = service_dir.join("gen_protos");
@@ -140,7 +145,7 @@ async fn generate_go(project_root: &std::path::Path, proto_dir: &std::path::Path
             // 创建输出目录
             tokio::fs::create_dir_all(&proto_out).await?;
 
-            // 生成 common proto
+            // 生成 common proto（每个服务也需要一份，用于本地引用）
             let _ = generate_proto_go(proto_dir, &proto_out, "common/common.proto").await;
 
             // 生成服务特定的 proto
@@ -162,6 +167,27 @@ async fn generate_go(project_root: &std::path::Path, proto_dir: &std::path::Path
         }
     }
 
+    // Timeline 服务需要 content 和 interaction proto
+    let timeline_proto_out = project_root.join("service/timeline/gen_protos");
+    for proto in ["content", "interaction"] {
+        let proto_file = format!("{}/{}.proto", proto, proto);
+        if proto_dir.join(&proto_file).exists() {
+            let _ = generate_proto_go(proto_dir, &timeline_proto_out, &proto_file).await;
+        }
+    }
+
+    // Comment 服务需要 content proto
+    let comment_proto_out = project_root.join("service/comment/gen_protos");
+    let _ = generate_proto_go(proto_dir, &comment_proto_out, "content/content.proto").await;
+
+    // Interaction 服务需要 content proto
+    let interaction_proto_out = project_root.join("service/interaction/gen_protos");
+    let _ = generate_proto_go(proto_dir, &interaction_proto_out, "content/content.proto").await;
+
+    // Chat 服务需要 auth proto
+    let chat_proto_out = project_root.join("service/chat/gen_protos");
+    let _ = generate_proto_go(proto_dir, &chat_proto_out, "auth/auth.proto").await;
+
     spinner.finish_and_clear();
     ui::step_done("Go 代码生成完成");
 
@@ -174,7 +200,14 @@ async fn generate_proto_go(
     out_dir: &std::path::Path,
     proto_file: &str,
 ) -> Result<()> {
+    // 获取当前 PATH 并添加 ~/go/bin
+    let home = std::env::var("HOME").unwrap_or_default();
+    let go_bin = format!("{}/go/bin", home);
+    let current_path = std::env::var("PATH").unwrap_or_default();
+    let new_path = format!("{}:{}", go_bin, current_path);
+
     let status = Command::new("protoc")
+        .env("PATH", &new_path)
         .args([
             &format!("--proto_path={}", proto_dir.display()),
             &format!("--go_out={}", out_dir.display()),

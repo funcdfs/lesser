@@ -1,7 +1,7 @@
 syntax = "proto3";
 package timeline;
 
-option go_package = "github.com/funcdfs/lesser/timeline/proto/timeline";
+option go_package = "github.com/funcdfs/lesser/timeline/gen_protos/timeline";
 
 import "common/common.proto";
 import "content/content.proto";

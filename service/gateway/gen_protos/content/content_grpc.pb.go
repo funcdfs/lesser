@@ -34,7 +34,7 @@ const (
 	ContentService_CheckContentExists_FullMethodName = "/content.ContentService/CheckContentExists"
 )
 
-// ContentServiceClient is the client API for ContentService logic.
+// ContentServiceClient is the client API for ContentService service.
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 //
@@ -202,7 +202,7 @@ func (c *contentServiceClient) CheckContentExists(ctx context.Context, in *Check
 	return out, nil
 }
 
-// ContentServiceServer is the server API for ContentService logic.
+// ContentServiceServer is the server API for ContentService service.
 // All implementations must embed UnimplementedContentServiceServer
 // for forward compatibility.
 //
@@ -282,7 +282,7 @@ func (UnimplementedContentServiceServer) CheckContentExists(context.Context, *Ch
 func (UnimplementedContentServiceServer) mustEmbedUnimplementedContentServiceServer() {}
 func (UnimplementedContentServiceServer) testEmbeddedByValue()                        {}
 
-// UnsafeContentServiceServer may be embedded to opt out of forward compatibility for this logic.
+// UnsafeContentServiceServer may be embedded to opt out of forward compatibility for this service.
 // Use of this interface is not recommended, as added methods to ContentServiceServer will
 // result in compilation errors.
 type UnsafeContentServiceServer interface {
@@ -534,7 +534,7 @@ func _ContentService_CheckContentExists_Handler(srv interface{}, ctx context.Con
 	return interceptor(ctx, in, info, handler)
 }
 
-// ContentService_ServiceDesc is the grpc.ServiceDesc for ContentService logic.
+// ContentService_ServiceDesc is the grpc.ServiceDesc for ContentService service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
 var ContentService_ServiceDesc = grpc.ServiceDesc{

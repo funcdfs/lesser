@@ -7,8 +7,8 @@
 package timeline
 
 import (
-	common "github.com/funcdfs/lesser/gateway/gen_protos/common"
-	content "github.com/funcdfs/lesser/gateway/gen_protos/content"
+	content "github.com/funcdfs/lesser/content/gen_protos/content"
+	common "github.com/funcdfs/lesser/pkg/gen_protos/common"
 	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
 	protoimpl "google.golang.org/protobuf/runtime/protoimpl"
 	reflect "reflect"
@@ -696,7 +696,7 @@ const file_timeline_timeline_proto_rawDesc = "" +
 	"\vGetUserFeed\x12\x1c.timeline.GetUserFeedRequest\x1a\x1d.timeline.GetUserFeedResponse\x12G\n" +
 	"\n" +
 	"GetHotFeed\x12\x1b.timeline.GetHotFeedRequest\x1a\x1c.timeline.GetHotFeedResponse\x12Y\n" +
-	"\x10GetContentDetail\x12!.timeline.GetContentDetailRequest\x1a\".timeline.GetContentDetailResponseB3Z1github.com/funcdfs/lesser/timeline/gen_protos/timelineb\x06proto3"
+	"\x10GetContentDetail\x12!.timeline.GetContentDetailRequest\x1a\".timeline.GetContentDetailResponseB8Z6github.com/funcdfs/lesser/timeline/gen_protos/timelineb\x06proto3"
 
 var (
 	file_timeline_timeline_proto_rawDescOnce sync.Once

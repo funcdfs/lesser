@@ -1288,7 +1288,7 @@ const file_interaction_interaction_proto_rawDesc = "" +
 	"\rListBookmarks\x12!.interaction.ListBookmarksRequest\x1a\".interaction.ListBookmarksResponse\x12S\n" +
 	"\fCreateRepost\x12 .interaction.CreateRepostRequest\x1a!.interaction.CreateRepostResponse\x12S\n" +
 	"\fDeleteRepost\x12 .interaction.DeleteRepostRequest\x1a!.interaction.DeleteRepostResponse\x12z\n" +
-	"\x19BatchGetInteractionStatus\x12-.interaction.BatchGetInteractionStatusRequest\x1a..interaction.BatchGetInteractionStatusResponseB9Z7github.com/funcdfs/lesser/interaction/gen_protos/interactionb\x06proto3"
+	"\x19BatchGetInteractionStatus\x12-.interaction.BatchGetInteractionStatusRequest\x1a..interaction.BatchGetInteractionStatusResponseB>Z<github.com/funcdfs/lesser/interaction/gen_protos/interactionb\x06proto3"
 
 var (
 	file_interaction_interaction_proto_rawDescOnce sync.Once

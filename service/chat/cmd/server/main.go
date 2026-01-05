@@ -16,9 +16,9 @@ import (
 	"github.com/funcdfs/lesser/chat/internal/logic"
 	"github.com/funcdfs/lesser/chat/internal/remote"
 	pb "github.com/funcdfs/lesser/chat/gen_protos/chat"
-	"github.com/funcdfs/lesser/pkg/cache"
-	"github.com/funcdfs/lesser/pkg/database"
-	"github.com/funcdfs/lesser/pkg/logger"
+	"github.com/funcdfs/lesser/pkg/db"
+	"github.com/funcdfs/lesser/pkg/db"
+	"github.com/funcdfs/lesser/pkg/log"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/keepalive"
 	"google.golang.org/grpc/reflection"
@@ -26,13 +26,13 @@ import (
 
 func main() {
 	// 初始化日志
-	log := logger.New("chat")
-	logger.SetGlobal(log)
+	log := log.New("chat")
+	log.SetGlobal(log)
 
 	grpcPort := getEnv("GRPC_PORT", "50060")
 
 	// 数据库连接（Chat 使用独立数据库 lesser_chat_db）
-	dbConfig := database.Config{
+	dbConfig := db.Config{
 		Host:     getEnv("DB_HOST", "localhost"),
 		Port:     getEnv("DB_PORT", "5432"),
 		User:     getEnv("DB_USER", "postgres"),
@@ -41,7 +41,7 @@ func main() {
 		SSLMode:  getEnv("DB_SSLMODE", "disable"),
 	}
 
-	db, err := database.NewConnection(dbConfig)
+	db, err := db.NewConnection(dbConfig)
 	if err != nil {
 		log.Fatal("数据库连接失败", slog.Any("error", err))
 	}
@@ -49,10 +49,10 @@ func main() {
 	log.Info("数据库连接成功")
 
 	// 初始化 Redis（可选）
-	var redisClient *cache.Client
-	redisCfg := cache.ConfigFromEnv()
+	var redisClient *db.Client
+	redisCfg := db.ConfigFromEnv()
 	if redisCfg.Host != "" || redisCfg.URL != "" {
-		redisClient, err = cache.NewClient(redisCfg)
+		redisClient, err = db.NewClient(redisCfg)
 		if err != nil {
 			log.Warn("Redis 连接失败，缓存功能禁用", slog.Any("error", err))
 		} else {
@@ -66,7 +66,7 @@ func main() {
 
 	// 初始化 Auth gRPC 客户端
 	authGRPCAddr := getEnv("AUTH_GRPC_ADDR", "gateway:50053")
-	authClient, err := remote.NewAuthClient(authGRPCAddr)
+	authClient, err := remote.NewAuthClient(authGRPCAddr, log)
 	if err != nil {
 		log.Warn("Auth gRPC 服务连接失败", slog.Any("error", err))
 	} else {
@@ -74,7 +74,7 @@ func main() {
 	}
 
 	// 初始化用户客户端（带缓存）
-	userClient := remote.NewUserClient(authClient, redisClient)
+	userClient := remote.NewUserClient(authClient, redisClient, log)
 
 	// 初始化未读数缓存服务
 	var unreadCacheService *logic.UnreadCacheService
@@ -134,7 +134,7 @@ func main() {
 }
 
 // newGRPCServer 创建 gRPC 服务器
-func newGRPCServer(authClient *remote.AuthClient, log *logger.Logger) *grpc.Server {
+func newGRPCServer(authClient *remote.AuthClient, log *log.Logger) *grpc.Server {
 	keepalivePolicy := keepalive.EnforcementPolicy{
 		MinTime:             10 * time.Second,
 		PermitWithoutStream: true,

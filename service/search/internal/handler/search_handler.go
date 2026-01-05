@@ -2,8 +2,10 @@ package handler
 
 import (
 	"context"
+	"log/slog"
 
 	"github.com/funcdfs/lesser/pkg/gen_protos/common"
+	"github.com/funcdfs/lesser/pkg/log"
 	"github.com/funcdfs/lesser/search/internal/data_access"
 	"github.com/funcdfs/lesser/search/internal/logic"
 	pb "github.com/funcdfs/lesser/search/gen_protos/search"
@@ -15,11 +17,18 @@ import (
 type SearchHandler struct {
 	pb.UnimplementedSearchServiceServer
 	searchService *logic.SearchService
+	log           *slog.Logger
 }
 
 // NewSearchHandler 创建搜索处理器
-func NewSearchHandler(searchService *logic.SearchService) *SearchHandler {
-	return &SearchHandler{searchService: searchService}
+func NewSearchHandler(searchService *logic.SearchService, log *slog.Logger) *SearchHandler {
+	if log == nil {
+		log = slog.Default()
+	}
+	return &SearchHandler{
+		searchService: searchService,
+		log:           log.With(slog.String("component", "handler")),
+	}
 }
 
 // SearchPosts 搜索内容
@@ -44,7 +53,12 @@ func (h *SearchHandler) SearchPosts(ctx context.Context, req *pb.SearchPostsRequ
 	// TODO: 集成 embedding 服务后启用语义搜索
 	contents, total, err := h.searchService.SearchContents(req.Query, limit, offset)
 	if err != nil {
-		return nil, status.Error(codes.Internal, err.Error())
+		h.log.Error("搜索内容失败",
+			slog.String("query", req.Query),
+			slog.String("trace_id", log.TraceIDFromContext(ctx)),
+			slog.Any("error", err),
+		)
+		return nil, logic.ToGRPCError(err)
 	}
 
 	return &pb.SearchPostsResponse{
@@ -73,7 +87,12 @@ func (h *SearchHandler) SearchUsers(ctx context.Context, req *pb.SearchUsersRequ
 
 	users, total, err := h.searchService.SearchUsers(req.Query, limit, offset)
 	if err != nil {
-		return nil, status.Error(codes.Internal, err.Error())
+		h.log.Error("搜索用户失败",
+			slog.String("query", req.Query),
+			slog.String("trace_id", log.TraceIDFromContext(ctx)),
+			slog.Any("error", err),
+		)
+		return nil, logic.ToGRPCError(err)
 	}
 
 	return &pb.SearchUsersResponse{
@@ -102,7 +121,13 @@ func (h *SearchHandler) SearchComments(ctx context.Context, req *pb.SearchCommen
 
 	comments, total, err := h.searchService.SearchComments(req.Query, req.PostId, limit, offset)
 	if err != nil {
-		return nil, status.Error(codes.Internal, err.Error())
+		h.log.Error("搜索评论失败",
+			slog.String("query", req.Query),
+			slog.String("post_id", req.PostId),
+			slog.String("trace_id", log.TraceIDFromContext(ctx)),
+			slog.Any("error", err),
+		)
+		return nil, logic.ToGRPCError(err)
 	}
 
 	return &pb.SearchCommentsResponse{

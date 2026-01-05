@@ -9,6 +9,7 @@ import (
 	"github.com/funcdfs/lesser/comment/internal/logic"
 	pb "github.com/funcdfs/lesser/comment/gen_protos/comment"
 	"github.com/funcdfs/lesser/pkg/gen_protos/common"
+	"github.com/funcdfs/lesser/pkg/log"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 )
@@ -48,7 +49,8 @@ func (h *CommentHandler) CreateComment(ctx context.Context, req *pb.CreateCommen
 		slog.String("content_id", req.ContentId),
 	)
 
-	comment, count, err := h.svc.CreateComment(ctx, req.AuthorId, req.ContentId, req.ParentId, req.Text, req.MentionedUserIds)
+	// 注意：当前 proto 未定义 mentioned_user_ids 字段，传 nil
+	comment, count, err := h.svc.CreateComment(ctx, req.AuthorId, req.ContentId, req.ParentId, req.Text, nil)
 	if err != nil {
 		return nil, mapError(err)
 	}
@@ -123,7 +125,12 @@ func (h *CommentHandler) ListComments(ctx context.Context, req *pb.ListCommentsR
 
 	comments, total, err := h.svc.ListComments(ctx, req.ContentId, req.ParentId, sortBy, int(pageSize), int((page-1)*pageSize))
 	if err != nil {
-		return nil, status.Error(codes.Internal, err.Error())
+		h.log.Error("获取评论列表失败",
+			slog.String("content_id", req.ContentId),
+			slog.String("trace_id", log.TraceIDFromContext(ctx)),
+			slog.Any("error", err),
+		)
+		return nil, mapError(err)
 	}
 
 	return &pb.ListCommentsResponse{
@@ -140,7 +147,12 @@ func (h *CommentHandler) GetCommentCount(ctx context.Context, req *pb.GetComment
 
 	count, err := h.svc.GetCommentCount(ctx, req.ContentId)
 	if err != nil {
-		return nil, status.Error(codes.Internal, err.Error())
+		h.log.Error("获取评论数量失败",
+			slog.String("content_id", req.ContentId),
+			slog.String("trace_id", log.TraceIDFromContext(ctx)),
+			slog.Any("error", err),
+		)
+		return nil, mapError(err)
 	}
 
 	return &pb.GetCommentCountResponse{Count: count}, nil
@@ -157,7 +169,11 @@ func (h *CommentHandler) BatchGetCommentCount(ctx context.Context, req *pb.Batch
 
 	countMap, err := h.svc.BatchGetCommentCount(ctx, req.ContentIds)
 	if err != nil {
-		return nil, status.Error(codes.Internal, err.Error())
+		h.log.Error("批量获取评论数量失败",
+			slog.String("trace_id", log.TraceIDFromContext(ctx)),
+			slog.Any("error", err),
+		)
+		return nil, mapError(err)
 	}
 
 	counts := make([]*pb.CommentCount, 0, len(countMap))
@@ -251,26 +267,5 @@ func commentsToProto(comments []*data_access.Comment) []*pb.Comment {
 }
 
 func mapError(err error) error {
-	switch err {
-	case logic.ErrContentNotFound:
-		return status.Error(codes.NotFound, "内容不存在")
-	case logic.ErrCommentsDisabled:
-		return status.Error(codes.FailedPrecondition, "该内容已禁止评论")
-	case logic.ErrUnauthorized:
-		return status.Error(codes.PermissionDenied, "无权限操作")
-	case logic.ErrCommentNotFound, data_access.ErrCommentNotFound:
-		return status.Error(codes.NotFound, "评论不存在")
-	case logic.ErrInvalidParent, data_access.ErrInvalidParent:
-		return status.Error(codes.InvalidArgument, "父评论不存在或已删除")
-	case logic.ErrEmptyText:
-		return status.Error(codes.InvalidArgument, "评论内容不能为空")
-	case logic.ErrTextTooLong:
-		return status.Error(codes.InvalidArgument, "评论内容超出长度限制")
-	case logic.ErrAlreadyLiked:
-		return status.Error(codes.AlreadyExists, "已经点赞过")
-	case logic.ErrNotLiked:
-		return status.Error(codes.FailedPrecondition, "未点赞")
-	default:
-		return status.Error(codes.Internal, err.Error())
-	}
+	return logic.ToGRPCError(err)
 }

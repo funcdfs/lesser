@@ -10,9 +10,9 @@ import (
 	"strconv"
 	"syscall"
 
-	"github.com/funcdfs/lesser/pkg/broker"
-	"github.com/funcdfs/lesser/pkg/database"
-	"github.com/funcdfs/lesser/pkg/logger"
+	"github.com/funcdfs/lesser/pkg/mq"
+	"github.com/funcdfs/lesser/pkg/db"
+	"github.com/funcdfs/lesser/pkg/log"
 	"github.com/funcdfs/lesser/user/internal/handler"
 	"github.com/funcdfs/lesser/user/internal/data_access"
 	"github.com/funcdfs/lesser/user/internal/logic"
@@ -24,7 +24,7 @@ import (
 
 func main() {
 	// 初始化日志
-	log := logger.New("user-service")
+	log := log.New("user-service")
 	log.Info("用户服务启动中...")
 
 	// 读取配置
@@ -32,18 +32,18 @@ func main() {
 	rabbitMQURL := getEnv("RABBITMQ_URL", "amqp://superuser:superuser@rabbitmq:5672/")
 
 	// 初始化数据库连接
-	dbConfig := database.ConfigFromEnv()
-	db, err := database.NewConnection(dbConfig)
+	dbConfig := db.PostgresConfigFromEnv()
+	pgDB, err := db.NewPostgresConnection(dbConfig)
 	if err != nil {
 		log.Error("数据库连接失败", slog.Any("error", err))
 		os.Exit(1)
 	}
-	defer db.Close()
+	defer pgDB.Close()
 	log.Info("数据库连接成功", slog.String("host", dbConfig.Host))
 
 	// 初始化 RabbitMQ Publisher（可选，失败不影响服务启动）
-	var publisher *broker.Publisher
-	publisher = broker.NewPublisher(rabbitMQURL, log)
+	var publisher *mq.Publisher
+	publisher = mq.NewPublisher(rabbitMQURL, log)
 	if err := publisher.Connect(); err != nil {
 		log.Warn("RabbitMQ 连接失败，事件通知功能将不可用", slog.Any("error", err))
 		publisher = nil
@@ -53,13 +53,13 @@ func main() {
 	}
 
 	// 初始化仓库层
-	userRepo := data_access.NewUserRepository(db)
-	followRepo := data_access.NewFollowRepository(db)
-	blockRepo := data_access.NewBlockRepository(db)
-	settingsRepo := data_access.NewSettingsRepository(db)
+	userRepo := data_access.NewUserRepository(pgDB)
+	followRepo := data_access.NewFollowRepository(pgDB)
+	blockRepo := data_access.NewBlockRepository(pgDB)
+	settingsRepo := data_access.NewSettingsRepository(pgDB)
 
 	// 初始化服务层
-	userSvc := logic.NewUserService(db, log, userRepo, followRepo, blockRepo, settingsRepo)
+	userSvc := logic.NewUserService(pgDB, log, userRepo, followRepo, blockRepo, settingsRepo)
 
 	// 初始化 messaging 层并注入
 	if publisher != nil {

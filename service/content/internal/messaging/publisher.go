@@ -4,17 +4,17 @@ package messaging
 import (
 	"context"
 
-	"github.com/funcdfs/lesser/pkg/broker"
+	"github.com/funcdfs/lesser/pkg/mq"
 )
 
 // EventPublisher 事件发布者
 // 实现 logic 层定义的 EventPublisher 接口
 type EventPublisher struct {
-	publisher *broker.Publisher
+	publisher *mq.Publisher
 }
 
 // NewEventPublisher 创建事件发布者
-func NewEventPublisher(publisher *broker.Publisher) *EventPublisher {
+func NewEventPublisher(publisher *mq.Publisher) *EventPublisher {
 	return &EventPublisher{
 		publisher: publisher,
 	}
@@ -26,7 +26,7 @@ func (p *EventPublisher) PublishContentCreated(ctx context.Context, contentID, a
 		return
 	}
 
-	event := broker.ContentIndexEvent{
+	event := mq.ContentIndexEvent{
 		ContentID:   contentID,
 		AuthorID:    authorID,
 		Title:       title,
@@ -34,7 +34,7 @@ func (p *EventPublisher) PublishContentCreated(ctx context.Context, contentID, a
 		ContentType: contentType,
 		Action:      "create",
 	}
-	p.publisher.PublishAsync(ctx, broker.EventContentCreated, event)
+	p.publisher.PublishAsync(ctx, mq.EventContentCreated, event)
 }
 
 // PublishContentUpdated 发布内容更新事件（用于搜索索引）
@@ -43,7 +43,7 @@ func (p *EventPublisher) PublishContentUpdated(ctx context.Context, contentID, a
 		return
 	}
 
-	event := broker.ContentIndexEvent{
+	event := mq.ContentIndexEvent{
 		ContentID:   contentID,
 		AuthorID:    authorID,
 		Title:       title,
@@ -51,7 +51,7 @@ func (p *EventPublisher) PublishContentUpdated(ctx context.Context, contentID, a
 		ContentType: contentType,
 		Action:      "update",
 	}
-	p.publisher.PublishAsync(ctx, broker.EventContentUpdated, event)
+	p.publisher.PublishAsync(ctx, mq.EventContentUpdated, event)
 }
 
 // PublishContentDeleted 发布内容删除事件（用于搜索索引）
@@ -60,11 +60,11 @@ func (p *EventPublisher) PublishContentDeleted(ctx context.Context, contentID st
 		return
 	}
 
-	event := broker.ContentIndexEvent{
+	event := mq.ContentIndexEvent{
 		ContentID: contentID,
 		Action:    "delete",
 	}
-	p.publisher.PublishAsync(ctx, broker.EventContentDeleted, event)
+	p.publisher.PublishAsync(ctx, mq.EventContentDeleted, event)
 }
 
 // PublishUserMentioned 发布用户被 @ 事件
@@ -73,11 +73,11 @@ func (p *EventPublisher) PublishUserMentioned(ctx context.Context, mentionedUser
 		return
 	}
 
-	event := broker.UserMentionedEvent{
+	event := mq.UserMentionedEvent{
 		MentionedUserID: mentionedUserID,
 		MentionerID:     mentionerID,
 		ContentID:       contentID,
 		ContentType:     "content",
 	}
-	p.publisher.PublishAsync(ctx, broker.EventUserMentioned, event)
+	p.publisher.PublishAsync(ctx, mq.EventUserMentioned, event)
 }

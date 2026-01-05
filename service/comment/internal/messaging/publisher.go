@@ -4,17 +4,17 @@ package messaging
 import (
 	"context"
 
-	"github.com/funcdfs/lesser/pkg/broker"
+	"github.com/funcdfs/lesser/pkg/mq"
 )
 
 // EventPublisher 事件发布者
 // 实现 logic 层定义的 EventPublisher 接口
 type EventPublisher struct {
-	publisher *broker.Publisher
+	publisher *mq.Publisher
 }
 
 // NewEventPublisher 创建事件发布者
-func NewEventPublisher(publisher *broker.Publisher) *EventPublisher {
+func NewEventPublisher(publisher *mq.Publisher) *EventPublisher {
 	return &EventPublisher{
 		publisher: publisher,
 	}
@@ -26,7 +26,7 @@ func (p *EventPublisher) PublishCommentCreated(ctx context.Context, commentID, a
 		return
 	}
 
-	event := broker.CommentCreatedEvent{
+	event := mq.CommentCreatedEvent{
 		CommentID:       commentID,
 		AuthorID:        authorID,
 		ContentID:       contentID,
@@ -35,7 +35,7 @@ func (p *EventPublisher) PublishCommentCreated(ctx context.Context, commentID, a
 		ParentAuthorID:  parentAuthorID,
 		Text:            text,
 	}
-	p.publisher.PublishAsync(ctx, broker.EventCommentCreated, event)
+	p.publisher.PublishAsync(ctx, mq.EventCommentCreated, event)
 }
 
 // PublishCommentLiked 发布评论点赞事件
@@ -44,12 +44,12 @@ func (p *EventPublisher) PublishCommentLiked(ctx context.Context, commentID, com
 		return
 	}
 
-	event := broker.CommentLikedEvent{
+	event := mq.CommentLikedEvent{
 		CommentID:       commentID,
 		CommentAuthorID: commentAuthorID,
 		LikerID:         likerID,
 	}
-	p.publisher.PublishAsync(ctx, broker.EventCommentLiked, event)
+	p.publisher.PublishAsync(ctx, mq.EventCommentLiked, event)
 }
 
 // PublishUserMentioned 发布用户被 @ 事件（评论中的 @）
@@ -58,11 +58,11 @@ func (p *EventPublisher) PublishUserMentioned(ctx context.Context, mentionedUser
 		return
 	}
 
-	event := broker.UserMentionedEvent{
+	event := mq.UserMentionedEvent{
 		MentionedUserID: mentionedUserID,
 		MentionerID:     mentionerID,
 		ContentID:       commentID,
 		ContentType:     "comment",
 	}
-	p.publisher.PublishAsync(ctx, broker.EventUserMentioned, event)
+	p.publisher.PublishAsync(ctx, mq.EventUserMentioned, event)
 }

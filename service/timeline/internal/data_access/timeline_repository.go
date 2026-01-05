@@ -8,6 +8,7 @@ import (
 	"log/slog"
 	"time"
 
+	"github.com/funcdfs/lesser/pkg/log"
 	"github.com/lib/pq"
 )
 
@@ -48,17 +49,14 @@ type FeedItem struct {
 // TimelineRepository Feed 流数据仓库
 type TimelineRepository struct {
 	db  *sql.DB
-	log *slog.Logger
+	log *log.Logger
 }
 
 // NewTimelineRepository 创建 Feed 流仓库
-func NewTimelineRepository(db *sql.DB, log *slog.Logger) *TimelineRepository {
-	if log == nil {
-		log = slog.Default()
-	}
+func NewTimelineRepository(db *sql.DB, log *log.Logger) *TimelineRepository {
 	return &TimelineRepository{
 		db:  db,
-		log: log.With(slog.String("component", "timeline_repository")),
+		log: log,
 	}
 }
 

@@ -6,7 +6,7 @@ import (
 	"database/sql"
 	"time"
 
-	"github.com/funcdfs/lesser/pkg/database"
+	"github.com/funcdfs/lesser/pkg/db"
 	"github.com/google/uuid"
 )
 
@@ -305,11 +305,11 @@ func scanUsers(rows *sql.Rows) []*User {
 			continue
 		}
 
-		user.DisplayName = database.StringFromNull(displayName)
-		user.AvatarURL = database.StringFromNull(avatarURL)
-		user.Bio = database.StringFromNull(bio)
-		user.Location = database.StringFromNull(location)
-		user.Website = database.StringFromNull(website)
+		user.DisplayName = db.StringFromNull(displayName)
+		user.AvatarURL = db.StringFromNull(avatarURL)
+		user.Bio = db.StringFromNull(bio)
+		user.Location = db.StringFromNull(location)
+		user.Website = db.StringFromNull(website)
 		user.Birthday = birthday
 		users = append(users, user)
 	}

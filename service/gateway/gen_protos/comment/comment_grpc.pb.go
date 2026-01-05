@@ -29,7 +29,7 @@ const (
 	CommentService_UnlikeComment_FullMethodName        = "/comment.CommentService/UnlikeComment"
 )
 
-// CommentServiceClient is the client API for CommentService logic.
+// CommentServiceClient is the client API for CommentService service.
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 //
@@ -137,7 +137,7 @@ func (c *commentServiceClient) UnlikeComment(ctx context.Context, in *UnlikeComm
 	return out, nil
 }
 
-// CommentServiceServer is the server API for CommentService logic.
+// CommentServiceServer is the server API for CommentService service.
 // All implementations must embed UnimplementedCommentServiceServer
 // for forward compatibility.
 //
@@ -192,7 +192,7 @@ func (UnimplementedCommentServiceServer) UnlikeComment(context.Context, *UnlikeC
 func (UnimplementedCommentServiceServer) mustEmbedUnimplementedCommentServiceServer() {}
 func (UnimplementedCommentServiceServer) testEmbeddedByValue()                        {}
 
-// UnsafeCommentServiceServer may be embedded to opt out of forward compatibility for this logic.
+// UnsafeCommentServiceServer may be embedded to opt out of forward compatibility for this service.
 // Use of this interface is not recommended, as added methods to CommentServiceServer will
 // result in compilation errors.
 type UnsafeCommentServiceServer interface {
@@ -354,7 +354,7 @@ func _CommentService_UnlikeComment_Handler(srv interface{}, ctx context.Context,
 	return interceptor(ctx, in, info, handler)
 }
 
-// CommentService_ServiceDesc is the grpc.ServiceDesc for CommentService logic.
+// CommentService_ServiceDesc is the grpc.ServiceDesc for CommentService service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
 var CommentService_ServiceDesc = grpc.ServiceDesc{

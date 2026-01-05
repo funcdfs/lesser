@@ -454,7 +454,7 @@ const file_common_common_proto_rawDesc = "" +
 	"\x0fSERVICE_UNKNOWN\x10\x032\x95\x01\n" +
 	"\rHealthService\x12@\n" +
 	"\x05Check\x12\x1a.common.HealthCheckRequest\x1a\x1b.common.HealthCheckResponse\x12B\n" +
-	"\x05Watch\x12\x1a.common.HealthCheckRequest\x1a\x1b.common.HealthCheckResponse0\x01B,Z*github.com/funcdfs/lesser/pkg/gen_protos/commonb\x06proto3"
+	"\x05Watch\x12\x1a.common.HealthCheckRequest\x1a\x1b.common.HealthCheckResponse0\x01B1Z/github.com/funcdfs/lesser/pkg/gen_protos/commonb\x06proto3"
 
 var (
 	file_common_common_proto_rawDescOnce sync.Once

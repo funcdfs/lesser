@@ -11,29 +11,42 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/funcdfs/lesser/comment/internal/remote"
-	"github.com/funcdfs/lesser/comment/internal/handler"
 	"github.com/funcdfs/lesser/comment/internal/data_access"
+	"github.com/funcdfs/lesser/comment/internal/handler"
 	"github.com/funcdfs/lesser/comment/internal/logic"
 	"github.com/funcdfs/lesser/comment/internal/messaging"
+	"github.com/funcdfs/lesser/comment/internal/remote"
 	pb "github.com/funcdfs/lesser/comment/gen_protos/comment"
-	"github.com/funcdfs/lesser/pkg/broker"
-	"github.com/funcdfs/lesser/pkg/database"
-	"github.com/funcdfs/lesser/pkg/logger"
+	"github.com/funcdfs/lesser/pkg/mq"
+	"github.com/funcdfs/lesser/pkg/db"
+	"github.com/funcdfs/lesser/pkg/log"
+	"github.com/funcdfs/lesser/pkg/grpc/interceptor"
+	"github.com/funcdfs/lesser/pkg/trace"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/reflection"
 )
 
 func main() {
 	// 初始化日志
-	log := logger.New("comment")
+	log := log.New("comment")
 
 	grpcPort := getEnv("GRPC_PORT", "50055")
 	contentServiceAddr := getEnv("CONTENT_SERVICE_ADDR", "content:50054")
 	rabbitmqURL := getEnv("RABBITMQ_URL", "amqp://superuser:superuser@rabbitmq:5672/")
 
+	// 初始化 OpenTelemetry
+	ctx := context.Background()
+	tracingCfg := trace.DefaultConfig("comment")
+	shutdown, err := trace.Init(ctx, tracingCfg)
+	if err != nil {
+		log.Error("初始化 OpenTelemetry 失败", slog.Any("error", err))
+	} else {
+		defer shutdown(ctx)
+		log.Info("OpenTelemetry 初始化成功", slog.String("endpoint", tracingCfg.Endpoint))
+	}
+
 	// 数据库连接
-	dbConfig := database.Config{
+	dbConfig := db.PostgresConfig{
 		Host:            getEnv("DB_HOST", "localhost"),
 		Port:            getEnv("DB_PORT", "5432"),
 		User:            getEnv("DB_USER", "postgres"),
@@ -45,15 +58,15 @@ func main() {
 		ConnMaxLifetime: time.Hour,
 	}
 
-	db, err := database.NewConnection(dbConfig)
+	database, err := db.NewPostgresConnection(dbConfig)
 	if err != nil {
 		log.Fatal("数据库连接失败", slog.Any("error", err))
 	}
-	defer db.Close()
+	defer database.Close()
 	log.Info("数据库连接成功", slog.String("db", dbConfig.DBName))
 
 	// 初始化 Content Service 客户端
-	contentClient, err := remote.NewContentServiceClient(contentServiceAddr)
+	contentClient, err := remote.NewContentServiceClient(contentServiceAddr, log)
 	if err != nil {
 		log.Fatal("连接 Content Service 失败", slog.Any("error", err))
 	}
@@ -61,12 +74,12 @@ func main() {
 	log.Info("已连接 Content Service", slog.String("addr", contentServiceAddr))
 
 	// 初始化各层
-	commentRepo := data_access.NewCommentRepository(db)
+	commentRepo := data_access.NewCommentRepository(database)
 	commentSvc := logic.NewCommentService(commentRepo, contentClient)
 
 	// 初始化 RabbitMQ Publisher（用于发送通知事件）
-	var publisher *broker.Publisher
-	publisher = broker.NewPublisher(rabbitmqURL, log)
+	var publisher *mq.Publisher
+	publisher = mq.NewPublisher(rabbitmqURL, log)
 	if err := publisher.Connect(); err != nil {
 		log.Warn("RabbitMQ 连接失败，通知功能将不可用", slog.Any("error", err))
 		publisher = nil
@@ -83,8 +96,14 @@ func main() {
 
 	commentHandler := handler.NewCommentHandler(commentSvc, log.Logger)
 
-	// 创建 gRPC 服务器（简化版，不使用 pkg/grpcserver）
-	grpcServer := grpc.NewServer()
+	// 创建 gRPC 服务器（带拦截器）
+	grpcServer := grpc.NewServer(
+		grpc.ChainUnaryInterceptor(
+			interceptor.RecoveryInterceptor(log),
+			interceptor.TraceInterceptor(),
+			interceptor.LoggingInterceptor(log),
+		),
+	)
 	pb.RegisterCommentServiceServer(grpcServer, commentHandler)
 	reflection.Register(grpcServer)
 

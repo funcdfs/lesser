@@ -1,20 +1,13 @@
-// Package repository 提供内容数据访问层
+// Package data_access 提供内容数据访问层
 package data_access
 
 import (
 	"database/sql"
-	"errors"
 	"fmt"
 	"time"
 
 	"github.com/google/uuid"
 	"github.com/lib/pq"
-)
-
-// 错误定义
-var (
-	ErrContentNotFound = errors.New("内容不存在")
-	ErrUnauthorized    = errors.New("无权限操作")
 )
 
 // ContentType 内容类型
@@ -446,7 +439,7 @@ func (r *ContentRepository) UpdateCounter(id string, counterType CounterType, de
 	case CounterTypeBookmark:
 		column = "bookmark_count"
 	default:
-		return 0, errors.New("无效的计数器类型")
+		return 0, ErrInvalidCounterType
 	}
 
 	var newCount int32

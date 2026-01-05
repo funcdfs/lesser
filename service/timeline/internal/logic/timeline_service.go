@@ -3,15 +3,9 @@ package logic
 
 import (
 	"context"
-	"errors"
 	"log/slog"
 
 	"github.com/funcdfs/lesser/timeline/internal/data_access"
-)
-
-// 业务错误定义
-var (
-	ErrContentNotFound = errors.New("内容不存在")
 )
 
 // InteractionStatus 用户对内容的交互状态

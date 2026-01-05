@@ -1,36 +1,12 @@
-// Package repository 提供通知数据访问层
+// Package data_access 提供通知数据访问层
 package data_access
 
 import (
 	"context"
 	"database/sql"
-	"errors"
 	"time"
 
 	"github.com/google/uuid"
-)
-
-// 通知类型常量
-const (
-	NotificationTypeLike     int32 = 1 // 点赞
-	NotificationTypeComment  int32 = 2 // 评论
-	NotificationTypeReply    int32 = 3 // 回复
-	NotificationTypeBookmark int32 = 4 // 收藏
-	NotificationTypeMention  int32 = 5 // @提及
-	NotificationTypeFollow   int32 = 6 // 关注
-	NotificationTypeRepost   int32 = 7 // 转发
-)
-
-// 目标类型常量
-const (
-	TargetTypeContent = "content" // 内容
-	TargetTypeComment = "comment" // 评论
-	TargetTypeUser    = "user"    // 用户
-)
-
-// 错误定义
-var (
-	ErrNotificationNotFound = errors.New("notification not found")
 )
 
 // Notification 通知实体
@@ -224,3 +200,21 @@ func nullString(s string) sql.NullString {
 	}
 	return sql.NullString{String: s, Valid: true}
 }
+
+// 通知类型常量
+const (
+	NotificationTypeLike     int32 = 1 // 点赞
+	NotificationTypeComment  int32 = 2 // 评论
+	NotificationTypeReply    int32 = 3 // 回复
+	NotificationTypeBookmark int32 = 4 // 收藏
+	NotificationTypeMention  int32 = 5 // @提及
+	NotificationTypeFollow   int32 = 6 // 关注
+	NotificationTypeRepost   int32 = 7 // 转发
+)
+
+// 目标类型常量
+const (
+	TargetTypeContent = "content" // 内容
+	TargetTypeComment = "comment" // 评论
+	TargetTypeUser    = "user"    // 用户
+)

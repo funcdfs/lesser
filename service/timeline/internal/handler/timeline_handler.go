@@ -6,8 +6,9 @@ import (
 	"log/slog"
 
 	"github.com/funcdfs/lesser/pkg/gen_protos/common"
+	"github.com/funcdfs/lesser/pkg/log"
 	"github.com/funcdfs/lesser/timeline/internal/logic"
-	contentpb "github.com/funcdfs/lesser/timeline/gen_protos/content"
+	contentpb "github.com/funcdfs/lesser/content/gen_protos/content"
 	pb "github.com/funcdfs/lesser/timeline/gen_protos/timeline"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
@@ -21,13 +22,16 @@ type TimelineHandler struct {
 }
 
 // NewTimelineHandler 创建处理器
-func NewTimelineHandler(svc *logic.TimelineService, log *slog.Logger) *TimelineHandler {
-	if log == nil {
-		log = slog.Default()
+func NewTimelineHandler(svc *logic.TimelineService, logger *log.Logger) *TimelineHandler {
+	var slogger *slog.Logger
+	if logger != nil {
+		slogger = logger.Logger
+	} else {
+		slogger = slog.Default()
 	}
 	return &TimelineHandler{
 		svc: svc,
-		log: log.With(slog.String("component", "handler")),
+		log: slogger.With(slog.String("component", "handler")),
 	}
 }
 
@@ -49,7 +53,12 @@ func (h *TimelineHandler) GetFollowingFeed(ctx context.Context, req *pb.GetFollo
 
 	items, total, err := h.svc.GetFollowingFeed(ctx, req.UserId, int(pageSize), int((page-1)*pageSize))
 	if err != nil {
-		return nil, status.Errorf(codes.Internal, "获取关注 Feed 失败: %v", err)
+		h.log.Error("获取关注 Feed 失败",
+			slog.String("user_id", req.UserId),
+			slog.String("trace_id", log.TraceIDFromContext(ctx)),
+			slog.Any("error", err),
+		)
+		return nil, logic.ToGRPCError(err)
 	}
 
 	return &pb.GetFollowingFeedResponse{
@@ -81,7 +90,12 @@ func (h *TimelineHandler) GetUserFeed(ctx context.Context, req *pb.GetUserFeedRe
 
 	items, total, err := h.svc.GetUserFeed(ctx, req.UserId, req.ViewerId, int(pageSize), int((page-1)*pageSize))
 	if err != nil {
-		return nil, status.Errorf(codes.Internal, "获取用户 Feed 失败: %v", err)
+		h.log.Error("获取用户 Feed 失败",
+			slog.String("user_id", req.UserId),
+			slog.String("trace_id", log.TraceIDFromContext(ctx)),
+			slog.Any("error", err),
+		)
+		return nil, logic.ToGRPCError(err)
 	}
 
 	return &pb.GetUserFeedResponse{
@@ -109,7 +123,13 @@ func (h *TimelineHandler) GetHotFeed(ctx context.Context, req *pb.GetHotFeedRequ
 
 	items, total, err := h.svc.GetHotFeed(ctx, req.UserId, timeRange, int(pageSize), int((page-1)*pageSize))
 	if err != nil {
-		return nil, status.Errorf(codes.Internal, "获取热门 Feed 失败: %v", err)
+		h.log.Error("获取热门 Feed 失败",
+			slog.String("user_id", req.UserId),
+			slog.String("time_range", timeRange),
+			slog.String("trace_id", log.TraceIDFromContext(ctx)),
+			slog.Any("error", err),
+		)
+		return nil, logic.ToGRPCError(err)
 	}
 
 	return &pb.GetHotFeedResponse{
@@ -126,10 +146,12 @@ func (h *TimelineHandler) GetContentDetail(ctx context.Context, req *pb.GetConte
 
 	item, err := h.svc.GetContentDetail(ctx, req.ContentId, req.ViewerId)
 	if err != nil {
-		if err == logic.ErrContentNotFound {
-			return nil, status.Error(codes.NotFound, "内容不存在")
-		}
-		return nil, status.Errorf(codes.Internal, "获取内容详情失败: %v", err)
+		h.log.Error("获取内容详情失败",
+			slog.String("content_id", req.ContentId),
+			slog.String("trace_id", log.TraceIDFromContext(ctx)),
+			slog.Any("error", err),
+		)
+		return nil, logic.ToGRPCError(err)
 	}
 
 	return &pb.GetContentDetailResponse{

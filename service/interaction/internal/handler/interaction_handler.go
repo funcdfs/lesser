@@ -9,6 +9,7 @@ import (
 	"github.com/funcdfs/lesser/interaction/internal/logic"
 	pb "github.com/funcdfs/lesser/interaction/gen_protos/interaction"
 	"github.com/funcdfs/lesser/pkg/gen_protos/common"
+	"github.com/funcdfs/lesser/pkg/log"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 )
@@ -45,7 +46,13 @@ func (h *InteractionHandler) Like(ctx context.Context, req *pb.LikeRequest) (*pb
 
 	count, err := h.svc.Like(ctx, req.UserId, req.ContentId)
 	if err != nil {
-		return nil, mapError(err)
+		h.log.Error("点赞失败",
+			slog.String("user_id", req.UserId),
+			slog.String("content_id", req.ContentId),
+			slog.String("trace_id", log.TraceIDFromContext(ctx)),
+			slog.Any("error", err),
+		)
+		return nil, logic.ToGRPCError(err)
 	}
 
 	return &pb.LikeResponse{Success: true, LikeCount: count}, nil
@@ -61,7 +68,13 @@ func (h *InteractionHandler) Unlike(ctx context.Context, req *pb.UnlikeRequest) 
 
 	count, err := h.svc.Unlike(ctx, req.UserId, req.ContentId)
 	if err != nil {
-		return nil, mapError(err)
+		h.log.Error("取消点赞失败",
+			slog.String("user_id", req.UserId),
+			slog.String("content_id", req.ContentId),
+			slog.String("trace_id", log.TraceIDFromContext(ctx)),
+			slog.Any("error", err),
+		)
+		return nil, logic.ToGRPCError(err)
 	}
 
 	return &pb.UnlikeResponse{Success: true, LikeCount: count}, nil
@@ -75,7 +88,13 @@ func (h *InteractionHandler) CheckLiked(ctx context.Context, req *pb.CheckLikedR
 
 	isLiked, err := h.svc.CheckLiked(req.UserId, req.ContentId)
 	if err != nil {
-		return nil, status.Error(codes.Internal, err.Error())
+		h.log.Error("检查是否已点赞失败",
+			slog.String("user_id", req.UserId),
+			slog.String("content_id", req.ContentId),
+			slog.String("trace_id", log.TraceIDFromContext(ctx)),
+			slog.Any("error", err),
+		)
+		return nil, logic.ToGRPCError(err)
 	}
 
 	return &pb.CheckLikedResponse{IsLiked: isLiked}, nil
@@ -95,7 +114,13 @@ func (h *InteractionHandler) Bookmark(ctx context.Context, req *pb.BookmarkReque
 
 	count, err := h.svc.Bookmark(ctx, req.UserId, req.ContentId)
 	if err != nil {
-		return nil, mapError(err)
+		h.log.Error("收藏失败",
+			slog.String("user_id", req.UserId),
+			slog.String("content_id", req.ContentId),
+			slog.String("trace_id", log.TraceIDFromContext(ctx)),
+			slog.Any("error", err),
+		)
+		return nil, logic.ToGRPCError(err)
 	}
 
 	return &pb.BookmarkResponse{Success: true, BookmarkCount: count}, nil
@@ -111,7 +136,13 @@ func (h *InteractionHandler) Unbookmark(ctx context.Context, req *pb.UnbookmarkR
 
 	count, err := h.svc.Unbookmark(ctx, req.UserId, req.ContentId)
 	if err != nil {
-		return nil, mapError(err)
+		h.log.Error("取消收藏失败",
+			slog.String("user_id", req.UserId),
+			slog.String("content_id", req.ContentId),
+			slog.String("trace_id", log.TraceIDFromContext(ctx)),
+			slog.Any("error", err),
+		)
+		return nil, logic.ToGRPCError(err)
 	}
 
 	return &pb.UnbookmarkResponse{Success: true, BookmarkCount: count}, nil
@@ -135,7 +166,12 @@ func (h *InteractionHandler) ListBookmarks(ctx context.Context, req *pb.ListBook
 
 	bookmarks, total, err := h.svc.ListBookmarks(req.UserId, int(pageSize), int((page-1)*pageSize))
 	if err != nil {
-		return nil, status.Error(codes.Internal, err.Error())
+		h.log.Error("获取收藏列表失败",
+			slog.String("user_id", req.UserId),
+			slog.String("trace_id", log.TraceIDFromContext(ctx)),
+			slog.Any("error", err),
+		)
+		return nil, logic.ToGRPCError(err)
 	}
 
 	return &pb.ListBookmarksResponse{
@@ -158,7 +194,13 @@ func (h *InteractionHandler) CreateRepost(ctx context.Context, req *pb.CreateRep
 
 	repost, count, err := h.svc.CreateRepost(ctx, req.UserId, req.ContentId, req.Quote)
 	if err != nil {
-		return nil, mapError(err)
+		h.log.Error("转发失败",
+			slog.String("user_id", req.UserId),
+			slog.String("content_id", req.ContentId),
+			slog.String("trace_id", log.TraceIDFromContext(ctx)),
+			slog.Any("error", err),
+		)
+		return nil, logic.ToGRPCError(err)
 	}
 
 	return &pb.CreateRepostResponse{
@@ -177,7 +219,13 @@ func (h *InteractionHandler) DeleteRepost(ctx context.Context, req *pb.DeleteRep
 
 	count, err := h.svc.DeleteRepost(ctx, req.UserId, req.ContentId)
 	if err != nil {
-		return nil, mapError(err)
+		h.log.Error("删除转发失败",
+			slog.String("user_id", req.UserId),
+			slog.String("content_id", req.ContentId),
+			slog.String("trace_id", log.TraceIDFromContext(ctx)),
+			slog.Any("error", err),
+		)
+		return nil, logic.ToGRPCError(err)
 	}
 
 	return &pb.DeleteRepostResponse{Success: true, RepostCount: count}, nil
@@ -195,7 +243,12 @@ func (h *InteractionHandler) BatchGetInteractionStatus(ctx context.Context, req 
 
 	statuses, err := h.svc.BatchGetInteractionStatus(req.UserId, req.ContentIds)
 	if err != nil {
-		return nil, status.Error(codes.Internal, err.Error())
+		h.log.Error("批量获取交互状态失败",
+			slog.String("user_id", req.UserId),
+			slog.String("trace_id", log.TraceIDFromContext(ctx)),
+			slog.Any("error", err),
+		)
+		return nil, logic.ToGRPCError(err)
 	}
 
 	return &pb.BatchGetInteractionStatusResponse{
@@ -244,13 +297,4 @@ func statusesToProto(statuses []*logic.InteractionStatus) []*pb.UserInteractionS
 		}
 	}
 	return result
-}
-
-func mapError(err error) error {
-	switch err {
-	case logic.ErrContentNotFound:
-		return status.Error(codes.NotFound, "内容不存在")
-	default:
-		return status.Error(codes.Internal, err.Error())
-	}
 }

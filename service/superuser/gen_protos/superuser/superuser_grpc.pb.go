@@ -43,7 +43,7 @@ const (
 	SuperUserService_GetAuditLogs_FullMethodName        = "/superuser.SuperUserService/GetAuditLogs"
 )
 
-// SuperUserServiceClient is the client API for SuperUserService logic.
+// SuperUserServiceClient is the client API for SuperUserService service.
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 //
@@ -319,7 +319,7 @@ func (c *superUserServiceClient) GetAuditLogs(ctx context.Context, in *GetAuditL
 	return out, nil
 }
 
-// SuperUserServiceServer is the server API for SuperUserService logic.
+// SuperUserServiceServer is the server API for SuperUserService service.
 // All implementations must embed UnimplementedSuperUserServiceServer
 // for forward compatibility.
 //
@@ -451,7 +451,7 @@ func (UnimplementedSuperUserServiceServer) GetAuditLogs(context.Context, *GetAud
 func (UnimplementedSuperUserServiceServer) mustEmbedUnimplementedSuperUserServiceServer() {}
 func (UnimplementedSuperUserServiceServer) testEmbeddedByValue()                          {}
 
-// UnsafeSuperUserServiceServer may be embedded to opt out of forward compatibility for this logic.
+// UnsafeSuperUserServiceServer may be embedded to opt out of forward compatibility for this service.
 // Use of this interface is not recommended, as added methods to SuperUserServiceServer will
 // result in compilation errors.
 type UnsafeSuperUserServiceServer interface {
@@ -847,7 +847,7 @@ func _SuperUserService_GetAuditLogs_Handler(srv interface{}, ctx context.Context
 	return interceptor(ctx, in, info, handler)
 }
 
-// SuperUserService_ServiceDesc is the grpc.ServiceDesc for SuperUserService logic.
+// SuperUserService_ServiceDesc is the grpc.ServiceDesc for SuperUserService service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
 var SuperUserService_ServiceDesc = grpc.ServiceDesc{

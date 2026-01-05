@@ -12,11 +12,10 @@ import (
 	"sync"
 	"syscall"
 
-	"github.com/funcdfs/lesser/pkg/broker"
-	"github.com/funcdfs/lesser/pkg/cache"
-	"github.com/funcdfs/lesser/pkg/database"
-	"github.com/funcdfs/lesser/pkg/grpcclient"
-	"github.com/funcdfs/lesser/pkg/logger"
+	"github.com/funcdfs/lesser/pkg/db"
+	"github.com/funcdfs/lesser/pkg/grpc/client"
+	"github.com/funcdfs/lesser/pkg/log"
+	"github.com/funcdfs/lesser/pkg/mq"
 )
 
 // Component 可管理的组件接口
@@ -32,11 +31,11 @@ type Component interface {
 // App 应用实例，管理所有组件的生命周期
 type App struct {
 	name       string
-	log        *logger.Logger
+	log        *log.Logger
 	db         *sql.DB
-	worker     *broker.Worker
-	cache      *cache.Client
-	grpcPool   *grpcclient.ClientPool
+	worker     *mq.Worker
+	cache      *db.RedisClient
+	grpcPool   *client.Pool
 	components []Component
 	mu         sync.Mutex
 }
@@ -48,9 +47,9 @@ type Config struct {
 	// RabbitMQURL RabbitMQ 连接地址
 	RabbitMQURL string
 	// Database 数据库配置
-	Database database.Config
+	Database db.PostgresConfig
 	// Redis Redis 配置
-	Redis cache.Config
+	Redis db.RedisConfig
 	// EnableRedis 是否启用 Redis
 	EnableRedis bool
 	// EnableGRPC 是否启用 gRPC 客户端连接池
@@ -65,7 +64,7 @@ func ConfigFromEnv(name string) Config {
 	return Config{
 		Name:        name,
 		RabbitMQURL: getEnv("RABBITMQ_URL", "amqp://guest:guest@localhost:5672/"),
-		Database: database.Config{
+		Database: db.PostgresConfig{
 			Host:     getEnv("DB_HOST", "localhost"),
 			Port:     getEnv("DB_PORT", "5432"),
 			User:     getEnv("DB_USER", "postgres"),
@@ -73,42 +72,42 @@ func ConfigFromEnv(name string) Config {
 			DBName:   getEnv("DB_NAME", "lesser"),
 			SSLMode:  getEnv("DB_SSLMODE", "disable"),
 		},
-		Redis:       cache.ConfigFromEnv(),
+		Redis:       db.RedisConfigFromEnv(),
 		EnableRedis: enableRedis,
 	}
 }
 
 // New 创建新的 App 实例
 func New(cfg Config) (*App, error) {
-	log := logger.New(cfg.Name)
+	logger := log.New(cfg.Name)
 
 	// 初始化数据库
-	db, err := database.NewConnection(cfg.Database)
+	database, err := db.NewPostgresConnection(cfg.Database)
 	if err != nil {
 		return nil, fmt.Errorf("failed to connect to database: %w", err)
 	}
-	log.Info("connected to PostgreSQL")
+	logger.Info("connected to PostgreSQL")
 
 	// 初始化 Worker
-	worker := broker.NewWorker(cfg.RabbitMQURL, log)
+	worker := mq.NewWorker(cfg.RabbitMQURL, logger)
 
 	app := &App{
 		name:     cfg.Name,
-		log:      log,
-		db:       db,
+		log:      logger,
+		db:       database,
 		worker:   worker,
-		grpcPool: grpcclient.NewClientPool(log),
+		grpcPool: client.NewPool(logger),
 	}
 
 	// 初始化 Redis（如果启用）
 	if cfg.EnableRedis {
-		redisClient, err := cache.NewClient(cfg.Redis)
+		redisClient, err := db.NewRedisClient(cfg.Redis)
 		if err != nil {
 			// Redis 连接失败不阻止应用启动，只记录警告
-			log.Warn("failed to connect to Redis, cache disabled", slog.Any("error", err))
+			logger.Warn("failed to connect to Redis, cache disabled", slog.Any("error", err))
 		} else {
 			app.cache = redisClient
-			log.Info("connected to Redis")
+			logger.Info("connected to Redis")
 		}
 	}
 
@@ -121,22 +120,22 @@ func (a *App) DB() *sql.DB {
 }
 
 // Worker 返回 Broker Worker
-func (a *App) Worker() *broker.Worker {
+func (a *App) Worker() *mq.Worker {
 	return a.worker
 }
 
 // Logger 返回日志实例
-func (a *App) Logger() *logger.Logger {
+func (a *App) Logger() *log.Logger {
 	return a.log
 }
 
 // Cache 返回 Redis 客户端
-func (a *App) Cache() *cache.Client {
+func (a *App) Cache() *db.RedisClient {
 	return a.cache
 }
 
 // GRPCPool 返回 gRPC 连接池
-func (a *App) GRPCPool() *grpcclient.ClientPool {
+func (a *App) GRPCPool() *client.Pool {
 	return a.grpcPool
 }
 
@@ -148,7 +147,7 @@ func (a *App) Register(components ...Component) {
 }
 
 // Run 启动应用，阻塞直到收到停止信号
-func (a *App) Run(ctx context.Context, brokerConfigs ...broker.Config) error {
+func (a *App) Run(ctx context.Context, brokerConfigs ...mq.Config) error {
 	// 启动所有注册的组件
 	for _, c := range a.components {
 		a.log.Info("starting component", slog.String("component", c.Name()))

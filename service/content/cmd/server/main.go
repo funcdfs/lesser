@@ -15,22 +15,22 @@ import (
 	"github.com/funcdfs/lesser/content/internal/logic"
 	"github.com/funcdfs/lesser/content/internal/messaging"
 	pb "github.com/funcdfs/lesser/content/gen_protos/content"
-	"github.com/funcdfs/lesser/pkg/broker"
-	"github.com/funcdfs/lesser/pkg/database"
-	"github.com/funcdfs/lesser/pkg/logger"
+	"github.com/funcdfs/lesser/pkg/mq"
+	"github.com/funcdfs/lesser/pkg/db"
+	"github.com/funcdfs/lesser/pkg/log"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/reflection"
 )
 
 func main() {
 	// 初始化日志
-	log := logger.New("content")
+	log := log.New("content")
 
 	grpcPort := getEnv("GRPC_PORT", "50054")
 	rabbitmqURL := getEnv("RABBITMQ_URL", "amqp://superuser:superuser@rabbitmq:5672/")
 
 	// 数据库连接
-	dbConfig := database.Config{
+	dbConfig := db.PostgresConfig{
 		Host:     getEnv("DB_HOST", "localhost"),
 		Port:     getEnv("DB_PORT", "5432"),
 		User:     getEnv("DB_USER", "postgres"),
@@ -39,17 +39,17 @@ func main() {
 		SSLMode:  getEnv("DB_SSLMODE", "disable"),
 	}
 
-	db, err := database.NewConnection(dbConfig)
+	database, err := db.NewPostgresConnection(dbConfig)
 	if err != nil {
 		log.Error("数据库连接失败", slog.Any("error", err))
 		os.Exit(1)
 	}
-	defer db.Close()
+	defer database.Close()
 	log.Info("数据库连接成功", slog.String("db", dbConfig.DBName))
 
 	// 初始化 RabbitMQ Publisher（用于发送搜索索引事件和 @ 提及事件）
-	var publisher *broker.Publisher
-	publisher = broker.NewPublisher(rabbitmqURL, log)
+	var publisher *mq.Publisher
+	publisher = mq.NewPublisher(rabbitmqURL, log)
 	if err := publisher.Connect(); err != nil {
 		log.Warn("RabbitMQ 连接失败，搜索索引和通知功能将不可用", slog.Any("error", err))
 		publisher = nil
@@ -59,7 +59,7 @@ func main() {
 	}
 
 	// 初始化各层
-	contentRepo := data_access.NewContentRepository(db)
+	contentRepo := data_access.NewContentRepository(database)
 	contentSvc := logic.NewContentService(contentRepo)
 
 	// 初始化 messaging 层并注入

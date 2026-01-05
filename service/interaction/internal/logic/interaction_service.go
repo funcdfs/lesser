@@ -3,15 +3,9 @@ package logic
 
 import (
 	"context"
-	"errors"
 
 	"github.com/funcdfs/lesser/interaction/internal/data_access"
 	contentpb "github.com/funcdfs/lesser/interaction/gen_protos/content"
-)
-
-// 业务错误定义
-var (
-	ErrContentNotFound = errors.New("内容不存在")
 )
 
 // ContentClient Content 服务客户端接口

@@ -23,7 +23,7 @@ const (
 	HealthService_Watch_FullMethodName = "/common.HealthService/Watch"
 )
 
-// HealthServiceClient is the client API for HealthService logic.
+// HealthServiceClient is the client API for HealthService service.
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 //
@@ -72,7 +72,7 @@ func (c *healthServiceClient) Watch(ctx context.Context, in *HealthCheckRequest,
 // This type alias is provided for backwards compatibility with existing code that references the prior non-generic stream type by name.
 type HealthService_WatchClient = grpc.ServerStreamingClient[HealthCheckResponse]
 
-// HealthServiceServer is the server API for HealthService logic.
+// HealthServiceServer is the server API for HealthService service.
 // All implementations must embed UnimplementedHealthServiceServer
 // for forward compatibility.
 //
@@ -101,7 +101,7 @@ func (UnimplementedHealthServiceServer) Watch(*HealthCheckRequest, grpc.ServerSt
 func (UnimplementedHealthServiceServer) mustEmbedUnimplementedHealthServiceServer() {}
 func (UnimplementedHealthServiceServer) testEmbeddedByValue()                       {}
 
-// UnsafeHealthServiceServer may be embedded to opt out of forward compatibility for this logic.
+// UnsafeHealthServiceServer may be embedded to opt out of forward compatibility for this service.
 // Use of this interface is not recommended, as added methods to HealthServiceServer will
 // result in compilation errors.
 type UnsafeHealthServiceServer interface {
@@ -148,7 +148,7 @@ func _HealthService_Watch_Handler(srv interface{}, stream grpc.ServerStream) err
 // This type alias is provided for backwards compatibility with existing code that references the prior non-generic stream type by name.
 type HealthService_WatchServer = grpc.ServerStreamingServer[HealthCheckResponse]
 
-// HealthService_ServiceDesc is the grpc.ServiceDesc for HealthService logic.
+// HealthService_ServiceDesc is the grpc.ServiceDesc for HealthService service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
 var HealthService_ServiceDesc = grpc.ServiceDesc{

@@ -8,7 +8,7 @@ import (
 
 	"github.com/funcdfs/lesser/chat/internal/remote"
 	"github.com/funcdfs/lesser/pkg/auth"
-	"github.com/funcdfs/lesser/pkg/logger"
+	"github.com/funcdfs/lesser/pkg/log"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/metadata"
@@ -58,7 +58,7 @@ func authUnaryInterceptor(authClient *remote.AuthClient) grpc.UnaryServerInterce
 }
 
 // loggingUnaryInterceptor 日志拦截器
-func loggingUnaryInterceptor(log *logger.Logger) grpc.UnaryServerInterceptor {
+func loggingUnaryInterceptor(log *log.Logger) grpc.UnaryServerInterceptor {
 	return func(ctx context.Context, req interface{}, info *grpc.UnaryServerInfo, handler grpc.UnaryHandler) (interface{}, error) {
 		start := time.Now()
 
@@ -90,7 +90,7 @@ func loggingUnaryInterceptor(log *logger.Logger) grpc.UnaryServerInterceptor {
 }
 
 // loggingStreamInterceptor 流日志拦截器
-func loggingStreamInterceptor(log *logger.Logger) grpc.StreamServerInterceptor {
+func loggingStreamInterceptor(log *log.Logger) grpc.StreamServerInterceptor {
 	return func(srv interface{}, ss grpc.ServerStream, info *grpc.StreamServerInfo, handler grpc.StreamHandler) error {
 		start := time.Now()
 

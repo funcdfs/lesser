@@ -1,7 +1,7 @@
 syntax = "proto3";
 package gateway;
 
-option go_package = "github.com/funcdfs/lesser/gateway/proto/gateway";
+option go_package = "github.com/funcdfs/lesser/gateway/gen_protos/gateway";
 
 // GatewayService API 网关服务
 // Gateway 只做：鉴权（JWT 本地验签）、限流、路由转发

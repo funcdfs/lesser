@@ -1,13 +1,15 @@
+// Package remote 提供外部服务客户端
 package remote
 
 import (
 	"context"
 	"fmt"
-	"log/slog"
 	"time"
 
 	"github.com/google/uuid"
-	"github.com/funcdfs/lesser/pkg/cache"
+
+	"github.com/funcdfs/lesser/pkg/db"
+	"github.com/funcdfs/lesser/pkg/log"
 )
 
 // UserInfo 用户信息
@@ -28,14 +30,16 @@ const (
 // UserClient 用户信息客户端（带缓存）
 type UserClient struct {
 	authClient *AuthClient
-	cache      *cache.Client
+	cache      *db.Client
+	log        *log.Logger
 }
 
 // NewUserClient 创建用户客户端
-func NewUserClient(authClient *AuthClient, redisCache *cache.Client) *UserClient {
+func NewUserClient(authClient *AuthClient, redisCache *db.Client, log *log.Logger) *UserClient {
 	return &UserClient{
 		authClient: authClient,
 		cache:      redisCache,
+		log:        log,
 	}
 }
 
@@ -46,7 +50,8 @@ func (c *UserClient) GetUser(ctx context.Context, userID uuid.UUID) (*UserInfo, 
 	// 尝试从缓存获取
 	if c.cache != nil {
 		var cached UserInfo
-		if err := c.cache.Get(ctx, cacheKey, &cached); err == nil {
+		if err := c.db.Get(ctx, cacheKey, &cached); err == nil {
+			c.log.WithContext(ctx).Debug("用户信息缓存命中", "user_id", userID.String())
 			return &cached, nil
 		}
 	}
@@ -63,8 +68,8 @@ func (c *UserClient) GetUser(ctx context.Context, userID uuid.UUID) (*UserInfo, 
 
 	// 写入缓存
 	if c.cache != nil {
-		if err := c.cache.Set(ctx, cacheKey, user, userCacheTTL); err != nil {
-			slog.Warn("写入用户缓存失败", slog.Any("error", err))
+		if err := c.db.Set(ctx, cacheKey, user, userCacheTTL); err != nil {
+			c.log.WithContext(ctx).Warn("写入用户缓存失败", "error", err)
 		}
 	}
 
@@ -85,7 +90,7 @@ func (c *UserClient) GetUsers(ctx context.Context, userIDs []uuid.UUID) (map[uui
 		for _, userID := range userIDs {
 			cacheKey := userCacheKey(userID)
 			var cached UserInfo
-			if err := c.cache.Get(ctx, cacheKey, &cached); err == nil {
+			if err := c.db.Get(ctx, cacheKey, &cached); err == nil {
 				result[userID] = &cached
 			} else {
 				missedIDs = append(missedIDs, userID)
@@ -97,6 +102,7 @@ func (c *UserClient) GetUsers(ctx context.Context, userIDs []uuid.UUID) (map[uui
 
 	// 所有都命中缓存
 	if len(missedIDs) == 0 {
+		c.log.WithContext(ctx).Debug("批量用户信息全部缓存命中", "count", len(userIDs))
 		return result, nil
 	}
 
@@ -108,7 +114,9 @@ func (c *UserClient) GetUsers(ctx context.Context, userIDs []uuid.UUID) (map[uui
 	for _, userID := range missedIDs {
 		user, err := c.authClient.GetUser(ctx, userID)
 		if err != nil {
-			slog.Warn("获取用户失败", slog.String("user_id", userID.String()), slog.Any("error", err))
+			c.log.WithContext(ctx).Warn("获取用户失败",
+				"user_id", userID.String(),
+				"error", err)
 			continue
 		}
 		result[userID] = user
@@ -116,11 +124,16 @@ func (c *UserClient) GetUsers(ctx context.Context, userIDs []uuid.UUID) (map[uui
 		// 写入缓存
 		if c.cache != nil {
 			cacheKey := userCacheKey(userID)
-			if err := c.cache.Set(ctx, cacheKey, user, userCacheTTL); err != nil {
-				slog.Warn("写入用户缓存失败", slog.Any("error", err))
+			if err := c.db.Set(ctx, cacheKey, user, userCacheTTL); err != nil {
+				c.log.WithContext(ctx).Warn("写入用户缓存失败", "error", err)
 			}
 		}
 	}
+
+	c.log.WithContext(ctx).Debug("批量获取用户信息完成",
+		"total", len(userIDs),
+		"cached", len(userIDs)-len(missedIDs),
+		"fetched", len(missedIDs))
 
 	return result, nil
 }
@@ -130,7 +143,7 @@ func (c *UserClient) InvalidateUserCache(ctx context.Context, userID uuid.UUID) 
 	if c.cache == nil {
 		return nil
 	}
-	return c.cache.Delete(ctx, userCacheKey(userID))
+	return c.db.Delete(ctx, userCacheKey(userID))
 }
 
 func userCacheKey(userID uuid.UUID) string {

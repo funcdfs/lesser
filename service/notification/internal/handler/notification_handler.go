@@ -3,10 +3,12 @@ package handler
 
 import (
 	"context"
+	"log/slog"
 
 	"github.com/funcdfs/lesser/notification/internal/data_access"
 	"github.com/funcdfs/lesser/notification/internal/logic"
 	"github.com/funcdfs/lesser/pkg/gen_protos/common"
+	"github.com/funcdfs/lesser/pkg/log"
 	pb "github.com/funcdfs/lesser/notification/gen_protos/notification"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
@@ -16,11 +18,18 @@ import (
 type NotificationHandler struct {
 	pb.UnimplementedNotificationServiceServer
 	notifService *logic.NotificationService
+	log          *slog.Logger
 }
 
 // NewNotificationHandler 创建通知处理器实例
-func NewNotificationHandler(notifService *logic.NotificationService) *NotificationHandler {
-	return &NotificationHandler{notifService: notifService}
+func NewNotificationHandler(notifService *logic.NotificationService, log *slog.Logger) *NotificationHandler {
+	if log == nil {
+		log = slog.Default()
+	}
+	return &NotificationHandler{
+		notifService: notifService,
+		log:          log.With(slog.String("component", "handler")),
+	}
 }
 
 // List 获取通知列表
@@ -43,7 +52,12 @@ func (h *NotificationHandler) List(ctx context.Context, req *pb.ListNotification
 
 	notifications, total, err := h.notifService.List(ctx, req.UserId, req.UnreadOnly, limit, offset)
 	if err != nil {
-		return nil, status.Error(codes.Internal, err.Error())
+		h.log.Error("获取通知列表失败",
+			slog.String("user_id", req.UserId),
+			slog.String("trace_id", log.TraceIDFromContext(ctx)),
+			slog.Any("error", err),
+		)
+		return nil, logic.ToGRPCError(err)
 	}
 
 	return &pb.ListNotificationsResponse{
@@ -62,10 +76,13 @@ func (h *NotificationHandler) Read(ctx context.Context, req *pb.ReadNotification
 	}
 
 	if err := h.notifService.MarkAsRead(ctx, req.NotificationId, req.UserId); err != nil {
-		if err == data_access.ErrNotificationNotFound {
-			return nil, status.Error(codes.NotFound, "通知不存在")
-		}
-		return nil, status.Error(codes.Internal, err.Error())
+		h.log.Error("标记通知已读失败",
+			slog.String("notification_id", req.NotificationId),
+			slog.String("user_id", req.UserId),
+			slog.String("trace_id", log.TraceIDFromContext(ctx)),
+			slog.Any("error", err),
+		)
+		return nil, logic.ToGRPCError(err)
 	}
 	return &common.Empty{}, nil
 }
@@ -78,7 +95,12 @@ func (h *NotificationHandler) ReadAll(ctx context.Context, req *pb.ReadAllNotifi
 
 	_, err := h.notifService.MarkAllAsRead(ctx, req.UserId)
 	if err != nil {
-		return nil, status.Error(codes.Internal, err.Error())
+		h.log.Error("标记所有通知已读失败",
+			slog.String("user_id", req.UserId),
+			slog.String("trace_id", log.TraceIDFromContext(ctx)),
+			slog.Any("error", err),
+		)
+		return nil, logic.ToGRPCError(err)
 	}
 	return &common.Empty{}, nil
 }
@@ -91,7 +113,12 @@ func (h *NotificationHandler) GetUnreadCount(ctx context.Context, req *pb.GetUnr
 
 	count, err := h.notifService.GetUnreadCount(ctx, req.UserId)
 	if err != nil {
-		return nil, status.Error(codes.Internal, err.Error())
+		h.log.Error("获取未读通知数量失败",
+			slog.String("user_id", req.UserId),
+			slog.String("trace_id", log.TraceIDFromContext(ctx)),
+			slog.Any("error", err),
+		)
+		return nil, logic.ToGRPCError(err)
 	}
 	return &pb.UnreadCountResponse{Count: int32(count)}, nil
 }

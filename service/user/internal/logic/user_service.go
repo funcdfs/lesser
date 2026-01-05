@@ -6,8 +6,8 @@ import (
 	"database/sql"
 	"log/slog"
 
-	"github.com/funcdfs/lesser/pkg/database"
-	"github.com/funcdfs/lesser/pkg/logger"
+	"github.com/funcdfs/lesser/pkg/db"
+	"github.com/funcdfs/lesser/pkg/log"
 	"github.com/funcdfs/lesser/user/internal/data_access"
 )
 
@@ -20,7 +20,7 @@ type EventPublisher interface {
 // UserService 用户服务
 type UserService struct {
 	db           *sql.DB
-	log          *logger.Logger
+	log          *log.Logger
 	userRepo     *data_access.UserRepository
 	followRepo   *data_access.FollowRepository
 	blockRepo    *data_access.BlockRepository
@@ -31,7 +31,7 @@ type UserService struct {
 // NewUserService 创建用户服务实例
 func NewUserService(
 	db *sql.DB,
-	log *logger.Logger,
+	log *log.Logger,
 	userRepo *data_access.UserRepository,
 	followRepo *data_access.FollowRepository,
 	blockRepo *data_access.BlockRepository,
@@ -181,7 +181,7 @@ func (s *UserService) Follow(ctx context.Context, followerID, followingID string
 	}
 
 	// 使用事务创建关注关系
-	err = database.WithTransaction(ctx, s.db, func(tx *sql.Tx) error {
+	err = db.WithTransaction(ctx, s.db, func(tx *sql.Tx) error {
 		if err := s.followRepo.Create(ctx, followerID, followingID); err != nil {
 			return err
 		}
@@ -220,7 +220,7 @@ func (s *UserService) Unfollow(ctx context.Context, followerID, followingID stri
 	}
 
 	// 使用事务删除关注关系
-	return database.WithTransaction(ctx, s.db, func(tx *sql.Tx) error {
+	return db.WithTransaction(ctx, s.db, func(tx *sql.Tx) error {
 		if err := s.followRepo.Delete(ctx, followerID, followingID); err != nil {
 			return err
 		}
@@ -322,7 +322,7 @@ func (s *UserService) Block(ctx context.Context, blockerID, blockedID string, bl
 	}
 
 	// 使用事务
-	return database.WithTransaction(ctx, s.db, func(tx *sql.Tx) error {
+	return db.WithTransaction(ctx, s.db, func(tx *sql.Tx) error {
 		// 创建屏蔽关系
 		if err := s.blockRepo.Create(ctx, blockerID, blockedID, blockType); err != nil {
 			return err

@@ -1,6 +1,14 @@
+// Package logic 提供聊天服务的业务逻辑层
 package logic
 
-import "errors"
+import (
+	"errors"
+
+	"github.com/funcdfs/lesser/chat/internal/data_access"
+	pkgerrors "github.com/funcdfs/lesser/pkg/errors"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
+)
 
 var (
 	// 权限相关错误
@@ -39,3 +47,105 @@ var (
 	ErrMarkReadFailed           = errors.New("标记消息已读失败")
 	ErrGetMessageFailed         = errors.New("获取消息失败")
 )
+
+
+// ToGRPCError 将业务错误转换为 gRPC 错误
+// 确保所有错误消息为中文
+func ToGRPCError(err error) error {
+	if err == nil {
+		return nil
+	}
+
+	// 如果已经是 gRPC 错误，直接返回
+	if _, ok := status.FromError(err); ok {
+		return err
+	}
+
+	// 如果是 pkg/errors.AppError，使用其内置转换
+	var appErr *pkgerrors.AppError
+	if errors.As(err, &appErr) {
+		return appErr.ToGRPC()
+	}
+
+	// 业务逻辑层错误转换
+	switch {
+	// 权限相关
+	case errors.Is(err, ErrNotMember):
+		return status.Error(codes.PermissionDenied, "您不是该会话的成员")
+	case errors.Is(err, ErrNotAuthorized):
+		return status.Error(codes.PermissionDenied, "无权执行此操作")
+	case errors.Is(err, ErrCannotAddToPrivate):
+		return status.Error(codes.InvalidArgument, "无法向私聊会话添加成员")
+	case errors.Is(err, ErrCannotMarkOwnMessage):
+		return status.Error(codes.InvalidArgument, "不能标记自己发送的消息为已读")
+
+	// 资源不存在
+	case errors.Is(err, ErrMessageNotFound):
+		return status.Error(codes.NotFound, "消息不存在")
+	case errors.Is(err, ErrConversationNotFound):
+		return status.Error(codes.NotFound, "会话不存在")
+
+	// 状态错误
+	case errors.Is(err, ErrAlreadyRead):
+		return status.Error(codes.AlreadyExists, "消息已被标记为已读")
+	case errors.Is(err, ErrCacheNotAvailable):
+		return status.Error(codes.Unavailable, "缓存服务不可用")
+
+	// 参数验证
+	case errors.Is(err, ErrInvalidInput):
+		return status.Error(codes.InvalidArgument, "输入参数无效")
+	case errors.Is(err, ErrInvalidConversationID):
+		return status.Error(codes.InvalidArgument, "会话 ID 不能为空")
+	case errors.Is(err, ErrInvalidSenderID):
+		return status.Error(codes.InvalidArgument, "发送者 ID 不能为空")
+	case errors.Is(err, ErrInvalidCreatorID):
+		return status.Error(codes.InvalidArgument, "创建者 ID 不能为空")
+	case errors.Is(err, ErrEmptyContent):
+		return status.Error(codes.InvalidArgument, "消息内容不能为空")
+	case errors.Is(err, ErrNoMembers):
+		return status.Error(codes.InvalidArgument, "至少需要一个成员")
+	case errors.Is(err, ErrPrivateMemberCount):
+		return status.Error(codes.InvalidArgument, "私聊会话必须有且仅有 2 个成员")
+	case errors.Is(err, ErrGroupNameRequired):
+		return status.Error(codes.InvalidArgument, "群聊会话必须有名称")
+
+	// 操作失败
+	case errors.Is(err, ErrCreateConversationFailed):
+		return status.Error(codes.Internal, "创建会话失败")
+	case errors.Is(err, ErrCreateMessageFailed):
+		return status.Error(codes.Internal, "创建消息失败")
+	case errors.Is(err, ErrCheckMemberFailed):
+		return status.Error(codes.Internal, "检查成员身份失败")
+	case errors.Is(err, ErrGetConversationFailed):
+		return status.Error(codes.Internal, "获取会话信息失败")
+	case errors.Is(err, ErrGetMessagesFailed):
+		return status.Error(codes.Internal, "获取消息列表失败")
+	case errors.Is(err, ErrGetConversationsFailed):
+		return status.Error(codes.Internal, "获取会话列表失败")
+	case errors.Is(err, ErrAddMemberFailed):
+		return status.Error(codes.Internal, "添加成员失败")
+	case errors.Is(err, ErrRemoveMemberFailed):
+		return status.Error(codes.Internal, "移除成员失败")
+	case errors.Is(err, ErrMarkReadFailed):
+		return status.Error(codes.Internal, "标记消息已读失败")
+	case errors.Is(err, ErrGetMessageFailed):
+		return status.Error(codes.Internal, "获取消息失败")
+
+	// 数据访问层错误转换
+	case errors.Is(err, data_access.ErrNotFound):
+		return status.Error(codes.NotFound, "记录不存在")
+	case errors.Is(err, data_access.ErrDuplicate):
+		return status.Error(codes.AlreadyExists, "记录重复")
+	case errors.Is(err, data_access.ErrInvalidInput):
+		return status.Error(codes.InvalidArgument, "输入参数无效")
+	case errors.Is(err, data_access.ErrConversationNotFound):
+		return status.Error(codes.NotFound, "会话不存在")
+	case errors.Is(err, data_access.ErrNotConversationMember):
+		return status.Error(codes.PermissionDenied, "您不是该会话的成员")
+	case errors.Is(err, data_access.ErrMessageNotFound):
+		return status.Error(codes.NotFound, "消息不存在")
+
+	default:
+		return status.Error(codes.Internal, "内部服务错误")
+	}
+}

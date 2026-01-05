@@ -8,7 +8,7 @@ package user
 
 import (
 	context "context"
-	common "github.com/funcdfs/lesser/gateway/gen_protos/common"
+	common "github.com/funcdfs/lesser/pkg/gen_protos/common"
 	grpc "google.golang.org/grpc"
 	codes "google.golang.org/grpc/codes"
 	status "google.golang.org/grpc/status"
@@ -40,7 +40,7 @@ const (
 	UserService_SearchUsers_FullMethodName          = "/user.UserService/SearchUsers"
 )
 
-// UserServiceClient is the client API for UserService logic.
+// UserServiceClient is the client API for UserService service.
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 //
@@ -263,7 +263,7 @@ func (c *userServiceClient) SearchUsers(ctx context.Context, in *SearchUsersRequ
 	return out, nil
 }
 
-// UserServiceServer is the server API for UserService logic.
+// UserServiceServer is the server API for UserService service.
 // All implementations must embed UnimplementedUserServiceServer
 // for forward compatibility.
 //
@@ -363,7 +363,7 @@ func (UnimplementedUserServiceServer) SearchUsers(context.Context, *SearchUsersR
 func (UnimplementedUserServiceServer) mustEmbedUnimplementedUserServiceServer() {}
 func (UnimplementedUserServiceServer) testEmbeddedByValue()                     {}
 
-// UnsafeUserServiceServer may be embedded to opt out of forward compatibility for this logic.
+// UnsafeUserServiceServer may be embedded to opt out of forward compatibility for this service.
 // Use of this interface is not recommended, as added methods to UserServiceServer will
 // result in compilation errors.
 type UnsafeUserServiceServer interface {
@@ -705,7 +705,7 @@ func _UserService_SearchUsers_Handler(srv interface{}, ctx context.Context, dec 
 	return interceptor(ctx, in, info, handler)
 }
 
-// UserService_ServiceDesc is the grpc.ServiceDesc for UserService logic.
+// UserService_ServiceDesc is the grpc.ServiceDesc for UserService service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
 var UserService_ServiceDesc = grpc.ServiceDesc{

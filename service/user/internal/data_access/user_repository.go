@@ -7,7 +7,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/funcdfs/lesser/pkg/database"
+	"github.com/funcdfs/lesser/pkg/db"
 	"github.com/google/uuid"
 	"github.com/lib/pq"
 )
@@ -50,11 +50,11 @@ func (r *UserRepository) GetByID(ctx context.Context, id string) (*User, error) 
 		return nil, err
 	}
 
-	user.DisplayName = database.StringFromNull(displayName)
-	user.AvatarURL = database.StringFromNull(avatarURL)
-	user.Bio = database.StringFromNull(bio)
-	user.Location = database.StringFromNull(location)
-	user.Website = database.StringFromNull(website)
+	user.DisplayName = db.StringFromNull(displayName)
+	user.AvatarURL = db.StringFromNull(avatarURL)
+	user.Bio = db.StringFromNull(bio)
+	user.Location = db.StringFromNull(location)
+	user.Website = db.StringFromNull(website)
 	user.Birthday = birthday
 	return user, nil
 }
@@ -83,11 +83,11 @@ func (r *UserRepository) GetByUsername(ctx context.Context, username string) (*U
 		return nil, err
 	}
 
-	user.DisplayName = database.StringFromNull(displayName)
-	user.AvatarURL = database.StringFromNull(avatarURL)
-	user.Bio = database.StringFromNull(bio)
-	user.Location = database.StringFromNull(location)
-	user.Website = database.StringFromNull(website)
+	user.DisplayName = db.StringFromNull(displayName)
+	user.AvatarURL = db.StringFromNull(avatarURL)
+	user.Bio = db.StringFromNull(bio)
+	user.Location = db.StringFromNull(location)
+	user.Website = db.StringFromNull(website)
 	user.Birthday = birthday
 	return user, nil
 }
@@ -127,11 +127,11 @@ func (r *UserRepository) BatchGetByIDs(ctx context.Context, ids []string) (map[s
 			return nil, err
 		}
 
-		user.DisplayName = database.StringFromNull(displayName)
-		user.AvatarURL = database.StringFromNull(avatarURL)
-		user.Bio = database.StringFromNull(bio)
-		user.Location = database.StringFromNull(location)
-		user.Website = database.StringFromNull(website)
+		user.DisplayName = db.StringFromNull(displayName)
+		user.AvatarURL = db.StringFromNull(avatarURL)
+		user.Bio = db.StringFromNull(bio)
+		user.Location = db.StringFromNull(location)
+		user.Website = db.StringFromNull(website)
 		user.Birthday = birthday
 		result[user.ID] = user
 	}
@@ -317,11 +317,11 @@ func (r *UserRepository) scanUsers(rows *sql.Rows) []*User {
 			continue
 		}
 
-		user.DisplayName = database.StringFromNull(displayName)
-		user.AvatarURL = database.StringFromNull(avatarURL)
-		user.Bio = database.StringFromNull(bio)
-		user.Location = database.StringFromNull(location)
-		user.Website = database.StringFromNull(website)
+		user.DisplayName = db.StringFromNull(displayName)
+		user.AvatarURL = db.StringFromNull(avatarURL)
+		user.Bio = db.StringFromNull(bio)
+		user.Location = db.StringFromNull(location)
+		user.Website = db.StringFromNull(website)
 		user.Birthday = birthday
 		users = append(users, user)
 	}

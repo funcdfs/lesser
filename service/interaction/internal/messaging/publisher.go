@@ -4,17 +4,17 @@ package messaging
 import (
 	"context"
 
-	"github.com/funcdfs/lesser/pkg/broker"
+	"github.com/funcdfs/lesser/pkg/mq"
 )
 
 // EventPublisher 事件发布者
 // 实现 logic 层定义的 Publisher 接口
 type EventPublisher struct {
-	publisher *broker.Publisher
+	publisher *mq.Publisher
 }
 
 // NewEventPublisher 创建事件发布者
-func NewEventPublisher(publisher *broker.Publisher) *EventPublisher {
+func NewEventPublisher(publisher *mq.Publisher) *EventPublisher {
 	return &EventPublisher{
 		publisher: publisher,
 	}
@@ -26,12 +26,12 @@ func (p *EventPublisher) PublishContentLiked(ctx context.Context, contentID, con
 		return
 	}
 
-	event := broker.ContentLikedEvent{
+	event := mq.ContentLikedEvent{
 		ContentID:       contentID,
 		ContentAuthorID: contentAuthorID,
 		LikerID:         likerID,
 	}
-	p.publisher.PublishAsync(ctx, broker.EventContentLiked, event)
+	p.publisher.PublishAsync(ctx, mq.EventContentLiked, event)
 }
 
 // PublishContentBookmarked 发布内容收藏事件
@@ -40,12 +40,12 @@ func (p *EventPublisher) PublishContentBookmarked(ctx context.Context, contentID
 		return
 	}
 
-	event := broker.ContentBookmarkedEvent{
+	event := mq.ContentBookmarkedEvent{
 		ContentID:       contentID,
 		ContentAuthorID: contentAuthorID,
 		BookmarkerID:    bookmarkerID,
 	}
-	p.publisher.PublishAsync(ctx, broker.EventContentBookmarked, event)
+	p.publisher.PublishAsync(ctx, mq.EventContentBookmarked, event)
 }
 
 // PublishContentReposted 发布内容转发事件
@@ -54,11 +54,11 @@ func (p *EventPublisher) PublishContentReposted(ctx context.Context, contentID, 
 		return
 	}
 
-	event := broker.ContentRepostedEvent{
+	event := mq.ContentRepostedEvent{
 		ContentID:       contentID,
 		ContentAuthorID: contentAuthorID,
 		ReposterID:      reposterID,
 		RepostID:        repostID,
 	}
-	p.publisher.PublishAsync(ctx, broker.EventContentReposted, event)
+	p.publisher.PublishAsync(ctx, mq.EventContentReposted, event)
 }

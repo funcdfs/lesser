@@ -7,7 +7,7 @@
 package content
 
 import (
-	common "github.com/funcdfs/lesser/gateway/gen_protos/common"
+	common "github.com/funcdfs/lesser/pkg/gen_protos/common"
 	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
 	protoimpl "google.golang.org/protobuf/runtime/protoimpl"
 	reflect "reflect"
@@ -584,6 +584,7 @@ type CreateContentRequest struct {
 	QuoteId          string                 `protobuf:"bytes,9,opt,name=quote_id,json=quoteId,proto3" json:"quote_id,omitempty"`         // 引用某内容
 	IsDraft          bool                   `protobuf:"varint,10,opt,name=is_draft,json=isDraft,proto3" json:"is_draft,omitempty"`       // 是否保存为草稿（仅 ARTICLE）
 	CommentsDisabled bool                   `protobuf:"varint,11,opt,name=comments_disabled,json=commentsDisabled,proto3" json:"comments_disabled,omitempty"`
+	MentionedUserIds []string               `protobuf:"bytes,12,rep,name=mentioned_user_ids,json=mentionedUserIds,proto3" json:"mentioned_user_ids,omitempty"` // @ 提及的用户 ID 列表
 	unknownFields    protoimpl.UnknownFields
 	sizeCache        protoimpl.SizeCache
 }
@@ -693,6 +694,13 @@ func (x *CreateContentRequest) GetCommentsDisabled() bool {
 		return x.CommentsDisabled
 	}
 	return false
+}
+
+func (x *CreateContentRequest) GetMentionedUserIds() []string {
+	if x != nil {
+		return x.MentionedUserIds
+	}
+	return nil
 }
 
 // CreateContentResponse 创建内容响应
@@ -873,6 +881,7 @@ type UpdateContentRequest struct {
 	Media            []*Media               `protobuf:"bytes,6,rep,name=media,proto3" json:"media,omitempty"`
 	Tags             []string               `protobuf:"bytes,7,rep,name=tags,proto3" json:"tags,omitempty"`
 	CommentsDisabled bool                   `protobuf:"varint,8,opt,name=comments_disabled,json=commentsDisabled,proto3" json:"comments_disabled,omitempty"`
+	MentionedUserIds []string               `protobuf:"bytes,9,rep,name=mentioned_user_ids,json=mentionedUserIds,proto3" json:"mentioned_user_ids,omitempty"` // @ 提及的用户 ID 列表（新增的）
 	unknownFields    protoimpl.UnknownFields
 	sizeCache        protoimpl.SizeCache
 }
@@ -961,6 +970,13 @@ func (x *UpdateContentRequest) GetCommentsDisabled() bool {
 		return x.CommentsDisabled
 	}
 	return false
+}
+
+func (x *UpdateContentRequest) GetMentionedUserIds() []string {
+	if x != nil {
+		return x.MentionedUserIds
+	}
+	return nil
 }
 
 // UpdateContentResponse 更新内容响应
@@ -2122,7 +2138,7 @@ const file_content_content_proto_rawDesc = "" +
 	"expires_at\x18! \x01(\v2\x11.common.TimestampR\texpiresAt\x12\x1b\n" +
 	"\tis_pinned\x18( \x01(\bR\bisPinned\x12+\n" +
 	"\x11comments_disabled\x18) \x01(\bR\x10commentsDisabled\x12\x1a\n" +
-	"\blanguage\x18* \x01(\tR\blanguage\"\xde\x02\n" +
+	"\blanguage\x18* \x01(\tR\blanguage\"\x8c\x03\n" +
 	"\x14CreateContentRequest\x12\x1b\n" +
 	"\tauthor_id\x18\x01 \x01(\tR\bauthorId\x12(\n" +
 	"\x04type\x18\x02 \x01(\x0e2\x14.content.ContentTypeR\x04type\x12\x14\n" +
@@ -2135,7 +2151,8 @@ const file_content_content_proto_rawDesc = "" +
 	"\bquote_id\x18\t \x01(\tR\aquoteId\x12\x19\n" +
 	"\bis_draft\x18\n" +
 	" \x01(\bR\aisDraft\x12+\n" +
-	"\x11comments_disabled\x18\v \x01(\bR\x10commentsDisabled\"C\n" +
+	"\x11comments_disabled\x18\v \x01(\bR\x10commentsDisabled\x12,\n" +
+	"\x12mentioned_user_ids\x18\f \x03(\tR\x10mentionedUserIds\"C\n" +
 	"\x15CreateContentResponse\x12*\n" +
 	"\acontent\x18\x01 \x01(\v2\x10.content.ContentR\acontent\"O\n" +
 	"\x11GetContentRequest\x12\x1d\n" +
@@ -2147,7 +2164,7 @@ const file_content_content_proto_rawDesc = "" +
 	"\bis_liked\x18\x02 \x01(\bR\aisLiked\x12#\n" +
 	"\ris_bookmarked\x18\x03 \x01(\bR\fisBookmarked\x12\x1f\n" +
 	"\vis_reposted\x18\x04 \x01(\bR\n" +
-	"isReposted\"\xf9\x01\n" +
+	"isReposted\"\xa7\x02\n" +
 	"\x14UpdateContentRequest\x12\x1d\n" +
 	"\n" +
 	"content_id\x18\x01 \x01(\tR\tcontentId\x12\x17\n" +
@@ -2157,7 +2174,8 @@ const file_content_content_proto_rawDesc = "" +
 	"\asummary\x18\x05 \x01(\tR\asummary\x12$\n" +
 	"\x05media\x18\x06 \x03(\v2\x0e.content.MediaR\x05media\x12\x12\n" +
 	"\x04tags\x18\a \x03(\tR\x04tags\x12+\n" +
-	"\x11comments_disabled\x18\b \x01(\bR\x10commentsDisabled\"C\n" +
+	"\x11comments_disabled\x18\b \x01(\bR\x10commentsDisabled\x12,\n" +
+	"\x12mentioned_user_ids\x18\t \x03(\tR\x10mentionedUserIds\"C\n" +
 	"\x15UpdateContentResponse\x12*\n" +
 	"\acontent\x18\x01 \x01(\v2\x10.content.ContentR\acontent\"N\n" +
 	"\x14DeleteContentRequest\x12\x1d\n" +
@@ -2283,7 +2301,7 @@ const file_content_content_proto_rawDesc = "" +
 	"\n" +
 	"PinContent\x12\x1a.content.PinContentRequest\x1a\x1b.content.PinContentResponse\x12N\n" +
 	"\rUpdateCounter\x12\x1d.content.UpdateCounterRequest\x1a\x1e.content.UpdateCounterResponse\x12]\n" +
-	"\x12CheckContentExists\x12\".content.CheckContentExistsRequest\x1a#.content.CheckContentExistsResponseB1Z/github.com/funcdfs/lesser/content/gen_protos/contentb\x06proto3"
+	"\x12CheckContentExists\x12\".content.CheckContentExistsRequest\x1a#.content.CheckContentExistsResponseB6Z4github.com/funcdfs/lesser/content/gen_protos/contentb\x06proto3"
 
 var (
 	file_content_content_proto_rawDescOnce sync.Once

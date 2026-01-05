@@ -1,7 +1,7 @@
 syntax = "proto3";
 package search;
 
-option go_package = "github.com/funcdfs/lesser/search/proto/search";
+option go_package = "github.com/funcdfs/lesser/search/gen_protos/search";
 
 import "common/common.proto";
 

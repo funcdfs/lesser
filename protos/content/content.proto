@@ -1,7 +1,7 @@
 syntax = "proto3";
 package content;
 
-option go_package = "github.com/funcdfs/lesser/content/proto/content";
+option go_package = "github.com/funcdfs/lesser/content/gen_protos/content";
 
 import "common/common.proto";
 

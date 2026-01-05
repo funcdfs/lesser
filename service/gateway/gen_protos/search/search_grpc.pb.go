@@ -25,7 +25,7 @@ const (
 	SearchService_SearchAll_FullMethodName      = "/search.SearchService/SearchAll"
 )
 
-// SearchServiceClient is the client API for SearchService logic.
+// SearchServiceClient is the client API for SearchService service.
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 //
@@ -89,7 +89,7 @@ func (c *searchServiceClient) SearchAll(ctx context.Context, in *SearchAllReques
 	return out, nil
 }
 
-// SearchServiceServer is the server API for SearchService logic.
+// SearchServiceServer is the server API for SearchService service.
 // All implementations must embed UnimplementedSearchServiceServer
 // for forward compatibility.
 //
@@ -128,7 +128,7 @@ func (UnimplementedSearchServiceServer) SearchAll(context.Context, *SearchAllReq
 func (UnimplementedSearchServiceServer) mustEmbedUnimplementedSearchServiceServer() {}
 func (UnimplementedSearchServiceServer) testEmbeddedByValue()                       {}
 
-// UnsafeSearchServiceServer may be embedded to opt out of forward compatibility for this logic.
+// UnsafeSearchServiceServer may be embedded to opt out of forward compatibility for this service.
 // Use of this interface is not recommended, as added methods to SearchServiceServer will
 // result in compilation errors.
 type UnsafeSearchServiceServer interface {
@@ -218,7 +218,7 @@ func _SearchService_SearchAll_Handler(srv interface{}, ctx context.Context, dec 
 	return interceptor(ctx, in, info, handler)
 }
 
-// SearchService_ServiceDesc is the grpc.ServiceDesc for SearchService logic.
+// SearchService_ServiceDesc is the grpc.ServiceDesc for SearchService service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
 var SearchService_ServiceDesc = grpc.ServiceDesc{

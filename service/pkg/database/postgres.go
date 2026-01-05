@@ -1,400 +1,152 @@
 // Package database 提供统一的数据库连接封装
-// 支持连接池配置、健康检查、事务管理
+// Deprecated: 请使用 github.com/funcdfs/lesser/pkg/db 包
 package database
 
 import (
 	"context"
 	"database/sql"
-	"fmt"
-	"os"
 	"time"
 
+	"github.com/funcdfs/lesser/pkg/db"
 	_ "github.com/lib/pq"
 )
 
 // Config 数据库配置
-type Config struct {
-	// DSN 数据库连接字符串，优先使用
-	DSN string
-	// 以下字段在 DSN 为空时使用
-	Host     string
-	Port     string
-	User     string
-	Password string
-	DBName   string
-	SSLMode  string
-	// 连接池配置
-	MaxOpenConns    int
-	MaxIdleConns    int
-	ConnMaxLifetime time.Duration
-	ConnMaxIdleTime time.Duration
-}
+// Deprecated: 请使用 db.PostgresConfig
+type Config = db.PostgresConfig
 
 // DefaultConfig 返回默认配置
+// Deprecated: 请使用 db.DefaultPostgresConfig
 func DefaultConfig() Config {
-	return Config{
-		Host:            "localhost",
-		Port:            "5432",
-		User:            "postgres",
-		Password:        "postgres",
-		DBName:          "lesser",
-		SSLMode:         "disable",
-		MaxOpenConns:    25,
-		MaxIdleConns:    10,
-		ConnMaxLifetime: time.Hour,
-		ConnMaxIdleTime: 5 * time.Minute,
-	}
+	return db.DefaultPostgresConfig()
 }
 
 // ConfigFromEnv 从环境变量读取配置
+// Deprecated: 请使用 db.PostgresConfigFromEnv
 func ConfigFromEnv() Config {
-	cfg := DefaultConfig()
-
-	if host := os.Getenv("DB_HOST"); host != "" {
-		cfg.Host = host
-	}
-	if port := os.Getenv("DB_PORT"); port != "" {
-		cfg.Port = port
-	}
-	if user := os.Getenv("DB_USER"); user != "" {
-		cfg.User = user
-	}
-	if password := os.Getenv("DB_PASSWORD"); password != "" {
-		cfg.Password = password
-	}
-	if dbName := os.Getenv("DB_NAME"); dbName != "" {
-		cfg.DBName = dbName
-	}
-	if sslMode := os.Getenv("DB_SSLMODE"); sslMode != "" {
-		cfg.SSLMode = sslMode
-	}
-
-	return cfg
+	return db.PostgresConfigFromEnv()
 }
 
 // NewConnection 创建新的 PostgreSQL 连接
+// Deprecated: 请使用 db.NewPostgresConnection
 func NewConnection(cfg Config) (*sql.DB, error) {
-	dsn := cfg.DSN
-	if dsn == "" {
-		dsn = buildDSN(cfg)
-	}
-
-	db, err := sql.Open("postgres", dsn)
-	if err != nil {
-		return nil, fmt.Errorf("failed to open database: %w", err)
-	}
-
-	// 配置连接池
-	if cfg.MaxOpenConns > 0 {
-		db.SetMaxOpenConns(cfg.MaxOpenConns)
-	}
-	if cfg.MaxIdleConns > 0 {
-		db.SetMaxIdleConns(cfg.MaxIdleConns)
-	}
-	if cfg.ConnMaxLifetime > 0 {
-		db.SetConnMaxLifetime(cfg.ConnMaxLifetime)
-	}
-	if cfg.ConnMaxIdleTime > 0 {
-		db.SetConnMaxIdleTime(cfg.ConnMaxIdleTime)
-	}
-
-	// 测试连接
-	if err := db.Ping(); err != nil {
-		return nil, fmt.Errorf("failed to ping database: %w", err)
-	}
-
-	return db, nil
+	return db.NewPostgresConnection(cfg)
 }
 
 // MustInitDB 初始化数据库连接，失败时 panic
+// Deprecated: 请使用 db.MustInitPostgres
 func MustInitDB(cfg Config) *sql.DB {
-	db, err := NewConnection(cfg)
-	if err != nil {
-		panic(fmt.Sprintf("failed to initialize database: %v", err))
-	}
-	return db
-}
-
-// buildDSN 根据配置构建 DSN 字符串
-func buildDSN(cfg Config) string {
-	sslMode := cfg.SSLMode
-	if sslMode == "" {
-		sslMode = "disable"
-	}
-	return fmt.Sprintf(
-		"host=%s port=%s user=%s password=%s dbname=%s sslmode=%s",
-		cfg.Host, cfg.Port, cfg.User, cfg.Password, cfg.DBName, sslMode,
-	)
+	return db.MustInitPostgres(cfg)
 }
 
 // HealthCheck 检查数据库连接健康状态
-func HealthCheck(db *sql.DB) error {
-	return db.Ping()
+// Deprecated: 请使用 db.PostgresHealthCheck
+func HealthCheck(d *sql.DB) error {
+	return db.PostgresHealthCheck(d)
 }
 
 // HealthCheckWithTimeout 带超时的健康检查
-func HealthCheckWithTimeout(ctx context.Context, db *sql.DB, timeout time.Duration) error {
-	ctx, cancel := context.WithTimeout(ctx, timeout)
-	defer cancel()
-	return db.PingContext(ctx)
+// Deprecated: 请使用 db.PostgresHealthCheckWithTimeout
+func HealthCheckWithTimeout(ctx context.Context, d *sql.DB, timeout time.Duration) error {
+	return db.PostgresHealthCheckWithTimeout(ctx, d, timeout)
 }
 
-// ---- 事务管理 ----
-
 // TxFunc 事务函数类型
-type TxFunc func(tx *sql.Tx) error
+// Deprecated: 请使用 db.TxFunc
+type TxFunc = db.TxFunc
 
 // WithTransaction 在事务中执行函数
-// 使用 committed 标志确保 Commit 成功后不会再执行 Rollback
-func WithTransaction(ctx context.Context, db *sql.DB, fn TxFunc) error {
-	tx, err := db.BeginTx(ctx, nil)
-	if err != nil {
-		return fmt.Errorf("开始事务失败: %w", err)
-	}
-
-	var committed bool
-	defer func() {
-		if p := recover(); p != nil {
-			tx.Rollback()
-			panic(p)
-		}
-		// 只有在未提交时才回滚
-		if !committed {
-			tx.Rollback()
-		}
-	}()
-
-	if err := fn(tx); err != nil {
-		return err
-	}
-
-	if err := tx.Commit(); err != nil {
-		return fmt.Errorf("提交事务失败: %w", err)
-	}
-
-	committed = true
-	return nil
+// Deprecated: 请使用 db.WithTransaction
+func WithTransaction(ctx context.Context, d *sql.DB, fn TxFunc) error {
+	return db.WithTransaction(ctx, d, fn)
 }
 
 // WithTransactionOptions 带选项的事务执行
-// 使用 committed 标志确保 Commit 成功后不会再执行 Rollback
-func WithTransactionOptions(ctx context.Context, db *sql.DB, opts *sql.TxOptions, fn TxFunc) error {
-	tx, err := db.BeginTx(ctx, opts)
-	if err != nil {
-		return fmt.Errorf("开始事务失败: %w", err)
-	}
-
-	var committed bool
-	defer func() {
-		if p := recover(); p != nil {
-			tx.Rollback()
-			panic(p)
-		}
-		// 只有在未提交时才回滚
-		if !committed {
-			tx.Rollback()
-		}
-	}()
-
-	if err := fn(tx); err != nil {
-		return err
-	}
-
-	if err := tx.Commit(); err != nil {
-		return fmt.Errorf("提交事务失败: %w", err)
-	}
-
-	committed = true
-	return nil
+// Deprecated: 请使用 db.WithTransactionOptions
+func WithTransactionOptions(ctx context.Context, d *sql.DB, opts *sql.TxOptions, fn TxFunc) error {
+	return db.WithTransactionOptions(ctx, d, opts, fn)
 }
 
-// ---- 查询辅助 ----
-
-// Querier 查询接口（支持 *sql.DB 和 *sql.Tx）
-type Querier interface {
-	QueryContext(ctx context.Context, query string, args ...interface{}) (*sql.Rows, error)
-	QueryRowContext(ctx context.Context, query string, args ...interface{}) *sql.Row
-	ExecContext(ctx context.Context, query string, args ...interface{}) (sql.Result, error)
-}
+// Querier 查询接口
+// Deprecated: 请使用 db.Querier
+type Querier = db.Querier
 
 // NullString 创建可空字符串
+// Deprecated: 请使用 db.NullString
 func NullString(s string) sql.NullString {
-	if s == "" {
-		return sql.NullString{}
-	}
-	return sql.NullString{String: s, Valid: true}
+	return db.NullString(s)
 }
 
 // NullInt64 创建可空 int64
+// Deprecated: 请使用 db.NullInt64
 func NullInt64(i int64) sql.NullInt64 {
-	if i == 0 {
-		return sql.NullInt64{}
-	}
-	return sql.NullInt64{Int64: i, Valid: true}
+	return db.NullInt64(i)
 }
 
 // NullFloat64 创建可空 float64
+// Deprecated: 请使用 db.NullFloat64
 func NullFloat64(f float64) sql.NullFloat64 {
-	if f == 0 {
-		return sql.NullFloat64{}
-	}
-	return sql.NullFloat64{Float64: f, Valid: true}
+	return db.NullFloat64(f)
 }
 
 // NullBool 创建可空 bool
+// Deprecated: 请使用 db.NullBool
 func NullBool(b bool) sql.NullBool {
-	return sql.NullBool{Bool: b, Valid: true}
+	return db.NullBool(b)
 }
 
 // NullTime 创建可空时间
+// Deprecated: 请使用 db.NullTime
 func NullTime(t time.Time) sql.NullTime {
-	if t.IsZero() {
-		return sql.NullTime{}
-	}
-	return sql.NullTime{Time: t, Valid: true}
+	return db.NullTime(t)
 }
 
 // StringFromNull 从可空字符串获取值
+// Deprecated: 请使用 db.StringFromNull
 func StringFromNull(ns sql.NullString) string {
-	if ns.Valid {
-		return ns.String
-	}
-	return ""
+	return db.StringFromNull(ns)
 }
 
 // Int64FromNull 从可空 int64 获取值
+// Deprecated: 请使用 db.Int64FromNull
 func Int64FromNull(ni sql.NullInt64) int64 {
-	if ni.Valid {
-		return ni.Int64
-	}
-	return 0
+	return db.Int64FromNull(ni)
 }
 
 // Float64FromNull 从可空 float64 获取值
+// Deprecated: 请使用 db.Float64FromNull
 func Float64FromNull(nf sql.NullFloat64) float64 {
-	if nf.Valid {
-		return nf.Float64
-	}
-	return 0
+	return db.Float64FromNull(nf)
 }
 
 // BoolFromNull 从可空 bool 获取值
+// Deprecated: 请使用 db.BoolFromNull
 func BoolFromNull(nb sql.NullBool) bool {
-	if nb.Valid {
-		return nb.Bool
-	}
-	return false
+	return db.BoolFromNull(nb)
 }
 
 // TimeFromNull 从可空时间获取值
+// Deprecated: 请使用 db.TimeFromNull
 func TimeFromNull(nt sql.NullTime) time.Time {
-	if nt.Valid {
-		return nt.Time
-	}
-	return time.Time{}
+	return db.TimeFromNull(nt)
 }
-
-// ---- 批量操作辅助 ----
 
 // BatchInsertBuilder 批量插入构建器
-type BatchInsertBuilder struct {
-	table   string
-	columns []string
-	values  [][]interface{}
-}
+// Deprecated: 请使用 db.BatchInsertBuilder
+type BatchInsertBuilder = db.BatchInsertBuilder
 
 // NewBatchInsert 创建批量插入构建器
+// Deprecated: 请使用 db.NewBatchInsert
 func NewBatchInsert(table string, columns ...string) *BatchInsertBuilder {
-	return &BatchInsertBuilder{
-		table:   table,
-		columns: columns,
-		values:  make([][]interface{}, 0),
-	}
+	return db.NewBatchInsert(table, columns...)
 }
-
-// Add 添加一行数据
-func (b *BatchInsertBuilder) Add(values ...interface{}) *BatchInsertBuilder {
-	if len(values) == len(b.columns) {
-		b.values = append(b.values, values)
-	}
-	return b
-}
-
-// Build 构建 SQL 语句和参数
-func (b *BatchInsertBuilder) Build() (string, []interface{}) {
-	if len(b.values) == 0 {
-		return "", nil
-	}
-
-	// 构建列名部分
-	query := fmt.Sprintf("INSERT INTO %s (", b.table)
-	for i, col := range b.columns {
-		if i > 0 {
-			query += ", "
-		}
-		query += col
-	}
-	query += ") VALUES "
-
-	// 构建值占位符
-	args := make([]interface{}, 0, len(b.values)*len(b.columns))
-	paramIndex := 1
-
-	for i, row := range b.values {
-		if i > 0 {
-			query += ", "
-		}
-		query += "("
-		for j := range row {
-			if j > 0 {
-				query += ", "
-			}
-			query += fmt.Sprintf("$%d", paramIndex)
-			paramIndex++
-		}
-		query += ")"
-		args = append(args, row...)
-	}
-
-	return query, args
-}
-
-// Execute 执行批量插入
-func (b *BatchInsertBuilder) Execute(ctx context.Context, q Querier) (sql.Result, error) {
-	query, args := b.Build()
-	if query == "" {
-		return nil, nil
-	}
-	return q.ExecContext(ctx, query, args...)
-}
-
-// ---- 连接池统计 ----
 
 // PoolStats 连接池统计信息
-type PoolStats struct {
-	MaxOpenConnections int           // 最大打开连接数
-	OpenConnections    int           // 当前打开连接数
-	InUse              int           // 使用中的连接数
-	Idle               int           // 空闲连接数
-	WaitCount          int64         // 等待连接的总次数
-	WaitDuration       time.Duration // 等待连接的总时间
-	MaxIdleClosed      int64         // 因超过最大空闲数而关闭的连接数
-	MaxIdleTimeClosed  int64         // 因空闲超时而关闭的连接数
-	MaxLifetimeClosed  int64         // 因生命周期超时而关闭的连接数
-}
+// Deprecated: 请使用 db.PoolStats
+type PoolStats = db.PoolStats
 
 // GetPoolStats 获取连接池统计信息
-func GetPoolStats(db *sql.DB) PoolStats {
-	stats := db.Stats()
-	return PoolStats{
-		MaxOpenConnections: stats.MaxOpenConnections,
-		OpenConnections:    stats.OpenConnections,
-		InUse:              stats.InUse,
-		Idle:               stats.Idle,
-		WaitCount:          stats.WaitCount,
-		WaitDuration:       stats.WaitDuration,
-		MaxIdleClosed:      stats.MaxIdleClosed,
-		MaxIdleTimeClosed:  stats.MaxIdleTimeClosed,
-		MaxLifetimeClosed:  stats.MaxLifetimeClosed,
-	}
+// Deprecated: 请使用 db.GetPoolStats
+func GetPoolStats(d *sql.DB) PoolStats {
+	return db.GetPoolStats(d)
 }

@@ -8,23 +8,23 @@ import (
 	"log/slog"
 
 	"github.com/funcdfs/lesser/notification/internal/logic"
-	"github.com/funcdfs/lesser/pkg/broker"
-	"github.com/funcdfs/lesser/pkg/logger"
+	"github.com/funcdfs/lesser/pkg/mq"
+	"github.com/funcdfs/lesser/pkg/log"
 )
 
 // EventWorker 事件消费者
 // 负责消费 RabbitMQ 中的事件并创建相应的通知
 type EventWorker struct {
 	notifService *logic.NotificationService
-	worker       *broker.Worker
-	log          *logger.Logger
+	worker       *mq.Worker
+	log          *log.Logger
 }
 
 // NewEventWorker 创建事件消费者实例
-func NewEventWorker(notifService *logic.NotificationService, rabbitURL string, log *logger.Logger) *EventWorker {
+func NewEventWorker(notifService *logic.NotificationService, rabbitURL string, log *log.Logger) *EventWorker {
 	return &EventWorker{
 		notifService: notifService,
-		worker:       broker.NewWorker(rabbitURL, log),
+		worker:       mq.NewWorker(rabbitURL, log),
 		log:          log,
 	}
 }
@@ -32,40 +32,40 @@ func NewEventWorker(notifService *logic.NotificationService, rabbitURL string, l
 // Start 启动事件消费者
 // 订阅所有需要处理的事件队列
 func (w *EventWorker) Start(ctx context.Context) error {
-	configs := []broker.Config{
+	configs := []mq.Config{
 		{
 			Queue:      "notification.content.liked",
-			RoutingKey: broker.EventContentLiked,
+			RoutingKey: mq.EventContentLiked,
 			Handler:    w.handleContentLiked,
 		},
 		{
 			Queue:      "notification.content.bookmarked",
-			RoutingKey: broker.EventContentBookmarked,
+			RoutingKey: mq.EventContentBookmarked,
 			Handler:    w.handleContentBookmarked,
 		},
 		{
 			Queue:      "notification.content.reposted",
-			RoutingKey: broker.EventContentReposted,
+			RoutingKey: mq.EventContentReposted,
 			Handler:    w.handleContentReposted,
 		},
 		{
 			Queue:      "notification.comment.created",
-			RoutingKey: broker.EventCommentCreated,
+			RoutingKey: mq.EventCommentCreated,
 			Handler:    w.handleCommentCreated,
 		},
 		{
 			Queue:      "notification.comment.liked",
-			RoutingKey: broker.EventCommentLiked,
+			RoutingKey: mq.EventCommentLiked,
 			Handler:    w.handleCommentLiked,
 		},
 		{
 			Queue:      "notification.user.followed",
-			RoutingKey: broker.EventUserFollowed,
+			RoutingKey: mq.EventUserFollowed,
 			Handler:    w.handleUserFollowed,
 		},
 		{
 			Queue:      "notification.user.mentioned",
-			RoutingKey: broker.EventUserMentioned,
+			RoutingKey: mq.EventUserMentioned,
 			Handler:    w.handleUserMentioned,
 		},
 	}
@@ -80,7 +80,7 @@ func (w *EventWorker) Stop() {
 
 // handleContentLiked 处理内容点赞事件
 func (w *EventWorker) handleContentLiked(ctx context.Context, body []byte) error {
-	var event broker.ContentLikedEvent
+	var event mq.ContentLikedEvent
 	if err := json.Unmarshal(body, &event); err != nil {
 		w.log.WithContext(ctx).Error("解析 ContentLikedEvent 失败",
 			slog.Any("error", err),
@@ -105,7 +105,7 @@ func (w *EventWorker) handleContentLiked(ctx context.Context, body []byte) error
 
 // handleContentBookmarked 处理内容收藏事件
 func (w *EventWorker) handleContentBookmarked(ctx context.Context, body []byte) error {
-	var event broker.ContentBookmarkedEvent
+	var event mq.ContentBookmarkedEvent
 	if err := json.Unmarshal(body, &event); err != nil {
 		w.log.WithContext(ctx).Error("解析 ContentBookmarkedEvent 失败",
 			slog.Any("error", err),
@@ -130,7 +130,7 @@ func (w *EventWorker) handleContentBookmarked(ctx context.Context, body []byte) 
 
 // handleContentReposted 处理内容转发事件
 func (w *EventWorker) handleContentReposted(ctx context.Context, body []byte) error {
-	var event broker.ContentRepostedEvent
+	var event mq.ContentRepostedEvent
 	if err := json.Unmarshal(body, &event); err != nil {
 		w.log.WithContext(ctx).Error("解析 ContentRepostedEvent 失败",
 			slog.Any("error", err),
@@ -155,7 +155,7 @@ func (w *EventWorker) handleContentReposted(ctx context.Context, body []byte) er
 
 // handleCommentCreated 处理评论创建事件
 func (w *EventWorker) handleCommentCreated(ctx context.Context, body []byte) error {
-	var event broker.CommentCreatedEvent
+	var event mq.CommentCreatedEvent
 	if err := json.Unmarshal(body, &event); err != nil {
 		w.log.WithContext(ctx).Error("解析 CommentCreatedEvent 失败",
 			slog.Any("error", err),
@@ -194,7 +194,7 @@ func (w *EventWorker) handleCommentCreated(ctx context.Context, body []byte) err
 
 // handleCommentLiked 处理评论点赞事件
 func (w *EventWorker) handleCommentLiked(ctx context.Context, body []byte) error {
-	var event broker.CommentLikedEvent
+	var event mq.CommentLikedEvent
 	if err := json.Unmarshal(body, &event); err != nil {
 		w.log.WithContext(ctx).Error("解析 CommentLikedEvent 失败",
 			slog.Any("error", err),
@@ -220,7 +220,7 @@ func (w *EventWorker) handleCommentLiked(ctx context.Context, body []byte) error
 
 // handleUserFollowed 处理用户关注事件
 func (w *EventWorker) handleUserFollowed(ctx context.Context, body []byte) error {
-	var event broker.UserFollowedEvent
+	var event mq.UserFollowedEvent
 	if err := json.Unmarshal(body, &event); err != nil {
 		w.log.WithContext(ctx).Error("解析 UserFollowedEvent 失败",
 			slog.Any("error", err),
@@ -245,7 +245,7 @@ func (w *EventWorker) handleUserFollowed(ctx context.Context, body []byte) error
 
 // handleUserMentioned 处理用户被 @ 事件
 func (w *EventWorker) handleUserMentioned(ctx context.Context, body []byte) error {
-	var event broker.UserMentionedEvent
+	var event mq.UserMentionedEvent
 	if err := json.Unmarshal(body, &event); err != nil {
 		w.log.WithContext(ctx).Error("解析 UserMentionedEvent 失败",
 			slog.Any("error", err),

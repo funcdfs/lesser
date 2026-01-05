@@ -3,7 +3,6 @@ package handler
 
 import (
 	"context"
-	"errors"
 	"log/slog"
 	"time"
 
@@ -14,6 +13,7 @@ import (
 	"github.com/funcdfs/lesser/auth/internal/logic"
 	pb "github.com/funcdfs/lesser/auth/gen_protos/auth"
 	"github.com/funcdfs/lesser/pkg/gen_protos/common"
+	"github.com/funcdfs/lesser/pkg/log"
 )
 
 // AuthHandler gRPC 认证处理器
@@ -46,7 +46,13 @@ func (h *AuthHandler) Register(ctx context.Context, req *pb.RegisterRequest) (*p
 
 	result, err := h.authService.Register(ctx, req.Username, req.Email, req.Password, req.DisplayName)
 	if err != nil {
-		return nil, h.handleError(err, "注册失败")
+		h.log.Error("注册失败",
+			slog.String("username", req.Username),
+			slog.String("email", req.Email),
+			slog.String("trace_id", log.TraceIDFromContext(ctx)),
+			slog.Any("error", err),
+		)
+		return nil, logic.ToGRPCError(err)
 	}
 
 	return &pb.AuthResponse{
@@ -68,7 +74,12 @@ func (h *AuthHandler) Login(ctx context.Context, req *pb.LoginRequest) (*pb.Auth
 
 	result, err := h.authService.Login(ctx, req.Email, req.Password)
 	if err != nil {
-		return nil, h.handleError(err, "登录失败")
+		h.log.Error("登录失败",
+			slog.String("email", req.Email),
+			slog.String("trace_id", log.TraceIDFromContext(ctx)),
+			slog.Any("error", err),
+		)
+		return nil, logic.ToGRPCError(err)
 	}
 
 	return &pb.AuthResponse{
@@ -100,7 +111,11 @@ func (h *AuthHandler) RefreshToken(ctx context.Context, req *pb.RefreshRequest) 
 
 	result, err := h.authService.RefreshToken(ctx, req.RefreshToken)
 	if err != nil {
-		return nil, h.handleError(err, "刷新 Token 失败")
+		h.log.Error("刷新 Token 失败",
+			slog.String("trace_id", log.TraceIDFromContext(ctx)),
+			slog.Any("error", err),
+		)
+		return nil, logic.ToGRPCError(err)
 	}
 
 	return &pb.AuthResponse{
@@ -140,7 +155,12 @@ func (h *AuthHandler) BanUser(ctx context.Context, req *pb.BanUserRequest) (*pb.
 	operatorID := ""
 
 	if err := h.authService.BanUser(ctx, req.UserId, req.Reason, duration, operatorID); err != nil {
-		return nil, h.handleError(err, "封禁用户失败")
+		h.log.Error("封禁用户失败",
+			slog.String("user_id", req.UserId),
+			slog.String("trace_id", log.TraceIDFromContext(ctx)),
+			slog.Any("error", err),
+		)
+		return nil, logic.ToGRPCError(err)
 	}
 
 	return &pb.BanUserResponse{Success: true}, nil
@@ -154,7 +174,12 @@ func (h *AuthHandler) CheckBanned(ctx context.Context, req *pb.CheckBannedReques
 
 	info, err := h.authService.CheckBanned(ctx, req.UserId)
 	if err != nil {
-		return nil, h.handleError(err, "检查封禁状态失败")
+		h.log.Error("检查封禁状态失败",
+			slog.String("user_id", req.UserId),
+			slog.String("trace_id", log.TraceIDFromContext(ctx)),
+			slog.Any("error", err),
+		)
+		return nil, logic.ToGRPCError(err)
 	}
 
 	return &pb.CheckBannedResponse{
@@ -172,37 +197,15 @@ func (h *AuthHandler) GetUser(ctx context.Context, req *pb.GetUserRequest) (*pb.
 
 	user, err := h.authService.GetUser(ctx, req.UserId)
 	if err != nil {
-		return nil, h.handleError(err, "获取用户失败")
+		h.log.Error("获取用户失败",
+			slog.String("user_id", req.UserId),
+			slog.String("trace_id", log.TraceIDFromContext(ctx)),
+			slog.Any("error", err),
+		)
+		return nil, logic.ToGRPCError(err)
 	}
 
 	return userToProto(user), nil
-}
-
-// handleError 统一错误处理
-func (h *AuthHandler) handleError(err error, msg string) error {
-	switch {
-	case errors.Is(err, data_access.ErrUserExists):
-		return status.Error(codes.AlreadyExists, "用户已存在")
-	case errors.Is(err, data_access.ErrUserNotFound):
-		return status.Error(codes.NotFound, "用户不存在")
-	case errors.Is(err, logic.ErrInvalidCredentials):
-		return status.Error(codes.Unauthenticated, "邮箱或密码错误")
-	case errors.Is(err, logic.ErrUserBanned):
-		return status.Error(codes.PermissionDenied, "用户已被封禁")
-	case errors.Is(err, logic.ErrAccountLocked):
-		return status.Error(codes.ResourceExhausted, "账户已被锁定，请稍后再试")
-	case errors.Is(err, logic.ErrInvalidToken):
-		return status.Error(codes.Unauthenticated, "无效的令牌")
-	case errors.Is(err, logic.ErrTokenExpired):
-		return status.Error(codes.Unauthenticated, "令牌已过期")
-	case errors.Is(err, logic.ErrPasswordTooWeak):
-		return status.Error(codes.InvalidArgument, err.Error())
-	case errors.Is(err, logic.ErrUserNotActive):
-		return status.Error(codes.PermissionDenied, "用户账户未激活")
-	default:
-		h.log.Error(msg, slog.Any("error", err))
-		return status.Error(codes.Internal, msg)
-	}
 }
 
 // userToProto 转换用户实体为 proto

@@ -9,9 +9,8 @@ import (
 	"github.com/funcdfs/lesser/content/internal/data_access"
 )
 
-// 业务错误定义
+// 业务错误定义（补充 errors.go 中未定义的错误）
 var (
-	ErrUnauthorized     = errors.New("无权限操作")
 	ErrInvalidContent   = errors.New("内容无效")
 	ErrContentTooLong   = errors.New("内容超出长度限制")
 	ErrTitleRequired    = errors.New("标题不能为空")

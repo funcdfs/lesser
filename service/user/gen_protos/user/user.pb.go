@@ -2309,7 +2309,7 @@ const file_user_user_proto_rawDesc = "" +
 	"\fCheckBlocked\x12\x19.user.CheckBlockedRequest\x1a\x1a.user.CheckBlockedResponse\x12C\n" +
 	"\x0fGetUserSettings\x12\x1c.user.GetUserSettingsRequest\x1a\x12.user.UserSettings\x12I\n" +
 	"\x12UpdateUserSettings\x12\x1f.user.UpdateUserSettingsRequest\x1a\x12.user.UserSettings\x12B\n" +
-	"\vSearchUsers\x12\x18.user.SearchUsersRequest\x1a\x19.user.SearchUsersResponseB+Z)github.com/funcdfs/lesser/user/gen_protos/userb\x06proto3"
+	"\vSearchUsers\x12\x18.user.SearchUsersRequest\x1a\x19.user.SearchUsersResponseB0Z.github.com/funcdfs/lesser/user/gen_protos/userb\x06proto3"
 
 var (
 	file_user_user_proto_rawDescOnce sync.Once

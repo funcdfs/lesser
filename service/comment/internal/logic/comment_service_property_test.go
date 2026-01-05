@@ -203,7 +203,7 @@ func TestProperty17_CommentSortingNewest(t *testing.T) {
 
 			// 创建多条评论，每条间隔一点时间
 			for i := 0; i < numComments; i++ {
-				_, _, err := svc.CreateComment(ctx, "user-1", "content-1", "", "评论内容")
+				_, _, err := svc.CreateComment(ctx, "user-1", "content-1", "", "评论内容", nil)
 				if err != nil {
 					return false
 				}
@@ -255,7 +255,7 @@ func TestProperty17_CommentSortingOldest(t *testing.T) {
 
 			// 创建多条评论
 			for i := 0; i < numComments; i++ {
-				_, _, err := svc.CreateComment(ctx, "user-1", "content-1", "", "评论内容")
+				_, _, err := svc.CreateComment(ctx, "user-1", "content-1", "", "评论内容", nil)
 				if err != nil {
 					return false
 				}
@@ -307,7 +307,7 @@ func TestProperty17_CommentSortingHottest(t *testing.T) {
 
 			// 创建多条评论并设置不同的点赞数
 			for i := 0; i < numComments; i++ {
-				comment, _, err := svc.CreateComment(ctx, "user-1", "content-1", "", "评论内容")
+				comment, _, err := svc.CreateComment(ctx, "user-1", "content-1", "", "评论内容", nil)
 				if err != nil {
 					return false
 				}
@@ -373,7 +373,7 @@ func TestProperty17_SortingPreservesAllComments(t *testing.T) {
 
 			// 创建评论
 			for i := 0; i < numComments; i++ {
-				_, _, err := svc.CreateComment(ctx, "user-1", "content-1", "", "评论内容")
+				_, _, err := svc.CreateComment(ctx, "user-1", "content-1", "", "评论内容", nil)
 				if err != nil {
 					return false
 				}
@@ -551,7 +551,7 @@ func TestProperty18_LikeUnlikeRoundTrip(t *testing.T) {
 			ctx := context.Background()
 
 			// 创建评论
-			comment, _, err := svc.CreateComment(ctx, "author-1", "content-1", "", "测试评论")
+			comment, _, err := svc.CreateComment(ctx, "author-1", "content-1", "", "测试评论", nil)
 			if err != nil {
 				return false
 			}
@@ -608,7 +608,7 @@ func TestProperty18_MultipleLikesRoundTrip(t *testing.T) {
 			ctx := context.Background()
 
 			// 创建评论
-			comment, _, err := svc.CreateComment(ctx, "author-1", "content-1", "", "测试评论")
+			comment, _, err := svc.CreateComment(ctx, "author-1", "content-1", "", "测试评论", nil)
 			if err != nil {
 				return false
 			}
@@ -677,7 +677,7 @@ func TestProperty18_LikeCountNeverNegative(t *testing.T) {
 			ctx := context.Background()
 
 			// 创建评论
-			comment, _, err := svc.CreateComment(ctx, "author-1", "content-1", "", "测试评论")
+			comment, _, err := svc.CreateComment(ctx, "author-1", "content-1", "", "测试评论", nil)
 			if err != nil {
 				return false
 			}
@@ -720,7 +720,7 @@ func TestProperty18_LikeStatusConsistency(t *testing.T) {
 			ctx := context.Background()
 
 			// 创建评论
-			comment, _, err := svc.CreateComment(ctx, "author-1", "content-1", "", "测试评论")
+			comment, _, err := svc.CreateComment(ctx, "author-1", "content-1", "", "测试评论", nil)
 			if err != nil {
 				return false
 			}
@@ -782,7 +782,7 @@ func TestProperty18_DuplicateLikePrevented(t *testing.T) {
 			ctx := context.Background()
 
 			// 创建评论
-			comment, _, err := svc.CreateComment(ctx, "author-1", "content-1", "", "测试评论")
+			comment, _, err := svc.CreateComment(ctx, "author-1", "content-1", "", "测试评论", nil)
 			if err != nil {
 				return false
 			}

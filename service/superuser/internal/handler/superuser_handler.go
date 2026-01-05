@@ -11,6 +11,7 @@ import (
 	"github.com/funcdfs/lesser/superuser/internal/logic"
 	pb "github.com/funcdfs/lesser/superuser/gen_protos/superuser"
 	commonpb "github.com/funcdfs/lesser/pkg/gen_protos/common"
+	"github.com/funcdfs/lesser/pkg/log"
 	"github.com/google/uuid"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/metadata"
@@ -43,8 +44,12 @@ func (h *SuperUserHandler) Login(ctx context.Context, req *pb.SuperUserLoginRequ
 	ip := h.getClientIP(ctx)
 	result, err := h.logic.Login(ctx, req.Username, req.Password, ip)
 	if err != nil {
-		h.logger.Warn("登录失败", slog.String("username", req.Username), slog.Any("error", err))
-		return nil, status.Error(codes.Unauthenticated, err.Error())
+		h.log.Error("登录失败",
+			slog.String("username", req.Username),
+			slog.String("trace_id", log.TraceIDFromContext(ctx)),
+			slog.Any("error", err),
+		)
+		return nil, logic.ToGRPCError(err)
 	}
 
 	return &pb.SuperUserLoginResponse{
@@ -61,7 +66,11 @@ func (h *SuperUserHandler) Logout(ctx context.Context, req *pb.SuperUserLogoutRe
 	}
 
 	if err := h.logic.Logout(ctx, req.AccessToken); err != nil {
-		return nil, status.Error(codes.Internal, err.Error())
+		h.log.Error("登出失败",
+			slog.String("trace_id", log.TraceIDFromContext(ctx)),
+			slog.Any("error", err),
+		)
+		return nil, logic.ToGRPCError(err)
 	}
 
 	return &commonpb.Empty{}, nil
@@ -75,7 +84,11 @@ func (h *SuperUserHandler) RefreshToken(ctx context.Context, req *pb.SuperUserRe
 
 	result, err := h.logic.RefreshToken(ctx, req.RefreshToken)
 	if err != nil {
-		return nil, status.Error(codes.Unauthenticated, err.Error())
+		h.log.Error("刷新 Token 失败",
+			slog.String("trace_id", log.TraceIDFromContext(ctx)),
+			slog.Any("error", err),
+		)
+		return nil, logic.ToGRPCError(err)
 	}
 
 	return &pb.SuperUserLoginResponse{
@@ -126,7 +139,11 @@ func (h *SuperUserHandler) ListUsers(ctx context.Context, req *pb.ListUsersReque
 
 	users, total, err := h.logic.ListUsers(ctx, filter)
 	if err != nil {
-		return nil, status.Error(codes.Internal, err.Error())
+		h.log.Error("获取用户列表失败",
+			slog.String("trace_id", log.TraceIDFromContext(ctx)),
+			slog.Any("error", err),
+		)
+		return nil, logic.ToGRPCError(err)
 	}
 
 	pbUsers := make([]*pb.UserDetail, len(users))
@@ -155,7 +172,12 @@ func (h *SuperUserHandler) GetUser(ctx context.Context, req *pb.GetUserRequest) 
 
 	user, err := h.logic.GetUser(ctx, userID)
 	if err != nil {
-		return nil, status.Error(codes.NotFound, err.Error())
+		h.log.Error("获取用户详情失败",
+			slog.String("user_id", req.UserId),
+			slog.String("trace_id", log.TraceIDFromContext(ctx)),
+			slog.Any("error", err),
+		)
+		return nil, logic.ToGRPCError(err)
 	}
 
 	return h.toUserDetailPB(user), nil
@@ -174,7 +196,12 @@ func (h *SuperUserHandler) BanUser(ctx context.Context, req *pb.BanUserRequest) 
 	}
 
 	if err := h.logic.BanUser(ctx, operatorID, userID, req.Reason, req.DurationSeconds); err != nil {
-		return nil, status.Error(codes.Internal, err.Error())
+		h.log.Error("封禁用户失败",
+			slog.String("user_id", req.UserId),
+			slog.String("trace_id", log.TraceIDFromContext(ctx)),
+			slog.Any("error", err),
+		)
+		return nil, logic.ToGRPCError(err)
 	}
 
 	return &pb.BanUserResponse{Success: true, Message: "用户已封禁"}, nil
@@ -193,7 +220,12 @@ func (h *SuperUserHandler) UnbanUser(ctx context.Context, req *pb.UnbanUserReque
 	}
 
 	if err := h.logic.UnbanUser(ctx, operatorID, userID); err != nil {
-		return nil, status.Error(codes.Internal, err.Error())
+		h.log.Error("解封用户失败",
+			slog.String("user_id", req.UserId),
+			slog.String("trace_id", log.TraceIDFromContext(ctx)),
+			slog.Any("error", err),
+		)
+		return nil, logic.ToGRPCError(err)
 	}
 
 	return &pb.UnbanUserResponse{Success: true, Message: "用户已解封"}, nil
@@ -212,7 +244,12 @@ func (h *SuperUserHandler) DeleteUser(ctx context.Context, req *pb.DeleteUserReq
 	}
 
 	if err := h.logic.DeleteUser(ctx, operatorID, userID, req.HardDelete); err != nil {
-		return nil, status.Error(codes.Internal, err.Error())
+		h.log.Error("删除用户失败",
+			slog.String("user_id", req.UserId),
+			slog.String("trace_id", log.TraceIDFromContext(ctx)),
+			slog.Any("error", err),
+		)
+		return nil, logic.ToGRPCError(err)
 	}
 
 	return &pb.DeleteUserResponse{Success: true, Message: "用户已删除"}, nil
@@ -233,7 +270,12 @@ func (h *SuperUserHandler) UpdateUser(ctx context.Context, req *pb.UpdateUserReq
 	// 获取现有用户
 	user, err := h.logic.GetUser(ctx, userID)
 	if err != nil {
-		return nil, status.Error(codes.NotFound, err.Error())
+		h.log.Error("获取用户失败",
+			slog.String("user_id", req.UserId),
+			slog.String("trace_id", log.TraceIDFromContext(ctx)),
+			slog.Any("error", err),
+		)
+		return nil, logic.ToGRPCError(err)
 	}
 
 	// 更新字段
@@ -255,7 +297,12 @@ func (h *SuperUserHandler) UpdateUser(ctx context.Context, req *pb.UpdateUserReq
 
 	updatedUser, err := h.logic.UpdateUser(ctx, operatorID, user)
 	if err != nil {
-		return nil, status.Error(codes.Internal, err.Error())
+		h.log.Error("更新用户失败",
+			slog.String("user_id", req.UserId),
+			slog.String("trace_id", log.TraceIDFromContext(ctx)),
+			slog.Any("error", err),
+		)
+		return nil, logic.ToGRPCError(err)
 	}
 
 	return h.toUserDetailPB(updatedUser), nil
@@ -293,7 +340,11 @@ func (h *SuperUserHandler) ListContents(ctx context.Context, req *pb.ListContent
 
 	contents, total, err := h.logic.ListContents(ctx, filter)
 	if err != nil {
-		return nil, status.Error(codes.Internal, err.Error())
+		h.log.Error("获取内容列表失败",
+			slog.String("trace_id", log.TraceIDFromContext(ctx)),
+			slog.Any("error", err),
+		)
+		return nil, logic.ToGRPCError(err)
 	}
 
 	pbContents := make([]*pb.ContentDetail, len(contents))
@@ -322,7 +373,12 @@ func (h *SuperUserHandler) DeleteContent(ctx context.Context, req *pb.DeleteCont
 	}
 
 	if err := h.logic.DeleteContent(ctx, operatorID, contentID, req.HardDelete); err != nil {
-		return nil, status.Error(codes.Internal, err.Error())
+		h.log.Error("删除内容失败",
+			slog.String("content_id", req.ContentId),
+			slog.String("trace_id", log.TraceIDFromContext(ctx)),
+			slog.Any("error", err),
+		)
+		return nil, logic.ToGRPCError(err)
 	}
 
 	return &pb.DeleteContentResponse{Success: true, Message: "内容已删除"}, nil
@@ -342,7 +398,11 @@ func (h *SuperUserHandler) BatchDeleteContents(ctx context.Context, req *pb.Batc
 
 	deletedCount, failedIDs, err := h.logic.BatchDeleteContents(ctx, operatorID, contentIDs, req.HardDelete)
 	if err != nil {
-		return nil, status.Error(codes.Internal, err.Error())
+		h.log.Error("批量删除内容失败",
+			slog.String("trace_id", log.TraceIDFromContext(ctx)),
+			slog.Any("error", err),
+		)
+		return nil, logic.ToGRPCError(err)
 	}
 
 	failedIDStrs := make([]string, len(failedIDs))
@@ -367,7 +427,11 @@ func (h *SuperUserHandler) GetSystemStats(ctx context.Context, req *pb.GetSystem
 
 	stats, err := h.logic.GetSystemStats(ctx)
 	if err != nil {
-		return nil, status.Error(codes.Internal, err.Error())
+		h.log.Error("获取系统统计失败",
+			slog.String("trace_id", log.TraceIDFromContext(ctx)),
+			slog.Any("error", err),
+		)
+		return nil, logic.ToGRPCError(err)
 	}
 
 	return &pb.SystemStats{
@@ -390,7 +454,11 @@ func (h *SuperUserHandler) GetDatabaseStatus(ctx context.Context, req *pb.GetDat
 
 	dbStatus, err := h.logic.GetDatabaseStatus(ctx)
 	if err != nil {
-		return nil, status.Error(codes.Internal, err.Error())
+		h.log.Error("获取数据库状态失败",
+			slog.String("trace_id", log.TraceIDFromContext(ctx)),
+			slog.Any("error", err),
+		)
+		return nil, logic.ToGRPCError(err)
 	}
 
 	tables := make([]*pb.TableInfo, len(dbStatus.Tables))
@@ -420,7 +488,11 @@ func (h *SuperUserHandler) GetRedisStatus(ctx context.Context, req *pb.GetRedisS
 
 	redisStatus, err := h.logic.GetRedisStatus(ctx)
 	if err != nil {
-		return nil, status.Error(codes.Internal, err.Error())
+		h.log.Error("获取 Redis 状态失败",
+			slog.String("trace_id", log.TraceIDFromContext(ctx)),
+			slog.Any("error", err),
+		)
+		return nil, logic.ToGRPCError(err)
 	}
 
 	return &pb.RedisStatus{
@@ -441,7 +513,11 @@ func (h *SuperUserHandler) GetRabbitMQStatus(ctx context.Context, req *pb.GetRab
 
 	mqStatus, err := h.logic.GetRabbitMQStatus(ctx)
 	if err != nil {
-		return nil, status.Error(codes.Internal, err.Error())
+		h.log.Error("获取 RabbitMQ 状态失败",
+			slog.String("trace_id", log.TraceIDFromContext(ctx)),
+			slog.Any("error", err),
+		)
+		return nil, logic.ToGRPCError(err)
 	}
 
 	queues := make([]*pb.QueueInfo, len(mqStatus.Queues))
@@ -477,7 +553,12 @@ func (h *SuperUserHandler) ExecuteQuery(ctx context.Context, req *pb.ExecuteQuer
 
 	result, err := h.logic.ExecuteQuery(ctx, operatorID, req.Query, int(req.Limit))
 	if err != nil {
-		return nil, status.Error(codes.InvalidArgument, err.Error())
+		h.log.Error("执行查询失败",
+			slog.String("query", req.Query),
+			slog.String("trace_id", log.TraceIDFromContext(ctx)),
+			slog.Any("error", err),
+		)
+		return nil, logic.ToGRPCError(err)
 	}
 
 	rows := make([]*pb.QueryRow, len(result.Rows))
@@ -505,7 +586,12 @@ func (h *SuperUserHandler) GetTableSchema(ctx context.Context, req *pb.GetTableS
 
 	schema, err := h.logic.GetTableSchema(ctx, req.TableName)
 	if err != nil {
-		return nil, status.Error(codes.Internal, err.Error())
+		h.log.Error("获取表结构失败",
+			slog.String("table_name", req.TableName),
+			slog.String("trace_id", log.TraceIDFromContext(ctx)),
+			slog.Any("error", err),
+		)
+		return nil, logic.ToGRPCError(err)
 	}
 
 	columns := make([]*pb.ColumnInfo, len(schema.Columns))
@@ -545,7 +631,12 @@ func (h *SuperUserHandler) ListTables(ctx context.Context, req *pb.ListTablesReq
 
 	tables, err := h.logic.ListTables(ctx, req.Schema)
 	if err != nil {
-		return nil, status.Error(codes.Internal, err.Error())
+		h.log.Error("获取表列表失败",
+			slog.String("schema", req.Schema),
+			slog.String("trace_id", log.TraceIDFromContext(ctx)),
+			slog.Any("error", err),
+		)
+		return nil, logic.ToGRPCError(err)
 	}
 
 	return &pb.ListTablesResponse{Tables: tables}, nil
@@ -573,7 +664,11 @@ func (h *SuperUserHandler) GetAuditLogs(ctx context.Context, req *pb.GetAuditLog
 
 	logs, total, err := h.logic.GetAuditLogs(ctx, filter)
 	if err != nil {
-		return nil, status.Error(codes.Internal, err.Error())
+		h.log.Error("获取审计日志失败",
+			slog.String("trace_id", log.TraceIDFromContext(ctx)),
+			slog.Any("error", err),
+		)
+		return nil, logic.ToGRPCError(err)
 	}
 
 	pbLogs := make([]*pb.AuditLog, len(logs))

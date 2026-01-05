@@ -1,23 +1,14 @@
-// Package repository 提供 Comment 服务的数据访问层
+// Package data_access 提供 Comment 服务的数据访问层
 package data_access
 
 import (
 	"context"
 	"database/sql"
-	"errors"
 	"fmt"
 	"time"
 
 	"github.com/google/uuid"
 	"github.com/lib/pq"
-)
-
-// 错误定义
-var (
-	ErrCommentNotFound = errors.New("评论不存在")
-	ErrInvalidParent   = errors.New("父评论不存在或已删除")
-	ErrAlreadyLiked    = errors.New("已经点赞过")
-	ErrNotLiked        = errors.New("未点赞")
 )
 
 // SortBy 排序方式
