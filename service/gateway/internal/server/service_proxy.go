@@ -12,7 +12,7 @@ import (
 
 	authpb "github.com/funcdfs/lesser/gateway/gen_protos/auth"
 	commentpb "github.com/funcdfs/lesser/gateway/gen_protos/comment"
-	"github.com/funcdfs/lesser/gateway/gen_protos/common"
+	"github.com/funcdfs/lesser/pkg/gen_protos/common"
 	contentpb "github.com/funcdfs/lesser/gateway/gen_protos/content"
 	interactionpb "github.com/funcdfs/lesser/gateway/gen_protos/interaction"
 	notificationpb "github.com/funcdfs/lesser/gateway/gen_protos/notification"
