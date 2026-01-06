@@ -23,6 +23,8 @@ export 'content.pb.dart';
 /// ContentService 内容服务
 @$pb.GrpcServiceName('content.ContentService')
 class ContentServiceClient extends $grpc.Client {
+  ContentServiceClient(super.channel, {super.options, super.interceptors});
+
   /// The hostname for this service.
   static const $core.String defaultHost = '';
 
@@ -30,8 +32,6 @@ class ContentServiceClient extends $grpc.Client {
   static const $core.List<$core.String> oauthScopes = [
     '',
   ];
-
-  ContentServiceClient(super.channel, {super.options, super.interceptors});
 
   /// 基础 CRUD
   $grpc.ResponseFuture<$0.CreateContentResponse> createContent(
@@ -120,65 +120,74 @@ class ContentServiceClient extends $grpc.Client {
 
   static final _$createContent =
       $grpc.ClientMethod<$0.CreateContentRequest, $0.CreateContentResponse>(
-          '/content.ContentService/CreateContent',
-          ($0.CreateContentRequest value) => value.writeToBuffer(),
-          $0.CreateContentResponse.fromBuffer);
+    '/content.ContentService/CreateContent',
+    ($0.CreateContentRequest value) => value.writeToBuffer(),
+    $0.CreateContentResponse.fromBuffer,
+  );
   static final _$getContent =
       $grpc.ClientMethod<$0.GetContentRequest, $0.GetContentResponse>(
-          '/content.ContentService/GetContent',
-          ($0.GetContentRequest value) => value.writeToBuffer(),
-          $0.GetContentResponse.fromBuffer);
+    '/content.ContentService/GetContent',
+    ($0.GetContentRequest value) => value.writeToBuffer(),
+    $0.GetContentResponse.fromBuffer,
+  );
   static final _$updateContent =
       $grpc.ClientMethod<$0.UpdateContentRequest, $0.UpdateContentResponse>(
-          '/content.ContentService/UpdateContent',
-          ($0.UpdateContentRequest value) => value.writeToBuffer(),
-          $0.UpdateContentResponse.fromBuffer);
+    '/content.ContentService/UpdateContent',
+    ($0.UpdateContentRequest value) => value.writeToBuffer(),
+    $0.UpdateContentResponse.fromBuffer,
+  );
   static final _$deleteContent =
       $grpc.ClientMethod<$0.DeleteContentRequest, $0.DeleteContentResponse>(
-          '/content.ContentService/DeleteContent',
-          ($0.DeleteContentRequest value) => value.writeToBuffer(),
-          $0.DeleteContentResponse.fromBuffer);
+    '/content.ContentService/DeleteContent',
+    ($0.DeleteContentRequest value) => value.writeToBuffer(),
+    $0.DeleteContentResponse.fromBuffer,
+  );
   static final _$listContents =
       $grpc.ClientMethod<$0.ListContentsRequest, $0.ListContentsResponse>(
-          '/content.ContentService/ListContents',
-          ($0.ListContentsRequest value) => value.writeToBuffer(),
-          $0.ListContentsResponse.fromBuffer);
+    '/content.ContentService/ListContents',
+    ($0.ListContentsRequest value) => value.writeToBuffer(),
+    $0.ListContentsResponse.fromBuffer,
+  );
   static final _$batchGetContents = $grpc.ClientMethod<
-          $0.BatchGetContentsRequest, $0.BatchGetContentsResponse>(
-      '/content.ContentService/BatchGetContents',
-      ($0.BatchGetContentsRequest value) => value.writeToBuffer(),
-      $0.BatchGetContentsResponse.fromBuffer);
+      $0.BatchGetContentsRequest, $0.BatchGetContentsResponse>(
+    '/content.ContentService/BatchGetContents',
+    ($0.BatchGetContentsRequest value) => value.writeToBuffer(),
+    $0.BatchGetContentsResponse.fromBuffer,
+  );
   static final _$getUserDrafts =
       $grpc.ClientMethod<$0.GetUserDraftsRequest, $0.GetUserDraftsResponse>(
-          '/content.ContentService/GetUserDrafts',
-          ($0.GetUserDraftsRequest value) => value.writeToBuffer(),
-          $0.GetUserDraftsResponse.fromBuffer);
+    '/content.ContentService/GetUserDrafts',
+    ($0.GetUserDraftsRequest value) => value.writeToBuffer(),
+    $0.GetUserDraftsResponse.fromBuffer,
+  );
   static final _$publishDraft =
       $grpc.ClientMethod<$0.PublishDraftRequest, $0.PublishDraftResponse>(
-          '/content.ContentService/PublishDraft',
-          ($0.PublishDraftRequest value) => value.writeToBuffer(),
-          $0.PublishDraftResponse.fromBuffer);
+    '/content.ContentService/PublishDraft',
+    ($0.PublishDraftRequest value) => value.writeToBuffer(),
+    $0.PublishDraftResponse.fromBuffer,
+  );
   static final _$getReplies =
       $grpc.ClientMethod<$0.GetRepliesRequest, $0.GetRepliesResponse>(
-          '/content.ContentService/GetReplies',
-          ($0.GetRepliesRequest value) => value.writeToBuffer(),
-          $0.GetRepliesResponse.fromBuffer);
+    '/content.ContentService/GetReplies',
+    ($0.GetRepliesRequest value) => value.writeToBuffer(),
+    $0.GetRepliesResponse.fromBuffer,
+  );
   static final _$getUserStories =
       $grpc.ClientMethod<$0.GetUserStoriesRequest, $0.GetUserStoriesResponse>(
-          '/content.ContentService/GetUserStories',
-          ($0.GetUserStoriesRequest value) => value.writeToBuffer(),
-          $0.GetUserStoriesResponse.fromBuffer);
+    '/content.ContentService/GetUserStories',
+    ($0.GetUserStoriesRequest value) => value.writeToBuffer(),
+    $0.GetUserStoriesResponse.fromBuffer,
+  );
   static final _$pinContent =
       $grpc.ClientMethod<$0.PinContentRequest, $0.PinContentResponse>(
-          '/content.ContentService/PinContent',
-          ($0.PinContentRequest value) => value.writeToBuffer(),
-          $0.PinContentResponse.fromBuffer);
+    '/content.ContentService/PinContent',
+    ($0.PinContentRequest value) => value.writeToBuffer(),
+    $0.PinContentResponse.fromBuffer,
+  );
 }
 
 @$pb.GrpcServiceName('content.ContentService')
 abstract class ContentServiceBase extends $grpc.Service {
-  $core.String get $name => 'content.ContentService';
-
   ContentServiceBase() {
     $addMethod(
         $grpc.ServiceMethod<$0.CreateContentRequest, $0.CreateContentResponse>(
@@ -274,100 +283,137 @@ abstract class ContentServiceBase extends $grpc.Service {
         ($core.List<$core.int> value) => $0.PinContentRequest.fromBuffer(value),
         ($0.PinContentResponse value) => value.writeToBuffer()));
   }
+  $core.String get $name => 'content.ContentService';
 
   $async.Future<$0.CreateContentResponse> createContent_Pre(
-      $grpc.ServiceCall $call,
-      $async.Future<$0.CreateContentRequest> $request) async {
+    $grpc.ServiceCall $call,
+    $async.Future<$0.CreateContentRequest> $request,
+  ) async {
     return createContent($call, await $request);
   }
 
   $async.Future<$0.CreateContentResponse> createContent(
-      $grpc.ServiceCall call, $0.CreateContentRequest request);
+    $grpc.ServiceCall call,
+    $0.CreateContentRequest request,
+  );
 
-  $async.Future<$0.GetContentResponse> getContent_Pre($grpc.ServiceCall $call,
-      $async.Future<$0.GetContentRequest> $request) async {
+  $async.Future<$0.GetContentResponse> getContent_Pre(
+    $grpc.ServiceCall $call,
+    $async.Future<$0.GetContentRequest> $request,
+  ) async {
     return getContent($call, await $request);
   }
 
   $async.Future<$0.GetContentResponse> getContent(
-      $grpc.ServiceCall call, $0.GetContentRequest request);
+    $grpc.ServiceCall call,
+    $0.GetContentRequest request,
+  );
 
   $async.Future<$0.UpdateContentResponse> updateContent_Pre(
-      $grpc.ServiceCall $call,
-      $async.Future<$0.UpdateContentRequest> $request) async {
+    $grpc.ServiceCall $call,
+    $async.Future<$0.UpdateContentRequest> $request,
+  ) async {
     return updateContent($call, await $request);
   }
 
   $async.Future<$0.UpdateContentResponse> updateContent(
-      $grpc.ServiceCall call, $0.UpdateContentRequest request);
+    $grpc.ServiceCall call,
+    $0.UpdateContentRequest request,
+  );
 
   $async.Future<$0.DeleteContentResponse> deleteContent_Pre(
-      $grpc.ServiceCall $call,
-      $async.Future<$0.DeleteContentRequest> $request) async {
+    $grpc.ServiceCall $call,
+    $async.Future<$0.DeleteContentRequest> $request,
+  ) async {
     return deleteContent($call, await $request);
   }
 
   $async.Future<$0.DeleteContentResponse> deleteContent(
-      $grpc.ServiceCall call, $0.DeleteContentRequest request);
+    $grpc.ServiceCall call,
+    $0.DeleteContentRequest request,
+  );
 
   $async.Future<$0.ListContentsResponse> listContents_Pre(
-      $grpc.ServiceCall $call,
-      $async.Future<$0.ListContentsRequest> $request) async {
+    $grpc.ServiceCall $call,
+    $async.Future<$0.ListContentsRequest> $request,
+  ) async {
     return listContents($call, await $request);
   }
 
   $async.Future<$0.ListContentsResponse> listContents(
-      $grpc.ServiceCall call, $0.ListContentsRequest request);
+    $grpc.ServiceCall call,
+    $0.ListContentsRequest request,
+  );
 
   $async.Future<$0.BatchGetContentsResponse> batchGetContents_Pre(
-      $grpc.ServiceCall $call,
-      $async.Future<$0.BatchGetContentsRequest> $request) async {
+    $grpc.ServiceCall $call,
+    $async.Future<$0.BatchGetContentsRequest> $request,
+  ) async {
     return batchGetContents($call, await $request);
   }
 
   $async.Future<$0.BatchGetContentsResponse> batchGetContents(
-      $grpc.ServiceCall call, $0.BatchGetContentsRequest request);
+    $grpc.ServiceCall call,
+    $0.BatchGetContentsRequest request,
+  );
 
   $async.Future<$0.GetUserDraftsResponse> getUserDrafts_Pre(
-      $grpc.ServiceCall $call,
-      $async.Future<$0.GetUserDraftsRequest> $request) async {
+    $grpc.ServiceCall $call,
+    $async.Future<$0.GetUserDraftsRequest> $request,
+  ) async {
     return getUserDrafts($call, await $request);
   }
 
   $async.Future<$0.GetUserDraftsResponse> getUserDrafts(
-      $grpc.ServiceCall call, $0.GetUserDraftsRequest request);
+    $grpc.ServiceCall call,
+    $0.GetUserDraftsRequest request,
+  );
 
   $async.Future<$0.PublishDraftResponse> publishDraft_Pre(
-      $grpc.ServiceCall $call,
-      $async.Future<$0.PublishDraftRequest> $request) async {
+    $grpc.ServiceCall $call,
+    $async.Future<$0.PublishDraftRequest> $request,
+  ) async {
     return publishDraft($call, await $request);
   }
 
   $async.Future<$0.PublishDraftResponse> publishDraft(
-      $grpc.ServiceCall call, $0.PublishDraftRequest request);
+    $grpc.ServiceCall call,
+    $0.PublishDraftRequest request,
+  );
 
-  $async.Future<$0.GetRepliesResponse> getReplies_Pre($grpc.ServiceCall $call,
-      $async.Future<$0.GetRepliesRequest> $request) async {
+  $async.Future<$0.GetRepliesResponse> getReplies_Pre(
+    $grpc.ServiceCall $call,
+    $async.Future<$0.GetRepliesRequest> $request,
+  ) async {
     return getReplies($call, await $request);
   }
 
   $async.Future<$0.GetRepliesResponse> getReplies(
-      $grpc.ServiceCall call, $0.GetRepliesRequest request);
+    $grpc.ServiceCall call,
+    $0.GetRepliesRequest request,
+  );
 
   $async.Future<$0.GetUserStoriesResponse> getUserStories_Pre(
-      $grpc.ServiceCall $call,
-      $async.Future<$0.GetUserStoriesRequest> $request) async {
+    $grpc.ServiceCall $call,
+    $async.Future<$0.GetUserStoriesRequest> $request,
+  ) async {
     return getUserStories($call, await $request);
   }
 
   $async.Future<$0.GetUserStoriesResponse> getUserStories(
-      $grpc.ServiceCall call, $0.GetUserStoriesRequest request);
+    $grpc.ServiceCall call,
+    $0.GetUserStoriesRequest request,
+  );
 
-  $async.Future<$0.PinContentResponse> pinContent_Pre($grpc.ServiceCall $call,
-      $async.Future<$0.PinContentRequest> $request) async {
+  $async.Future<$0.PinContentResponse> pinContent_Pre(
+    $grpc.ServiceCall $call,
+    $async.Future<$0.PinContentRequest> $request,
+  ) async {
     return pinContent($call, await $request);
   }
 
   $async.Future<$0.PinContentResponse> pinContent(
-      $grpc.ServiceCall call, $0.PinContentRequest request);
+    $grpc.ServiceCall call,
+    $0.PinContentRequest request,
+  );
 }

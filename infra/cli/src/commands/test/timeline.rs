@@ -7,7 +7,7 @@
 //! 4. Alice 获取关注用户 Feed
 //! 5. 获取 Bob 的用户主页 Feed
 //! 6. 获取热门 Feed
-//! 7. 获取推荐 Feed（预留）
+//! 7. 获取推荐 Feed
 //! 8. 获取内容详情（含交互状态）
 
 use anyhow::Result;
@@ -36,7 +36,7 @@ pub async fn run_tests() -> Result<TestStats> {
 
     // 1. Alice 关注 Bob
     let result = follow_user(&alice, &bob.id).await;
-    stats.record_with_func(result, "Alice 关注 Bob", "Follow()", "user/handler.go");
+    stats.record_with_func(result, "Alice 关注 Bob", "Follow()", "service/user/internal/handler/user_handler.go");
     grpc::delay_short().await;
 
     // 2. Bob 发布一条内容
@@ -49,32 +49,32 @@ pub async fn run_tests() -> Result<TestStats> {
             return Ok(stats);
         }
     };
-    stats.record_with_func(true, "Bob 发布内容", "CreateContent()", "content/handler.go");
+    stats.record_with_func(true, "Bob 发布内容", "CreateContent()", "service/content/internal/handler/content_handler.go");
     grpc::delay_medium().await;
 
     // 3. Alice 获取关注用户 Feed
     let result = get_following_feed(&alice).await;
-    stats.record_with_func(result, "获取关注用户 Feed", "GetFollowingFeed()", "timeline/handler.go");
+    stats.record_with_func(result, "获取关注用户 Feed", "GetFollowingFeed()", "service/timeline/internal/handler/timeline_handler.go");
     grpc::delay_short().await;
 
     // 4. 获取 Bob 的用户主页 Feed
     let result = get_user_feed(&alice, &bob.id).await;
-    stats.record_with_func(result, "获取用户主页 Feed", "GetUserFeed()", "timeline/handler.go");
+    stats.record_with_func(result, "获取用户主页 Feed", "GetUserFeed()", "service/timeline/internal/handler/timeline_handler.go");
     grpc::delay_short().await;
 
     // 5. 获取热门 Feed
     let result = get_hot_feed(&alice).await;
-    stats.record_with_func(result, "获取热门 Feed", "GetHotFeed()", "timeline/handler.go");
+    stats.record_with_func(result, "获取热门 Feed", "GetHotFeed()", "service/timeline/internal/handler/timeline_handler.go");
     grpc::delay_short().await;
 
-    // 6. 获取推荐 Feed（预留）
+    // 6. 获取推荐 Feed
     let result = get_recommend_feed(&alice).await;
-    stats.record_with_func(result, "获取推荐 Feed", "GetRecommendFeed()", "timeline/handler.go");
+    stats.record_with_func(result, "获取推荐 Feed", "GetRecommendFeed()", "service/timeline/internal/handler/timeline_handler.go");
     grpc::delay_short().await;
 
     // 7. 获取内容详情（含交互状态）
     let result = get_content_detail(&alice, &content_id).await;
-    stats.record_with_func(result, "获取内容详情（含交互状态）", "GetContentDetail()", "timeline/handler.go");
+    stats.record_with_func(result, "获取内容详情（含交互状态）", "GetContentDetail()", "service/timeline/internal/handler/timeline_handler.go");
 
     // 清理
     auth::cleanup_user(&alice).await;

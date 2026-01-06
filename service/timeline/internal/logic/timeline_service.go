@@ -114,6 +114,27 @@ func (s *TimelineService) GetHotFeed(ctx context.Context, userID, timeRange stri
 	return s.enrichWithInteractionStatus(ctx, userID, items), total, nil
 }
 
+// GetRecommendFeed 获取推荐 Feed
+// 使用综合推荐算法：热度 + 时间衰减 + 多样性
+func (s *TimelineService) GetRecommendFeed(ctx context.Context, userID string, limit, offset int) ([]*FeedItemWithStatus, int, error) {
+	limit = normalizeLimit(limit)
+
+	items, total, err := s.da.GetRecommendFeed(ctx, userID, limit, offset)
+	if err != nil {
+		s.log.WithContext(ctx).Error("获取推荐 Feed 失败",
+			log.String("user_id", userID),
+			log.Any("error", err))
+		return nil, 0, err
+	}
+
+	s.log.WithContext(ctx).Debug("获取推荐 Feed 成功",
+		log.String("user_id", userID),
+		log.Int("count", len(items)),
+		log.Int("total", total))
+
+	return s.enrichWithInteractionStatus(ctx, userID, items), total, nil
+}
+
 // GetContentDetail 获取内容详情（包含交互状态）
 func (s *TimelineService) GetContentDetail(ctx context.Context, contentID, viewerID string) (*FeedItemWithStatus, error) {
 	item, err := s.da.GetContentByID(ctx, contentID)

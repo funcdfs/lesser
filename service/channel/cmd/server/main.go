@@ -10,8 +10,10 @@ import (
 	"os/signal"
 	"strconv"
 	"syscall"
+	"time"
 
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/keepalive"
 	"google.golang.org/grpc/reflection"
 
 	pb "github.com/funcdfs/lesser/channel/gen_protos/channel"
@@ -52,6 +54,15 @@ func main() {
 		}
 	}
 
+	// 初始化 Auth gRPC 客户端
+	authGRPCAddr := getEnv("AUTH_GRPC_ADDR", "auth:50052")
+	authClient, err := remote.NewAuthClient(authGRPCAddr, logger)
+	if err != nil {
+		logger.Warn("Auth gRPC 服务连接失败", slog.Any("error", err))
+	} else {
+		logger.Info("Auth gRPC 服务连接成功", slog.String("addr", authGRPCAddr))
+	}
+
 	channelDA := data_access.NewChannelDataAccess(pgDB)
 	subscriptionDA := data_access.NewSubscriptionDataAccess(pgDB)
 	postDA := data_access.NewPostDataAccess(pgDB)
@@ -74,7 +85,8 @@ func main() {
 	streamManager := handler.NewStreamManager(redisClient)
 	channelHandler := handler.NewChannelHandler(channelService, streamManager, logger)
 
-	grpcServer := grpc.NewServer()
+	// 创建 gRPC 服务器（带认证拦截器）
+	grpcServer := newGRPCServer(authClient, logger)
 	pb.RegisterChannelServiceServer(grpcServer, channelHandler)
 	reflection.Register(grpcServer)
 
@@ -98,12 +110,44 @@ func main() {
 		if userClient != nil {
 			userClient.Close()
 		}
+		if authClient != nil {
+			authClient.Close()
+		}
 	}()
 
 	logger.Info("Channel 服务已启动", slog.Int("port", grpcPort))
 	if err := grpcServer.Serve(lis); err != nil && ctx.Err() == nil {
 		logger.Fatal("gRPC 服务异常退出", slog.Any("error", err))
 	}
+}
+
+// newGRPCServer 创建 gRPC 服务器（带认证和日志拦截器）
+func newGRPCServer(authClient *remote.AuthClient, log *log.Logger) *grpc.Server {
+	keepalivePolicy := keepalive.EnforcementPolicy{
+		MinTime:             10 * time.Second,
+		PermitWithoutStream: true,
+	}
+
+	keepaliveParams := keepalive.ServerParameters{
+		MaxConnectionIdle:     5 * time.Minute,
+		MaxConnectionAge:      30 * time.Minute,
+		MaxConnectionAgeGrace: 10 * time.Second,
+		Time:                  30 * time.Second,
+		Timeout:               10 * time.Second,
+	}
+
+	return grpc.NewServer(
+		grpc.KeepaliveEnforcementPolicy(keepalivePolicy),
+		grpc.KeepaliveParams(keepaliveParams),
+		grpc.MaxRecvMsgSize(4*1024*1024),
+		grpc.MaxSendMsgSize(4*1024*1024),
+		grpc.MaxConcurrentStreams(100),
+		grpc.ChainUnaryInterceptor(
+			authUnaryInterceptor(authClient),
+			loggingUnaryInterceptor(log),
+		),
+		grpc.StreamInterceptor(loggingStreamInterceptor(log)),
+	)
 }
 
 // getEnv 获取环境变量，如果不存在则返回默认值

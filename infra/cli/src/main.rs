@@ -55,6 +55,7 @@ async fn main() -> Result<()> {
                 TestTarget::Search => commands::test::TestTarget::Search,
                 TestTarget::Notification => commands::test::TestTarget::Notification,
                 TestTarget::Chat => commands::test::TestTarget::Chat,
+                TestTarget::Channel => commands::test::TestTarget::Channel,
                 TestTarget::Gateway => commands::test::TestTarget::Gateway,
                 TestTarget::Superuser => commands::test::TestTarget::Superuser,
                 TestTarget::Db => commands::test::TestTarget::Db,

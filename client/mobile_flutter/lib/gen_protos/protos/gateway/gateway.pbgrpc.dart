@@ -25,6 +25,8 @@ export 'gateway.pb.dart';
 /// 不处理任何业务逻辑
 @$pb.GrpcServiceName('gateway.GatewayService')
 class GatewayServiceClient extends $grpc.Client {
+  GatewayServiceClient(super.channel, {super.options, super.interceptors});
+
   /// The hostname for this service.
   static const $core.String defaultHost = '';
 
@@ -32,8 +34,6 @@ class GatewayServiceClient extends $grpc.Client {
   static const $core.List<$core.String> oauthScopes = [
     '',
   ];
-
-  GatewayServiceClient(super.channel, {super.options, super.interceptors});
 
   /// 健康检查
   $grpc.ResponseFuture<$0.HealthResponse> health(
@@ -47,15 +47,14 @@ class GatewayServiceClient extends $grpc.Client {
 
   static final _$health =
       $grpc.ClientMethod<$0.HealthRequest, $0.HealthResponse>(
-          '/gateway.GatewayService/Health',
-          ($0.HealthRequest value) => value.writeToBuffer(),
-          $0.HealthResponse.fromBuffer);
+    '/gateway.GatewayService/Health',
+    ($0.HealthRequest value) => value.writeToBuffer(),
+    $0.HealthResponse.fromBuffer,
+  );
 }
 
 @$pb.GrpcServiceName('gateway.GatewayService')
 abstract class GatewayServiceBase extends $grpc.Service {
-  $core.String get $name => 'gateway.GatewayService';
-
   GatewayServiceBase() {
     $addMethod($grpc.ServiceMethod<$0.HealthRequest, $0.HealthResponse>(
         'Health',
@@ -65,12 +64,17 @@ abstract class GatewayServiceBase extends $grpc.Service {
         ($core.List<$core.int> value) => $0.HealthRequest.fromBuffer(value),
         ($0.HealthResponse value) => value.writeToBuffer()));
   }
+  $core.String get $name => 'gateway.GatewayService';
 
   $async.Future<$0.HealthResponse> health_Pre(
-      $grpc.ServiceCall $call, $async.Future<$0.HealthRequest> $request) async {
+    $grpc.ServiceCall $call,
+    $async.Future<$0.HealthRequest> $request,
+  ) async {
     return health($call, await $request);
   }
 
   $async.Future<$0.HealthResponse> health(
-      $grpc.ServiceCall call, $0.HealthRequest request);
+    $grpc.ServiceCall call,
+    $0.HealthRequest request,
+  );
 }

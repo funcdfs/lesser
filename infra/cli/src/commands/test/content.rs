@@ -36,18 +36,18 @@ pub async fn run_tests() -> Result<TestStats> {
 
     // 1. 发布 SHORT 类型内容
     let (success, content_id) = create_short_content(&user).await;
-    stats.record_with_func(success, "发布 SHORT 内容", "CreateContent()", "content/handler.go");
+    stats.record_with_func(success, "发布 SHORT 内容", "CreateContent()", "service/content/internal/handler/content_handler.go");
     grpc::delay_short().await;
 
     // 2. 获取内容详情
     if !content_id.is_empty() {
         let result = get_content(&user, &content_id).await;
-        stats.record_with_func(result, "获取内容详情", "GetContent()", "content/handler.go");
+        stats.record_with_func(result, "获取内容详情", "GetContent()", "service/content/internal/handler/content_handler.go");
         grpc::delay_short().await;
 
         // 3. 更新内容
         let result = update_content(&user, &content_id).await;
-        stats.record_with_func(result, "更新内容", "UpdateContent()", "content/handler.go");
+        stats.record_with_func(result, "更新内容", "UpdateContent()", "service/content/internal/handler/content_handler.go");
         grpc::delay_short().await;
     } else {
         stats.record(false, "获取内容详情（跳过：无内容 ID）");
@@ -56,18 +56,18 @@ pub async fn run_tests() -> Result<TestStats> {
 
     // 4. 发布 ARTICLE 草稿
     let (success, draft_id) = create_article_draft(&user).await;
-    stats.record_with_func(success, "创建 ARTICLE 草稿", "CreateContent()", "content/handler.go");
+    stats.record_with_func(success, "创建 ARTICLE 草稿", "CreateContent()", "service/content/internal/handler/content_handler.go");
     grpc::delay_short().await;
 
     // 5. 获取用户草稿列表
     let result = get_user_drafts(&user).await;
-    stats.record_with_func(result, "获取用户草稿列表", "GetUserDrafts()", "content/handler.go");
+    stats.record_with_func(result, "获取用户草稿列表", "GetUserDrafts()", "service/content/internal/handler/content_handler.go");
     grpc::delay_short().await;
 
     // 6. 发布草稿
     if !draft_id.is_empty() {
         let result = publish_draft(&user, &draft_id).await;
-        stats.record_with_func(result, "发布草稿", "PublishDraft()", "content/handler.go");
+        stats.record_with_func(result, "发布草稿", "PublishDraft()", "service/content/internal/handler/content_handler.go");
         grpc::delay_short().await;
     } else {
         stats.record(false, "发布草稿（跳过：无草稿 ID）");
@@ -75,18 +75,18 @@ pub async fn run_tests() -> Result<TestStats> {
 
     // 7. 获取用户内容列表
     let result = list_user_contents(&user).await;
-    stats.record_with_func(result, "获取用户内容列表", "ListContents()", "content/handler.go");
+    stats.record_with_func(result, "获取用户内容列表", "ListContents()", "service/content/internal/handler/content_handler.go");
     grpc::delay_short().await;
 
     // 8. 置顶内容
     if !content_id.is_empty() {
         let result = pin_content(&user, &content_id, true).await;
-        stats.record_with_func(result, "置顶内容", "PinContent()", "content/handler.go");
+        stats.record_with_func(result, "置顶内容", "PinContent()", "service/content/internal/handler/content_handler.go");
         grpc::delay_short().await;
 
         // 9. 取消置顶
         let result = pin_content(&user, &content_id, false).await;
-        stats.record_with_func(result, "取消置顶", "PinContent()", "content/handler.go");
+        stats.record_with_func(result, "取消置顶", "PinContent()", "service/content/internal/handler/content_handler.go");
         grpc::delay_short().await;
     } else {
         stats.record(false, "置顶内容（跳过：无内容 ID）");
@@ -100,7 +100,7 @@ pub async fn run_tests() -> Result<TestStats> {
         .collect();
     if !content_ids.is_empty() {
         let result = batch_get_contents(&user, &content_ids).await;
-        stats.record_with_func(result, "批量获取内容", "BatchGetContents()", "content/handler.go");
+        stats.record_with_func(result, "批量获取内容", "BatchGetContents()", "service/content/internal/handler/content_handler.go");
         grpc::delay_short().await;
     } else {
         stats.record(false, "批量获取内容（跳过：无内容 ID）");
@@ -109,7 +109,7 @@ pub async fn run_tests() -> Result<TestStats> {
     // 11. 删除内容
     if !content_id.is_empty() {
         let result = delete_content(&user, &content_id).await;
-        stats.record_with_func(result, "删除内容", "DeleteContent()", "content/handler.go");
+        stats.record_with_func(result, "删除内容", "DeleteContent()", "service/content/internal/handler/content_handler.go");
     } else {
         stats.record(false, "删除内容（跳过：无内容 ID）");
     }

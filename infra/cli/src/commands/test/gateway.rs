@@ -29,47 +29,47 @@ pub async fn run_tests() -> Result<TestStats> {
 
     // 1. 测试无认证请求访问受保护接口（应被拒绝）
     let result = test_unauthenticated_request().await;
-    stats.record_with_func(result, "无认证请求被拒绝", "AuthInterceptor()", "gateway/middleware.go");
+    stats.record_with_func(result, "无认证请求被拒绝", "AuthInterceptor()", "service/gateway/internal/middleware/auth.go");
     grpc::delay_short().await;
 
     // 2. 测试无效 Token 请求（应被拒绝）
     let result = test_invalid_token_request().await;
-    stats.record_with_func(result, "无效 Token 请求被拒绝", "ValidateToken()", "gateway/middleware.go");
+    stats.record_with_func(result, "无效 Token 请求被拒绝", "ValidateToken()", "service/gateway/internal/middleware/auth.go");
     grpc::delay_short().await;
 
     // 3. 测试有效 Token 请求（应成功）
     let result = test_valid_token_request(&user).await;
-    stats.record_with_func(result, "有效 Token 请求成功", "GetProfile()", "user/handler.go");
+    stats.record_with_func(result, "有效 Token 请求成功", "GetProfile()", "service/user/internal/handler/user_handler.go");
     grpc::delay_short().await;
 
     // 4. 测试 Auth 服务路由
     let result = test_auth_route().await;
-    stats.record_with_func(result, "Auth 服务路由正常", "GetPublicKey()", "auth/handler.go");
+    stats.record_with_func(result, "Auth 服务路由正常", "GetPublicKey()", "service/auth/internal/handler/auth_handler.go");
     grpc::delay_short().await;
 
     // 5. 测试 User 服务路由
     let result = test_user_route(&user).await;
-    stats.record_with_func(result, "User 服务路由正常", "GetProfile()", "user/handler.go");
+    stats.record_with_func(result, "User 服务路由正常", "GetProfile()", "service/user/internal/handler/user_handler.go");
     grpc::delay_short().await;
 
     // 6. 测试 Content 服务路由
     let result = test_content_route(&user).await;
-    stats.record_with_func(result, "Content 服务路由正常", "ListContents()", "content/handler.go");
+    stats.record_with_func(result, "Content 服务路由正常", "ListContents()", "service/content/internal/handler/content_handler.go");
     grpc::delay_short().await;
 
     // 7. 测试 Timeline 服务路由
     let result = test_timeline_route(&user).await;
-    stats.record_with_func(result, "Timeline 服务路由正常", "GetFollowingFeed()", "timeline/handler.go");
+    stats.record_with_func(result, "Timeline 服务路由正常", "GetFollowingFeed()", "service/timeline/internal/handler/timeline_handler.go");
     grpc::delay_short().await;
 
     // 8. 测试 Search 服务路由
     let result = test_search_route(&user).await;
-    stats.record_with_func(result, "Search 服务路由正常", "SearchPosts()", "search/handler.go");
+    stats.record_with_func(result, "Search 服务路由正常", "SearchPosts()", "service/search/internal/handler/search_handler.go");
     grpc::delay_short().await;
 
     // 9. 测试 Notification 服务路由
     let result = test_notification_route(&user).await;
-    stats.record_with_func(result, "Notification 服务路由正常", "GetUnreadCount()", "notification/handler.go");
+    stats.record_with_func(result, "Notification 服务路由正常", "GetUnreadCount()", "service/notification/internal/handler/notification_handler.go");
 
     // 清理
     auth::cleanup_user(&user).await;

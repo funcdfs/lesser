@@ -37,7 +37,7 @@ pub async fn run_tests() -> Result<TestStats> {
 
     // 1. Alice 创建与 Bob 的私聊会话
     let (success, conv_id) = create_private_conversation(&alice, &bob.id).await;
-    stats.record_with_func(success, "创建私聊会话", "CreateConversation()", "chat/handler.go");
+    stats.record_with_func(success, "创建私聊会话", "CreateConversation()", "service/chat/internal/handler/chat_handler.go");
     grpc::delay_short().await;
 
     // 2. Alice 发送消息给 Bob
@@ -46,18 +46,18 @@ pub async fn run_tests() -> Result<TestStats> {
     } else {
         (false, String::new())
     };
-    stats.record_with_func(success, "Alice 发送消息", "SendMessage()", "chat/handler.go");
+    stats.record_with_func(success, "Alice 发送消息", "SendMessage()", "service/chat/internal/handler/chat_handler.go");
     grpc::delay_short().await;
 
     // 3. Bob 获取会话列表
     let result = get_conversations(&bob).await;
-    stats.record_with_func(result, "Bob 获取会话列表", "GetConversations()", "chat/handler.go");
+    stats.record_with_func(result, "Bob 获取会话列表", "GetConversations()", "service/chat/internal/handler/chat_handler.go");
     grpc::delay_short().await;
 
     // 4. Bob 获取消息列表
     if !conv_id.is_empty() {
         let result = get_messages(&bob, &conv_id).await;
-        stats.record_with_func(result, "Bob 获取消息列表", "GetMessages()", "chat/handler.go");
+        stats.record_with_func(result, "Bob 获取消息列表", "GetMessages()", "service/chat/internal/handler/chat_handler.go");
         grpc::delay_short().await;
     } else {
         stats.record(false, "Bob 获取消息列表（跳过）");
@@ -66,7 +66,7 @@ pub async fn run_tests() -> Result<TestStats> {
     // 5. Bob 标记消息已读
     if !msg_id.is_empty() {
         let result = mark_as_read(&bob, &msg_id).await;
-        stats.record_with_func(result, "Bob 标记消息已读", "MarkAsRead()", "chat/handler.go");
+        stats.record_with_func(result, "Bob 标记消息已读", "MarkAsRead()", "service/chat/internal/handler/chat_handler.go");
         grpc::delay_short().await;
     } else {
         stats.record(false, "Bob 标记消息已读（跳过）");
@@ -75,7 +75,7 @@ pub async fn run_tests() -> Result<TestStats> {
     // 6. Bob 标记会话所有消息已读
     if !conv_id.is_empty() {
         let result = mark_conversation_as_read(&bob, &conv_id).await;
-        stats.record_with_func(result, "标记会话所有消息已读", "MarkConversationAsRead()", "chat/handler.go");
+        stats.record_with_func(result, "标记会话所有消息已读", "MarkConversationAsRead()", "service/chat/internal/handler/chat_handler.go");
         grpc::delay_short().await;
     } else {
         stats.record(false, "标记会话所有消息已读（跳过）");
@@ -84,7 +84,7 @@ pub async fn run_tests() -> Result<TestStats> {
     // 7. 获取单个会话详情
     if !conv_id.is_empty() {
         let result = get_conversation(&alice, &conv_id).await;
-        stats.record_with_func(result, "获取会话详情", "GetConversation()", "chat/handler.go");
+        stats.record_with_func(result, "获取会话详情", "GetConversation()", "service/chat/internal/handler/chat_handler.go");
         grpc::delay_short().await;
     } else {
         stats.record(false, "获取会话详情（跳过）");
@@ -93,7 +93,7 @@ pub async fn run_tests() -> Result<TestStats> {
     // 8. 批量获取未读数
     if !conv_id.is_empty() {
         let result = get_unread_counts(&alice, &[&conv_id]).await;
-        stats.record_with_func(result, "批量获取未读数", "GetUnreadCounts()", "chat/handler.go");
+        stats.record_with_func(result, "批量获取未读数", "GetUnreadCounts()", "service/chat/internal/handler/chat_handler.go");
     } else {
         stats.record(false, "批量获取未读数（跳过）");
     }

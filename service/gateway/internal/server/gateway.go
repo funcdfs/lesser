@@ -13,7 +13,7 @@ import (
 
 	"google.golang.org/grpc"
 
-	authpb "github.com/funcdfs/lesser/gateway/gen_protos/auth"
+	authpb "github.com/funcdfs/lesser/auth/gen_protos/auth"
 	pb "github.com/funcdfs/lesser/gateway/gen_protos/gateway"
 	"github.com/funcdfs/lesser/gateway/internal/auth"
 	"github.com/funcdfs/lesser/gateway/internal/interceptor"

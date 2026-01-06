@@ -118,6 +118,8 @@ pub enum TestTarget {
     Notification,
     /// Chat 服务测试
     Chat,
+    /// Channel 服务测试（广播频道）
+    Channel,
     /// Gateway 路由测试
     Gateway,
     /// SuperUser 服务测试

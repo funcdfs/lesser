@@ -23,6 +23,8 @@ export 'common.pb.dart';
 /// Health check service for service discovery
 @$pb.GrpcServiceName('common.HealthService')
 class HealthServiceClient extends $grpc.Client {
+  HealthServiceClient(super.channel, {super.options, super.interceptors});
+
   /// The hostname for this service.
   static const $core.String defaultHost = '';
 
@@ -30,8 +32,6 @@ class HealthServiceClient extends $grpc.Client {
   static const $core.List<$core.String> oauthScopes = [
     '',
   ];
-
-  HealthServiceClient(super.channel, {super.options, super.interceptors});
 
   /// Check service health
   $grpc.ResponseFuture<$0.HealthCheckResponse> check(
@@ -46,28 +46,31 @@ class HealthServiceClient extends $grpc.Client {
     $0.HealthCheckRequest request, {
     $grpc.CallOptions? options,
   }) {
-    return $createStreamingCall(_$watch, $async.Stream.fromIterable([request]),
-        options: options);
+    return $createStreamingCall(
+      _$watch,
+      $async.Stream.fromIterable([request]),
+      options: options,
+    );
   }
 
   // method descriptors
 
   static final _$check =
       $grpc.ClientMethod<$0.HealthCheckRequest, $0.HealthCheckResponse>(
-          '/common.HealthService/Check',
-          ($0.HealthCheckRequest value) => value.writeToBuffer(),
-          $0.HealthCheckResponse.fromBuffer);
+    '/common.HealthService/Check',
+    ($0.HealthCheckRequest value) => value.writeToBuffer(),
+    $0.HealthCheckResponse.fromBuffer,
+  );
   static final _$watch =
       $grpc.ClientMethod<$0.HealthCheckRequest, $0.HealthCheckResponse>(
-          '/common.HealthService/Watch',
-          ($0.HealthCheckRequest value) => value.writeToBuffer(),
-          $0.HealthCheckResponse.fromBuffer);
+    '/common.HealthService/Watch',
+    ($0.HealthCheckRequest value) => value.writeToBuffer(),
+    $0.HealthCheckResponse.fromBuffer,
+  );
 }
 
 @$pb.GrpcServiceName('common.HealthService')
 abstract class HealthServiceBase extends $grpc.Service {
-  $core.String get $name => 'common.HealthService';
-
   HealthServiceBase() {
     $addMethod(
         $grpc.ServiceMethod<$0.HealthCheckRequest, $0.HealthCheckResponse>(
@@ -88,20 +91,29 @@ abstract class HealthServiceBase extends $grpc.Service {
                 $0.HealthCheckRequest.fromBuffer(value),
             ($0.HealthCheckResponse value) => value.writeToBuffer()));
   }
+  $core.String get $name => 'common.HealthService';
 
-  $async.Future<$0.HealthCheckResponse> check_Pre($grpc.ServiceCall $call,
-      $async.Future<$0.HealthCheckRequest> $request) async {
+  $async.Future<$0.HealthCheckResponse> check_Pre(
+    $grpc.ServiceCall $call,
+    $async.Future<$0.HealthCheckRequest> $request,
+  ) async {
     return check($call, await $request);
   }
 
   $async.Future<$0.HealthCheckResponse> check(
-      $grpc.ServiceCall call, $0.HealthCheckRequest request);
+    $grpc.ServiceCall call,
+    $0.HealthCheckRequest request,
+  );
 
-  $async.Stream<$0.HealthCheckResponse> watch_Pre($grpc.ServiceCall $call,
-      $async.Future<$0.HealthCheckRequest> $request) async* {
+  $async.Stream<$0.HealthCheckResponse> watch_Pre(
+    $grpc.ServiceCall $call,
+    $async.Future<$0.HealthCheckRequest> $request,
+  ) async* {
     yield* watch($call, await $request);
   }
 
   $async.Stream<$0.HealthCheckResponse> watch(
-      $grpc.ServiceCall call, $0.HealthCheckRequest request);
+    $grpc.ServiceCall call,
+    $0.HealthCheckRequest request,
+  );
 }

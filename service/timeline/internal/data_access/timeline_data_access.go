@@ -208,6 +208,59 @@ func (da *TimelineDataAccess) GetHotFeed(ctx context.Context, timeRange string, 
 	return items, total, nil
 }
 
+// GetRecommendFeed 获取推荐 Feed
+// 推荐算法：综合考虑内容热度、新鲜度、多样性
+// 热度分数 = like_count + comment_count*2 + repost_count*3 + view_count*0.1
+// 时间衰减：越新的内容权重越高
+func (da *TimelineDataAccess) GetRecommendFeed(ctx context.Context, userID string, limit, offset int) ([]*FeedItem, int, error) {
+	// 获取总数（排除用户自己的内容，增加发现性）
+	var total int
+	err := da.db.QueryRowContext(ctx, `
+		SELECT COUNT(*) 
+		FROM contents c
+		WHERE c.status = 2
+		  AND (c.expires_at IS NULL OR c.expires_at > NOW())
+		  AND c.created_at > NOW() - INTERVAL '30 days'
+		  AND ($1 = '' OR c.author_id != $1::uuid)
+	`, userID).Scan(&total)
+	if err != nil {
+		return nil, 0, fmt.Errorf("统计推荐 Feed 总数失败: %w", err)
+	}
+
+	// 推荐算法查询
+	// 综合评分 = 热度分数 * 时间衰减因子
+	// 时间衰减：使用指数衰减，半衰期为 3 天
+	rows, err := da.db.QueryContext(ctx, `
+		SELECT 
+			c.id, c.author_id, c.type, c.status, c.title, c.text, c.summary,
+			c.media_urls, c.tags, c.reply_to_id, c.quote_id,
+			c.like_count, c.comment_count, c.repost_count, c.bookmark_count, c.view_count,
+			c.created_at, c.updated_at, c.published_at, c.expires_at,
+			c.is_pinned, c.comments_disabled, c.language
+		FROM contents c
+		WHERE c.status = 2
+		  AND (c.expires_at IS NULL OR c.expires_at > NOW())
+		  AND c.created_at > NOW() - INTERVAL '30 days'
+		  AND ($1 = '' OR c.author_id != $1::uuid)
+		ORDER BY 
+			(c.like_count + c.comment_count * 2 + c.repost_count * 3 + c.view_count * 0.1) 
+			* EXP(-EXTRACT(EPOCH FROM (NOW() - c.created_at)) / (3 * 24 * 3600)) DESC,
+			c.created_at DESC
+		LIMIT $2 OFFSET $3
+	`, userID, limit, offset)
+	if err != nil {
+		return nil, 0, fmt.Errorf("查询推荐 Feed 失败: %w", err)
+	}
+	defer rows.Close()
+
+	items, err := scanFeedItems(rows)
+	if err != nil {
+		return nil, 0, err
+	}
+
+	return items, total, nil
+}
+
 // GetContentByID 获取单个内容
 func (da *TimelineDataAccess) GetContentByID(ctx context.Context, contentID string) (*FeedItem, error) {
 	row := da.db.QueryRowContext(ctx, `

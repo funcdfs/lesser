@@ -35,27 +35,27 @@ pub async fn run_tests() -> Result<TestStats> {
 
     // 2. 搜索帖子
     let result = search_posts(&user, "test").await;
-    stats.record_with_func(result, "搜索帖子", "SearchPosts()", "search/handler.go");
+    stats.record_with_func(result, "搜索帖子", "SearchPosts()", "service/search/internal/handler/search_handler.go");
     grpc::delay_short().await;
 
     // 3. 搜索用户
     let result = search_users(&user, "test").await;
-    stats.record_with_func(result, "搜索用户", "SearchUsers()", "search/handler.go");
+    stats.record_with_func(result, "搜索用户", "SearchUsers()", "service/search/internal/handler/search_handler.go");
     grpc::delay_short().await;
 
     // 4. 搜索评论
     let result = search_comments(&user, "test").await;
-    stats.record_with_func(result, "搜索评论", "SearchComments()", "search/handler.go");
+    stats.record_with_func(result, "搜索评论", "SearchComments()", "service/search/internal/handler/search_handler.go");
     grpc::delay_short().await;
 
     // 5. 综合搜索
     let result = search_all(&user, "test").await;
-    stats.record_with_func(result, "综合搜索", "SearchAll()", "search/handler.go");
+    stats.record_with_func(result, "综合搜索", "SearchAll()", "service/search/internal/handler/search_handler.go");
     grpc::delay_short().await;
 
     // 6. 语义搜索帖子
     let result = search_posts_semantic(&user, "测试内容").await;
-    stats.record_with_func(result, "语义搜索帖子", "SearchPosts(semantic)", "search/handler.go");
+    stats.record_with_func(result, "语义搜索帖子", "SearchPosts(semantic)", "service/search/internal/handler/search_handler.go");
 
     // 清理
     auth::cleanup_user(&user).await;

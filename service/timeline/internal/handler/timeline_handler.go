@@ -56,9 +56,27 @@ func (h *TimelineHandler) GetFollowingFeed(ctx context.Context, req *pb.GetFollo
 	}, nil
 }
 
-// GetRecommendFeed 获取推荐 Feed 流（预留）
+// GetRecommendFeed 获取推荐 Feed 流
 func (h *TimelineHandler) GetRecommendFeed(ctx context.Context, req *pb.GetRecommendFeedRequest) (*pb.GetRecommendFeedResponse, error) {
-	return nil, status.Error(codes.Unimplemented, "推荐 Feed 功能暂未实现")
+	pageReq := extractPagination(req.Pagination)
+	limit, offset := int(pageReq.Limit()), int(pageReq.Offset())
+
+	// user_id 可选，用于个性化推荐和排除自己的内容
+	userID := req.UserId
+
+	items, total, err := h.svc.GetRecommendFeed(ctx, userID, limit, offset)
+	if err != nil {
+		h.log.WithContext(ctx).Error("获取推荐 Feed 失败",
+			log.String("user_id", userID),
+			log.Any("error", err),
+		)
+		return nil, logic.ToGRPCError(err)
+	}
+
+	return &pb.GetRecommendFeedResponse{
+		Items:      feedItemsToProto(items),
+		Pagination: &common.Pagination{Page: pageReq.Page, PageSize: pageReq.PageSize, Total: int32(total)},
+	}, nil
 }
 
 // GetUserFeed 获取指定用户的 Feed（用户主页）

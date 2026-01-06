@@ -24,6 +24,8 @@ export 'chat.pb.dart';
 /// 处理会话管理、消息收发、实时通信
 @$pb.GrpcServiceName('chat.ChatService')
 class ChatServiceClient extends $grpc.Client {
+  ChatServiceClient(super.channel, {super.options, super.interceptors});
+
   /// The hostname for this service.
   static const $core.String defaultHost = '';
 
@@ -31,8 +33,6 @@ class ChatServiceClient extends $grpc.Client {
   static const $core.List<$core.String> oauthScopes = [
     '',
   ];
-
-  ChatServiceClient(super.channel, {super.options, super.interceptors});
 
   /// 获取用户的所有会话
   $grpc.ResponseFuture<$0.ConversationsResponse> getConversations(
@@ -87,8 +87,11 @@ class ChatServiceClient extends $grpc.Client {
     $0.MarkConversationAsReadRequest request, {
     $grpc.CallOptions? options,
   }) {
-    return $createUnaryCall(_$markConversationAsRead, request,
-        options: options);
+    return $createUnaryCall(
+      _$markConversationAsRead,
+      request,
+      options: options,
+    );
   }
 
   /// 批量获取多个会话的未读数
@@ -112,55 +115,62 @@ class ChatServiceClient extends $grpc.Client {
 
   static final _$getConversations =
       $grpc.ClientMethod<$0.GetConversationsRequest, $0.ConversationsResponse>(
-          '/chat.ChatService/GetConversations',
-          ($0.GetConversationsRequest value) => value.writeToBuffer(),
-          $0.ConversationsResponse.fromBuffer);
+    '/chat.ChatService/GetConversations',
+    ($0.GetConversationsRequest value) => value.writeToBuffer(),
+    $0.ConversationsResponse.fromBuffer,
+  );
   static final _$getConversation =
       $grpc.ClientMethod<$0.GetConversationRequest, $0.Conversation>(
-          '/chat.ChatService/GetConversation',
-          ($0.GetConversationRequest value) => value.writeToBuffer(),
-          $0.Conversation.fromBuffer);
+    '/chat.ChatService/GetConversation',
+    ($0.GetConversationRequest value) => value.writeToBuffer(),
+    $0.Conversation.fromBuffer,
+  );
   static final _$createConversation =
       $grpc.ClientMethod<$0.CreateConversationRequest, $0.Conversation>(
-          '/chat.ChatService/CreateConversation',
-          ($0.CreateConversationRequest value) => value.writeToBuffer(),
-          $0.Conversation.fromBuffer);
+    '/chat.ChatService/CreateConversation',
+    ($0.CreateConversationRequest value) => value.writeToBuffer(),
+    $0.Conversation.fromBuffer,
+  );
   static final _$getMessages =
       $grpc.ClientMethod<$0.GetMessagesRequest, $0.MessagesResponse>(
-          '/chat.ChatService/GetMessages',
-          ($0.GetMessagesRequest value) => value.writeToBuffer(),
-          $0.MessagesResponse.fromBuffer);
+    '/chat.ChatService/GetMessages',
+    ($0.GetMessagesRequest value) => value.writeToBuffer(),
+    $0.MessagesResponse.fromBuffer,
+  );
   static final _$sendMessage =
       $grpc.ClientMethod<$0.SendMessageRequest, $0.Message>(
-          '/chat.ChatService/SendMessage',
-          ($0.SendMessageRequest value) => value.writeToBuffer(),
-          $0.Message.fromBuffer);
+    '/chat.ChatService/SendMessage',
+    ($0.SendMessageRequest value) => value.writeToBuffer(),
+    $0.Message.fromBuffer,
+  );
   static final _$markAsRead =
       $grpc.ClientMethod<$0.MarkAsReadRequest, $0.ReadReceipt>(
-          '/chat.ChatService/MarkAsRead',
-          ($0.MarkAsReadRequest value) => value.writeToBuffer(),
-          $0.ReadReceipt.fromBuffer);
+    '/chat.ChatService/MarkAsRead',
+    ($0.MarkAsReadRequest value) => value.writeToBuffer(),
+    $0.ReadReceipt.fromBuffer,
+  );
   static final _$markConversationAsRead =
       $grpc.ClientMethod<$0.MarkConversationAsReadRequest, $0.BatchReadReceipt>(
-          '/chat.ChatService/MarkConversationAsRead',
-          ($0.MarkConversationAsReadRequest value) => value.writeToBuffer(),
-          $0.BatchReadReceipt.fromBuffer);
+    '/chat.ChatService/MarkConversationAsRead',
+    ($0.MarkConversationAsReadRequest value) => value.writeToBuffer(),
+    $0.BatchReadReceipt.fromBuffer,
+  );
   static final _$getUnreadCounts =
       $grpc.ClientMethod<$0.GetUnreadCountsRequest, $0.GetUnreadCountsResponse>(
-          '/chat.ChatService/GetUnreadCounts',
-          ($0.GetUnreadCountsRequest value) => value.writeToBuffer(),
-          $0.GetUnreadCountsResponse.fromBuffer);
+    '/chat.ChatService/GetUnreadCounts',
+    ($0.GetUnreadCountsRequest value) => value.writeToBuffer(),
+    $0.GetUnreadCountsResponse.fromBuffer,
+  );
   static final _$streamEvents =
       $grpc.ClientMethod<$0.ClientEvent, $0.ServerEvent>(
-          '/chat.ChatService/StreamEvents',
-          ($0.ClientEvent value) => value.writeToBuffer(),
-          $0.ServerEvent.fromBuffer);
+    '/chat.ChatService/StreamEvents',
+    ($0.ClientEvent value) => value.writeToBuffer(),
+    $0.ServerEvent.fromBuffer,
+  );
 }
 
 @$pb.GrpcServiceName('chat.ChatService')
 abstract class ChatServiceBase extends $grpc.Service {
-  $core.String get $name => 'chat.ChatService';
-
   ChatServiceBase() {
     $addMethod($grpc.ServiceMethod<$0.GetConversationsRequest,
             $0.ConversationsResponse>(
@@ -237,74 +247,106 @@ abstract class ChatServiceBase extends $grpc.Service {
         ($core.List<$core.int> value) => $0.ClientEvent.fromBuffer(value),
         ($0.ServerEvent value) => value.writeToBuffer()));
   }
+  $core.String get $name => 'chat.ChatService';
 
   $async.Future<$0.ConversationsResponse> getConversations_Pre(
-      $grpc.ServiceCall $call,
-      $async.Future<$0.GetConversationsRequest> $request) async {
+    $grpc.ServiceCall $call,
+    $async.Future<$0.GetConversationsRequest> $request,
+  ) async {
     return getConversations($call, await $request);
   }
 
   $async.Future<$0.ConversationsResponse> getConversations(
-      $grpc.ServiceCall call, $0.GetConversationsRequest request);
+    $grpc.ServiceCall call,
+    $0.GetConversationsRequest request,
+  );
 
-  $async.Future<$0.Conversation> getConversation_Pre($grpc.ServiceCall $call,
-      $async.Future<$0.GetConversationRequest> $request) async {
+  $async.Future<$0.Conversation> getConversation_Pre(
+    $grpc.ServiceCall $call,
+    $async.Future<$0.GetConversationRequest> $request,
+  ) async {
     return getConversation($call, await $request);
   }
 
   $async.Future<$0.Conversation> getConversation(
-      $grpc.ServiceCall call, $0.GetConversationRequest request);
+    $grpc.ServiceCall call,
+    $0.GetConversationRequest request,
+  );
 
-  $async.Future<$0.Conversation> createConversation_Pre($grpc.ServiceCall $call,
-      $async.Future<$0.CreateConversationRequest> $request) async {
+  $async.Future<$0.Conversation> createConversation_Pre(
+    $grpc.ServiceCall $call,
+    $async.Future<$0.CreateConversationRequest> $request,
+  ) async {
     return createConversation($call, await $request);
   }
 
   $async.Future<$0.Conversation> createConversation(
-      $grpc.ServiceCall call, $0.CreateConversationRequest request);
+    $grpc.ServiceCall call,
+    $0.CreateConversationRequest request,
+  );
 
-  $async.Future<$0.MessagesResponse> getMessages_Pre($grpc.ServiceCall $call,
-      $async.Future<$0.GetMessagesRequest> $request) async {
+  $async.Future<$0.MessagesResponse> getMessages_Pre(
+    $grpc.ServiceCall $call,
+    $async.Future<$0.GetMessagesRequest> $request,
+  ) async {
     return getMessages($call, await $request);
   }
 
   $async.Future<$0.MessagesResponse> getMessages(
-      $grpc.ServiceCall call, $0.GetMessagesRequest request);
+    $grpc.ServiceCall call,
+    $0.GetMessagesRequest request,
+  );
 
-  $async.Future<$0.Message> sendMessage_Pre($grpc.ServiceCall $call,
-      $async.Future<$0.SendMessageRequest> $request) async {
+  $async.Future<$0.Message> sendMessage_Pre(
+    $grpc.ServiceCall $call,
+    $async.Future<$0.SendMessageRequest> $request,
+  ) async {
     return sendMessage($call, await $request);
   }
 
   $async.Future<$0.Message> sendMessage(
-      $grpc.ServiceCall call, $0.SendMessageRequest request);
+    $grpc.ServiceCall call,
+    $0.SendMessageRequest request,
+  );
 
-  $async.Future<$0.ReadReceipt> markAsRead_Pre($grpc.ServiceCall $call,
-      $async.Future<$0.MarkAsReadRequest> $request) async {
+  $async.Future<$0.ReadReceipt> markAsRead_Pre(
+    $grpc.ServiceCall $call,
+    $async.Future<$0.MarkAsReadRequest> $request,
+  ) async {
     return markAsRead($call, await $request);
   }
 
   $async.Future<$0.ReadReceipt> markAsRead(
-      $grpc.ServiceCall call, $0.MarkAsReadRequest request);
+    $grpc.ServiceCall call,
+    $0.MarkAsReadRequest request,
+  );
 
   $async.Future<$0.BatchReadReceipt> markConversationAsRead_Pre(
-      $grpc.ServiceCall $call,
-      $async.Future<$0.MarkConversationAsReadRequest> $request) async {
+    $grpc.ServiceCall $call,
+    $async.Future<$0.MarkConversationAsReadRequest> $request,
+  ) async {
     return markConversationAsRead($call, await $request);
   }
 
   $async.Future<$0.BatchReadReceipt> markConversationAsRead(
-      $grpc.ServiceCall call, $0.MarkConversationAsReadRequest request);
+    $grpc.ServiceCall call,
+    $0.MarkConversationAsReadRequest request,
+  );
 
   $async.Future<$0.GetUnreadCountsResponse> getUnreadCounts_Pre(
-      $grpc.ServiceCall $call,
-      $async.Future<$0.GetUnreadCountsRequest> $request) async {
+    $grpc.ServiceCall $call,
+    $async.Future<$0.GetUnreadCountsRequest> $request,
+  ) async {
     return getUnreadCounts($call, await $request);
   }
 
   $async.Future<$0.GetUnreadCountsResponse> getUnreadCounts(
-      $grpc.ServiceCall call, $0.GetUnreadCountsRequest request);
+    $grpc.ServiceCall call,
+    $0.GetUnreadCountsRequest request,
+  );
 
   $async.Stream<$0.ServerEvent> streamEvents(
-      $grpc.ServiceCall call, $async.Stream<$0.ClientEvent> request);
+    $grpc.ServiceCall call,
+    $async.Stream<$0.ClientEvent> request,
+  );
 }

@@ -565,7 +565,7 @@ GRANT USAGE, SELECT ON SEQUENCE chat_messages_id_seq TO lesser_app;
 
 -- ============================================================================
 -- Part 17: 默认测试用户 (开发环境)
--- 密码: password123 (bcrypt hash)
+-- 密码: password123 (argon2id hash)
 -- ============================================================================
 DO $$
 DECLARE
@@ -578,7 +578,7 @@ BEGIN
         VALUES (
             'alice',
             'alice@test.com',
-            '$2a$10$N9qo8uLOickgx2ZMRZoMyeIjZAgcfl7p92ldGxad68LJZdL17lhWy',
+            '$argon2id$v=19$m=65536,t=3,p=2$gkQKt+vFdBCwgKkHcnGm7A$drMzARQh05w3XcNYahdXwTN7tG3SeUz/ZA1Dpa2Xf1M',
             'Alice Test',
             '测试用户 Alice，用于开发调试',
             true,
@@ -595,7 +595,7 @@ BEGIN
         VALUES (
             'bob',
             'bob@test.com',
-            '$2a$10$N9qo8uLOickgx2ZMRZoMyeIjZAgcfl7p92ldGxad68LJZdL17lhWy',
+            '$argon2id$v=19$m=65536,t=3,p=2$gkQKt+vFdBCwgKkHcnGm7A$drMzARQh05w3XcNYahdXwTN7tG3SeUz/ZA1Dpa2Xf1M',
             'Bob Test',
             '测试用户 Bob，用于开发调试',
             true,
@@ -609,7 +609,74 @@ END
 $$;
 
 -- ============================================================================
--- Part 18: 默认超级管理员
+-- Part 18: Channel 表 (Channel Service - 广播频道)
+-- ============================================================================
+CREATE TABLE IF NOT EXISTS channels (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    name VARCHAR(255) NOT NULL,
+    description TEXT,
+    avatar_url VARCHAR(500),
+    owner_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    subscriber_count BIGINT DEFAULT 0,
+    post_count BIGINT DEFAULT 0,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+    deleted_at TIMESTAMP WITH TIME ZONE
+);
+
+CREATE INDEX IF NOT EXISTS idx_channels_owner_id ON channels(owner_id);
+CREATE INDEX IF NOT EXISTS idx_channels_subscriber_count ON channels(subscriber_count DESC);
+CREATE INDEX IF NOT EXISTS idx_channels_created_at ON channels(created_at DESC);
+CREATE INDEX IF NOT EXISTS idx_channels_deleted_at ON channels(deleted_at) WHERE deleted_at IS NULL;
+
+DROP TRIGGER IF EXISTS update_channels_updated_at ON channels;
+CREATE TRIGGER update_channels_updated_at
+    BEFORE UPDATE ON channels FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+GRANT ALL PRIVILEGES ON TABLE channels TO lesser_app;
+
+-- 频道管理员表
+CREATE TABLE IF NOT EXISTS channel_admins (
+    channel_id UUID NOT NULL REFERENCES channels(id) ON DELETE CASCADE,
+    user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+    PRIMARY KEY (channel_id, user_id)
+);
+
+CREATE INDEX IF NOT EXISTS idx_channel_admins_user_id ON channel_admins(user_id);
+GRANT ALL PRIVILEGES ON TABLE channel_admins TO lesser_app;
+
+-- 频道订阅表
+CREATE TABLE IF NOT EXISTS channel_subscriptions (
+    channel_id UUID NOT NULL REFERENCES channels(id) ON DELETE CASCADE,
+    user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+    PRIMARY KEY (channel_id, user_id)
+);
+
+CREATE INDEX IF NOT EXISTS idx_channel_subscriptions_user_id ON channel_subscriptions(user_id);
+CREATE INDEX IF NOT EXISTS idx_channel_subscriptions_created_at ON channel_subscriptions(created_at DESC);
+GRANT ALL PRIVILEGES ON TABLE channel_subscriptions TO lesser_app;
+
+-- 频道内容表
+CREATE TABLE IF NOT EXISTS channel_posts (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    channel_id UUID NOT NULL REFERENCES channels(id) ON DELETE CASCADE,
+    author_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    content TEXT NOT NULL,
+    media_urls TEXT[] DEFAULT '{}',
+    view_count BIGINT DEFAULT 0,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+    deleted_at TIMESTAMP WITH TIME ZONE
+);
+
+CREATE INDEX IF NOT EXISTS idx_channel_posts_channel_id ON channel_posts(channel_id);
+CREATE INDEX IF NOT EXISTS idx_channel_posts_author_id ON channel_posts(author_id);
+CREATE INDEX IF NOT EXISTS idx_channel_posts_created_at ON channel_posts(created_at DESC);
+CREATE INDEX IF NOT EXISTS idx_channel_posts_channel_created ON channel_posts(channel_id, created_at DESC) WHERE deleted_at IS NULL;
+GRANT ALL PRIVILEGES ON TABLE channel_posts TO lesser_app;
+
+-- ============================================================================
+-- Part 19: 默认超级管理员
 -- 用户名: funcdfs, 密码: fw142857 (占位符，服务启动时更新)
 -- ============================================================================
 DO $$

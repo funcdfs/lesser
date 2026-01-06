@@ -26,6 +26,8 @@ export 'channel.pb.dart';
 /// 类似 Telegram Channel，支持单向广播模式
 @$pb.GrpcServiceName('channel.ChannelService')
 class ChannelServiceClient extends $grpc.Client {
+  ChannelServiceClient(super.channel, {super.options, super.interceptors});
+
   /// The hostname for this service.
   static const $core.String defaultHost = '';
 
@@ -33,8 +35,6 @@ class ChannelServiceClient extends $grpc.Client {
   static const $core.List<$core.String> oauthScopes = [
     '',
   ];
-
-  ChannelServiceClient(super.channel, {super.options, super.interceptors});
 
   /// 创建频道
   $grpc.ResponseFuture<$0.Channel> createChannel(
@@ -216,116 +216,136 @@ class ChannelServiceClient extends $grpc.Client {
 
   static final _$createChannel =
       $grpc.ClientMethod<$0.CreateChannelRequest, $0.Channel>(
-          '/channel.ChannelService/CreateChannel',
-          ($0.CreateChannelRequest value) => value.writeToBuffer(),
-          $0.Channel.fromBuffer);
+    '/channel.ChannelService/CreateChannel',
+    ($0.CreateChannelRequest value) => value.writeToBuffer(),
+    $0.Channel.fromBuffer,
+  );
   static final _$getChannel =
       $grpc.ClientMethod<$0.GetChannelRequest, $0.Channel>(
-          '/channel.ChannelService/GetChannel',
-          ($0.GetChannelRequest value) => value.writeToBuffer(),
-          $0.Channel.fromBuffer);
+    '/channel.ChannelService/GetChannel',
+    ($0.GetChannelRequest value) => value.writeToBuffer(),
+    $0.Channel.fromBuffer,
+  );
   static final _$updateChannel =
       $grpc.ClientMethod<$0.UpdateChannelRequest, $0.Channel>(
-          '/channel.ChannelService/UpdateChannel',
-          ($0.UpdateChannelRequest value) => value.writeToBuffer(),
-          $0.Channel.fromBuffer);
+    '/channel.ChannelService/UpdateChannel',
+    ($0.UpdateChannelRequest value) => value.writeToBuffer(),
+    $0.Channel.fromBuffer,
+  );
   static final _$deleteChannel =
       $grpc.ClientMethod<$0.DeleteChannelRequest, $1.Empty>(
-          '/channel.ChannelService/DeleteChannel',
-          ($0.DeleteChannelRequest value) => value.writeToBuffer(),
-          $1.Empty.fromBuffer);
+    '/channel.ChannelService/DeleteChannel',
+    ($0.DeleteChannelRequest value) => value.writeToBuffer(),
+    $1.Empty.fromBuffer,
+  );
   static final _$getSubscribedChannels =
       $grpc.ClientMethod<$0.GetSubscribedChannelsRequest, $0.ChannelsResponse>(
-          '/channel.ChannelService/GetSubscribedChannels',
-          ($0.GetSubscribedChannelsRequest value) => value.writeToBuffer(),
-          $0.ChannelsResponse.fromBuffer);
+    '/channel.ChannelService/GetSubscribedChannels',
+    ($0.GetSubscribedChannelsRequest value) => value.writeToBuffer(),
+    $0.ChannelsResponse.fromBuffer,
+  );
   static final _$getOwnedChannels =
       $grpc.ClientMethod<$0.GetOwnedChannelsRequest, $0.ChannelsResponse>(
-          '/channel.ChannelService/GetOwnedChannels',
-          ($0.GetOwnedChannelsRequest value) => value.writeToBuffer(),
-          $0.ChannelsResponse.fromBuffer);
+    '/channel.ChannelService/GetOwnedChannels',
+    ($0.GetOwnedChannelsRequest value) => value.writeToBuffer(),
+    $0.ChannelsResponse.fromBuffer,
+  );
   static final _$searchChannels =
       $grpc.ClientMethod<$0.SearchChannelsRequest, $0.ChannelsResponse>(
-          '/channel.ChannelService/SearchChannels',
-          ($0.SearchChannelsRequest value) => value.writeToBuffer(),
-          $0.ChannelsResponse.fromBuffer);
+    '/channel.ChannelService/SearchChannels',
+    ($0.SearchChannelsRequest value) => value.writeToBuffer(),
+    $0.ChannelsResponse.fromBuffer,
+  );
   static final _$subscribe = $grpc.ClientMethod<$0.SubscribeRequest, $1.Empty>(
-      '/channel.ChannelService/Subscribe',
-      ($0.SubscribeRequest value) => value.writeToBuffer(),
-      $1.Empty.fromBuffer);
+    '/channel.ChannelService/Subscribe',
+    ($0.SubscribeRequest value) => value.writeToBuffer(),
+    $1.Empty.fromBuffer,
+  );
   static final _$unsubscribe =
       $grpc.ClientMethod<$0.UnsubscribeRequest, $1.Empty>(
-          '/channel.ChannelService/Unsubscribe',
-          ($0.UnsubscribeRequest value) => value.writeToBuffer(),
-          $1.Empty.fromBuffer);
+    '/channel.ChannelService/Unsubscribe',
+    ($0.UnsubscribeRequest value) => value.writeToBuffer(),
+    $1.Empty.fromBuffer,
+  );
   static final _$getSubscribers =
       $grpc.ClientMethod<$0.GetSubscribersRequest, $0.SubscribersResponse>(
-          '/channel.ChannelService/GetSubscribers',
-          ($0.GetSubscribersRequest value) => value.writeToBuffer(),
-          $0.SubscribersResponse.fromBuffer);
+    '/channel.ChannelService/GetSubscribers',
+    ($0.GetSubscribersRequest value) => value.writeToBuffer(),
+    $0.SubscribersResponse.fromBuffer,
+  );
   static final _$checkSubscription = $grpc.ClientMethod<
-          $0.CheckSubscriptionRequest, $0.CheckSubscriptionResponse>(
-      '/channel.ChannelService/CheckSubscription',
-      ($0.CheckSubscriptionRequest value) => value.writeToBuffer(),
-      $0.CheckSubscriptionResponse.fromBuffer);
+      $0.CheckSubscriptionRequest, $0.CheckSubscriptionResponse>(
+    '/channel.ChannelService/CheckSubscription',
+    ($0.CheckSubscriptionRequest value) => value.writeToBuffer(),
+    $0.CheckSubscriptionResponse.fromBuffer,
+  );
   static final _$addAdmin = $grpc.ClientMethod<$0.AddAdminRequest, $1.Empty>(
-      '/channel.ChannelService/AddAdmin',
-      ($0.AddAdminRequest value) => value.writeToBuffer(),
-      $1.Empty.fromBuffer);
+    '/channel.ChannelService/AddAdmin',
+    ($0.AddAdminRequest value) => value.writeToBuffer(),
+    $1.Empty.fromBuffer,
+  );
   static final _$removeAdmin =
       $grpc.ClientMethod<$0.RemoveAdminRequest, $1.Empty>(
-          '/channel.ChannelService/RemoveAdmin',
-          ($0.RemoveAdminRequest value) => value.writeToBuffer(),
-          $1.Empty.fromBuffer);
+    '/channel.ChannelService/RemoveAdmin',
+    ($0.RemoveAdminRequest value) => value.writeToBuffer(),
+    $1.Empty.fromBuffer,
+  );
   static final _$getAdmins =
       $grpc.ClientMethod<$0.GetAdminsRequest, $0.AdminsResponse>(
-          '/channel.ChannelService/GetAdmins',
-          ($0.GetAdminsRequest value) => value.writeToBuffer(),
-          $0.AdminsResponse.fromBuffer);
+    '/channel.ChannelService/GetAdmins',
+    ($0.GetAdminsRequest value) => value.writeToBuffer(),
+    $0.AdminsResponse.fromBuffer,
+  );
   static final _$publishPost =
       $grpc.ClientMethod<$0.PublishPostRequest, $0.ChannelPost>(
-          '/channel.ChannelService/PublishPost',
-          ($0.PublishPostRequest value) => value.writeToBuffer(),
-          $0.ChannelPost.fromBuffer);
+    '/channel.ChannelService/PublishPost',
+    ($0.PublishPostRequest value) => value.writeToBuffer(),
+    $0.ChannelPost.fromBuffer,
+  );
   static final _$getPosts =
       $grpc.ClientMethod<$0.GetPostsRequest, $0.PostsResponse>(
-          '/channel.ChannelService/GetPosts',
-          ($0.GetPostsRequest value) => value.writeToBuffer(),
-          $0.PostsResponse.fromBuffer);
+    '/channel.ChannelService/GetPosts',
+    ($0.GetPostsRequest value) => value.writeToBuffer(),
+    $0.PostsResponse.fromBuffer,
+  );
   static final _$getPost =
       $grpc.ClientMethod<$0.GetPostRequest, $0.ChannelPost>(
-          '/channel.ChannelService/GetPost',
-          ($0.GetPostRequest value) => value.writeToBuffer(),
-          $0.ChannelPost.fromBuffer);
+    '/channel.ChannelService/GetPost',
+    ($0.GetPostRequest value) => value.writeToBuffer(),
+    $0.ChannelPost.fromBuffer,
+  );
   static final _$editPost =
       $grpc.ClientMethod<$0.EditPostRequest, $0.ChannelPost>(
-          '/channel.ChannelService/EditPost',
-          ($0.EditPostRequest value) => value.writeToBuffer(),
-          $0.ChannelPost.fromBuffer);
+    '/channel.ChannelService/EditPost',
+    ($0.EditPostRequest value) => value.writeToBuffer(),
+    $0.ChannelPost.fromBuffer,
+  );
   static final _$deletePost =
       $grpc.ClientMethod<$0.DeletePostRequest, $1.Empty>(
-          '/channel.ChannelService/DeletePost',
-          ($0.DeletePostRequest value) => value.writeToBuffer(),
-          $1.Empty.fromBuffer);
+    '/channel.ChannelService/DeletePost',
+    ($0.DeletePostRequest value) => value.writeToBuffer(),
+    $1.Empty.fromBuffer,
+  );
   static final _$pinPost = $grpc.ClientMethod<$0.PinPostRequest, $1.Empty>(
-      '/channel.ChannelService/PinPost',
-      ($0.PinPostRequest value) => value.writeToBuffer(),
-      $1.Empty.fromBuffer);
+    '/channel.ChannelService/PinPost',
+    ($0.PinPostRequest value) => value.writeToBuffer(),
+    $1.Empty.fromBuffer,
+  );
   static final _$unpinPost = $grpc.ClientMethod<$0.UnpinPostRequest, $1.Empty>(
-      '/channel.ChannelService/UnpinPost',
-      ($0.UnpinPostRequest value) => value.writeToBuffer(),
-      $1.Empty.fromBuffer);
+    '/channel.ChannelService/UnpinPost',
+    ($0.UnpinPostRequest value) => value.writeToBuffer(),
+    $1.Empty.fromBuffer,
+  );
   static final _$streamUpdates =
       $grpc.ClientMethod<$0.ChannelClientEvent, $0.ChannelServerEvent>(
-          '/channel.ChannelService/StreamUpdates',
-          ($0.ChannelClientEvent value) => value.writeToBuffer(),
-          $0.ChannelServerEvent.fromBuffer);
+    '/channel.ChannelService/StreamUpdates',
+    ($0.ChannelClientEvent value) => value.writeToBuffer(),
+    $0.ChannelServerEvent.fromBuffer,
+  );
 }
 
 @$pb.GrpcServiceName('channel.ChannelService')
 abstract class ChannelServiceBase extends $grpc.Service {
-  $core.String get $name => 'channel.ChannelService';
-
   ChannelServiceBase() {
     $addMethod($grpc.ServiceMethod<$0.CreateChannelRequest, $0.Channel>(
         'CreateChannel',
@@ -500,179 +520,262 @@ abstract class ChannelServiceBase extends $grpc.Service {
                 $0.ChannelClientEvent.fromBuffer(value),
             ($0.ChannelServerEvent value) => value.writeToBuffer()));
   }
+  $core.String get $name => 'channel.ChannelService';
 
-  $async.Future<$0.Channel> createChannel_Pre($grpc.ServiceCall $call,
-      $async.Future<$0.CreateChannelRequest> $request) async {
+  $async.Future<$0.Channel> createChannel_Pre(
+    $grpc.ServiceCall $call,
+    $async.Future<$0.CreateChannelRequest> $request,
+  ) async {
     return createChannel($call, await $request);
   }
 
   $async.Future<$0.Channel> createChannel(
-      $grpc.ServiceCall call, $0.CreateChannelRequest request);
+    $grpc.ServiceCall call,
+    $0.CreateChannelRequest request,
+  );
 
-  $async.Future<$0.Channel> getChannel_Pre($grpc.ServiceCall $call,
-      $async.Future<$0.GetChannelRequest> $request) async {
+  $async.Future<$0.Channel> getChannel_Pre(
+    $grpc.ServiceCall $call,
+    $async.Future<$0.GetChannelRequest> $request,
+  ) async {
     return getChannel($call, await $request);
   }
 
   $async.Future<$0.Channel> getChannel(
-      $grpc.ServiceCall call, $0.GetChannelRequest request);
+    $grpc.ServiceCall call,
+    $0.GetChannelRequest request,
+  );
 
-  $async.Future<$0.Channel> updateChannel_Pre($grpc.ServiceCall $call,
-      $async.Future<$0.UpdateChannelRequest> $request) async {
+  $async.Future<$0.Channel> updateChannel_Pre(
+    $grpc.ServiceCall $call,
+    $async.Future<$0.UpdateChannelRequest> $request,
+  ) async {
     return updateChannel($call, await $request);
   }
 
   $async.Future<$0.Channel> updateChannel(
-      $grpc.ServiceCall call, $0.UpdateChannelRequest request);
+    $grpc.ServiceCall call,
+    $0.UpdateChannelRequest request,
+  );
 
-  $async.Future<$1.Empty> deleteChannel_Pre($grpc.ServiceCall $call,
-      $async.Future<$0.DeleteChannelRequest> $request) async {
+  $async.Future<$1.Empty> deleteChannel_Pre(
+    $grpc.ServiceCall $call,
+    $async.Future<$0.DeleteChannelRequest> $request,
+  ) async {
     return deleteChannel($call, await $request);
   }
 
   $async.Future<$1.Empty> deleteChannel(
-      $grpc.ServiceCall call, $0.DeleteChannelRequest request);
+    $grpc.ServiceCall call,
+    $0.DeleteChannelRequest request,
+  );
 
   $async.Future<$0.ChannelsResponse> getSubscribedChannels_Pre(
-      $grpc.ServiceCall $call,
-      $async.Future<$0.GetSubscribedChannelsRequest> $request) async {
+    $grpc.ServiceCall $call,
+    $async.Future<$0.GetSubscribedChannelsRequest> $request,
+  ) async {
     return getSubscribedChannels($call, await $request);
   }
 
   $async.Future<$0.ChannelsResponse> getSubscribedChannels(
-      $grpc.ServiceCall call, $0.GetSubscribedChannelsRequest request);
+    $grpc.ServiceCall call,
+    $0.GetSubscribedChannelsRequest request,
+  );
 
   $async.Future<$0.ChannelsResponse> getOwnedChannels_Pre(
-      $grpc.ServiceCall $call,
-      $async.Future<$0.GetOwnedChannelsRequest> $request) async {
+    $grpc.ServiceCall $call,
+    $async.Future<$0.GetOwnedChannelsRequest> $request,
+  ) async {
     return getOwnedChannels($call, await $request);
   }
 
   $async.Future<$0.ChannelsResponse> getOwnedChannels(
-      $grpc.ServiceCall call, $0.GetOwnedChannelsRequest request);
+    $grpc.ServiceCall call,
+    $0.GetOwnedChannelsRequest request,
+  );
 
-  $async.Future<$0.ChannelsResponse> searchChannels_Pre($grpc.ServiceCall $call,
-      $async.Future<$0.SearchChannelsRequest> $request) async {
+  $async.Future<$0.ChannelsResponse> searchChannels_Pre(
+    $grpc.ServiceCall $call,
+    $async.Future<$0.SearchChannelsRequest> $request,
+  ) async {
     return searchChannels($call, await $request);
   }
 
   $async.Future<$0.ChannelsResponse> searchChannels(
-      $grpc.ServiceCall call, $0.SearchChannelsRequest request);
+    $grpc.ServiceCall call,
+    $0.SearchChannelsRequest request,
+  );
 
-  $async.Future<$1.Empty> subscribe_Pre($grpc.ServiceCall $call,
-      $async.Future<$0.SubscribeRequest> $request) async {
+  $async.Future<$1.Empty> subscribe_Pre(
+    $grpc.ServiceCall $call,
+    $async.Future<$0.SubscribeRequest> $request,
+  ) async {
     return subscribe($call, await $request);
   }
 
   $async.Future<$1.Empty> subscribe(
-      $grpc.ServiceCall call, $0.SubscribeRequest request);
+    $grpc.ServiceCall call,
+    $0.SubscribeRequest request,
+  );
 
-  $async.Future<$1.Empty> unsubscribe_Pre($grpc.ServiceCall $call,
-      $async.Future<$0.UnsubscribeRequest> $request) async {
+  $async.Future<$1.Empty> unsubscribe_Pre(
+    $grpc.ServiceCall $call,
+    $async.Future<$0.UnsubscribeRequest> $request,
+  ) async {
     return unsubscribe($call, await $request);
   }
 
   $async.Future<$1.Empty> unsubscribe(
-      $grpc.ServiceCall call, $0.UnsubscribeRequest request);
+    $grpc.ServiceCall call,
+    $0.UnsubscribeRequest request,
+  );
 
   $async.Future<$0.SubscribersResponse> getSubscribers_Pre(
-      $grpc.ServiceCall $call,
-      $async.Future<$0.GetSubscribersRequest> $request) async {
+    $grpc.ServiceCall $call,
+    $async.Future<$0.GetSubscribersRequest> $request,
+  ) async {
     return getSubscribers($call, await $request);
   }
 
   $async.Future<$0.SubscribersResponse> getSubscribers(
-      $grpc.ServiceCall call, $0.GetSubscribersRequest request);
+    $grpc.ServiceCall call,
+    $0.GetSubscribersRequest request,
+  );
 
   $async.Future<$0.CheckSubscriptionResponse> checkSubscription_Pre(
-      $grpc.ServiceCall $call,
-      $async.Future<$0.CheckSubscriptionRequest> $request) async {
+    $grpc.ServiceCall $call,
+    $async.Future<$0.CheckSubscriptionRequest> $request,
+  ) async {
     return checkSubscription($call, await $request);
   }
 
   $async.Future<$0.CheckSubscriptionResponse> checkSubscription(
-      $grpc.ServiceCall call, $0.CheckSubscriptionRequest request);
+    $grpc.ServiceCall call,
+    $0.CheckSubscriptionRequest request,
+  );
 
-  $async.Future<$1.Empty> addAdmin_Pre($grpc.ServiceCall $call,
-      $async.Future<$0.AddAdminRequest> $request) async {
+  $async.Future<$1.Empty> addAdmin_Pre(
+    $grpc.ServiceCall $call,
+    $async.Future<$0.AddAdminRequest> $request,
+  ) async {
     return addAdmin($call, await $request);
   }
 
   $async.Future<$1.Empty> addAdmin(
-      $grpc.ServiceCall call, $0.AddAdminRequest request);
+    $grpc.ServiceCall call,
+    $0.AddAdminRequest request,
+  );
 
-  $async.Future<$1.Empty> removeAdmin_Pre($grpc.ServiceCall $call,
-      $async.Future<$0.RemoveAdminRequest> $request) async {
+  $async.Future<$1.Empty> removeAdmin_Pre(
+    $grpc.ServiceCall $call,
+    $async.Future<$0.RemoveAdminRequest> $request,
+  ) async {
     return removeAdmin($call, await $request);
   }
 
   $async.Future<$1.Empty> removeAdmin(
-      $grpc.ServiceCall call, $0.RemoveAdminRequest request);
+    $grpc.ServiceCall call,
+    $0.RemoveAdminRequest request,
+  );
 
-  $async.Future<$0.AdminsResponse> getAdmins_Pre($grpc.ServiceCall $call,
-      $async.Future<$0.GetAdminsRequest> $request) async {
+  $async.Future<$0.AdminsResponse> getAdmins_Pre(
+    $grpc.ServiceCall $call,
+    $async.Future<$0.GetAdminsRequest> $request,
+  ) async {
     return getAdmins($call, await $request);
   }
 
   $async.Future<$0.AdminsResponse> getAdmins(
-      $grpc.ServiceCall call, $0.GetAdminsRequest request);
+    $grpc.ServiceCall call,
+    $0.GetAdminsRequest request,
+  );
 
-  $async.Future<$0.ChannelPost> publishPost_Pre($grpc.ServiceCall $call,
-      $async.Future<$0.PublishPostRequest> $request) async {
+  $async.Future<$0.ChannelPost> publishPost_Pre(
+    $grpc.ServiceCall $call,
+    $async.Future<$0.PublishPostRequest> $request,
+  ) async {
     return publishPost($call, await $request);
   }
 
   $async.Future<$0.ChannelPost> publishPost(
-      $grpc.ServiceCall call, $0.PublishPostRequest request);
+    $grpc.ServiceCall call,
+    $0.PublishPostRequest request,
+  );
 
-  $async.Future<$0.PostsResponse> getPosts_Pre($grpc.ServiceCall $call,
-      $async.Future<$0.GetPostsRequest> $request) async {
+  $async.Future<$0.PostsResponse> getPosts_Pre(
+    $grpc.ServiceCall $call,
+    $async.Future<$0.GetPostsRequest> $request,
+  ) async {
     return getPosts($call, await $request);
   }
 
   $async.Future<$0.PostsResponse> getPosts(
-      $grpc.ServiceCall call, $0.GetPostsRequest request);
+    $grpc.ServiceCall call,
+    $0.GetPostsRequest request,
+  );
 
-  $async.Future<$0.ChannelPost> getPost_Pre($grpc.ServiceCall $call,
-      $async.Future<$0.GetPostRequest> $request) async {
+  $async.Future<$0.ChannelPost> getPost_Pre(
+    $grpc.ServiceCall $call,
+    $async.Future<$0.GetPostRequest> $request,
+  ) async {
     return getPost($call, await $request);
   }
 
   $async.Future<$0.ChannelPost> getPost(
-      $grpc.ServiceCall call, $0.GetPostRequest request);
+    $grpc.ServiceCall call,
+    $0.GetPostRequest request,
+  );
 
-  $async.Future<$0.ChannelPost> editPost_Pre($grpc.ServiceCall $call,
-      $async.Future<$0.EditPostRequest> $request) async {
+  $async.Future<$0.ChannelPost> editPost_Pre(
+    $grpc.ServiceCall $call,
+    $async.Future<$0.EditPostRequest> $request,
+  ) async {
     return editPost($call, await $request);
   }
 
   $async.Future<$0.ChannelPost> editPost(
-      $grpc.ServiceCall call, $0.EditPostRequest request);
+    $grpc.ServiceCall call,
+    $0.EditPostRequest request,
+  );
 
-  $async.Future<$1.Empty> deletePost_Pre($grpc.ServiceCall $call,
-      $async.Future<$0.DeletePostRequest> $request) async {
+  $async.Future<$1.Empty> deletePost_Pre(
+    $grpc.ServiceCall $call,
+    $async.Future<$0.DeletePostRequest> $request,
+  ) async {
     return deletePost($call, await $request);
   }
 
   $async.Future<$1.Empty> deletePost(
-      $grpc.ServiceCall call, $0.DeletePostRequest request);
+    $grpc.ServiceCall call,
+    $0.DeletePostRequest request,
+  );
 
-  $async.Future<$1.Empty> pinPost_Pre($grpc.ServiceCall $call,
-      $async.Future<$0.PinPostRequest> $request) async {
+  $async.Future<$1.Empty> pinPost_Pre(
+    $grpc.ServiceCall $call,
+    $async.Future<$0.PinPostRequest> $request,
+  ) async {
     return pinPost($call, await $request);
   }
 
   $async.Future<$1.Empty> pinPost(
-      $grpc.ServiceCall call, $0.PinPostRequest request);
+    $grpc.ServiceCall call,
+    $0.PinPostRequest request,
+  );
 
-  $async.Future<$1.Empty> unpinPost_Pre($grpc.ServiceCall $call,
-      $async.Future<$0.UnpinPostRequest> $request) async {
+  $async.Future<$1.Empty> unpinPost_Pre(
+    $grpc.ServiceCall $call,
+    $async.Future<$0.UnpinPostRequest> $request,
+  ) async {
     return unpinPost($call, await $request);
   }
 
   $async.Future<$1.Empty> unpinPost(
-      $grpc.ServiceCall call, $0.UnpinPostRequest request);
+    $grpc.ServiceCall call,
+    $0.UnpinPostRequest request,
+  );
 
   $async.Stream<$0.ChannelServerEvent> streamUpdates(
-      $grpc.ServiceCall call, $async.Stream<$0.ChannelClientEvent> request);
+    $grpc.ServiceCall call,
+    $async.Stream<$0.ChannelClientEvent> request,
+  );
 }

@@ -154,11 +154,10 @@ fn print_quick_links(statuses: &[ServiceStatus]) {
     let has_dozzle = running.iter().any(|s| s.service_name() == "dozzle");
 
     if has_gateway {
-        ui::kv("    Gateway gRPC", "localhost:50053");
+        ui::kv("    Gateway gRPC", "localhost:50051");
     }
     if has_chat {
-        ui::kv("    Chat gRPC", "localhost:50052");
-        ui::kv("    Chat WebSocket", "ws://localhost:8081/ws/chat");
+        ui::kv("    Chat gRPC", "localhost:50060");
     }
     if has_traefik {
         ui::kv("    Traefik", "http://localhost:8088");

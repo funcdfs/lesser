@@ -38,8 +38,8 @@ func NewChannelHandler(service logic.ChannelService, streamManager *StreamManage
 
 // CreateChannel 创建频道
 func (h *ChannelHandler) CreateChannel(ctx context.Context, req *pb.CreateChannelRequest) (*pb.Channel, error) {
-	// 获取用户 ID
-	userID, err := auth.ExtractUserIDFromMetadata(ctx)
+	// 获取用户 ID（从 context value 中获取，由拦截器注入）
+	userID, err := auth.MustUserIDFromContext(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -66,8 +66,8 @@ func (h *ChannelHandler) CreateChannel(ctx context.Context, req *pb.CreateChanne
 
 // GetChannel 获取频道信息
 func (h *ChannelHandler) GetChannel(ctx context.Context, req *pb.GetChannelRequest) (*pb.Channel, error) {
-	// 获取用户 ID（可选）
-	userID, _ := auth.ExtractUserIDFromMetadata(ctx)
+	// 获取用户 ID（可选，从 context value 中获取）
+	userID := auth.UserIDFromContext(ctx)
 
 	// 参数验证
 	if req.ChannelId == "" {
@@ -85,8 +85,8 @@ func (h *ChannelHandler) GetChannel(ctx context.Context, req *pb.GetChannelReque
 
 // UpdateChannel 更新频道信息
 func (h *ChannelHandler) UpdateChannel(ctx context.Context, req *pb.UpdateChannelRequest) (*pb.Channel, error) {
-	// 获取用户 ID
-	userID, err := auth.ExtractUserIDFromMetadata(ctx)
+	// 获取用户 ID（从 context value 中获取，由拦截器注入）
+	userID, err := auth.MustUserIDFromContext(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -114,8 +114,8 @@ func (h *ChannelHandler) UpdateChannel(ctx context.Context, req *pb.UpdateChanne
 
 // DeleteChannel 删除频道
 func (h *ChannelHandler) DeleteChannel(ctx context.Context, req *pb.DeleteChannelRequest) (*common.Empty, error) {
-	// 获取用户 ID
-	userID, err := auth.ExtractUserIDFromMetadata(ctx)
+	// 获取用户 ID（从 context value 中获取，由拦截器注入）
+	userID, err := auth.MustUserIDFromContext(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -135,11 +135,11 @@ func (h *ChannelHandler) DeleteChannel(ctx context.Context, req *pb.DeleteChanne
 
 // GetSubscribedChannels 获取用户订阅的频道列表
 func (h *ChannelHandler) GetSubscribedChannels(ctx context.Context, req *pb.GetSubscribedChannelsRequest) (*pb.ChannelsResponse, error) {
-	// 获取用户 ID
+	// 获取用户 ID（优先使用请求参数，否则从 context 获取）
 	userID := req.UserId
 	if userID == "" {
 		var err error
-		userID, err = auth.ExtractUserIDFromMetadata(ctx)
+		userID, err = auth.MustUserIDFromContext(ctx)
 		if err != nil {
 			return nil, err
 		}
@@ -162,11 +162,11 @@ func (h *ChannelHandler) GetSubscribedChannels(ctx context.Context, req *pb.GetS
 
 // GetOwnedChannels 获取用户管理的频道列表
 func (h *ChannelHandler) GetOwnedChannels(ctx context.Context, req *pb.GetOwnedChannelsRequest) (*pb.ChannelsResponse, error) {
-	// 获取用户 ID
+	// 获取用户 ID（优先使用请求参数，否则从 context 获取）
 	userID := req.UserId
 	if userID == "" {
 		var err error
-		userID, err = auth.ExtractUserIDFromMetadata(ctx)
+		userID, err = auth.MustUserIDFromContext(ctx)
 		if err != nil {
 			return nil, err
 		}
@@ -189,8 +189,8 @@ func (h *ChannelHandler) GetOwnedChannels(ctx context.Context, req *pb.GetOwnedC
 
 // SearchChannels 搜索频道
 func (h *ChannelHandler) SearchChannels(ctx context.Context, req *pb.SearchChannelsRequest) (*pb.ChannelsResponse, error) {
-	// 获取用户 ID（可选）
-	userID, _ := auth.ExtractUserIDFromMetadata(ctx)
+	// 获取用户 ID（可选，从 context value 中获取）
+	userID := auth.UserIDFromContext(ctx)
 
 	// 分页参数
 	limit, offset := getPagination(req.Pagination)
@@ -213,8 +213,8 @@ func (h *ChannelHandler) SearchChannels(ctx context.Context, req *pb.SearchChann
 
 // Subscribe 订阅频道
 func (h *ChannelHandler) Subscribe(ctx context.Context, req *pb.SubscribeRequest) (*common.Empty, error) {
-	// 获取用户 ID
-	userID, err := auth.ExtractUserIDFromMetadata(ctx)
+	// 获取用户 ID（从 context value 中获取，由拦截器注入）
+	userID, err := auth.MustUserIDFromContext(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -234,8 +234,8 @@ func (h *ChannelHandler) Subscribe(ctx context.Context, req *pb.SubscribeRequest
 
 // Unsubscribe 取消订阅
 func (h *ChannelHandler) Unsubscribe(ctx context.Context, req *pb.UnsubscribeRequest) (*common.Empty, error) {
-	// 获取用户 ID
-	userID, err := auth.ExtractUserIDFromMetadata(ctx)
+	// 获取用户 ID（从 context value 中获取，由拦截器注入）
+	userID, err := auth.MustUserIDFromContext(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -277,8 +277,8 @@ func (h *ChannelHandler) GetSubscribers(ctx context.Context, req *pb.GetSubscrib
 
 // CheckSubscription 检查是否已订阅
 func (h *ChannelHandler) CheckSubscription(ctx context.Context, req *pb.CheckSubscriptionRequest) (*pb.CheckSubscriptionResponse, error) {
-	// 获取用户 ID
-	userID, err := auth.ExtractUserIDFromMetadata(ctx)
+	// 获取用户 ID（从 context value 中获取，由拦截器注入）
+	userID, err := auth.MustUserIDFromContext(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -303,8 +303,8 @@ func (h *ChannelHandler) CheckSubscription(ctx context.Context, req *pb.CheckSub
 
 // AddAdmin 添加管理员
 func (h *ChannelHandler) AddAdmin(ctx context.Context, req *pb.AddAdminRequest) (*common.Empty, error) {
-	// 获取用户 ID
-	userID, err := auth.ExtractUserIDFromMetadata(ctx)
+	// 获取用户 ID（从 context value 中获取，由拦截器注入）
+	userID, err := auth.MustUserIDFromContext(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -327,8 +327,8 @@ func (h *ChannelHandler) AddAdmin(ctx context.Context, req *pb.AddAdminRequest) 
 
 // RemoveAdmin 移除管理员
 func (h *ChannelHandler) RemoveAdmin(ctx context.Context, req *pb.RemoveAdminRequest) (*common.Empty, error) {
-	// 获取用户 ID
-	userID, err := auth.ExtractUserIDFromMetadata(ctx)
+	// 获取用户 ID（从 context value 中获取，由拦截器注入）
+	userID, err := auth.MustUserIDFromContext(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -371,8 +371,8 @@ func (h *ChannelHandler) GetAdmins(ctx context.Context, req *pb.GetAdminsRequest
 
 // PublishPost 发布内容
 func (h *ChannelHandler) PublishPost(ctx context.Context, req *pb.PublishPostRequest) (*pb.ChannelPost, error) {
-	// 获取用户 ID
-	userID, err := auth.ExtractUserIDFromMetadata(ctx)
+	// 获取用户 ID（从 context value 中获取，由拦截器注入）
+	userID, err := auth.MustUserIDFromContext(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -438,8 +438,8 @@ func (h *ChannelHandler) GetPost(ctx context.Context, req *pb.GetPostRequest) (*
 
 // EditPost 编辑频道内容
 func (h *ChannelHandler) EditPost(ctx context.Context, req *pb.EditPostRequest) (*pb.ChannelPost, error) {
-	// 获取用户 ID
-	userID, err := auth.ExtractUserIDFromMetadata(ctx)
+	// 获取用户 ID（从 context value 中获取，由拦截器注入）
+	userID, err := auth.MustUserIDFromContext(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -464,8 +464,8 @@ func (h *ChannelHandler) EditPost(ctx context.Context, req *pb.EditPostRequest) 
 
 // DeletePost 删除频道内容
 func (h *ChannelHandler) DeletePost(ctx context.Context, req *pb.DeletePostRequest) (*common.Empty, error) {
-	// 获取用户 ID
-	userID, err := auth.ExtractUserIDFromMetadata(ctx)
+	// 获取用户 ID（从 context value 中获取，由拦截器注入）
+	userID, err := auth.MustUserIDFromContext(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -485,8 +485,8 @@ func (h *ChannelHandler) DeletePost(ctx context.Context, req *pb.DeletePostReque
 
 // PinPost 置顶内容
 func (h *ChannelHandler) PinPost(ctx context.Context, req *pb.PinPostRequest) (*common.Empty, error) {
-	// 获取用户 ID
-	userID, err := auth.ExtractUserIDFromMetadata(ctx)
+	// 获取用户 ID（从 context value 中获取，由拦截器注入）
+	userID, err := auth.MustUserIDFromContext(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -506,8 +506,8 @@ func (h *ChannelHandler) PinPost(ctx context.Context, req *pb.PinPostRequest) (*
 
 // UnpinPost 取消置顶
 func (h *ChannelHandler) UnpinPost(ctx context.Context, req *pb.UnpinPostRequest) (*common.Empty, error) {
-	// 获取用户 ID
-	userID, err := auth.ExtractUserIDFromMetadata(ctx)
+	// 获取用户 ID（从 context value 中获取，由拦截器注入）
+	userID, err := auth.MustUserIDFromContext(ctx)
 	if err != nil {
 		return nil, err
 	}

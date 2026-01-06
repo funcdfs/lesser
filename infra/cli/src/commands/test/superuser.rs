@@ -33,7 +33,7 @@ pub async fn run_tests() -> Result<TestStats> {
 
     // 1. SuperUser 登录
     let (success, su_info) = superuser_login().await;
-    stats.record_with_func(success, "SuperUser 登录", "Login()", "superuser/handler.go");
+    stats.record_with_func(success, "SuperUser 登录", "Login()", "service/superuser/internal/handler/superuser_handler.go");
     grpc::delay_short().await;
 
     if su_info.access_token.is_empty() {
@@ -50,47 +50,47 @@ pub async fn run_tests() -> Result<TestStats> {
 
     // 3. 获取用户列表
     let result = list_users(&su_info).await;
-    stats.record_with_func(result, "获取用户列表", "ListUsers()", "superuser/handler.go");
+    stats.record_with_func(result, "获取用户列表", "ListUsers()", "service/superuser/internal/handler/superuser_handler.go");
     grpc::delay_short().await;
 
     // 4. 获取用户详情
     let result = get_user(&su_info, &zombie.id).await;
-    stats.record_with_func(result, "获取用户详情", "GetUser()", "superuser/handler.go");
+    stats.record_with_func(result, "获取用户详情", "GetUser()", "service/superuser/internal/handler/superuser_handler.go");
     grpc::delay_short().await;
 
     // 5. 封禁僵尸用户
     let result = ban_user(&su_info, &zombie.id, "测试封禁").await;
-    stats.record_with_func(result, "封禁用户", "BanUser()", "superuser/handler.go");
+    stats.record_with_func(result, "封禁用户", "BanUser()", "service/superuser/internal/handler/superuser_handler.go");
     grpc::delay_short().await;
 
     // 6. 解封僵尸用户
     let result = unban_user(&su_info, &zombie.id).await;
-    stats.record_with_func(result, "解封用户", "UnbanUser()", "superuser/handler.go");
+    stats.record_with_func(result, "解封用户", "UnbanUser()", "service/superuser/internal/handler/superuser_handler.go");
     grpc::delay_short().await;
 
     // 7. 获取系统统计信息
     let result = get_system_stats(&su_info).await;
-    stats.record_with_func(result, "获取系统统计信息", "GetSystemStats()", "superuser/handler.go");
+    stats.record_with_func(result, "获取系统统计信息", "GetSystemStats()", "service/superuser/internal/handler/superuser_handler.go");
     grpc::delay_short().await;
 
     // 8. 获取数据库状态
     let result = get_database_status(&su_info).await;
-    stats.record_with_func(result, "获取数据库状态", "GetDatabaseStatus()", "superuser/handler.go");
+    stats.record_with_func(result, "获取数据库状态", "GetDatabaseStatus()", "service/superuser/internal/handler/superuser_handler.go");
     grpc::delay_short().await;
 
     // 9. 获取审计日志
     let result = get_audit_logs(&su_info).await;
-    stats.record_with_func(result, "获取审计日志", "GetAuditLogs()", "superuser/handler.go");
+    stats.record_with_func(result, "获取审计日志", "GetAuditLogs()", "service/superuser/internal/handler/superuser_handler.go");
     grpc::delay_short().await;
 
     // 10. 删除僵尸用户
     let result = delete_user(&su_info, &zombie.id).await;
-    stats.record_with_func(result, "删除用户", "DeleteUser()", "superuser/handler.go");
+    stats.record_with_func(result, "删除用户", "DeleteUser()", "service/superuser/internal/handler/superuser_handler.go");
     grpc::delay_short().await;
 
     // 11. SuperUser 登出
     let result = superuser_logout(&su_info).await;
-    stats.record_with_func(result, "SuperUser 登出", "Logout()", "superuser/handler.go");
+    stats.record_with_func(result, "SuperUser 登出", "Logout()", "service/superuser/internal/handler/superuser_handler.go");
 
     println!();
     Ok(stats)

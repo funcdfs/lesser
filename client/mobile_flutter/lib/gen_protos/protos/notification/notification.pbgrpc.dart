@@ -24,6 +24,8 @@ export 'notification.pb.dart';
 /// NotificationService 通知服务
 @$pb.GrpcServiceName('notification.NotificationService')
 class NotificationServiceClient extends $grpc.Client {
+  NotificationServiceClient(super.channel, {super.options, super.interceptors});
+
   /// The hostname for this service.
   static const $core.String defaultHost = '';
 
@@ -31,8 +33,6 @@ class NotificationServiceClient extends $grpc.Client {
   static const $core.List<$core.String> oauthScopes = [
     '',
   ];
-
-  NotificationServiceClient(super.channel, {super.options, super.interceptors});
 
   $grpc.ResponseFuture<$0.ListNotificationsResponse> list(
     $0.ListNotificationsRequest request, {
@@ -65,31 +65,33 @@ class NotificationServiceClient extends $grpc.Client {
   // method descriptors
 
   static final _$list = $grpc.ClientMethod<$0.ListNotificationsRequest,
-          $0.ListNotificationsResponse>(
-      '/notification.NotificationService/List',
-      ($0.ListNotificationsRequest value) => value.writeToBuffer(),
-      $0.ListNotificationsResponse.fromBuffer);
+      $0.ListNotificationsResponse>(
+    '/notification.NotificationService/List',
+    ($0.ListNotificationsRequest value) => value.writeToBuffer(),
+    $0.ListNotificationsResponse.fromBuffer,
+  );
   static final _$read =
       $grpc.ClientMethod<$0.ReadNotificationRequest, $1.Empty>(
-          '/notification.NotificationService/Read',
-          ($0.ReadNotificationRequest value) => value.writeToBuffer(),
-          $1.Empty.fromBuffer);
+    '/notification.NotificationService/Read',
+    ($0.ReadNotificationRequest value) => value.writeToBuffer(),
+    $1.Empty.fromBuffer,
+  );
   static final _$readAll =
       $grpc.ClientMethod<$0.ReadAllNotificationsRequest, $1.Empty>(
-          '/notification.NotificationService/ReadAll',
-          ($0.ReadAllNotificationsRequest value) => value.writeToBuffer(),
-          $1.Empty.fromBuffer);
+    '/notification.NotificationService/ReadAll',
+    ($0.ReadAllNotificationsRequest value) => value.writeToBuffer(),
+    $1.Empty.fromBuffer,
+  );
   static final _$getUnreadCount =
       $grpc.ClientMethod<$0.GetUnreadCountRequest, $0.UnreadCountResponse>(
-          '/notification.NotificationService/GetUnreadCount',
-          ($0.GetUnreadCountRequest value) => value.writeToBuffer(),
-          $0.UnreadCountResponse.fromBuffer);
+    '/notification.NotificationService/GetUnreadCount',
+    ($0.GetUnreadCountRequest value) => value.writeToBuffer(),
+    $0.UnreadCountResponse.fromBuffer,
+  );
 }
 
 @$pb.GrpcServiceName('notification.NotificationService')
 abstract class NotificationServiceBase extends $grpc.Service {
-  $core.String get $name => 'notification.NotificationService';
-
   NotificationServiceBase() {
     $addMethod($grpc.ServiceMethod<$0.ListNotificationsRequest,
             $0.ListNotificationsResponse>(
@@ -126,37 +128,53 @@ abstract class NotificationServiceBase extends $grpc.Service {
                 $0.GetUnreadCountRequest.fromBuffer(value),
             ($0.UnreadCountResponse value) => value.writeToBuffer()));
   }
+  $core.String get $name => 'notification.NotificationService';
 
-  $async.Future<$0.ListNotificationsResponse> list_Pre($grpc.ServiceCall $call,
-      $async.Future<$0.ListNotificationsRequest> $request) async {
+  $async.Future<$0.ListNotificationsResponse> list_Pre(
+    $grpc.ServiceCall $call,
+    $async.Future<$0.ListNotificationsRequest> $request,
+  ) async {
     return list($call, await $request);
   }
 
   $async.Future<$0.ListNotificationsResponse> list(
-      $grpc.ServiceCall call, $0.ListNotificationsRequest request);
+    $grpc.ServiceCall call,
+    $0.ListNotificationsRequest request,
+  );
 
-  $async.Future<$1.Empty> read_Pre($grpc.ServiceCall $call,
-      $async.Future<$0.ReadNotificationRequest> $request) async {
+  $async.Future<$1.Empty> read_Pre(
+    $grpc.ServiceCall $call,
+    $async.Future<$0.ReadNotificationRequest> $request,
+  ) async {
     return read($call, await $request);
   }
 
   $async.Future<$1.Empty> read(
-      $grpc.ServiceCall call, $0.ReadNotificationRequest request);
+    $grpc.ServiceCall call,
+    $0.ReadNotificationRequest request,
+  );
 
-  $async.Future<$1.Empty> readAll_Pre($grpc.ServiceCall $call,
-      $async.Future<$0.ReadAllNotificationsRequest> $request) async {
+  $async.Future<$1.Empty> readAll_Pre(
+    $grpc.ServiceCall $call,
+    $async.Future<$0.ReadAllNotificationsRequest> $request,
+  ) async {
     return readAll($call, await $request);
   }
 
   $async.Future<$1.Empty> readAll(
-      $grpc.ServiceCall call, $0.ReadAllNotificationsRequest request);
+    $grpc.ServiceCall call,
+    $0.ReadAllNotificationsRequest request,
+  );
 
   $async.Future<$0.UnreadCountResponse> getUnreadCount_Pre(
-      $grpc.ServiceCall $call,
-      $async.Future<$0.GetUnreadCountRequest> $request) async {
+    $grpc.ServiceCall $call,
+    $async.Future<$0.GetUnreadCountRequest> $request,
+  ) async {
     return getUnreadCount($call, await $request);
   }
 
   $async.Future<$0.UnreadCountResponse> getUnreadCount(
-      $grpc.ServiceCall call, $0.GetUnreadCountRequest request);
+    $grpc.ServiceCall call,
+    $0.GetUnreadCountRequest request,
+  );
 }

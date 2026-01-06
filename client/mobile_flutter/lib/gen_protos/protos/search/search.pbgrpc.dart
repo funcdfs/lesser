@@ -23,6 +23,8 @@ export 'search.pb.dart';
 /// SearchService 搜索服务
 @$pb.GrpcServiceName('search.SearchService')
 class SearchServiceClient extends $grpc.Client {
+  SearchServiceClient(super.channel, {super.options, super.interceptors});
+
   /// The hostname for this service.
   static const $core.String defaultHost = '';
 
@@ -30,8 +32,6 @@ class SearchServiceClient extends $grpc.Client {
   static const $core.List<$core.String> oauthScopes = [
     '',
   ];
-
-  SearchServiceClient(super.channel, {super.options, super.interceptors});
 
   $grpc.ResponseFuture<$0.SearchPostsResponse> searchPosts(
     $0.SearchPostsRequest request, {
@@ -51,20 +51,20 @@ class SearchServiceClient extends $grpc.Client {
 
   static final _$searchPosts =
       $grpc.ClientMethod<$0.SearchPostsRequest, $0.SearchPostsResponse>(
-          '/search.SearchService/SearchPosts',
-          ($0.SearchPostsRequest value) => value.writeToBuffer(),
-          $0.SearchPostsResponse.fromBuffer);
+    '/search.SearchService/SearchPosts',
+    ($0.SearchPostsRequest value) => value.writeToBuffer(),
+    $0.SearchPostsResponse.fromBuffer,
+  );
   static final _$searchUsers =
       $grpc.ClientMethod<$0.SearchUsersRequest, $0.SearchUsersResponse>(
-          '/search.SearchService/SearchUsers',
-          ($0.SearchUsersRequest value) => value.writeToBuffer(),
-          $0.SearchUsersResponse.fromBuffer);
+    '/search.SearchService/SearchUsers',
+    ($0.SearchUsersRequest value) => value.writeToBuffer(),
+    $0.SearchUsersResponse.fromBuffer,
+  );
 }
 
 @$pb.GrpcServiceName('search.SearchService')
 abstract class SearchServiceBase extends $grpc.Service {
-  $core.String get $name => 'search.SearchService';
-
   SearchServiceBase() {
     $addMethod(
         $grpc.ServiceMethod<$0.SearchPostsRequest, $0.SearchPostsResponse>(
@@ -85,20 +85,29 @@ abstract class SearchServiceBase extends $grpc.Service {
                 $0.SearchUsersRequest.fromBuffer(value),
             ($0.SearchUsersResponse value) => value.writeToBuffer()));
   }
+  $core.String get $name => 'search.SearchService';
 
-  $async.Future<$0.SearchPostsResponse> searchPosts_Pre($grpc.ServiceCall $call,
-      $async.Future<$0.SearchPostsRequest> $request) async {
+  $async.Future<$0.SearchPostsResponse> searchPosts_Pre(
+    $grpc.ServiceCall $call,
+    $async.Future<$0.SearchPostsRequest> $request,
+  ) async {
     return searchPosts($call, await $request);
   }
 
   $async.Future<$0.SearchPostsResponse> searchPosts(
-      $grpc.ServiceCall call, $0.SearchPostsRequest request);
+    $grpc.ServiceCall call,
+    $0.SearchPostsRequest request,
+  );
 
-  $async.Future<$0.SearchUsersResponse> searchUsers_Pre($grpc.ServiceCall $call,
-      $async.Future<$0.SearchUsersRequest> $request) async {
+  $async.Future<$0.SearchUsersResponse> searchUsers_Pre(
+    $grpc.ServiceCall $call,
+    $async.Future<$0.SearchUsersRequest> $request,
+  ) async {
     return searchUsers($call, await $request);
   }
 
   $async.Future<$0.SearchUsersResponse> searchUsers(
-      $grpc.ServiceCall call, $0.SearchUsersRequest request);
+    $grpc.ServiceCall call,
+    $0.SearchUsersRequest request,
+  );
 }

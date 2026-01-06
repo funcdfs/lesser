@@ -646,12 +646,6 @@ pub async fn execute(target: TestTarget) -> Result<()> {
             ui::info("运行完整三轮测试");
             println!();
             let full_stats = super::rounds::execute_full_test().await?;
-            // 汇总所有轮次的统计
-            for round in &full_stats.rounds {
-                stats.total += round.total_tests();
-                stats.passed += round.passed_tests();
-                stats.failed += round.failed_tests();
-            }
             // full_stats 已经打印了汇总，这里只需要检查结果
             if !full_stats.is_success() {
                 bail!("测试失败");

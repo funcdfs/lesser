@@ -41,13 +41,13 @@ pub async fn run_tests() -> Result<TestStats> {
 
     // 1. Alice 创建一个公开频道
     let (success, channel_id) = create_channel(&alice, "测试频道", "这是一个测试频道").await;
-    stats.record_with_func(success, "创建频道", "CreateChannel()", "channel/handler.go");
+    stats.record_with_func(success, "创建频道", "CreateChannel()", "service/channel/internal/handler/channel_handler.go");
     grpc::delay_short().await;
 
     // 2. Alice 获取频道详情
     if !channel_id.is_empty() {
         let result = get_channel(&alice, &channel_id).await;
-        stats.record_with_func(result, "获取频道详情", "GetChannel()", "channel/handler.go");
+        stats.record_with_func(result, "获取频道详情", "GetChannel()", "service/channel/internal/handler/channel_handler.go");
         grpc::delay_short().await;
     } else {
         stats.record(false, "获取频道详情（跳过）");
@@ -56,7 +56,7 @@ pub async fn run_tests() -> Result<TestStats> {
     // 3. Bob 订阅频道
     if !channel_id.is_empty() {
         let result = subscribe(&bob, &channel_id).await;
-        stats.record_with_func(result, "Bob 订阅频道", "Subscribe()", "channel/handler.go");
+        stats.record_with_func(result, "Bob 订阅频道", "Subscribe()", "service/channel/internal/handler/channel_handler.go");
         grpc::delay_short().await;
     } else {
         stats.record(false, "Bob 订阅频道（跳过）");
@@ -65,7 +65,7 @@ pub async fn run_tests() -> Result<TestStats> {
     // 4. Bob 检查订阅状态
     if !channel_id.is_empty() {
         let result = check_subscription(&bob, &channel_id).await;
-        stats.record_with_func(result, "检查订阅状态", "CheckSubscription()", "channel/handler.go");
+        stats.record_with_func(result, "检查订阅状态", "CheckSubscription()", "service/channel/internal/handler/channel_handler.go");
         grpc::delay_short().await;
     } else {
         stats.record(false, "检查订阅状态（跳过）");
@@ -77,13 +77,13 @@ pub async fn run_tests() -> Result<TestStats> {
     } else {
         (false, String::new())
     };
-    stats.record_with_func(success, "发布频道内容", "PublishPost()", "channel/handler.go");
+    stats.record_with_func(success, "发布频道内容", "PublishPost()", "service/channel/internal/handler/channel_handler.go");
     grpc::delay_short().await;
 
     // 6. Bob 获取频道内容列表
     if !channel_id.is_empty() {
         let result = get_posts(&bob, &channel_id).await;
-        stats.record_with_func(result, "获取频道内容列表", "GetPosts()", "channel/handler.go");
+        stats.record_with_func(result, "获取频道内容列表", "GetPosts()", "service/channel/internal/handler/channel_handler.go");
         grpc::delay_short().await;
     } else {
         stats.record(false, "获取频道内容列表（跳过）");
@@ -92,7 +92,7 @@ pub async fn run_tests() -> Result<TestStats> {
     // 7. Alice 置顶内容
     if !post_id.is_empty() {
         let result = pin_post(&alice, &post_id).await;
-        stats.record_with_func(result, "置顶内容", "PinPost()", "channel/handler.go");
+        stats.record_with_func(result, "置顶内容", "PinPost()", "service/channel/internal/handler/channel_handler.go");
         grpc::delay_short().await;
     } else {
         stats.record(false, "置顶内容（跳过）");
@@ -101,7 +101,7 @@ pub async fn run_tests() -> Result<TestStats> {
     // 8. Alice 更新频道信息
     if !channel_id.is_empty() {
         let result = update_channel(&alice, &channel_id, "更新后的频道名称").await;
-        stats.record_with_func(result, "更新频道信息", "UpdateChannel()", "channel/handler.go");
+        stats.record_with_func(result, "更新频道信息", "UpdateChannel()", "service/channel/internal/handler/channel_handler.go");
         grpc::delay_short().await;
     } else {
         stats.record(false, "更新频道信息（跳过）");
@@ -109,13 +109,13 @@ pub async fn run_tests() -> Result<TestStats> {
 
     // 9. Bob 获取订阅的频道列表
     let result = get_subscribed_channels(&bob).await;
-    stats.record_with_func(result, "获取订阅频道列表", "GetSubscribedChannels()", "channel/handler.go");
+    stats.record_with_func(result, "获取订阅频道列表", "GetSubscribedChannels()", "service/channel/internal/handler/channel_handler.go");
     grpc::delay_short().await;
 
     // 10. Bob 取消订阅
     if !channel_id.is_empty() {
         let result = unsubscribe(&bob, &channel_id).await;
-        stats.record_with_func(result, "取消订阅", "Unsubscribe()", "channel/handler.go");
+        stats.record_with_func(result, "取消订阅", "Unsubscribe()", "service/channel/internal/handler/channel_handler.go");
         grpc::delay_short().await;
     } else {
         stats.record(false, "取消订阅（跳过）");
@@ -124,7 +124,7 @@ pub async fn run_tests() -> Result<TestStats> {
     // 11. Alice 删除频道
     if !channel_id.is_empty() {
         let result = delete_channel(&alice, &channel_id).await;
-        stats.record_with_func(result, "删除频道", "DeleteChannel()", "channel/handler.go");
+        stats.record_with_func(result, "删除频道", "DeleteChannel()", "service/channel/internal/handler/channel_handler.go");
     } else {
         stats.record(false, "删除频道（跳过）");
     }

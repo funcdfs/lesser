@@ -9,14 +9,14 @@ import (
 
 	"google.golang.org/grpc"
 
-	authpb "github.com/funcdfs/lesser/gateway/gen_protos/auth"
-	commentpb "github.com/funcdfs/lesser/gateway/gen_protos/comment"
-	contentpb "github.com/funcdfs/lesser/gateway/gen_protos/content"
-	interactionpb "github.com/funcdfs/lesser/gateway/gen_protos/interaction"
-	notificationpb "github.com/funcdfs/lesser/gateway/gen_protos/notification"
-	searchpb "github.com/funcdfs/lesser/gateway/gen_protos/search"
-	timelinepb "github.com/funcdfs/lesser/gateway/gen_protos/timeline"
-	userpb "github.com/funcdfs/lesser/gateway/gen_protos/user"
+	authpb "github.com/funcdfs/lesser/auth/gen_protos/auth"
+	commentpb "github.com/funcdfs/lesser/comment/gen_protos/comment"
+	contentpb "github.com/funcdfs/lesser/content/gen_protos/content"
+	interactionpb "github.com/funcdfs/lesser/interaction/gen_protos/interaction"
+	notificationpb "github.com/funcdfs/lesser/notification/gen_protos/notification"
+	searchpb "github.com/funcdfs/lesser/search/gen_protos/search"
+	timelinepb "github.com/funcdfs/lesser/timeline/gen_protos/timeline"
+	userpb "github.com/funcdfs/lesser/user/gen_protos/user"
 	"github.com/funcdfs/lesser/pkg/gen_protos/common"
 	"github.com/funcdfs/lesser/pkg/log"
 )

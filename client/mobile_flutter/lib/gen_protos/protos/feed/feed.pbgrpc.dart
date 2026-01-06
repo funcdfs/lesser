@@ -25,6 +25,8 @@ export 'feed.pb.dart';
 /// 提供 Feed 流获取和内容交互功能
 @$pb.GrpcServiceName('feed.FeedService')
 class FeedServiceClient extends $grpc.Client {
+  FeedServiceClient(super.channel, {super.options, super.interceptors});
+
   /// The hostname for this service.
   static const $core.String defaultHost = '';
 
@@ -32,8 +34,6 @@ class FeedServiceClient extends $grpc.Client {
   static const $core.List<$core.String> oauthScopes = [
     '',
   ];
-
-  FeedServiceClient(super.channel, {super.options, super.interceptors});
 
   /// ---- Feed 流 ----
   $grpc.ResponseFuture<$0.GetFollowingFeedResponse> getFollowingFeed(
@@ -124,67 +124,77 @@ class FeedServiceClient extends $grpc.Client {
   // method descriptors
 
   static final _$getFollowingFeed = $grpc.ClientMethod<
-          $0.GetFollowingFeedRequest, $0.GetFollowingFeedResponse>(
-      '/feed.FeedService/GetFollowingFeed',
-      ($0.GetFollowingFeedRequest value) => value.writeToBuffer(),
-      $0.GetFollowingFeedResponse.fromBuffer);
+      $0.GetFollowingFeedRequest, $0.GetFollowingFeedResponse>(
+    '/feed.FeedService/GetFollowingFeed',
+    ($0.GetFollowingFeedRequest value) => value.writeToBuffer(),
+    $0.GetFollowingFeedResponse.fromBuffer,
+  );
   static final _$getRecommendFeed = $grpc.ClientMethod<
-          $0.GetRecommendFeedRequest, $0.GetRecommendFeedResponse>(
-      '/feed.FeedService/GetRecommendFeed',
-      ($0.GetRecommendFeedRequest value) => value.writeToBuffer(),
-      $0.GetRecommendFeedResponse.fromBuffer);
+      $0.GetRecommendFeedRequest, $0.GetRecommendFeedResponse>(
+    '/feed.FeedService/GetRecommendFeed',
+    ($0.GetRecommendFeedRequest value) => value.writeToBuffer(),
+    $0.GetRecommendFeedResponse.fromBuffer,
+  );
   static final _$getUserFeed =
       $grpc.ClientMethod<$0.GetUserFeedRequest, $0.GetUserFeedResponse>(
-          '/feed.FeedService/GetUserFeed',
-          ($0.GetUserFeedRequest value) => value.writeToBuffer(),
-          $0.GetUserFeedResponse.fromBuffer);
+    '/feed.FeedService/GetUserFeed',
+    ($0.GetUserFeedRequest value) => value.writeToBuffer(),
+    $0.GetUserFeedResponse.fromBuffer,
+  );
   static final _$like = $grpc.ClientMethod<$0.LikeRequest, $1.Empty>(
-      '/feed.FeedService/Like',
-      ($0.LikeRequest value) => value.writeToBuffer(),
-      $1.Empty.fromBuffer);
+    '/feed.FeedService/Like',
+    ($0.LikeRequest value) => value.writeToBuffer(),
+    $1.Empty.fromBuffer,
+  );
   static final _$unlike = $grpc.ClientMethod<$0.UnlikeRequest, $1.Empty>(
-      '/feed.FeedService/Unlike',
-      ($0.UnlikeRequest value) => value.writeToBuffer(),
-      $1.Empty.fromBuffer);
+    '/feed.FeedService/Unlike',
+    ($0.UnlikeRequest value) => value.writeToBuffer(),
+    $1.Empty.fromBuffer,
+  );
   static final _$createComment =
       $grpc.ClientMethod<$0.CreateCommentRequest, $0.Comment>(
-          '/feed.FeedService/CreateComment',
-          ($0.CreateCommentRequest value) => value.writeToBuffer(),
-          $0.Comment.fromBuffer);
+    '/feed.FeedService/CreateComment',
+    ($0.CreateCommentRequest value) => value.writeToBuffer(),
+    $0.Comment.fromBuffer,
+  );
   static final _$deleteComment =
       $grpc.ClientMethod<$0.DeleteCommentRequest, $1.Empty>(
-          '/feed.FeedService/DeleteComment',
-          ($0.DeleteCommentRequest value) => value.writeToBuffer(),
-          $1.Empty.fromBuffer);
+    '/feed.FeedService/DeleteComment',
+    ($0.DeleteCommentRequest value) => value.writeToBuffer(),
+    $1.Empty.fromBuffer,
+  );
   static final _$listComments =
       $grpc.ClientMethod<$0.ListCommentsRequest, $0.ListCommentsResponse>(
-          '/feed.FeedService/ListComments',
-          ($0.ListCommentsRequest value) => value.writeToBuffer(),
-          $0.ListCommentsResponse.fromBuffer);
+    '/feed.FeedService/ListComments',
+    ($0.ListCommentsRequest value) => value.writeToBuffer(),
+    $0.ListCommentsResponse.fromBuffer,
+  );
   static final _$createRepost = $grpc.ClientMethod<$0.RepostRequest, $0.Repost>(
-      '/feed.FeedService/CreateRepost',
-      ($0.RepostRequest value) => value.writeToBuffer(),
-      $0.Repost.fromBuffer);
+    '/feed.FeedService/CreateRepost',
+    ($0.RepostRequest value) => value.writeToBuffer(),
+    $0.Repost.fromBuffer,
+  );
   static final _$bookmark = $grpc.ClientMethod<$0.BookmarkRequest, $1.Empty>(
-      '/feed.FeedService/Bookmark',
-      ($0.BookmarkRequest value) => value.writeToBuffer(),
-      $1.Empty.fromBuffer);
+    '/feed.FeedService/Bookmark',
+    ($0.BookmarkRequest value) => value.writeToBuffer(),
+    $1.Empty.fromBuffer,
+  );
   static final _$unbookmark =
       $grpc.ClientMethod<$0.UnbookmarkRequest, $1.Empty>(
-          '/feed.FeedService/Unbookmark',
-          ($0.UnbookmarkRequest value) => value.writeToBuffer(),
-          $1.Empty.fromBuffer);
+    '/feed.FeedService/Unbookmark',
+    ($0.UnbookmarkRequest value) => value.writeToBuffer(),
+    $1.Empty.fromBuffer,
+  );
   static final _$listBookmarks =
       $grpc.ClientMethod<$0.ListBookmarksRequest, $0.ListBookmarksResponse>(
-          '/feed.FeedService/ListBookmarks',
-          ($0.ListBookmarksRequest value) => value.writeToBuffer(),
-          $0.ListBookmarksResponse.fromBuffer);
+    '/feed.FeedService/ListBookmarks',
+    ($0.ListBookmarksRequest value) => value.writeToBuffer(),
+    $0.ListBookmarksResponse.fromBuffer,
+  );
 }
 
 @$pb.GrpcServiceName('feed.FeedService')
 abstract class FeedServiceBase extends $grpc.Service {
-  $core.String get $name => 'feed.FeedService';
-
   FeedServiceBase() {
     $addMethod($grpc.ServiceMethod<$0.GetFollowingFeedRequest,
             $0.GetFollowingFeedResponse>(
@@ -283,103 +293,146 @@ abstract class FeedServiceBase extends $grpc.Service {
                 $0.ListBookmarksRequest.fromBuffer(value),
             ($0.ListBookmarksResponse value) => value.writeToBuffer()));
   }
+  $core.String get $name => 'feed.FeedService';
 
   $async.Future<$0.GetFollowingFeedResponse> getFollowingFeed_Pre(
-      $grpc.ServiceCall $call,
-      $async.Future<$0.GetFollowingFeedRequest> $request) async {
+    $grpc.ServiceCall $call,
+    $async.Future<$0.GetFollowingFeedRequest> $request,
+  ) async {
     return getFollowingFeed($call, await $request);
   }
 
   $async.Future<$0.GetFollowingFeedResponse> getFollowingFeed(
-      $grpc.ServiceCall call, $0.GetFollowingFeedRequest request);
+    $grpc.ServiceCall call,
+    $0.GetFollowingFeedRequest request,
+  );
 
   $async.Future<$0.GetRecommendFeedResponse> getRecommendFeed_Pre(
-      $grpc.ServiceCall $call,
-      $async.Future<$0.GetRecommendFeedRequest> $request) async {
+    $grpc.ServiceCall $call,
+    $async.Future<$0.GetRecommendFeedRequest> $request,
+  ) async {
     return getRecommendFeed($call, await $request);
   }
 
   $async.Future<$0.GetRecommendFeedResponse> getRecommendFeed(
-      $grpc.ServiceCall call, $0.GetRecommendFeedRequest request);
+    $grpc.ServiceCall call,
+    $0.GetRecommendFeedRequest request,
+  );
 
-  $async.Future<$0.GetUserFeedResponse> getUserFeed_Pre($grpc.ServiceCall $call,
-      $async.Future<$0.GetUserFeedRequest> $request) async {
+  $async.Future<$0.GetUserFeedResponse> getUserFeed_Pre(
+    $grpc.ServiceCall $call,
+    $async.Future<$0.GetUserFeedRequest> $request,
+  ) async {
     return getUserFeed($call, await $request);
   }
 
   $async.Future<$0.GetUserFeedResponse> getUserFeed(
-      $grpc.ServiceCall call, $0.GetUserFeedRequest request);
+    $grpc.ServiceCall call,
+    $0.GetUserFeedRequest request,
+  );
 
   $async.Future<$1.Empty> like_Pre(
-      $grpc.ServiceCall $call, $async.Future<$0.LikeRequest> $request) async {
+    $grpc.ServiceCall $call,
+    $async.Future<$0.LikeRequest> $request,
+  ) async {
     return like($call, await $request);
   }
 
   $async.Future<$1.Empty> like($grpc.ServiceCall call, $0.LikeRequest request);
 
   $async.Future<$1.Empty> unlike_Pre(
-      $grpc.ServiceCall $call, $async.Future<$0.UnlikeRequest> $request) async {
+    $grpc.ServiceCall $call,
+    $async.Future<$0.UnlikeRequest> $request,
+  ) async {
     return unlike($call, await $request);
   }
 
   $async.Future<$1.Empty> unlike(
-      $grpc.ServiceCall call, $0.UnlikeRequest request);
+    $grpc.ServiceCall call,
+    $0.UnlikeRequest request,
+  );
 
-  $async.Future<$0.Comment> createComment_Pre($grpc.ServiceCall $call,
-      $async.Future<$0.CreateCommentRequest> $request) async {
+  $async.Future<$0.Comment> createComment_Pre(
+    $grpc.ServiceCall $call,
+    $async.Future<$0.CreateCommentRequest> $request,
+  ) async {
     return createComment($call, await $request);
   }
 
   $async.Future<$0.Comment> createComment(
-      $grpc.ServiceCall call, $0.CreateCommentRequest request);
+    $grpc.ServiceCall call,
+    $0.CreateCommentRequest request,
+  );
 
-  $async.Future<$1.Empty> deleteComment_Pre($grpc.ServiceCall $call,
-      $async.Future<$0.DeleteCommentRequest> $request) async {
+  $async.Future<$1.Empty> deleteComment_Pre(
+    $grpc.ServiceCall $call,
+    $async.Future<$0.DeleteCommentRequest> $request,
+  ) async {
     return deleteComment($call, await $request);
   }
 
   $async.Future<$1.Empty> deleteComment(
-      $grpc.ServiceCall call, $0.DeleteCommentRequest request);
+    $grpc.ServiceCall call,
+    $0.DeleteCommentRequest request,
+  );
 
   $async.Future<$0.ListCommentsResponse> listComments_Pre(
-      $grpc.ServiceCall $call,
-      $async.Future<$0.ListCommentsRequest> $request) async {
+    $grpc.ServiceCall $call,
+    $async.Future<$0.ListCommentsRequest> $request,
+  ) async {
     return listComments($call, await $request);
   }
 
   $async.Future<$0.ListCommentsResponse> listComments(
-      $grpc.ServiceCall call, $0.ListCommentsRequest request);
+    $grpc.ServiceCall call,
+    $0.ListCommentsRequest request,
+  );
 
   $async.Future<$0.Repost> createRepost_Pre(
-      $grpc.ServiceCall $call, $async.Future<$0.RepostRequest> $request) async {
+    $grpc.ServiceCall $call,
+    $async.Future<$0.RepostRequest> $request,
+  ) async {
     return createRepost($call, await $request);
   }
 
   $async.Future<$0.Repost> createRepost(
-      $grpc.ServiceCall call, $0.RepostRequest request);
+    $grpc.ServiceCall call,
+    $0.RepostRequest request,
+  );
 
-  $async.Future<$1.Empty> bookmark_Pre($grpc.ServiceCall $call,
-      $async.Future<$0.BookmarkRequest> $request) async {
+  $async.Future<$1.Empty> bookmark_Pre(
+    $grpc.ServiceCall $call,
+    $async.Future<$0.BookmarkRequest> $request,
+  ) async {
     return bookmark($call, await $request);
   }
 
   $async.Future<$1.Empty> bookmark(
-      $grpc.ServiceCall call, $0.BookmarkRequest request);
+    $grpc.ServiceCall call,
+    $0.BookmarkRequest request,
+  );
 
-  $async.Future<$1.Empty> unbookmark_Pre($grpc.ServiceCall $call,
-      $async.Future<$0.UnbookmarkRequest> $request) async {
+  $async.Future<$1.Empty> unbookmark_Pre(
+    $grpc.ServiceCall $call,
+    $async.Future<$0.UnbookmarkRequest> $request,
+  ) async {
     return unbookmark($call, await $request);
   }
 
   $async.Future<$1.Empty> unbookmark(
-      $grpc.ServiceCall call, $0.UnbookmarkRequest request);
+    $grpc.ServiceCall call,
+    $0.UnbookmarkRequest request,
+  );
 
   $async.Future<$0.ListBookmarksResponse> listBookmarks_Pre(
-      $grpc.ServiceCall $call,
-      $async.Future<$0.ListBookmarksRequest> $request) async {
+    $grpc.ServiceCall $call,
+    $async.Future<$0.ListBookmarksRequest> $request,
+  ) async {
     return listBookmarks($call, await $request);
   }
 
   $async.Future<$0.ListBookmarksResponse> listBookmarks(
-      $grpc.ServiceCall call, $0.ListBookmarksRequest request);
+    $grpc.ServiceCall call,
+    $0.ListBookmarksRequest request,
+  );
 }
