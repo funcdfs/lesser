@@ -78,6 +78,8 @@ class _AnimatedCountState extends State<AnimatedCount>
   }
 
   String _formatCount(int count) {
+    // 处理负数：显示负号 + 格式化绝对值
+    if (count < 0) return '-${_formatCount(-count)}';
     if (count >= 10000) return '${(count / 10000).toStringAsFixed(1)}w';
     if (count >= 1000) return '${(count / 1000).toStringAsFixed(1)}k';
     return count.toString();

@@ -1,8 +1,9 @@
-// 点赞按钮 - 仿真烟花特效
+// 点赞按钮 - 喜庆烟花特效
 
 import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import '../theme/theme.dart';
 import 'animated_count.dart';
 
 class LikeButton extends StatefulWidget {
@@ -27,20 +28,26 @@ class _LikeButtonState extends State<LikeButton> with TickerProviderStateMixin {
   late final AnimationController _scaleCtrl;
   late final AnimationController _fireworkCtrl;
   bool _wasLiked = false;
-  List<_Particle>? _particles;
+
+  // 烟花火花
+  late List<_Spark> _sparks;
+  // 二次爆炸的小火花
+  late List<_TinySpark> _tinySparks;
 
   @override
   void initState() {
     super.initState();
     _scaleCtrl = AnimationController(
-      duration: const Duration(milliseconds: 80), // 呼吸感，与其他按钮统一
+      duration: const Duration(milliseconds: 80),
       vsync: this,
     );
     _fireworkCtrl = AnimationController(
-      duration: const Duration(milliseconds: 500), // 烟花动画
+      duration: const Duration(milliseconds: 700),
       vsync: this,
     );
     _wasLiked = widget.isLiked;
+    _sparks = _generateSparks();
+    _tinySparks = _generateTinySparks();
   }
 
   @override
@@ -54,44 +61,75 @@ class _LikeButtonState extends State<LikeButton> with TickerProviderStateMixin {
   void didUpdateWidget(LikeButton old) {
     super.didUpdateWidget(old);
     if (widget.isLiked && !_wasLiked) {
-      _particles = _generateParticles();
+      _regenerateSparks();
       _fireworkCtrl.forward(from: 0);
     }
     _wasLiked = widget.isLiked;
   }
 
-  List<_Particle> _generateParticles() {
+  void _regenerateSparks() {
+    _sparks = _generateSparks();
+    _tinySparks = _generateTinySparks();
+  }
+
+  /// 生成主火花 - 模拟烟花绽放的主要轨迹
+  List<_Spark> _generateSparks() {
     final random = math.Random();
-    final particles = <_Particle>[];
-    // 粒子数量适中，精致而不杂乱
-    const particleCount = 18;
+    final sparks = <_Spark>[];
+    const sparkCount = 12;
 
-    for (int i = 0; i < particleCount; i++) {
-      // 角度均匀分布 + 轻微随机抖动
-      final baseAngle = (2 * math.pi * i) / particleCount;
-      final angle = baseAngle + (random.nextDouble() - 0.5) * 0.25;
+    for (int i = 0; i < sparkCount; i++) {
+      // 均匀分布的角度，带少量随机偏移
+      final baseAngle = (2 * math.pi * i) / sparkCount;
+      final angle = baseAngle + (random.nextDouble() - 0.5) * 0.3;
 
-      // 速度收窄，让粒子飞行距离更可控
-      final speed = 0.6 + random.nextDouble() * 0.6;
-
-      final color = _Particle.colors[random.nextInt(_Particle.colors.length)];
-
-      particles.add(
-        _Particle(
+      sparks.add(
+        _Spark(
           angle: angle,
-          speed: speed,
-          color: color,
-          size: 1.0 + random.nextDouble() * 0.8, // 粒子更小更精致
-          gravity: 0.005 + random.nextDouble() * 0.01, // 极低重力
-          sparkle: random.nextDouble() > 0.6, // 40% 概率闪烁
+          speed: 0.7 + random.nextDouble() * 0.5,
+          color: _Spark.colors[random.nextInt(_Spark.colors.length)],
+          // 轨迹长度
+          trailLength: 2 + random.nextInt(2),
+          // 弯曲程度
+          curvature: (random.nextDouble() - 0.5) * 0.3,
+          // 延迟启动
+          delay: random.nextDouble() * 0.1,
         ),
       );
     }
-    return particles;
+    return sparks;
+  }
+
+  /// 生成二次爆炸的小火花
+  List<_TinySpark> _generateTinySparks() {
+    final random = math.Random();
+    final sparks = <_TinySpark>[];
+    const count = 24;
+
+    for (int i = 0; i < count; i++) {
+      sparks.add(
+        _TinySpark(
+          // 随机角度
+          angle: random.nextDouble() * 2 * math.pi,
+          // 随机速度
+          speed: 0.3 + random.nextDouble() * 0.7,
+          // 随机颜色
+          color: _Spark.colors[random.nextInt(_Spark.colors.length)],
+          // 随机大小
+          size: 0.5 + random.nextDouble() * 1.0,
+          // 重力影响
+          gravity: 0.02 + random.nextDouble() * 0.03,
+          // 启动延迟（在主火花之后）
+          delay: 0.15 + random.nextDouble() * 0.15,
+          // 生命周期
+          life: 0.4 + random.nextDouble() * 0.3,
+        ),
+      );
+    }
+    return sparks;
   }
 
   void _onTap() {
-    // 呼吸感：按下缩小，松开弹回
     _scaleCtrl.forward().then((_) => _scaleCtrl.reverse());
     HapticFeedback.lightImpact();
     widget.onTap?.call();
@@ -99,9 +137,9 @@ class _LikeButtonState extends State<LikeButton> with TickerProviderStateMixin {
 
   @override
   Widget build(BuildContext context) {
-    final color = widget.isLiked
-        ? const Color(0xFFFF1744) // 与图标渐变起始色一致
-        : const Color(0xFF888888);
+    final colors = AppColors.of(context);
+    final likeColor = colors.like;
+    final inactiveColor = colors.textTertiary;
 
     return GestureDetector(
       behavior: HitTestBehavior.opaque,
@@ -112,49 +150,49 @@ class _LikeButtonState extends State<LikeButton> with TickerProviderStateMixin {
           AnimatedBuilder(
             animation: Listenable.merge([_scaleCtrl, _fireworkCtrl]),
             builder: (context, _) {
-              // 呼吸感：按下缩小 12%，与其他按钮统一
               final tapScale =
                   1.0 - 0.12 * Curves.easeOut.transform(_scaleCtrl.value);
 
               return Transform.scale(
                 scale: tapScale,
                 child: SizedBox(
-                  // 绘制区域紧凑，刚好容纳烟花
-                  width: widget.size + 20,
-                  height: widget.size + 20,
-                  child: CustomPaint(
-                    painter: _FireworkPainter(
-                      progress: _fireworkCtrl.value,
-                      particles: _particles,
-                      iconSize: widget.size,
-                      isActive: widget.isLiked,
-                    ),
-                    child: Center(
-                      child: SizedBox(
-                        width: widget.size,
-                        height: widget.size,
-                        child: widget.isLiked
-                            ? ShaderMask(
-                                shaderCallback: (bounds) =>
-                                    const LinearGradient(
-                                      begin: Alignment.topLeft,
-                                      end: Alignment.bottomRight,
-                                      colors: [
-                                        Color(0xFFFF3B30), // 正红色
-                                        Color(0xFFE53935), // 深红色
-                                      ],
-                                    ).createShader(bounds),
-                                child: Icon(
-                                  Icons.favorite_rounded,
+                  width: widget.size + 24,
+                  height: widget.size + 24,
+                  child: RepaintBoundary(
+                    child: CustomPaint(
+                      painter: _FireworkPainter(
+                        progress: _fireworkCtrl.value,
+                        sparks: _sparks,
+                        tinySparks: _tinySparks,
+                        iconSize: widget.size,
+                        isActive: widget.isLiked,
+                      ),
+                      child: Center(
+                        child: SizedBox(
+                          width: widget.size,
+                          height: widget.size,
+                          child: widget.isLiked
+                              ? ShaderMask(
+                                  shaderCallback: (bounds) => LinearGradient(
+                                    begin: Alignment.topLeft,
+                                    end: Alignment.bottomRight,
+                                    colors: [
+                                      likeColor,
+                                      likeColor.withValues(alpha: 0.8),
+                                    ],
+                                  ).createShader(bounds),
+                                  child: Icon(
+                                    Icons.favorite_rounded,
+                                    size: widget.size,
+                                    color: likeColor,
+                                  ),
+                                )
+                              : Icon(
+                                  Icons.favorite_border_rounded,
                                   size: widget.size,
-                                  color: const Color(0xFFFF3B30), // 正红色
+                                  color: inactiveColor,
                                 ),
-                              )
-                            : Icon(
-                                Icons.favorite_border_rounded,
-                                size: widget.size,
-                                color: const Color(0xFF888888),
-                              ),
+                        ),
                       ),
                     ),
                   ),
@@ -163,18 +201,14 @@ class _LikeButtonState extends State<LikeButton> with TickerProviderStateMixin {
             },
           ),
           if (widget.count != null) ...[
-            // 烟花容器右侧有 10px 空白，用负 margin 补偿
-            Transform.translate(
-              offset: const Offset(-6, 0),
-              child: AnimatedCount(
-                count: widget.count!,
-                style: TextStyle(
-                  fontSize: 14,
-                  color: color,
-                  fontWeight: widget.isLiked
-                      ? FontWeight.w600
-                      : FontWeight.normal,
-                ),
+            // 与其他按钮组件保持一致的间距和字体
+            const SizedBox(width: 4),
+            AnimatedCount(
+              count: widget.count!,
+              style: TextStyle(
+                fontSize: 13,
+                color: widget.isLiked ? likeColor : inactiveColor,
+                fontWeight: widget.isLiked ? FontWeight.w600 : FontWeight.w400,
               ),
             ),
           ],
@@ -184,15 +218,47 @@ class _LikeButtonState extends State<LikeButton> with TickerProviderStateMixin {
   }
 }
 
-/// 烟花粒子
-class _Particle {
-  _Particle({
+/// 主火花 - 带轨迹的烟花
+class _Spark {
+  _Spark({
+    required this.angle,
+    required this.speed,
+    required this.color,
+    required this.trailLength,
+    required this.curvature,
+    required this.delay,
+  });
+
+  final double angle;
+  final double speed;
+  final Color color;
+  final int trailLength;
+  final double curvature;
+  final double delay;
+
+  // 喜庆烟花调色板 - 红金为主
+  static const colors = [
+    Color(0xFFFF3B30), // 大红
+    Color(0xFFFF2D55), // 玫红
+    Color(0xFFFF6B6B), // 浅红
+    Color(0xFFFFD700), // 金色
+    Color(0xFFFFA500), // 橙金
+    Color(0xFFFFE066), // 浅金
+    Color(0xFFFF9500), // 橙
+    Color(0xFFFF7043), // 珊瑚红
+  ];
+}
+
+/// 二次爆炸的小火花
+class _TinySpark {
+  _TinySpark({
     required this.angle,
     required this.speed,
     required this.color,
     required this.size,
     required this.gravity,
-    required this.sparkle,
+    required this.delay,
+    required this.life,
   });
 
   final double angle;
@@ -200,96 +266,243 @@ class _Particle {
   final Color color;
   final double size;
   final double gravity;
-  final bool sparkle;
-
-  // 精选暖色调色板，与正红心呼应
-  static const colors = [
-    Color(0xFFFF3B30), // 正红色
-    Color(0xFFFF6B6B), // 浅红
-    Color(0xFFFF8A80), // 珊瑚红
-    Color(0xFFFF6E40), // 深橙
-    Color(0xFFFFAB40), // 橙色
-    Color(0xFFFFD740), // 琥珀
-  ];
+  final double delay;
+  final double life;
 }
 
-/// 仿真烟花绘制器
+/// 喜庆烟花绘制器
 class _FireworkPainter extends CustomPainter {
   _FireworkPainter({
     required this.progress,
-    required this.particles,
+    required this.sparks,
+    required this.tinySparks,
     required this.iconSize,
     required this.isActive,
   });
 
   final double progress;
-  final List<_Particle>? particles;
+  final List<_Spark> sparks;
+  final List<_TinySpark> tinySparks;
   final double iconSize;
   final bool isActive;
 
   @override
   void paint(Canvas canvas, Size size) {
-    if (progress <= 0 || progress >= 1 || !isActive || particles == null) {
-      return;
-    }
+    if (progress <= 0 || progress >= 1 || !isActive) return;
 
     final center = Offset(size.width / 2, size.height / 2);
+
+    // 绘制初始爆炸光晕
+    _drawExplosionGlow(canvas, center);
+
+    // 绘制主火花轨迹
+    _drawSparks(canvas, center);
+
+    // 绘制二次爆炸的小火花
+    _drawTinySparks(canvas, center);
+  }
+
+  /// 绘制爆炸光晕
+  void _drawExplosionGlow(Canvas canvas, Offset center) {
+    if (progress > 0.3) return;
+
+    final glowProgress = progress / 0.3;
+    final radius = iconSize * 0.4 * Curves.easeOut.transform(glowProgress);
+    final opacity = (1 - glowProgress) * 0.6;
+
+    final gradient = RadialGradient(
+      colors: [
+        const Color(0xFFFFD700).withValues(alpha: opacity),
+        const Color(0xFFFF3B30).withValues(alpha: opacity * 0.5),
+        Colors.transparent,
+      ],
+      stops: const [0.0, 0.5, 1.0],
+    );
+
     final paint = Paint()
-      ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 0.5);
+      ..shader = gradient.createShader(
+        Rect.fromCircle(center: center, radius: radius),
+      );
 
-    // 1. 绘制扩散波纹 - 更小更快消失
-    if (progress < 0.25) {
-      final ringProgress = progress / 0.25;
-      // 波纹半径从图标边缘开始，扩散范围小
-      final ringRadius = iconSize * 0.5 + (iconSize * 0.4 * ringProgress);
-      final ringOpacity = (1 - ringProgress) * 0.4;
-      final ringPaint = Paint()
-        ..style = PaintingStyle.stroke
-        ..strokeWidth = 1.5 * (1 - ringProgress)
-        ..color = const Color(0xFFFF3B30).withValues(alpha: ringOpacity);
+    canvas.drawCircle(center, radius, paint);
+  }
 
-      canvas.drawCircle(center, ringRadius, ringPaint);
+  /// 绘制主火花轨迹
+  void _drawSparks(Canvas canvas, Offset center) {
+    for (final spark in sparks) {
+      // 计算延迟后的进度
+      final adjustedProgress = (progress - spark.delay).clamp(0.0, 1.0);
+      if (adjustedProgress <= 0) continue;
+
+      // 使用缓动曲线
+      final t = Curves.easeOutCubic.transform(adjustedProgress);
+
+      // 计算当前位置
+      final distance = spark.speed * t * iconSize * 0.9;
+
+      // 添加弯曲效果，模拟烟花下坠
+      final curveOffset = spark.curvature * t * t * iconSize;
+
+      final x = center.dx + math.cos(spark.angle) * distance;
+      final y =
+          center.dy +
+          math.sin(spark.angle) * distance +
+          curveOffset +
+          (t * t * iconSize * 0.15); // 重力下坠
+
+      // 绘制轨迹（拖尾）
+      _drawSparkTrail(canvas, center, spark, t, Offset(x, y));
+
+      // 绘制火花头部
+      _drawSparkHead(canvas, spark, t, Offset(x, y));
+    }
+  }
+
+  /// 绘制火花轨迹
+  void _drawSparkTrail(
+    Canvas canvas,
+    Offset center,
+    _Spark spark,
+    double t,
+    Offset headPos,
+  ) {
+    if (t < 0.1) return;
+
+    final path = Path();
+    path.moveTo(headPos.dx, headPos.dy);
+
+    // 绘制渐变轨迹
+    for (int i = 1; i <= spark.trailLength; i++) {
+      final trailT = (t - i * 0.05).clamp(0.0, 1.0);
+      if (trailT <= 0) break;
+
+      final trailDist = spark.speed * trailT * iconSize * 0.9;
+      final trailCurve = spark.curvature * trailT * trailT * iconSize;
+
+      final tx = center.dx + math.cos(spark.angle) * trailDist;
+      final ty =
+          center.dy +
+          math.sin(spark.angle) * trailDist +
+          trailCurve +
+          (trailT * trailT * iconSize * 0.15);
+
+      path.lineTo(tx, ty);
     }
 
-    // 2. 绘制粒子
-    for (final p in particles!) {
-      // 使用 easeOut 曲线，前快后慢
-      final t = Curves.easeOut.transform(progress);
+    // 轨迹透明度
+    double opacity = 1.0;
+    if (t > 0.6) {
+      opacity = 1 - ((t - 0.6) / 0.4);
+    }
 
-      // 飞行距离大幅缩小
-      final moveDist = p.speed * t * iconSize * 0.8;
+    final paint = Paint()
+      ..color = spark.color.withValues(alpha: opacity * 0.7)
+      ..strokeWidth = 1.5 * (1 - t * 0.5)
+      ..style = PaintingStyle.stroke
+      ..strokeCap = StrokeCap.round;
 
-      // 极低重力，几乎水平扩散
-      final gravityDy = p.gravity * (t * t) * iconSize * 2;
+    canvas.drawPath(path, paint);
+  }
 
-      final x = center.dx + math.cos(p.angle) * moveDist;
-      final y = center.dy + math.sin(p.angle) * moveDist + gravityDy;
+  /// 绘制火花头部（星形）
+  void _drawSparkHead(Canvas canvas, _Spark spark, double t, Offset pos) {
+    double opacity = 1.0;
+    if (t < 0.1) {
+      opacity = t * 10;
+    } else if (t > 0.5) {
+      opacity = 1 - ((t - 0.5) / 0.5);
+    }
 
-      // 透明度曲线：快速淡入，平稳保持，快速淡出
+    if (opacity <= 0) return;
+
+    final sparkSize = 2.5 * (1 - t * 0.3);
+
+    // 绘制星形火花
+    _drawStar(canvas, pos, sparkSize, spark.color, opacity);
+
+    // 绘制高光核心
+    final corePaint = Paint()
+      ..color = Colors.white.withValues(alpha: opacity * 0.9);
+    canvas.drawCircle(pos, sparkSize * 0.3, corePaint);
+  }
+
+  /// 绘制星形
+  void _drawStar(
+    Canvas canvas,
+    Offset center,
+    double size,
+    Color color,
+    double opacity,
+  ) {
+    final paint = Paint()
+      ..color = color.withValues(alpha: opacity)
+      ..style = PaintingStyle.fill;
+
+    final path = Path();
+    const points = 4;
+    const innerRatio = 0.4;
+
+    for (int i = 0; i < points * 2; i++) {
+      final angle = (i * math.pi / points) - math.pi / 2;
+      final radius = i.isEven ? size : size * innerRatio;
+      final x = center.dx + math.cos(angle) * radius;
+      final y = center.dy + math.sin(angle) * radius;
+
+      if (i == 0) {
+        path.moveTo(x, y);
+      } else {
+        path.lineTo(x, y);
+      }
+    }
+    path.close();
+
+    canvas.drawPath(path, paint);
+
+    // 添加发光效果
+    final glowPaint = Paint()
+      ..color = color.withValues(alpha: opacity * 0.3)
+      ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 2);
+    canvas.drawCircle(center, size * 0.8, glowPaint);
+  }
+
+  /// 绘制二次爆炸的小火花
+  void _drawTinySparks(Canvas canvas, Offset center) {
+    for (final spark in tinySparks) {
+      // 计算延迟后的进度
+      final adjustedProgress = (progress - spark.delay) / spark.life;
+      if (adjustedProgress <= 0 || adjustedProgress >= 1) continue;
+
+      final t = Curves.easeOut.transform(adjustedProgress.clamp(0.0, 1.0));
+
+      // 计算位置
+      final distance = spark.speed * t * iconSize * 0.6;
+      final gravityDy = spark.gravity * t * t * iconSize * 3;
+
+      final x = center.dx + math.cos(spark.angle) * distance;
+      final y = center.dy + math.sin(spark.angle) * distance + gravityDy;
+
+      // 透明度
       double opacity = 1.0;
-      if (progress < 0.05) {
-        opacity = progress * 20;
-      } else if (progress > 0.5) {
-        opacity = 1 - ((progress - 0.5) / 0.5);
+      if (adjustedProgress < 0.2) {
+        opacity = adjustedProgress * 5;
+      } else if (adjustedProgress > 0.6) {
+        opacity = 1 - ((adjustedProgress - 0.6) / 0.4);
       }
 
-      // 闪烁效果
-      if (p.sparkle) {
-        final sparkleCycle = math.sin(progress * 40);
-        opacity *= (0.8 + 0.2 * sparkleCycle);
-      }
+      if (opacity <= 0) continue;
 
-      // 粒子随时间缩小
-      final pSize = p.size * (1 - progress * 0.4);
+      // 绘制小火花点
+      final sparkSize = spark.size * (1 - t * 0.5);
+      final paint = Paint()
+        ..color = spark.color.withValues(alpha: opacity)
+        ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 0.5);
 
-      if (opacity <= 0 || pSize <= 0) continue;
+      canvas.drawCircle(Offset(x, y), sparkSize, paint);
 
-      paint.color = p.color.withValues(alpha: opacity);
-      canvas.drawCircle(Offset(x, y), pSize, paint);
-
-      // 高光核心
-      final coreColor = Colors.white.withValues(alpha: opacity * 0.7);
-      canvas.drawCircle(Offset(x, y), pSize * 0.35, Paint()..color = coreColor);
+      // 高光
+      final corePaint = Paint()
+        ..color = Colors.white.withValues(alpha: opacity * 0.6);
+      canvas.drawCircle(Offset(x, y), sparkSize * 0.3, corePaint);
     }
   }
 

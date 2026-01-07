@@ -27,16 +27,34 @@ class HomePage extends StatefulWidget {
 class HomePageState extends State<HomePage> {
   int _tabIndex = 0;
 
+  // 懒加载：记录已访问过的 Tab，避免 IndexedStack 同时保持所有页面状态
+  final Set<int> _loadedTabs = {0}; // 默认加载第一个 Tab
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       body: IndexedStack(
         index: _tabIndex,
-        children: const [FeedPage(), ChannelPage(), ChatPage(), ProfilePage()],
+        children: [
+          // 只构建已访问过的页面，未访问的用空容器占位
+          _loadedTabs.contains(0) ? const FeedPage() : const SizedBox.shrink(),
+          _loadedTabs.contains(1)
+              ? const ChannelPage()
+              : const SizedBox.shrink(),
+          _loadedTabs.contains(2) ? const ChatPage() : const SizedBox.shrink(),
+          _loadedTabs.contains(3)
+              ? const ProfilePage()
+              : const SizedBox.shrink(),
+        ],
       ),
       bottomNavigationBar: _BottomNavBar(
         currentIndex: _tabIndex,
-        onTap: (i) => setState(() => _tabIndex = i),
+        onTap: (i) {
+          if (!_loadedTabs.contains(i)) {
+            _loadedTabs.add(i);
+          }
+          setState(() => _tabIndex = i);
+        },
       ),
     );
   }
@@ -62,12 +80,14 @@ class _BottomNavBar extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final colors = AppColors.of(context);
+    // 缓存 MediaQuery 结果，避免重复调用
+    final bottomPadding = MediaQuery.paddingOf(context).bottom;
 
     return AnimatedContainer(
       duration: const Duration(milliseconds: 1000),
       curve: Curves.easeOutCubic,
-      height: 56 + MediaQuery.paddingOf(context).bottom,
-      padding: EdgeInsets.only(bottom: MediaQuery.paddingOf(context).bottom),
+      height: 56 + bottomPadding,
+      padding: EdgeInsets.only(bottom: bottomPadding),
       decoration: BoxDecoration(
         color: colors.surfaceNav,
         border: Border(top: BorderSide(color: colors.navBorder, width: 0.5)),
