@@ -94,15 +94,9 @@ infra/cache/data/
 # ============================================================================
 # Environment Variables (统一放在 infra/env/ 目录下)
 # ============================================================================
-# 忽略所有 .env 文件，除了 example 模板
+# 私人仓库，直接追踪所有配置文件
 .env
 .env.*
-!.env.example
-!.env.*.example
-
-# 保留 infra/env 目录下的 example 文件
-infra/env/*.env
-!infra/env/*.env.example
 
 # 忽略旧位置的环境变量文件
 infra/.env.dev
