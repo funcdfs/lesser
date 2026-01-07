@@ -85,7 +85,7 @@ func LoadFromEnv() *Config {
 		RedisURL: getEnv("REDIS_URL", "redis://redis:6379/2"),
 
 		// RabbitMQ 配置
-		RabbitMQURL: getEnv("RABBITMQ_URL", "amqp://superuser:superuser@rabbitmq:5672/"),
+		RabbitMQURL: getEnv("RABBITMQ_URL", "amqp://funcdfs:fw142857@rabbitmq:5672/"),
 
 		// JWT 配置
 		JWTSecret:            jwtSecret,

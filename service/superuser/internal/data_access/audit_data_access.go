@@ -33,17 +33,20 @@ func (r *AuditLogDataAccessImpl) Create(ctx context.Context, log *AuditLog) erro
 	}
 	log.CreatedAt = time.Now()
 
-	// 序列化 details 为 JSON
-	var detailsJSON []byte
-	var err error
+	// 序列化 details 为 JSON，如果为 nil 则使用 NULL
+	var detailsJSON interface{}
 	if log.Details != nil {
-		detailsJSON, err = json.Marshal(log.Details)
+		jsonBytes, err := json.Marshal(log.Details)
 		if err != nil {
 			return fmt.Errorf("序列化 details 失败: %w", err)
 		}
+		detailsJSON = jsonBytes
+	} else {
+		// 传入 nil 让 PostgreSQL 存储 NULL
+		detailsJSON = nil
 	}
 
-	_, err = r.db.ExecContext(ctx, query,
+	_, err := r.db.ExecContext(ctx, query,
 		log.ID, log.SuperUserID, log.Action, log.TargetType, log.TargetID,
 		detailsJSON, log.IPAddress, log.UserAgent, log.CreatedAt)
 	return err

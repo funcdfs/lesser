@@ -26,7 +26,7 @@ func main() {
 	logger := log.New("search")
 
 	grpcPort := getEnv("GRPC_PORT", "50058")
-	rabbitURL := getEnv("RABBITMQ_URL", "amqp://superuser:superuser@rabbitmq:5672/")
+	rabbitURL := getEnv("RABBITMQ_URL", "amqp://funcdfs:fw142857@rabbitmq:5672/")
 
 	// 初始化 OpenTelemetry
 	ctx := context.Background()

@@ -234,6 +234,7 @@ CREATE TABLE IF NOT EXISTS contents (
     is_pinned BOOLEAN DEFAULT false,
     comments_disabled BOOLEAN DEFAULT false,
     language VARCHAR(10),
+    search_vector TSVECTOR,
     CONSTRAINT valid_content_type CHECK (type IN (1, 2, 3)),
     CONSTRAINT valid_content_status CHECK (status IN (1, 2, 3, 4))
 );
@@ -247,6 +248,7 @@ CREATE INDEX IF NOT EXISTS idx_contents_expires_at ON contents(expires_at) WHERE
 CREATE INDEX IF NOT EXISTS idx_contents_reply_to_id ON contents(reply_to_id) WHERE reply_to_id IS NOT NULL;
 CREATE INDEX IF NOT EXISTS idx_contents_quote_id ON contents(quote_id) WHERE quote_id IS NOT NULL;
 CREATE INDEX IF NOT EXISTS idx_contents_tags ON contents USING GIN(tags);
+CREATE INDEX IF NOT EXISTS idx_contents_search_vector ON contents USING GIN(search_vector);
 CREATE INDEX IF NOT EXISTS idx_contents_author_type ON contents(author_id, type);
 CREATE INDEX IF NOT EXISTS idx_contents_author_status ON contents(author_id, status);
 CREATE INDEX IF NOT EXISTS idx_contents_pinned ON contents(author_id, is_pinned) WHERE is_pinned = true;

@@ -23,7 +23,7 @@ import (
 
 func main() {
 	grpcPort := getEnv("GRPC_PORT", "50059")
-	rabbitURL := getEnv("RABBITMQ_URL", "amqp://superuser:superuser@rabbitmq:5672/")
+	rabbitURL := getEnv("RABBITMQ_URL", "amqp://funcdfs:fw142857@rabbitmq:5672/")
 
 	// 初始化日志
 	pkgLog := log.New("notification")

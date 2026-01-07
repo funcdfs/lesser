@@ -28,7 +28,7 @@ func main() {
 
 	grpcPort := getEnv("GRPC_PORT", "50056")
 	contentServiceAddr := getEnv("CONTENT_SERVICE_ADDR", "content:50054")
-	rabbitmqURL := getEnv("RABBITMQ_URL", "amqp://superuser:superuser@rabbitmq:5672/")
+	rabbitmqURL := getEnv("RABBITMQ_URL", "amqp://funcdfs:fw142857@rabbitmq:5672/")
 
 	// 数据库连接
 	dbConfig := db.PostgresConfig{

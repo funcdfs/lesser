@@ -84,14 +84,16 @@ func Init(ctx context.Context, cfg Config) (ShutdownFunc, error) {
 	}
 
 	// 创建 Resource
-	res, err := resource.Merge(
-		resource.Default(),
-		resource.NewWithAttributes(
-			semconv.SchemaURL,
+	// 注意：不使用 resource.Merge 和 resource.Default()，避免 Schema URL 版本冲突
+	res, err := resource.New(ctx,
+		resource.WithAttributes(
 			semconv.ServiceName(cfg.ServiceName),
 			semconv.ServiceVersion(cfg.ServiceVersion),
 			semconv.DeploymentEnvironment(cfg.Environment),
 		),
+		resource.WithHost(),
+		resource.WithProcess(),
+		resource.WithTelemetrySDK(),
 	)
 	if err != nil {
 		return nil, fmt.Errorf("创建 resource 失败: %w", err)

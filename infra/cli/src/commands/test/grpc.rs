@@ -7,7 +7,6 @@ use tokio::process::Command;
 pub const GATEWAY_ADDR: &str = "localhost:50051";
 pub const CHAT_ADDR: &str = "localhost:50060";
 pub const SUPERUSER_ADDR: &str = "localhost:50061";
-pub const CHANNEL_ADDR: &str = "localhost:50062";
 
 /// 测试用户信息
 #[derive(Debug, Clone)]
@@ -112,11 +111,6 @@ pub async fn call_chat(method: &str, data: &str, token: Option<&str>) -> GrpcRes
 /// 通过 SuperUser 服务调用
 pub async fn call_superuser(method: &str, data: &str, token: Option<&str>) -> GrpcResult {
     call(SUPERUSER_ADDR, method, data, token).await
-}
-
-/// 通过 Channel 服务调用
-pub async fn call_channel(method: &str, data: &str, token: Option<&str>) -> GrpcResult {
-    call(CHANNEL_ADDR, method, data, token).await
 }
 
 /// 从 JSON 字符串中提取字段值（支持嵌套对象中的字段）

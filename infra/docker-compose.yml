@@ -173,8 +173,8 @@ services:
     restart: unless-stopped
     environment:
       DATABASE_URL: postgres://${POSTGRES_USER:-lesser}:${POSTGRES_PASSWORD:-lesser_dev_password}@postgres:5432/${POSTGRES_DB:-lesser_db}
-      PGHERO_USERNAME: ${PGHERO_USERNAME:-superuser}
-      PGHERO_PASSWORD: ${PGHERO_PASSWORD:-superuser}
+      PGHERO_USERNAME: ${PGHERO_USERNAME:-funcdfs}
+      PGHERO_PASSWORD: ${PGHERO_PASSWORD:-fw142857}
     ports:
       - "${PGHERO_PORT:-8080}:8080"
     networks:
@@ -291,7 +291,7 @@ services:
       - DB_PASSWORD=${POSTGRES_PASSWORD:-lesser_dev_password}
       - DB_NAME=${POSTGRES_DB:-lesser_db}
       - DB_SSLMODE=disable
-      - RABBITMQ_URL=amqp://${RABBITMQ_USER:-superuser}:${RABBITMQ_PASSWORD:-superuser}@rabbitmq:5672/
+      - RABBITMQ_URL=amqp://${RABBITMQ_USER:-funcdfs}:${RABBITMQ_PASSWORD:-fw142857}@rabbitmq:5672/
     volumes:
       - ../service:/app
       - go_mod_cache:/go/pkg/mod
@@ -329,7 +329,7 @@ services:
       - DB_PASSWORD=${POSTGRES_PASSWORD:-lesser_dev_password}
       - DB_NAME=${POSTGRES_DB:-lesser_db}
       - DB_SSLMODE=disable
-      - RABBITMQ_URL=amqp://${RABBITMQ_USER:-superuser}:${RABBITMQ_PASSWORD:-superuser}@rabbitmq:5672/
+      - RABBITMQ_URL=amqp://${RABBITMQ_USER:-funcdfs}:${RABBITMQ_PASSWORD:-fw142857}@rabbitmq:5672/
     volumes:
       - ../service:/app
       - go_mod_cache:/go/pkg/mod
@@ -368,7 +368,7 @@ services:
       - DB_NAME=${POSTGRES_DB:-lesser_db}
       - DB_SSLMODE=disable
       - CONTENT_SERVICE_ADDR=content:50054
-      - RABBITMQ_URL=amqp://${RABBITMQ_USER:-superuser}:${RABBITMQ_PASSWORD:-superuser}@rabbitmq:5672/
+      - RABBITMQ_URL=amqp://${RABBITMQ_USER:-funcdfs}:${RABBITMQ_PASSWORD:-fw142857}@rabbitmq:5672/
     volumes:
       - ../service:/app
       - go_mod_cache:/go/pkg/mod
@@ -409,7 +409,7 @@ services:
       - DB_NAME=${POSTGRES_DB:-lesser_db}
       - DB_SSLMODE=disable
       - CONTENT_SERVICE_ADDR=content:50054
-      - RABBITMQ_URL=amqp://${RABBITMQ_USER:-superuser}:${RABBITMQ_PASSWORD:-superuser}@rabbitmq:5672/
+      - RABBITMQ_URL=amqp://${RABBITMQ_USER:-funcdfs}:${RABBITMQ_PASSWORD:-fw142857}@rabbitmq:5672/
     volumes:
       - ../service:/app
       - go_mod_cache:/go/pkg/mod
@@ -525,7 +525,7 @@ services:
       - DB_PASSWORD=${POSTGRES_PASSWORD:-lesser_dev_password}
       - DB_NAME=${POSTGRES_DB:-lesser_db}
       - DB_SSLMODE=disable
-      - RABBITMQ_URL=amqp://${RABBITMQ_USER:-superuser}:${RABBITMQ_PASSWORD:-superuser}@rabbitmq:5672/
+      - RABBITMQ_URL=amqp://${RABBITMQ_USER:-funcdfs}:${RABBITMQ_PASSWORD:-fw142857}@rabbitmq:5672/
     volumes:
       - ../service:/app
       - go_mod_cache:/go/pkg/mod
@@ -648,7 +648,7 @@ services:
       - DB_NAME=${POSTGRES_DB:-lesser_db}
       - DB_SSLMODE=disable
       - REDIS_URL=redis://redis:6379/2
-      - RABBITMQ_URL=amqp://${RABBITMQ_USER:-superuser}:${RABBITMQ_PASSWORD:-superuser}@rabbitmq:5672/
+      - RABBITMQ_URL=amqp://${RABBITMQ_USER:-funcdfs}:${RABBITMQ_PASSWORD:-fw142857}@rabbitmq:5672/
       - SUPERUSER_USERNAME=${SUPERUSER_USERNAME:-funcdfs}
       - SUPERUSER_EMAIL=${SUPERUSER_EMAIL:-funcdfs@gmail.com}
       - SUPERUSER_PASSWORD=${SUPERUSER_PASSWORD:-fw142857}
