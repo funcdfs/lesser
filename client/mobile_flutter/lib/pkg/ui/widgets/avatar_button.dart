@@ -2,6 +2,7 @@
 
 import 'package:flutter/material.dart';
 import '../effects/effects.dart';
+import '../theme/theme.dart';
 
 class AvatarButton extends StatelessWidget {
   const AvatarButton({
@@ -19,15 +20,22 @@ class AvatarButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colors = AppColors.of(context);
+    // 头像背景使用 surfaceElevated，文字使用 textTertiary
+    final bgColor = colors.surfaceElevated;
+    final textColor = colors.textTertiary;
+
     return TapScale(
       onTap: onTap,
       scale: 0.92,
-      child: Container(
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 1000),
+        curve: Curves.easeOutCubic,
         width: size,
         height: size,
         decoration: BoxDecoration(
           shape: BoxShape.circle,
-          color: const Color(0xFFEEEEEE),
+          color: bgColor,
           image: imageUrl != null
               ? DecorationImage(
                   image: NetworkImage(imageUrl!),
@@ -37,13 +45,15 @@ class AvatarButton extends StatelessWidget {
         ),
         child: imageUrl == null && placeholder != null
             ? Center(
-                child: Text(
-                  placeholder!,
+                child: AnimatedDefaultTextStyle(
+                  duration: const Duration(milliseconds: 1000),
+                  curve: Curves.easeOutCubic,
                   style: TextStyle(
                     fontSize: size * 0.4,
                     fontWeight: FontWeight.w600,
-                    color: const Color(0xFF666666),
+                    color: textColor,
                   ),
+                  child: Text(placeholder!),
                 ),
               )
             : null,

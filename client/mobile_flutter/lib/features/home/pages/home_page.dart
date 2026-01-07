@@ -2,6 +2,8 @@
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import '../../../pkg/ui/theme/theme.dart';
+import '../../../pkg/ui/widgets/widgets.dart';
 import '../../feed/pages/feed_page.dart';
 import '../../channel/pages/channel_page.dart';
 import '../../chat/pages/chat_page.dart';
@@ -24,9 +26,6 @@ class HomePage extends StatefulWidget {
 
 class HomePageState extends State<HomePage> {
   int _tabIndex = 0;
-  bool _isDarkMode = false;
-
-  void toggleDarkMode() => setState(() => _isDarkMode = !_isDarkMode);
 
   @override
   Widget build(BuildContext context) {
@@ -37,7 +36,6 @@ class HomePageState extends State<HomePage> {
       ),
       bottomNavigationBar: _BottomNavBar(
         currentIndex: _tabIndex,
-        isDarkMode: _isDarkMode,
         onTap: (i) => setState(() => _tabIndex = i),
       ),
     );
@@ -49,14 +47,9 @@ class HomePageState extends State<HomePage> {
 // ============================================================================
 
 class _BottomNavBar extends StatelessWidget {
-  const _BottomNavBar({
-    required this.currentIndex,
-    required this.isDarkMode,
-    required this.onTap,
-  });
+  const _BottomNavBar({required this.currentIndex, required this.onTap});
 
   final int currentIndex;
-  final bool isDarkMode;
   final ValueChanged<int> onTap;
 
   static const _items = [
@@ -68,25 +61,16 @@ class _BottomNavBar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final bgColor = isDarkMode
-        ? const Color(0xFF000000)
-        : const Color(0xFFFFFFFF);
-    final activeColor = isDarkMode
-        ? const Color(0xFFFFFFFF)
-        : const Color(0xFF000000);
-    final inactiveColor = isDarkMode
-        ? const Color(0xFF666666)
-        : const Color(0xFFAAAAAA);
-    final borderColor = isDarkMode
-        ? const Color(0xFF222222)
-        : const Color(0xFFEEEEEE);
+    final colors = AppColors.of(context);
 
-    return Container(
+    return AnimatedContainer(
+      duration: const Duration(milliseconds: 1000),
+      curve: Curves.easeOutCubic,
       height: 56 + MediaQuery.paddingOf(context).bottom,
       padding: EdgeInsets.only(bottom: MediaQuery.paddingOf(context).bottom),
       decoration: BoxDecoration(
-        color: bgColor,
-        border: Border(top: BorderSide(color: borderColor, width: 0.5)),
+        color: colors.surfaceNav,
+        border: Border(top: BorderSide(color: colors.navBorder, width: 0.5)),
       ),
       child: Row(
         children: List.generate(_items.length, (i) {
@@ -94,8 +78,8 @@ class _BottomNavBar extends StatelessWidget {
             child: _NavItem(
               icon: _items[i].icon,
               isSelected: currentIndex == i,
-              activeColor: activeColor,
-              inactiveColor: inactiveColor,
+              activeColor: colors.textPrimary,
+              inactiveColor: colors.textTertiary,
               onTap: () => onTap(i),
             ),
           );
@@ -207,7 +191,7 @@ class _NavItemState extends State<_NavItem>
                   width: 26,
                   height: 26,
                   child: CustomPaint(
-                    painter: _IconPainter(widget.icon, color, strokeWidth),
+                    painter: IconPainter(widget.icon, color, strokeWidth),
                   ),
                 ),
               ],
@@ -217,78 +201,4 @@ class _NavItemState extends State<_NavItem>
       ),
     );
   }
-}
-
-// ============================================================================
-// SVG Path 绘制器
-// ============================================================================
-
-class _IconPainter extends CustomPainter {
-  _IconPainter(this.path, this.color, this.strokeWidth);
-  final String path;
-  final Color color;
-  final double strokeWidth;
-
-  @override
-  void paint(Canvas canvas, Size size) {
-    final paint = Paint()
-      ..color = color
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = strokeWidth
-      ..strokeCap = StrokeCap.round
-      ..strokeJoin = StrokeJoin.round;
-    canvas.drawPath(_parse(path, size), paint);
-  }
-
-  Path _parse(String data, Size size) {
-    final p = Path();
-    final tokens = _tokenize(data);
-    final sx = size.width / 24, sy = size.height / 24;
-    double cx = 0, cy = 0;
-    int i = 0;
-
-    while (i < tokens.length) {
-      switch (tokens[i]) {
-        case 'M':
-          cx = double.parse(tokens[++i]) * sx;
-          cy = double.parse(tokens[++i]) * sy;
-          p.moveTo(cx, cy);
-        case 'L':
-          cx = double.parse(tokens[++i]) * sx;
-          cy = double.parse(tokens[++i]) * sy;
-          p.lineTo(cx, cy);
-        case 'H':
-          cx = double.parse(tokens[++i]) * sx;
-          p.lineTo(cx, cy);
-        case 'V':
-          cy = double.parse(tokens[++i]) * sy;
-          p.lineTo(cx, cy);
-        case 'C':
-          final x1 = double.parse(tokens[++i]) * sx;
-          final y1 = double.parse(tokens[++i]) * sy;
-          final x2 = double.parse(tokens[++i]) * sx;
-          final y2 = double.parse(tokens[++i]) * sy;
-          cx = double.parse(tokens[++i]) * sx;
-          cy = double.parse(tokens[++i]) * sy;
-          p.cubicTo(x1, y1, x2, y2, cx, cy);
-        case 'Z':
-          p.close();
-      }
-      i++;
-    }
-    return p;
-  }
-
-  List<String> _tokenize(String data) {
-    final r = <String>[];
-    for (final m in RegExp(r'([MLHVCZ])|(-?\d+\.?\d*)').allMatches(data)) {
-      final v = m.group(0);
-      if (v != null && v.isNotEmpty) r.add(v);
-    }
-    return r;
-  }
-
-  @override
-  bool shouldRepaint(_IconPainter old) =>
-      old.path != path || old.color != color || old.strokeWidth != strokeWidth;
 }

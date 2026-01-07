@@ -2,6 +2,7 @@
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import '../theme/theme.dart';
 
 class ToggleSwitch extends StatefulWidget {
   const ToggleSwitch({
@@ -52,8 +53,11 @@ class _ToggleSwitchState extends State<ToggleSwitch>
 
   @override
   Widget build(BuildContext context) {
-    final activeColor = widget.activeColor ?? const Color(0xFF000000);
-    final inactiveColor = widget.inactiveColor ?? const Color(0xFFDDDDDD);
+    final colors = AppColors.of(context);
+    // 使用主题定义的开关颜色
+    final activeColor = widget.activeColor ?? colors.switchActive;
+    final inactiveColor = widget.inactiveColor ?? colors.switchInactive;
+    final thumbColor = colors.switchThumb;
     final thumbSize = widget.height - 4;
 
     return GestureDetector(
@@ -80,17 +84,19 @@ class _ToggleSwitchState extends State<ToggleSwitch>
                     curve: Curves.easeOutBack,
                     left: widget.value ? widget.width - thumbSize - 2 : 2,
                     top: 2,
-                    child: Container(
+                    child: AnimatedContainer(
+                      duration: const Duration(milliseconds: 1000),
+                      curve: Curves.easeOutCubic,
                       width: thumbSize,
                       height: thumbSize,
-                      decoration: const BoxDecoration(
+                      decoration: BoxDecoration(
                         shape: BoxShape.circle,
-                        color: Colors.white,
+                        color: thumbColor,
                         boxShadow: [
                           BoxShadow(
-                            color: Color(0x22000000),
+                            color: colors.surfaceOverlay.withValues(alpha: 0.3),
                             blurRadius: 4,
-                            offset: Offset(0, 2),
+                            offset: const Offset(0, 2),
                           ),
                         ],
                       ),

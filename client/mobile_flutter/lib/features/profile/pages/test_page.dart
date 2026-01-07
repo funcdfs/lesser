@@ -1,6 +1,7 @@
 // 组件展示测试页面
 
 import 'package:flutter/material.dart';
+import '../../../pkg/ui/theme/app_theme.dart';
 import '../../../pkg/ui/widgets/widgets.dart';
 
 class TestPage extends StatefulWidget {
@@ -20,19 +21,75 @@ class _TestPageState extends State<TestPage> {
   int _repostCount = 16;
   bool _toggleValue = false;
 
+  // 数字动画测试
+  int _animCount = 99;
+
   @override
   Widget build(BuildContext context) {
+    final colors = AppColors.of(context);
+
     return Scaffold(
       appBar: AppBar(
-        title: const Text('组件展示'),
-        backgroundColor: Colors.white,
-        foregroundColor: Colors.black,
+        title: Text(
+          '组件展示',
+          style: TextStyle(
+            fontWeight: FontWeight.w600,
+            color: colors.textPrimary,
+          ),
+        ),
+        backgroundColor: colors.surfaceBase,
+        foregroundColor: colors.textPrimary,
         elevation: 0,
       ),
-      backgroundColor: const Color(0xFFF5F5F5),
+      backgroundColor: colors.surfaceBase,
       body: ListView(
         padding: const EdgeInsets.all(16),
         children: [
+          // 数字翻页动画
+          _buildSection(
+            '数字翻页动画 AnimatedCount',
+            '数字变化时的滑动淡入淡出效果',
+            Column(
+              children: [
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    IconButton(
+                      onPressed: () => setState(() => _animCount -= 10),
+                      icon: const Icon(Icons.remove_circle_outline_rounded),
+                    ),
+                    IconButton(
+                      onPressed: () => setState(() => _animCount--),
+                      icon: const Icon(Icons.remove_rounded),
+                    ),
+                    const SizedBox(width: 16),
+                    AnimatedCount(
+                      count: _animCount,
+                      style: const TextStyle(
+                        fontSize: 32,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    const SizedBox(width: 16),
+                    IconButton(
+                      onPressed: () => setState(() => _animCount++),
+                      icon: const Icon(Icons.add_rounded),
+                    ),
+                    IconButton(
+                      onPressed: () => setState(() => _animCount += 10),
+                      icon: const Icon(Icons.add_circle_outline_rounded),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  '当前值: $_animCount',
+                  style: TextStyle(color: colors.textTertiary),
+                ),
+              ],
+            ),
+          ),
+
           // LikeButton
           _buildSection(
             '点赞按钮 LikeButton',
@@ -221,7 +278,7 @@ class _TestPageState extends State<TestPage> {
       margin: const EdgeInsets.only(bottom: 16),
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: AppColors.of(context).surfaceElevated,
         borderRadius: BorderRadius.circular(12),
       ),
       child: Column(
@@ -234,7 +291,10 @@ class _TestPageState extends State<TestPage> {
           const SizedBox(height: 4),
           Text(
             subtitle,
-            style: const TextStyle(fontSize: 13, color: Color(0xFF888888)),
+            style: TextStyle(
+              fontSize: 13,
+              color: AppColors.of(context).textTertiary,
+            ),
           ),
           const SizedBox(height: 16),
           child,
