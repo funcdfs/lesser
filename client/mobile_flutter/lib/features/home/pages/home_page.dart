@@ -1,5 +1,6 @@
 // 主页面 - 底部导航栏 + 四个 Tab 页面
 
+import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import '../../../pkg/ui/theme/theme.dart';
@@ -33,6 +34,8 @@ class HomePageState extends State<HomePage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      // 让内容延伸到底部导航栏后面
+      extendBody: true,
       body: IndexedStack(
         index: _tabIndex,
         children: [
@@ -47,7 +50,7 @@ class HomePageState extends State<HomePage> {
               : const SizedBox.shrink(),
         ],
       ),
-      bottomNavigationBar: _BottomNavBar(
+      bottomNavigationBar: _FrostedBottomNavBar(
         currentIndex: _tabIndex,
         onTap: (i) {
           if (!_loadedTabs.contains(i)) {
@@ -61,11 +64,11 @@ class HomePageState extends State<HomePage> {
 }
 
 // ============================================================================
-// 底部导航栏
+// 毛玻璃底部导航栏
 // ============================================================================
 
-class _BottomNavBar extends StatelessWidget {
-  const _BottomNavBar({required this.currentIndex, required this.onTap});
+class _FrostedBottomNavBar extends StatelessWidget {
+  const _FrostedBottomNavBar({required this.currentIndex, required this.onTap});
 
   final int currentIndex;
   final ValueChanged<int> onTap;
@@ -80,30 +83,37 @@ class _BottomNavBar extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final colors = AppColors.of(context);
-    // 缓存 MediaQuery 结果，避免重复调用
     final bottomPadding = MediaQuery.paddingOf(context).bottom;
 
-    return AnimatedContainer(
-      duration: const Duration(milliseconds: 1000),
-      curve: Curves.easeOutCubic,
-      height: 56 + bottomPadding,
-      padding: EdgeInsets.only(bottom: bottomPadding),
-      decoration: BoxDecoration(
-        color: colors.surfaceNav,
-        border: Border(top: BorderSide(color: colors.navBorder, width: 0.5)),
-      ),
-      child: Row(
-        children: List.generate(_items.length, (i) {
-          return Expanded(
-            child: _NavItem(
-              icon: _items[i].icon,
-              isSelected: currentIndex == i,
-              activeColor: colors.textPrimary,
-              inactiveColor: colors.textTertiary,
-              onTap: () => onTap(i),
+    return ClipRRect(
+      child: BackdropFilter(
+        filter: ImageFilter.blur(sigmaX: 20, sigmaY: 20),
+        child: Container(
+          height: 56 + bottomPadding,
+          padding: EdgeInsets.only(bottom: bottomPadding),
+          decoration: BoxDecoration(
+            color: colors.surfaceNav.withValues(alpha: 0.8),
+            border: Border(
+              top: BorderSide(
+                color: colors.navBorder.withValues(alpha: 0.5),
+                width: 0.5,
+              ),
             ),
-          );
-        }),
+          ),
+          child: Row(
+            children: List.generate(_items.length, (i) {
+              return Expanded(
+                child: _NavItem(
+                  icon: _items[i].icon,
+                  isSelected: currentIndex == i,
+                  activeColor: colors.textPrimary,
+                  inactiveColor: colors.textTertiary,
+                  onTap: () => onTap(i),
+                ),
+              );
+            }),
+          ),
+        ),
       ),
     );
   }
