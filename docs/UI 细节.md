@@ -72,3 +72,17 @@ chat page 借鉴 Telegram 的高效。
 ![通知区域](ver1%20设计图/image-4.png)
 
 ![我的区域](ver1%20设计图/image-5.png)
+
+---
+
+### D. 图标风格准则 (Icon Style Guidelines)
+
+* **圆润优先：** 所有图标统一使用 `_rounded` 后缀的圆润版本（如 `Icons.favorite_rounded`、`Icons.chat_bubble_rounded`），营造亲和、现代的视觉感受。
+* **禁止尖锐图标：** 避免使用 `_sharp` 后缀或默认的尖角图标，保持整体风格一致。
+* **常用图标对照：**
+  - ❌ `Icons.favorite` → ✅ `Icons.favorite_rounded`
+  - ❌ `Icons.chat_bubble` → ✅ `Icons.chat_bubble_rounded`
+  - ❌ `Icons.share` → ✅ `Icons.share_rounded`
+  - ❌ `Icons.bookmark` → ✅ `Icons.bookmark_rounded`
+  - ❌ `Icons.more_horiz` → ✅ `Icons.more_horiz_rounded`
+  - ❌ `Icons.arrow_back` → ✅ `Icons.arrow_back_rounded`

@@ -140,9 +140,50 @@ func (s *service) SendMessage(ctx context.Context, msg *Message) error {
 ```
 
 ### 3.3 Flutter/Dart 规范
-```dart
-// 使用项目分层架构: pages → handler → data_access → models
 
+**代码风格原则**：
+- 少用语法糖，保持代码直观易读
+- 少用额外抽象，避免过度封装
+- 优先使用简单直接的写法，不追求"优雅"但难懂的代码
+- 避免级联操作符 `..` 的过度使用
+- 避免不必要的 extension 扩展
+- 避免过度使用 typedef 和复杂泛型
+- Widget 拆分适度，不要为了拆分而拆分
+
+```dart
+// ✅ 推荐：直接明了
+final list = <String>[];
+list.add('item');
+
+// ❌ 避免：过度使用语法糖
+final list = <String>[]..add('item')..add('item2');
+
+// ✅ 推荐：简单的条件判断
+if (value != null) {
+  doSomething(value);
+}
+
+// ❌ 避免：过度使用空安全操作符链
+value?.let((v) => doSomething(v));
+
+// ✅ 推荐：清晰的类定义
+class UserModel {
+  final String id;
+  final String username;
+  
+  UserModel({required this.id, required this.username});
+}
+
+// ❌ 避免：过度依赖代码生成
+@freezed
+class UserModel with _$UserModel {
+  const factory UserModel({required String id}) = _UserModel;
+}
+```
+
+**项目分层架构**: pages → handler → data_access → models
+
+```dart
 // Model (模型层)
 class UserModel {
   final String id;

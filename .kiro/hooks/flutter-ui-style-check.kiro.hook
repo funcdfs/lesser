@@ -1,0 +1,16 @@
+{
+  "enabled": true,
+  "name": "Flutter UI 风格检查",
+  "description": "当 Flutter 组件风格修改或新创建组件时，自动检查是否使用了 pkg 下的公共 UI 组件，确保风格与 APP 整体一致，保持典雅风格",
+  "version": "1",
+  "when": {
+    "type": "fileEdited",
+    "patterns": [
+      "client/mobile_flutter/lib/**/*.dart"
+    ]
+  },
+  "then": {
+    "type": "askAgent",
+    "prompt": "请查看 docs/UI 细节.md 文件，然后审查刚才修改的 Flutter 组件代码，检查以下几点：\n\n1. **公共组件复用**: 检查是否重复实现了 `client/mobile_flutter/lib/pkg/ui/` 下已有的公共组件（如 widgets、effects 等），如果有重复，建议使用公共组件\n2. **风格一致性**: 确保使用的颜色、字体、间距等符合 APP 整体设计风格\n3. **典雅风格**: 检查 UI 是否保持简洁、优雅的视觉效果\n4. **自定义组件**: 确保优先使用项目自定义的 UI 组件而非原生 Material/Cupertino 组件\n\n如发现问题，请给出具体的修改建议。"
+  }
+}

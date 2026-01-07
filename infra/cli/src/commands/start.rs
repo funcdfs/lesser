@@ -276,7 +276,7 @@ async fn start_flutter_android(config: &Config) -> Result<()> {
         return Ok(());
     }
 
-    // 检查 Android 设备
+    // 检查 Android 设备，解析 JSON 获取设备 ID
     let spinner = Spinner::new("检查 Android 设备...");
     let devices_output = Command::new("flutter")
         .args(["devices", "--machine"])
@@ -286,9 +286,11 @@ async fn start_flutter_android(config: &Config) -> Result<()> {
     spinner.finish_and_clear();
 
     let devices_str = String::from_utf8_lossy(&devices_output.stdout);
-    let has_android = devices_str.contains("android");
+    
+    // 解析 JSON 查找 Android 设备（targetPlatform 包含 "android"）
+    let android_device_id = parse_android_device_id(&devices_str);
 
-    if !has_android {
+    if android_device_id.is_none() {
         ui::warn("未检测到 Android 设备或模拟器");
         ui::info("请确保:");
         println!("    • Android 模拟器已启动，或");
@@ -298,23 +300,26 @@ async fn start_flutter_android(config: &Config) -> Result<()> {
         return Ok(());
     }
 
+    let device_id = android_device_id.unwrap();
+    ui::step_done(&format!("检测到 Android 设备: {}", device_id));
+
     // 设置 adb reverse 端口转发
     ui::info("设置 ADB 端口转发...");
-    let ports = ["50053", "50052", "50062"]; // Gateway, Chat, Channel 端口
+    let ports = ["50050", "50051", "50060", "50062"]; // Traefik, Gateway, Chat, Channel 端口
     for port in ports {
         let _ = Command::new("adb")
             .args(["reverse", &format!("tcp:{}", port), &format!("tcp:{}", port)])
             .output()
             .await;
     }
-    ui::step_done("ADB 端口转发已配置 (50053, 50052, 50062)");
+    ui::step_done(&format!("ADB 端口转发已配置 ({})", ports.join(", ")));
 
-    // 启动 Flutter
+    // 启动 Flutter，使用实际设备 ID
     ui::info("启动 Flutter Android...");
     println!();
 
     let status = Command::new("flutter")
-        .args(["run", "-d", "android"])
+        .args(["run", "-d", &device_id])
         .current_dir(flutter_dir)
         .stdout(Stdio::inherit())
         .stderr(Stdio::inherit())
@@ -326,6 +331,48 @@ async fn start_flutter_android(config: &Config) -> Result<()> {
     }
 
     Ok(())
+}
+
+/// 从 flutter devices --machine 的 JSON 输出中解析 Android 设备 ID
+fn parse_android_device_id(json_str: &str) -> Option<String> {
+    // 简单解析：查找 targetPlatform 包含 "android" 的设备，提取其 id
+    // JSON 格式: [{"id":"R52T9011ZYB","targetPlatform":"android-arm64",...},...]
+    
+    // 查找所有 "targetPlatform":"android 的位置
+    let mut search_pos = 0;
+    while let Some(platform_pos) = json_str[search_pos..].find("\"targetPlatform\"") {
+        let abs_pos = search_pos + platform_pos;
+        
+        // 检查这个 targetPlatform 的值是否包含 android
+        if let Some(value_start) = json_str[abs_pos..].find(':') {
+            let value_area = &json_str[abs_pos + value_start..];
+            if let Some(quote_start) = value_area.find('"') {
+                let after_quote = &value_area[quote_start + 1..];
+                if let Some(quote_end) = after_quote.find('"') {
+                    let platform_value = &after_quote[..quote_end];
+                    if platform_value.contains("android") {
+                        // 找到 Android 设备，向前查找对应的 id
+                        // 从当前位置向前找最近的 "id":"xxx"
+                        let before_platform = &json_str[..abs_pos];
+                        if let Some(id_pos) = before_platform.rfind("\"id\"") {
+                            let id_area = &json_str[id_pos..abs_pos];
+                            if let Some(colon) = id_area.find(':') {
+                                let after_colon = &id_area[colon + 1..];
+                                if let Some(q1) = after_colon.find('"') {
+                                    let after_q1 = &after_colon[q1 + 1..];
+                                    if let Some(q2) = after_q1.find('"') {
+                                        return Some(after_q1[..q2].to_string());
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        search_pos = abs_pos + 1;
+    }
+    None
 }
 
 /// 启动 Flutter iOS
