@@ -32,19 +32,17 @@ const (
 // CommentServiceClient is the client API for CommentService service.
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
-//
-// CommentService 评论服务
 type CommentServiceClient interface {
-	// 基础 CRUD
+	// ---- 基础 CRUD ----
 	CreateComment(ctx context.Context, in *CreateCommentRequest, opts ...grpc.CallOption) (*CreateCommentResponse, error)
 	GetComment(ctx context.Context, in *GetCommentRequest, opts ...grpc.CallOption) (*GetCommentResponse, error)
 	DeleteComment(ctx context.Context, in *DeleteCommentRequest, opts ...grpc.CallOption) (*DeleteCommentResponse, error)
-	// 列表查询（支持排序）
+	// ---- 列表查询 ----
 	ListComments(ctx context.Context, in *ListCommentsRequest, opts ...grpc.CallOption) (*ListCommentsResponse, error)
-	// 统计
+	// ---- 统计 ----
 	GetCommentCount(ctx context.Context, in *GetCommentCountRequest, opts ...grpc.CallOption) (*GetCommentCountResponse, error)
 	BatchGetCommentCount(ctx context.Context, in *BatchGetCommentCountRequest, opts ...grpc.CallOption) (*BatchGetCommentCountResponse, error)
-	// 评论点赞
+	// ---- 评论点赞 ----
 	LikeComment(ctx context.Context, in *LikeCommentRequest, opts ...grpc.CallOption) (*LikeCommentResponse, error)
 	UnlikeComment(ctx context.Context, in *UnlikeCommentRequest, opts ...grpc.CallOption) (*UnlikeCommentResponse, error)
 }
@@ -140,19 +138,17 @@ func (c *commentServiceClient) UnlikeComment(ctx context.Context, in *UnlikeComm
 // CommentServiceServer is the server API for CommentService service.
 // All implementations must embed UnimplementedCommentServiceServer
 // for forward compatibility.
-//
-// CommentService 评论服务
 type CommentServiceServer interface {
-	// 基础 CRUD
+	// ---- 基础 CRUD ----
 	CreateComment(context.Context, *CreateCommentRequest) (*CreateCommentResponse, error)
 	GetComment(context.Context, *GetCommentRequest) (*GetCommentResponse, error)
 	DeleteComment(context.Context, *DeleteCommentRequest) (*DeleteCommentResponse, error)
-	// 列表查询（支持排序）
+	// ---- 列表查询 ----
 	ListComments(context.Context, *ListCommentsRequest) (*ListCommentsResponse, error)
-	// 统计
+	// ---- 统计 ----
 	GetCommentCount(context.Context, *GetCommentCountRequest) (*GetCommentCountResponse, error)
 	BatchGetCommentCount(context.Context, *BatchGetCommentCountRequest) (*BatchGetCommentCountResponse, error)
-	// 评论点赞
+	// ---- 评论点赞 ----
 	LikeComment(context.Context, *LikeCommentRequest) (*LikeCommentResponse, error)
 	UnlikeComment(context.Context, *UnlikeCommentRequest) (*UnlikeCommentResponse, error)
 	mustEmbedUnimplementedCommentServiceServer()

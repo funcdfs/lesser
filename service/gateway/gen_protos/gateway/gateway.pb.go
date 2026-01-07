@@ -21,7 +21,6 @@ const (
 	_ = protoimpl.EnforceVersion(protoimpl.MaxVersion - 20)
 )
 
-// HealthRequest 健康检查请求
 type HealthRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	unknownFields protoimpl.UnknownFields
@@ -58,7 +57,6 @@ func (*HealthRequest) Descriptor() ([]byte, []int) {
 	return file_gateway_gateway_proto_rawDescGZIP(), []int{0}
 }
 
-// HealthResponse 健康检查响应
 type HealthResponse struct {
 	state         protoimpl.MessageState    `protogen:"open.v1"`
 	Healthy       bool                      `protobuf:"varint,1,opt,name=healthy,proto3" json:"healthy,omitempty"`
@@ -111,7 +109,6 @@ func (x *HealthResponse) GetServices() map[string]*ServiceStatus {
 	return nil
 }
 
-// ServiceStatus 服务状态
 type ServiceStatus struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Healthy       bool                   `protobuf:"varint,1,opt,name=healthy,proto3" json:"healthy,omitempty"`

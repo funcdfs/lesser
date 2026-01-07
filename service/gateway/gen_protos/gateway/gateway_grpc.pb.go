@@ -25,10 +25,6 @@ const (
 // GatewayServiceClient is the client API for GatewayService service.
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
-//
-// GatewayService API 网关服务
-// Gateway 只做：鉴权（JWT 本地验签）、限流、路由转发
-// 不处理任何业务逻辑
 type GatewayServiceClient interface {
 	// 健康检查
 	Health(ctx context.Context, in *HealthRequest, opts ...grpc.CallOption) (*HealthResponse, error)
@@ -55,10 +51,6 @@ func (c *gatewayServiceClient) Health(ctx context.Context, in *HealthRequest, op
 // GatewayServiceServer is the server API for GatewayService service.
 // All implementations must embed UnimplementedGatewayServiceServer
 // for forward compatibility.
-//
-// GatewayService API 网关服务
-// Gateway 只做：鉴权（JWT 本地验签）、限流、路由转发
-// 不处理任何业务逻辑
 type GatewayServiceServer interface {
 	// 健康检查
 	Health(context.Context, *HealthRequest) (*HealthResponse, error)

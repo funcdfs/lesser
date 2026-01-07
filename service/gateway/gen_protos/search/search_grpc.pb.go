@@ -28,8 +28,6 @@ const (
 // SearchServiceClient is the client API for SearchService service.
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
-//
-// SearchService 搜索服务
 type SearchServiceClient interface {
 	// 搜索内容（帖子）
 	SearchPosts(ctx context.Context, in *SearchPostsRequest, opts ...grpc.CallOption) (*SearchPostsResponse, error)
@@ -37,7 +35,7 @@ type SearchServiceClient interface {
 	SearchUsers(ctx context.Context, in *SearchUsersRequest, opts ...grpc.CallOption) (*SearchUsersResponse, error)
 	// 搜索评论
 	SearchComments(ctx context.Context, in *SearchCommentsRequest, opts ...grpc.CallOption) (*SearchCommentsResponse, error)
-	// 综合搜索（内容+评论+用户）
+	// 综合搜索
 	SearchAll(ctx context.Context, in *SearchAllRequest, opts ...grpc.CallOption) (*SearchAllResponse, error)
 }
 
@@ -92,8 +90,6 @@ func (c *searchServiceClient) SearchAll(ctx context.Context, in *SearchAllReques
 // SearchServiceServer is the server API for SearchService service.
 // All implementations must embed UnimplementedSearchServiceServer
 // for forward compatibility.
-//
-// SearchService 搜索服务
 type SearchServiceServer interface {
 	// 搜索内容（帖子）
 	SearchPosts(context.Context, *SearchPostsRequest) (*SearchPostsResponse, error)
@@ -101,7 +97,7 @@ type SearchServiceServer interface {
 	SearchUsers(context.Context, *SearchUsersRequest) (*SearchUsersResponse, error)
 	// 搜索评论
 	SearchComments(context.Context, *SearchCommentsRequest) (*SearchCommentsResponse, error)
-	// 综合搜索（内容+评论+用户）
+	// 综合搜索
 	SearchAll(context.Context, *SearchAllRequest) (*SearchAllResponse, error)
 	mustEmbedUnimplementedSearchServiceServer()
 }

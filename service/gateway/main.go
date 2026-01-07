@@ -67,14 +67,15 @@ func main() {
 		log.String("port", grpcPort),
 		log.String("auth", cfg.AuthServiceAddr),
 		log.String("user", cfg.UserServiceAddr),
+		log.String("superuser", cfg.SuperUserServiceAddr),
 		log.String("content", cfg.ContentServiceAddr),
-		log.String("interaction", cfg.InteractionServiceAddr),
 		log.String("comment", cfg.CommentServiceAddr),
+		log.String("interaction", cfg.InteractionServiceAddr),
 		log.String("timeline", cfg.TimelineServiceAddr),
-		log.String("chat", cfg.ChatServiceAddr),
-		log.String("channel", cfg.ChannelServiceAddr),
 		log.String("search", cfg.SearchServiceAddr),
-		log.String("notification", cfg.NotificationServiceAddr))
+		log.String("notification", cfg.NotificationServiceAddr),
+		log.String("chat", cfg.ChatServiceAddr),
+		log.String("channel", cfg.ChannelServiceAddr))
 
 	if err := grpcServer.Serve(lis); err != nil {
 		logger.Error("gRPC 服务异常退出", log.Any("error", err))
@@ -85,18 +86,28 @@ func main() {
 // loadConfig 加载配置
 func loadConfig() server.Config {
 	return server.Config{
-		AuthServiceAddr:         getEnv("AUTH_SERVICE_ADDR", "auth:50052"),
-		UserServiceAddr:         getEnv("USER_SERVICE_ADDR", "user:50053"),
-		ContentServiceAddr:      getEnv("CONTENT_SERVICE_ADDR", "content:50054"),
-		CommentServiceAddr:      getEnv("COMMENT_SERVICE_ADDR", "comment:50055"),
-		InteractionServiceAddr:  getEnv("INTERACTION_SERVICE_ADDR", "interaction:50056"),
-		TimelineServiceAddr:     getEnv("TIMELINE_SERVICE_ADDR", "timeline:50057"),
+		// 认证与用户
+		AuthServiceAddr:      getEnv("AUTH_SERVICE_ADDR", "auth:50052"),
+		UserServiceAddr:      getEnv("USER_SERVICE_ADDR", "user:50053"),
+		SuperUserServiceAddr: getEnv("SUPERUSER_SERVICE_ADDR", "superuser:50061"),
+
+		// 内容与交互
+		ContentServiceAddr:     getEnv("CONTENT_SERVICE_ADDR", "content:50054"),
+		CommentServiceAddr:     getEnv("COMMENT_SERVICE_ADDR", "comment:50055"),
+		InteractionServiceAddr: getEnv("INTERACTION_SERVICE_ADDR", "interaction:50056"),
+		TimelineServiceAddr:    getEnv("TIMELINE_SERVICE_ADDR", "timeline:50057"),
+
+		// 搜索与通知
 		SearchServiceAddr:       getEnv("SEARCH_SERVICE_ADDR", "search:50058"),
 		NotificationServiceAddr: getEnv("NOTIFICATION_SERVICE_ADDR", "notification:50059"),
-		ChatServiceAddr:         getEnv("CHAT_SERVICE_ADDR", "chat:50060"),
-		ChannelServiceAddr:      getEnv("CHANNEL_SERVICE_ADDR", "channel:50062"),
-		RateLimitRate:           getEnvFloat("RATE_LIMIT_RATE", 100),
-		RateLimitBurst:          getEnvInt("RATE_LIMIT_BURST", 200),
+
+		// 实时通信
+		ChatServiceAddr:    getEnv("CHAT_SERVICE_ADDR", "chat:50060"),
+		ChannelServiceAddr: getEnv("CHANNEL_SERVICE_ADDR", "channel:50062"),
+
+		// 限流配置
+		RateLimitRate:  getEnvFloat("RATE_LIMIT_RATE", 100),
+		RateLimitBurst: getEnvInt("RATE_LIMIT_BURST", 200),
 	}
 }
 

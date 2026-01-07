@@ -5,97 +5,50 @@ option go_package = "github.com/funcdfs/lesser/superuser/gen_protos/superuser";
 
 import "common/common.proto";
 
-// SuperUserService 超级管理员服务
+// ============================================================================
+// SuperUserService 超级管理员服务 (端口: 50061)
 // 系统级管理员，拥有访问数据库、RabbitMQ、管理所有用户等上帝级权限
 // 与普通用户完全隔离，采用独立的认证和权限体系
+// ============================================================================
+
 service SuperUserService {
-  // ========== 认证相关 ==========
-  // 超级管理员登录
+  // ---- 认证 ----
   rpc Login(SuperUserLoginRequest) returns (SuperUserLoginResponse);
-  // 登出
   rpc Logout(SuperUserLogoutRequest) returns (common.Empty);
-  // 刷新 Token
   rpc RefreshToken(SuperUserRefreshRequest) returns (SuperUserLoginResponse);
-  // 验证 Token（内部服务调用）
   rpc ValidateToken(ValidateTokenRequest) returns (ValidateTokenResponse);
 
-  // ========== 用户管理 ==========
-  // 获取所有用户列表
+  // ---- 用户管理 ----
   rpc ListUsers(ListUsersRequest) returns (ListUsersResponse);
-  // 获取用户详情
   rpc GetUser(GetUserRequest) returns (UserDetail);
-  // 封禁用户
-  rpc BanUser(BanUserRequest) returns (BanUserResponse);
-  // 解封用户
-  rpc UnbanUser(UnbanUserRequest) returns (UnbanUserResponse);
-  // 删除用户
-  rpc DeleteUser(DeleteUserRequest) returns (DeleteUserResponse);
-  // 强制修改用户信息
   rpc UpdateUser(UpdateUserRequest) returns (UserDetail);
+  rpc BanUser(BanUserRequest) returns (BanUserResponse);
+  rpc UnbanUser(UnbanUserRequest) returns (UnbanUserResponse);
+  rpc DeleteUser(DeleteUserRequest) returns (DeleteUserResponse);
 
-  // ========== 内容管理 ==========
-  // 获取所有内容列表
+  // ---- 内容管理 ----
   rpc ListContents(ListContentsRequest) returns (ListContentsResponse);
-  // 删除内容
   rpc DeleteContent(DeleteContentRequest) returns (DeleteContentResponse);
-  // 批量删除内容
   rpc BatchDeleteContents(BatchDeleteContentsRequest) returns (BatchDeleteContentsResponse);
 
-  // ========== 系统监控 ==========
-  // 获取系统统计信息
+  // ---- 系统监控 ----
   rpc GetSystemStats(GetSystemStatsRequest) returns (SystemStats);
-  // 获取数据库状态
   rpc GetDatabaseStatus(GetDatabaseStatusRequest) returns (DatabaseStatus);
-  // 获取 Redis 状态
   rpc GetRedisStatus(GetRedisStatusRequest) returns (RedisStatus);
-  // 获取 RabbitMQ 状态
   rpc GetRabbitMQStatus(GetRabbitMQStatusRequest) returns (RabbitMQStatus);
 
-  // ========== 数据库操作 ==========
-  // 执行只读 SQL 查询
+  // ---- 数据库操作 ----
   rpc ExecuteQuery(ExecuteQueryRequest) returns (ExecuteQueryResponse);
-  // 获取表结构
   rpc GetTableSchema(GetTableSchemaRequest) returns (TableSchema);
-  // 获取所有表列表
   rpc ListTables(ListTablesRequest) returns (ListTablesResponse);
 
-  // ========== 审计日志 ==========
-  // 获取操作日志
+  // ---- 审计日志 ----
   rpc GetAuditLogs(GetAuditLogsRequest) returns (AuditLogsResponse);
 }
 
-// ========== 认证相关消息 ==========
-
-message SuperUserLoginRequest {
-  string username = 1;
-  string password = 2;
-}
-
-message SuperUserLoginResponse {
-  SuperUser superuser = 1;
-  string access_token = 2;
-  string refresh_token = 3;
-}
-
-message SuperUserLogoutRequest {
-  string access_token = 1;
-}
-
-message SuperUserRefreshRequest {
-  string refresh_token = 1;
-}
-
-message ValidateTokenRequest {
-  string access_token = 1;
-}
-
-message ValidateTokenResponse {
-  bool valid = 1;
-  string superuser_id = 2;
-  string username = 3;
-}
-
-// ========== 实体定义 ==========
+// ============================================================================
+// 实体定义
+// ============================================================================
 
 message SuperUser {
   string id = 1;
@@ -128,8 +81,8 @@ message ContentDetail {
   string id = 1;
   string author_id = 2;
   string author_username = 3;
-  int32 type = 4;           // 1=STORY, 2=SHORT, 3=ARTICLE
-  int32 status = 5;         // 1=DRAFT, 2=PUBLISHED, 3=ARCHIVED, 4=DELETED
+  int32 type = 4;      // 1=STORY, 2=SHORT, 3=ARTICLE
+  int32 status = 5;    // 1=DRAFT, 2=PUBLISHED, 3=ARCHIVED, 4=DELETED
   string title = 6;
   string text = 7;
   repeated string media_urls = 8;
@@ -142,15 +95,50 @@ message ContentDetail {
   common.Timestamp published_at = 15;
 }
 
-// ========== 用户管理消息 ==========
+// ============================================================================
+// 认证
+// ============================================================================
+
+message SuperUserLoginRequest {
+  string username = 1;
+  string password = 2;
+}
+
+message SuperUserLoginResponse {
+  SuperUser superuser = 1;
+  string access_token = 2;
+  string refresh_token = 3;
+}
+
+message SuperUserLogoutRequest {
+  string access_token = 1;
+}
+
+message SuperUserRefreshRequest {
+  string refresh_token = 1;
+}
+
+message ValidateTokenRequest {
+  string access_token = 1;
+}
+
+message ValidateTokenResponse {
+  bool valid = 1;
+  string superuser_id = 2;
+  string username = 3;
+}
+
+// ============================================================================
+// 用户管理
+// ============================================================================
 
 message ListUsersRequest {
   int32 page = 1;
   int32 page_size = 2;
-  string search = 3;          // 搜索用户名或邮箱
-  string status = 4;          // all, active, banned
-  string sort_by = 5;         // created_at, followers_count, posts_count
-  string sort_order = 6;      // asc, desc
+  string search = 3;       // 搜索用户名或邮箱
+  string status = 4;       // all, active, banned
+  string sort_by = 5;      // created_at, followers_count, posts_count
+  string sort_order = 6;   // asc, desc
 }
 
 message ListUsersResponse {
@@ -162,6 +150,16 @@ message ListUsersResponse {
 
 message GetUserRequest {
   string user_id = 1;
+}
+
+message UpdateUserRequest {
+  string user_id = 1;
+  optional string username = 2;
+  optional string email = 3;
+  optional string display_name = 4;
+  optional string bio = 5;
+  optional bool is_active = 6;
+  optional bool is_verified = 7;
 }
 
 message BanUserRequest {
@@ -186,7 +184,7 @@ message UnbanUserResponse {
 
 message DeleteUserRequest {
   string user_id = 1;
-  bool hard_delete = 2;       // true=物理删除, false=软删除
+  bool hard_delete = 2;  // true=物理删除, false=软删除
 }
 
 message DeleteUserResponse {
@@ -194,25 +192,17 @@ message DeleteUserResponse {
   string message = 2;
 }
 
-message UpdateUserRequest {
-  string user_id = 1;
-  optional string username = 2;
-  optional string email = 3;
-  optional string display_name = 4;
-  optional string bio = 5;
-  optional bool is_active = 6;
-  optional bool is_verified = 7;
-}
-
-// ========== 内容管理消息 ==========
+// ============================================================================
+// 内容管理
+// ============================================================================
 
 message ListContentsRequest {
   int32 page = 1;
   int32 page_size = 2;
-  string author_id = 3;       // 按作者筛选
-  int32 type = 4;             // 按类型筛选
-  int32 status = 5;           // 按状态筛选
-  string search = 6;          // 搜索内容
+  string author_id = 3;
+  int32 type = 4;
+  int32 status = 5;
+  string search = 6;
   string sort_by = 7;
   string sort_order = 8;
 }
@@ -245,7 +235,9 @@ message BatchDeleteContentsResponse {
   string message = 3;
 }
 
-// ========== 系统监控消息 ==========
+// ============================================================================
+// 系统监控
+// ============================================================================
 
 message GetSystemStatsRequest {}
 
@@ -304,11 +296,13 @@ message QueueInfo {
   int32 consumer_count = 3;
 }
 
-// ========== 数据库操作消息 ==========
+// ============================================================================
+// 数据库操作
+// ============================================================================
 
 message ExecuteQueryRequest {
-  string query = 1;           // 只允许 SELECT 语句
-  int32 limit = 2;            // 最大返回行数，默认 100
+  string query = 1;   // 只允许 SELECT 语句
+  int32 limit = 2;    // 最大返回行数，默认 100
 }
 
 message ExecuteQueryResponse {
@@ -347,20 +341,22 @@ message IndexInfo {
 }
 
 message ListTablesRequest {
-  string schema = 1;          // 默认 public
+  string schema = 1;  // 默认 public
 }
 
 message ListTablesResponse {
   repeated string tables = 1;
 }
 
-// ========== 审计日志消息 ==========
+// ============================================================================
+// 审计日志
+// ============================================================================
 
 message GetAuditLogsRequest {
   int32 page = 1;
   int32 page_size = 2;
-  string superuser_id = 3;    // 按操作者筛选
-  string action = 4;          // 按操作类型筛选
+  string superuser_id = 3;
+  string action = 4;
   common.Timestamp start_time = 5;
   common.Timestamp end_time = 6;
 }
@@ -376,10 +372,10 @@ message AuditLog {
   string id = 1;
   string superuser_id = 2;
   string superuser_username = 3;
-  string action = 4;          // LOGIN, LOGOUT, BAN_USER, DELETE_USER, DELETE_CONTENT, EXECUTE_QUERY 等
-  string target_type = 5;     // USER, CONTENT, SYSTEM 等
+  string action = 4;       // LOGIN, LOGOUT, BAN_USER, DELETE_USER, etc.
+  string target_type = 5;  // USER, CONTENT, SYSTEM
   string target_id = 6;
-  string details = 7;         // JSON 格式的详细信息
+  string details = 7;      // JSON 格式
   string ip_address = 8;
   common.Timestamp created_at = 9;
 }

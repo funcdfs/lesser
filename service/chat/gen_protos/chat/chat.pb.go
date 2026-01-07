@@ -22,8 +22,6 @@ const (
 	_ = protoimpl.EnforceVersion(protoimpl.MaxVersion - 20)
 )
 
-// ConversationType 会话类型
-// 注意：CHANNEL 类型已迁移到独立的 Channel 服务 (protos/channel/channel.proto)
 type ConversationType int32
 
 const (
@@ -70,7 +68,6 @@ func (ConversationType) EnumDescriptor() ([]byte, []int) {
 	return file_chat_chat_proto_rawDescGZIP(), []int{0}
 }
 
-// Conversation 会话实体
 type Conversation struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Id            string                 `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
@@ -171,7 +168,6 @@ func (x *Conversation) GetUnreadCount() int64 {
 	return 0
 }
 
-// Message 消息实体
 type Message struct {
 	state          protoimpl.MessageState `protogen:"open.v1"`
 	Id             string                 `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
@@ -180,7 +176,7 @@ type Message struct {
 	Content        string                 `protobuf:"bytes,4,opt,name=content,proto3" json:"content,omitempty"`
 	MessageType    string                 `protobuf:"bytes,5,opt,name=message_type,json=messageType,proto3" json:"message_type,omitempty"` // text, image, file, video, link, system
 	CreatedAt      *common.Timestamp      `protobuf:"bytes,6,opt,name=created_at,json=createdAt,proto3" json:"created_at,omitempty"`
-	ReadAt         *common.Timestamp      `protobuf:"bytes,7,opt,name=read_at,json=readAt,proto3" json:"read_at,omitempty"` // 已读时间戳，null 表示未读
+	ReadAt         *common.Timestamp      `protobuf:"bytes,7,opt,name=read_at,json=readAt,proto3" json:"read_at,omitempty"`
 	unknownFields  protoimpl.UnknownFields
 	sizeCache      protoimpl.SizeCache
 }
@@ -264,7 +260,6 @@ func (x *Message) GetReadAt() *common.Timestamp {
 	return nil
 }
 
-// ReadReceipt 单条消息已读回执
 type ReadReceipt struct {
 	state          protoimpl.MessageState `protogen:"open.v1"`
 	MessageId      string                 `protobuf:"bytes,1,opt,name=message_id,json=messageId,proto3" json:"message_id,omitempty"`
@@ -333,7 +328,6 @@ func (x *ReadReceipt) GetReadAt() *common.Timestamp {
 	return nil
 }
 
-// BatchReadReceipt 批量已读回执
 type BatchReadReceipt struct {
 	state          protoimpl.MessageState `protogen:"open.v1"`
 	ConversationId string                 `protobuf:"bytes,1,opt,name=conversation_id,json=conversationId,proto3" json:"conversation_id,omitempty"`
@@ -402,7 +396,6 @@ func (x *BatchReadReceipt) GetReadAt() *common.Timestamp {
 	return nil
 }
 
-// GetConversationsRequest 获取会话列表请求
 type GetConversationsRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	UserId        string                 `protobuf:"bytes,1,opt,name=user_id,json=userId,proto3" json:"user_id,omitempty"`
@@ -455,7 +448,6 @@ func (x *GetConversationsRequest) GetPagination() *common.Pagination {
 	return nil
 }
 
-// ConversationsResponse 会话列表响应
 type ConversationsResponse struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Conversations []*Conversation        `protobuf:"bytes,1,rep,name=conversations,proto3" json:"conversations,omitempty"`
@@ -508,7 +500,6 @@ func (x *ConversationsResponse) GetPagination() *common.Pagination {
 	return nil
 }
 
-// GetConversationRequest 获取单个会话请求
 type GetConversationRequest struct {
 	state          protoimpl.MessageState `protogen:"open.v1"`
 	ConversationId string                 `protobuf:"bytes,1,opt,name=conversation_id,json=conversationId,proto3" json:"conversation_id,omitempty"`
@@ -553,7 +544,6 @@ func (x *GetConversationRequest) GetConversationId() string {
 	return ""
 }
 
-// CreateConversationRequest 创建会话请求
 type CreateConversationRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Type          ConversationType       `protobuf:"varint,1,opt,name=type,proto3,enum=chat.ConversationType" json:"type,omitempty"`
@@ -622,7 +612,6 @@ func (x *CreateConversationRequest) GetCreatorId() string {
 	return ""
 }
 
-// GetMessagesRequest 获取消息列表请求
 type GetMessagesRequest struct {
 	state          protoimpl.MessageState `protogen:"open.v1"`
 	ConversationId string                 `protobuf:"bytes,1,opt,name=conversation_id,json=conversationId,proto3" json:"conversation_id,omitempty"`
@@ -675,7 +664,6 @@ func (x *GetMessagesRequest) GetPagination() *common.Pagination {
 	return nil
 }
 
-// MessagesResponse 消息列表响应
 type MessagesResponse struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Messages      []*Message             `protobuf:"bytes,1,rep,name=messages,proto3" json:"messages,omitempty"`
@@ -728,7 +716,6 @@ func (x *MessagesResponse) GetPagination() *common.Pagination {
 	return nil
 }
 
-// SendMessageRequest 发送消息请求
 type SendMessageRequest struct {
 	state          protoimpl.MessageState `protogen:"open.v1"`
 	ConversationId string                 `protobuf:"bytes,1,opt,name=conversation_id,json=conversationId,proto3" json:"conversation_id,omitempty"`
@@ -797,7 +784,6 @@ func (x *SendMessageRequest) GetMessageType() string {
 	return ""
 }
 
-// MarkAsReadRequest 标记单条消息已读请求
 type MarkAsReadRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	MessageId     string                 `protobuf:"bytes,1,opt,name=message_id,json=messageId,proto3" json:"message_id,omitempty"`
@@ -850,7 +836,6 @@ func (x *MarkAsReadRequest) GetUserId() string {
 	return ""
 }
 
-// MarkConversationAsReadRequest 标记会话所有消息已读请求
 type MarkConversationAsReadRequest struct {
 	state          protoimpl.MessageState `protogen:"open.v1"`
 	ConversationId string                 `protobuf:"bytes,1,opt,name=conversation_id,json=conversationId,proto3" json:"conversation_id,omitempty"`
@@ -903,7 +888,6 @@ func (x *MarkConversationAsReadRequest) GetUserId() string {
 	return ""
 }
 
-// GetUnreadCountsRequest 批量获取未读数请求
 type GetUnreadCountsRequest struct {
 	state           protoimpl.MessageState `protogen:"open.v1"`
 	UserId          string                 `protobuf:"bytes,1,opt,name=user_id,json=userId,proto3" json:"user_id,omitempty"`
@@ -956,7 +940,6 @@ func (x *GetUnreadCountsRequest) GetConversationIds() []string {
 	return nil
 }
 
-// UnreadCount 单个会话的未读数
 type UnreadCount struct {
 	state          protoimpl.MessageState `protogen:"open.v1"`
 	ConversationId string                 `protobuf:"bytes,1,opt,name=conversation_id,json=conversationId,proto3" json:"conversation_id,omitempty"`
@@ -1009,7 +992,6 @@ func (x *UnreadCount) GetCount() int64 {
 	return 0
 }
 
-// GetUnreadCountsResponse 批量获取未读数响应
 type GetUnreadCountsResponse struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	UnreadCounts  []*UnreadCount         `protobuf:"bytes,1,rep,name=unread_counts,json=unreadCounts,proto3" json:"unread_counts,omitempty"`
@@ -1054,7 +1036,6 @@ func (x *GetUnreadCountsResponse) GetUnreadCounts() []*UnreadCount {
 	return nil
 }
 
-// ClientEvent 客户端发送的事件
 type ClientEvent struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
 	// Types that are valid to be assigned to Event:
@@ -1185,7 +1166,6 @@ func (*ClientEvent_Ping) isClientEvent_Event() {}
 
 func (*ClientEvent_Typing) isClientEvent_Event() {}
 
-// SubscribeRequest 订阅会话请求
 type SubscribeRequest struct {
 	state          protoimpl.MessageState `protogen:"open.v1"`
 	ConversationId string                 `protobuf:"bytes,1,opt,name=conversation_id,json=conversationId,proto3" json:"conversation_id,omitempty"`
@@ -1230,7 +1210,6 @@ func (x *SubscribeRequest) GetConversationId() string {
 	return ""
 }
 
-// UnsubscribeRequest 取消订阅请求
 type UnsubscribeRequest struct {
 	state          protoimpl.MessageState `protogen:"open.v1"`
 	ConversationId string                 `protobuf:"bytes,1,opt,name=conversation_id,json=conversationId,proto3" json:"conversation_id,omitempty"`
@@ -1275,13 +1254,12 @@ func (x *UnsubscribeRequest) GetConversationId() string {
 	return ""
 }
 
-// SendMessageEvent 通过流发送消息事件
 type SendMessageEvent struct {
 	state           protoimpl.MessageState `protogen:"open.v1"`
 	ConversationId  string                 `protobuf:"bytes,1,opt,name=conversation_id,json=conversationId,proto3" json:"conversation_id,omitempty"`
 	Content         string                 `protobuf:"bytes,2,opt,name=content,proto3" json:"content,omitempty"`
 	MessageType     string                 `protobuf:"bytes,3,opt,name=message_type,json=messageType,proto3" json:"message_type,omitempty"`
-	ClientMessageId string                 `protobuf:"bytes,4,opt,name=client_message_id,json=clientMessageId,proto3" json:"client_message_id,omitempty"` // 客户端生成的临时 ID，用于乐观更新
+	ClientMessageId string                 `protobuf:"bytes,4,opt,name=client_message_id,json=clientMessageId,proto3" json:"client_message_id,omitempty"` // 客户端临时 ID
 	unknownFields   protoimpl.UnknownFields
 	sizeCache       protoimpl.SizeCache
 }
@@ -1344,7 +1322,6 @@ func (x *SendMessageEvent) GetClientMessageId() string {
 	return ""
 }
 
-// PingEvent 心跳事件
 type PingEvent struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	unknownFields protoimpl.UnknownFields
@@ -1381,7 +1358,6 @@ func (*PingEvent) Descriptor() ([]byte, []int) {
 	return file_chat_chat_proto_rawDescGZIP(), []int{20}
 }
 
-// TypingEvent 正在输入事件
 type TypingEvent struct {
 	state          protoimpl.MessageState `protogen:"open.v1"`
 	ConversationId string                 `protobuf:"bytes,1,opt,name=conversation_id,json=conversationId,proto3" json:"conversation_id,omitempty"`
@@ -1434,7 +1410,6 @@ func (x *TypingEvent) GetIsTyping() bool {
 	return false
 }
 
-// ServerEvent 服务端推送的事件
 type ServerEvent struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
 	// Types that are valid to be assigned to Event:
@@ -1661,7 +1636,6 @@ func (*ServerEvent_Error) isServerEvent_Event() {}
 
 func (*ServerEvent_MessageSent) isServerEvent_Event() {}
 
-// NewMessageEvent 新消息事件
 type NewMessageEvent struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Message       *Message               `protobuf:"bytes,1,opt,name=message,proto3" json:"message,omitempty"`
@@ -1706,14 +1680,13 @@ func (x *NewMessageEvent) GetMessage() *Message {
 	return nil
 }
 
-// MessageReadEvent 消息已读事件
 type MessageReadEvent struct {
 	state          protoimpl.MessageState `protogen:"open.v1"`
 	MessageId      string                 `protobuf:"bytes,1,opt,name=message_id,json=messageId,proto3" json:"message_id,omitempty"`
 	ConversationId string                 `protobuf:"bytes,2,opt,name=conversation_id,json=conversationId,proto3" json:"conversation_id,omitempty"`
 	ReaderId       string                 `protobuf:"bytes,3,opt,name=reader_id,json=readerId,proto3" json:"reader_id,omitempty"`
 	ReadAt         *common.Timestamp      `protobuf:"bytes,4,opt,name=read_at,json=readAt,proto3" json:"read_at,omitempty"`
-	MessageIds     []string               `protobuf:"bytes,5,rep,name=message_ids,json=messageIds,proto3" json:"message_ids,omitempty"` // 批量已读时使用
+	MessageIds     []string               `protobuf:"bytes,5,rep,name=message_ids,json=messageIds,proto3" json:"message_ids,omitempty"`
 	unknownFields  protoimpl.UnknownFields
 	sizeCache      protoimpl.SizeCache
 }
@@ -1783,7 +1756,6 @@ func (x *MessageReadEvent) GetMessageIds() []string {
 	return nil
 }
 
-// ConversationUpdateEvent 会话更新事件
 type ConversationUpdateEvent struct {
 	state          protoimpl.MessageState `protogen:"open.v1"`
 	ConversationId string                 `protobuf:"bytes,1,opt,name=conversation_id,json=conversationId,proto3" json:"conversation_id,omitempty"`
@@ -1844,7 +1816,6 @@ func (x *ConversationUpdateEvent) GetUnreadCount() int64 {
 	return 0
 }
 
-// UnreadCountUpdateEvent 未读数更新事件
 type UnreadCountUpdateEvent struct {
 	state          protoimpl.MessageState `protogen:"open.v1"`
 	ConversationId string                 `protobuf:"bytes,1,opt,name=conversation_id,json=conversationId,proto3" json:"conversation_id,omitempty"`
@@ -1897,7 +1868,6 @@ func (x *UnreadCountUpdateEvent) GetCount() int64 {
 	return 0
 }
 
-// UserStatusEvent 用户在线状态事件
 type UserStatusEvent struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	UserId        string                 `protobuf:"bytes,1,opt,name=user_id,json=userId,proto3" json:"user_id,omitempty"`
@@ -1958,7 +1928,6 @@ func (x *UserStatusEvent) GetLastSeen() *common.Timestamp {
 	return nil
 }
 
-// TypingIndicatorEvent 正在输入指示器事件
 type TypingIndicatorEvent struct {
 	state          protoimpl.MessageState `protogen:"open.v1"`
 	ConversationId string                 `protobuf:"bytes,1,opt,name=conversation_id,json=conversationId,proto3" json:"conversation_id,omitempty"`
@@ -2019,7 +1988,6 @@ func (x *TypingIndicatorEvent) GetIsTyping() bool {
 	return false
 }
 
-// SubscribedEvent 订阅成功事件
 type SubscribedEvent struct {
 	state          protoimpl.MessageState `protogen:"open.v1"`
 	ConversationId string                 `protobuf:"bytes,1,opt,name=conversation_id,json=conversationId,proto3" json:"conversation_id,omitempty"`
@@ -2064,7 +2032,6 @@ func (x *SubscribedEvent) GetConversationId() string {
 	return ""
 }
 
-// UnsubscribedEvent 取消订阅成功事件
 type UnsubscribedEvent struct {
 	state          protoimpl.MessageState `protogen:"open.v1"`
 	ConversationId string                 `protobuf:"bytes,1,opt,name=conversation_id,json=conversationId,proto3" json:"conversation_id,omitempty"`
@@ -2109,7 +2076,6 @@ func (x *UnsubscribedEvent) GetConversationId() string {
 	return ""
 }
 
-// PongEvent 心跳响应
 type PongEvent struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	unknownFields protoimpl.UnknownFields
@@ -2146,7 +2112,6 @@ func (*PongEvent) Descriptor() ([]byte, []int) {
 	return file_chat_chat_proto_rawDescGZIP(), []int{31}
 }
 
-// ErrorEvent 错误事件
 type ErrorEvent struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Code          string                 `protobuf:"bytes,1,opt,name=code,proto3" json:"code,omitempty"`
@@ -2207,11 +2172,10 @@ func (x *ErrorEvent) GetAction() string {
 	return ""
 }
 
-// MessageSentEvent 消息发送成功事件
 type MessageSentEvent struct {
 	state           protoimpl.MessageState `protogen:"open.v1"`
-	ClientMessageId string                 `protobuf:"bytes,1,opt,name=client_message_id,json=clientMessageId,proto3" json:"client_message_id,omitempty"` // 客户端临时 ID
-	Message         *Message               `protobuf:"bytes,2,opt,name=message,proto3" json:"message,omitempty"`                                          // 服务端生成的正式消息
+	ClientMessageId string                 `protobuf:"bytes,1,opt,name=client_message_id,json=clientMessageId,proto3" json:"client_message_id,omitempty"`
+	Message         *Message               `protobuf:"bytes,2,opt,name=message,proto3" json:"message,omitempty"`
 	unknownFields   protoimpl.UnknownFields
 	sizeCache       protoimpl.SizeCache
 }

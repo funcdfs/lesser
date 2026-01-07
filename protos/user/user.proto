@@ -6,15 +6,17 @@ option go_package = "github.com/funcdfs/lesser/user/gen_protos/user";
 import "common/common.proto";
 
 // ============================================================================
-// UserService 用户服务
+// UserService 用户服务 (端口: 50053)
 // 提供用户资料管理、关注关系、屏蔽系统、隐私设置等功能
 // ============================================================================
+
 service UserService {
   // ---- 用户资料 ----
   rpc GetProfile(GetProfileRequest) returns (Profile);
   rpc GetProfileByUsername(GetProfileByUsernameRequest) returns (Profile);
   rpc UpdateProfile(UpdateProfileRequest) returns (Profile);
   rpc BatchGetProfiles(BatchGetProfilesRequest) returns (BatchGetProfilesResponse);
+  rpc SearchUsers(SearchUsersRequest) returns (SearchUsersResponse);
   
   // ---- 关注系统 ----
   rpc Follow(FollowRequest) returns (common.Empty);
@@ -26,7 +28,6 @@ service UserService {
   rpc GetMutualFollowers(GetMutualFollowersRequest) returns (FollowListResponse);
   
   // ---- 屏蔽系统 ----
-  // BlockType: HIDE_POSTS(不看他), HIDE_ME(不让他看我), BLOCK(拉黑，同时开启两者)
   rpc Block(BlockRequest) returns (common.Empty);
   rpc Unblock(UnblockRequest) returns (common.Empty);
   rpc GetBlockList(GetBlockListRequest) returns (BlockListResponse);
@@ -35,16 +36,12 @@ service UserService {
   // ---- 用户设置 ----
   rpc GetUserSettings(GetUserSettingsRequest) returns (UserSettings);
   rpc UpdateUserSettings(UpdateUserSettingsRequest) returns (UserSettings);
-  
-  // ---- 用户搜索 ----
-  rpc SearchUsers(SearchUsersRequest) returns (SearchUsersResponse);
 }
 
 // ============================================================================
-// 用户资料相关消息
+// 用户资料
 // ============================================================================
 
-// Profile 用户资料
 message Profile {
   string id = 1;
   string username = 2;
@@ -52,45 +49,41 @@ message Profile {
   string display_name = 4;
   string avatar_url = 5;
   string bio = 6;
-  string location = 7;           // 位置
-  string website = 8;            // 个人网站
-  string birthday = 9;           // 生日 (YYYY-MM-DD)
-  bool is_verified = 10;         // 是否认证
-  bool is_private = 11;          // 是否私密账户
+  string location = 7;
+  string website = 8;
+  string birthday = 9;           // YYYY-MM-DD
+  bool is_verified = 10;
+  bool is_private = 11;
   int32 followers_count = 12;
   int32 following_count = 13;
   int32 posts_count = 14;
   common.Timestamp created_at = 15;
   common.Timestamp updated_at = 16;
-  
-  // 查看者视角的关系状态（可选，仅在需要时填充）
-  RelationshipStatus relationship = 17;
+  RelationshipStatus relationship = 17;  // 查看者视角的关系状态
 }
 
-// RelationshipStatus 关系状态（从查看者视角）
 message RelationshipStatus {
-  bool is_following = 1;         // 我是否关注了他
-  bool is_followed_by = 2;       // 他是否关注了我
-  bool is_mutual = 3;            // 是否互关
-  bool is_blocking = 4;          // 我是否屏蔽了他
-  bool is_blocked_by = 5;        // 他是否屏蔽了我
-  bool is_muting = 6;            // 我是否静音了他（不看他的内容）
-  bool is_hiding_from = 7;       // 我是否对他隐藏（不让他看我）
+  bool is_following = 1;      // 我是否关注了他
+  bool is_followed_by = 2;    // 他是否关注了我
+  bool is_mutual = 3;         // 是否互关
+  bool is_blocking = 4;       // 我是否屏蔽了他
+  bool is_blocked_by = 5;     // 他是否屏蔽了我
+  bool is_muting = 6;         // 我是否静音了他
+  bool is_hiding_from = 7;    // 我是否对他隐藏
 }
 
-// GetProfileRequest 获取用户资料请求
+// ---- 资料请求/响应 ----
+
 message GetProfileRequest {
-  string user_id = 1;            // 目标用户 ID
-  string viewer_id = 2;          // 查看者 ID（可选，用于计算关系状态）
+  string user_id = 1;
+  string viewer_id = 2;  // 可选，用于计算关系状态
 }
 
-// GetProfileByUsernameRequest 通过用户名获取资料
 message GetProfileByUsernameRequest {
   string username = 1;
   string viewer_id = 2;
 }
 
-// UpdateProfileRequest 更新用户资料请求
 message UpdateProfileRequest {
   string user_id = 1;
   optional string display_name = 2;
@@ -102,202 +95,172 @@ message UpdateProfileRequest {
   optional bool is_private = 8;
 }
 
-// BatchGetProfilesRequest 批量获取用户资料
 message BatchGetProfilesRequest {
   repeated string user_ids = 1;  // 最多 100 个
-  string viewer_id = 2;          // 查看者 ID（可选）
+  string viewer_id = 2;
 }
 
-// BatchGetProfilesResponse 批量获取用户资料响应
 message BatchGetProfilesResponse {
-  map<string, Profile> profiles = 1;  // user_id -> Profile
+  map<string, Profile> profiles = 1;
+}
+
+message SearchUsersRequest {
+  string query = 1;
+  string viewer_id = 2;
+  common.Pagination pagination = 3;
+}
+
+message SearchUsersResponse {
+  repeated Profile users = 1;
+  common.Pagination pagination = 2;
 }
 
 // ============================================================================
-// 关注系统相关消息
+// 关注系统
 // ============================================================================
 
-// FollowRequest 关注请求
 message FollowRequest {
-  string follower_id = 1;        // 关注者（发起人）
-  string following_id = 2;       // 被关注者
+  string follower_id = 1;
+  string following_id = 2;
 }
 
-// UnfollowRequest 取消关注请求
 message UnfollowRequest {
   string follower_id = 1;
   string following_id = 2;
 }
 
-// GetFollowersRequest 获取粉丝列表请求
 message GetFollowersRequest {
   string user_id = 1;
-  string viewer_id = 2;          // 查看者 ID（用于计算关系状态）
+  string viewer_id = 2;
   common.Pagination pagination = 3;
 }
 
-// GetFollowingRequest 获取关注列表请求
 message GetFollowingRequest {
   string user_id = 1;
   string viewer_id = 2;
   common.Pagination pagination = 3;
 }
 
-// FollowListResponse 关注/粉丝列表响应
 message FollowListResponse {
   repeated Profile users = 1;
   common.Pagination pagination = 2;
 }
 
-// CheckFollowingRequest 检查是否关注请求
 message CheckFollowingRequest {
   string follower_id = 1;
   string following_id = 2;
 }
 
-// CheckFollowingResponse 检查是否关注响应
 message CheckFollowingResponse {
   bool is_following = 1;
 }
 
-// GetRelationshipRequest 获取两用户间关系
 message GetRelationshipRequest {
-  string user_id = 1;            // 当前用户
-  string target_id = 2;          // 目标用户
+  string user_id = 1;
+  string target_id = 2;
 }
 
-// GetRelationshipResponse 关系响应
 message GetRelationshipResponse {
   RelationshipStatus relationship = 1;
 }
 
-// GetMutualFollowersRequest 获取共同关注
 message GetMutualFollowersRequest {
-  string user_id = 1;            // 当前用户
-  string target_id = 2;          // 目标用户
+  string user_id = 1;
+  string target_id = 2;
   common.Pagination pagination = 3;
 }
 
 // ============================================================================
-// 屏蔽系统相关消息
+// 屏蔽系统
 // ============================================================================
 
-// BlockType 屏蔽类型
+// BlockType: 1=不看他, 2=不让他看我, 3=拉黑（双向）
 enum BlockType {
   BLOCK_TYPE_UNSPECIFIED = 0;
-  BLOCK_TYPE_HIDE_POSTS = 1;     // 不看他：隐藏他的内容，但他能看到我
-  BLOCK_TYPE_HIDE_ME = 2;        // 不让他看我：他看不到我的内容，但我能看到他
-  BLOCK_TYPE_BLOCK = 3;          // 拉黑：双向屏蔽，互相看不到
+  BLOCK_TYPE_HIDE_POSTS = 1;  // 不看他
+  BLOCK_TYPE_HIDE_ME = 2;     // 不让他看我
+  BLOCK_TYPE_BLOCK = 3;       // 拉黑
 }
 
-// BlockRequest 屏蔽请求
 message BlockRequest {
-  string blocker_id = 1;         // 发起屏蔽的用户
-  string blocked_id = 2;         // 被屏蔽的用户
-  BlockType block_type = 3;      // 屏蔽类型
+  string blocker_id = 1;
+  string blocked_id = 2;
+  BlockType block_type = 3;
 }
 
-// UnblockRequest 取消屏蔽请求
 message UnblockRequest {
   string blocker_id = 1;
   string blocked_id = 2;
-  BlockType block_type = 3;      // 要取消的屏蔽类型，BLOCK 会同时取消两种
+  BlockType block_type = 3;
 }
 
-// GetBlockListRequest 获取屏蔽列表
 message GetBlockListRequest {
   string user_id = 1;
-  BlockType block_type = 2;      // 筛选类型，UNSPECIFIED 返回所有
+  BlockType block_type = 2;  // UNSPECIFIED 返回所有
   common.Pagination pagination = 3;
 }
 
-// BlockListResponse 屏蔽列表响应
 message BlockListResponse {
   repeated BlockedUser users = 1;
   common.Pagination pagination = 2;
 }
 
-// BlockedUser 被屏蔽的用户
 message BlockedUser {
   Profile profile = 1;
   BlockType block_type = 2;
   common.Timestamp blocked_at = 3;
 }
 
-// CheckBlockedRequest 检查屏蔽状态
 message CheckBlockedRequest {
-  string user_id = 1;            // 当前用户
-  string target_id = 2;          // 目标用户
+  string user_id = 1;
+  string target_id = 2;
 }
 
-// CheckBlockedResponse 屏蔽状态响应
 message CheckBlockedResponse {
-  bool is_blocking = 1;          // 我是否屏蔽了他
-  bool is_blocked_by = 2;        // 他是否屏蔽了我
-  BlockType my_block_type = 3;   // 我对他的屏蔽类型
-  BlockType their_block_type = 4; // 他对我的屏蔽类型
-  bool can_view_profile = 5;     // 我是否能看到他的资料
-  bool can_be_viewed = 6;        // 他是否能看到我的资料
+  bool is_blocking = 1;
+  bool is_blocked_by = 2;
+  BlockType my_block_type = 3;
+  BlockType their_block_type = 4;
+  bool can_view_profile = 5;
+  bool can_be_viewed = 6;
 }
 
 // ============================================================================
-// 用户设置相关消息
+// 用户设置
 // ============================================================================
 
-// UserSettings 用户设置
 message UserSettings {
   string user_id = 1;
   PrivacySettings privacy = 2;
   NotificationSettings notification = 3;
 }
 
-// PrivacySettings 隐私设置
 message PrivacySettings {
-  bool is_private_account = 1;           // 私密账户（需要审批关注）
-  bool allow_message_from_anyone = 2;    // 允许任何人私信
-  bool show_online_status = 3;           // 显示在线状态
-  bool show_last_seen = 4;               // 显示最后上线时间
-  bool allow_tagging = 5;                // 允许被 @ 提及
-  bool show_activity_status = 6;         // 显示活动状态
+  bool is_private_account = 1;
+  bool allow_message_from_anyone = 2;
+  bool show_online_status = 3;
+  bool show_last_seen = 4;
+  bool allow_tagging = 5;
+  bool show_activity_status = 6;
 }
 
-// NotificationSettings 通知设置
 message NotificationSettings {
-  bool push_enabled = 1;                 // 推送通知总开关
-  bool email_enabled = 2;                // 邮件通知总开关
-  bool notify_new_follower = 3;          // 新粉丝通知
-  bool notify_like = 4;                  // 点赞通知
-  bool notify_comment = 5;               // 评论通知
-  bool notify_mention = 6;               // @ 提及通知
-  bool notify_repost = 7;                // 转发通知
-  bool notify_message = 8;               // 私信通知
+  bool push_enabled = 1;
+  bool email_enabled = 2;
+  bool notify_new_follower = 3;
+  bool notify_like = 4;
+  bool notify_comment = 5;
+  bool notify_mention = 6;
+  bool notify_repost = 7;
+  bool notify_message = 8;
 }
 
-// GetUserSettingsRequest 获取用户设置
 message GetUserSettingsRequest {
   string user_id = 1;
 }
 
-// UpdateUserSettingsRequest 更新用户设置
 message UpdateUserSettingsRequest {
   string user_id = 1;
   optional PrivacySettings privacy = 2;
   optional NotificationSettings notification = 3;
-}
-
-// ============================================================================
-// 用户搜索相关消息
-// ============================================================================
-
-// SearchUsersRequest 搜索用户请求
-message SearchUsersRequest {
-  string query = 1;              // 搜索关键词（用户名或昵称）
-  string viewer_id = 2;          // 查看者 ID
-  common.Pagination pagination = 3;
-}
-
-// SearchUsersResponse 搜索用户响应
-message SearchUsersResponse {
-  repeated Profile users = 1;
-  common.Pagination pagination = 2;
 }

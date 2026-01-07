@@ -5,27 +5,31 @@ option go_package = "github.com/funcdfs/lesser/auth/gen_protos/auth";
 
 import "common/common.proto";
 
-// AuthService 认证服务
+// ============================================================================
+// AuthService 认证服务 (端口: 50052)
 // 处理用户登录、注册、Token 管理
 // Gateway 启动时获取公钥用于本地 JWT 验签
+// ============================================================================
+
 service AuthService {
-  // 用户注册（低频，强一致）
-  rpc Register(RegisterRequest) returns (AuthResponse);
-  // 用户登录（低频，强一致）
-  rpc Login(LoginRequest) returns (AuthResponse);
-  // 登出并使 Token 失效
-  rpc Logout(LogoutRequest) returns (common.Empty);
-  // 使用 Refresh Token 刷新 Access Token
-  rpc RefreshToken(RefreshRequest) returns (AuthResponse);
-  // 获取 JWT 公钥（Gateway 启动时调用，用于本地验签）
-  rpc GetPublicKey(GetPublicKeyRequest) returns (GetPublicKeyResponse);
-  // 封禁用户（管理接口）
-  rpc BanUser(BanUserRequest) returns (BanUserResponse);
-  // 检查用户是否被封禁
-  rpc CheckBanned(CheckBannedRequest) returns (CheckBannedResponse);
-  // 根据 ID 获取用户信息
-  rpc GetUser(GetUserRequest) returns (User);
+  // ---- 用户认证 ----
+  rpc Register(RegisterRequest) returns (AuthResponse);       // 用户注册
+  rpc Login(LoginRequest) returns (AuthResponse);             // 用户登录
+  rpc Logout(LogoutRequest) returns (common.Empty);           // 用户登出
+  rpc RefreshToken(RefreshRequest) returns (AuthResponse);    // 刷新 Token
+  
+  // ---- JWT 公钥 ----
+  rpc GetPublicKey(GetPublicKeyRequest) returns (GetPublicKeyResponse);  // 获取公钥
+  
+  // ---- 用户管理 ----
+  rpc GetUser(GetUserRequest) returns (User);                 // 获取用户信息
+  rpc BanUser(BanUserRequest) returns (BanUserResponse);      // 封禁用户
+  rpc CheckBanned(CheckBannedRequest) returns (CheckBannedResponse);  // 检查封禁状态
 }
+
+// ============================================================================
+// 实体定义
+// ============================================================================
 
 // User 用户实体
 message User {
@@ -38,7 +42,10 @@ message User {
   common.Timestamp created_at = 7;
 }
 
-// RegisterRequest 注册请求
+// ============================================================================
+// 认证相关消息
+// ============================================================================
+
 message RegisterRequest {
   string username = 1;
   string email = 2;
@@ -46,66 +53,62 @@ message RegisterRequest {
   string display_name = 4;
 }
 
-// LoginRequest 登录请求
 message LoginRequest {
   string email = 1;
   string password = 2;
 }
 
-
-// AuthResponse 认证响应
 message AuthResponse {
   User user = 1;
   string access_token = 2;
   string refresh_token = 3;
 }
 
-// LogoutRequest 登出请求
 message LogoutRequest {
   string access_token = 1;
 }
 
-// RefreshRequest 刷新 Token 请求
 message RefreshRequest {
   string refresh_token = 1;
 }
 
-// GetPublicKeyRequest 获取公钥请求
+// ============================================================================
+// JWT 公钥相关消息
+// ============================================================================
+
 message GetPublicKeyRequest {}
 
-// GetPublicKeyResponse 获取公钥响应
 message GetPublicKeyResponse {
-  string public_key = 1;      // PEM 格式的公钥
-  string key_id = 2;          // Key ID，用于密钥轮换
-  string algorithm = 3;       // 签名算法，如 "RS256"
-  int64 expires_at = 4;       // 公钥过期时间戳（Unix 秒）
+  string public_key = 1;   // PEM 格式公钥
+  string key_id = 2;       // Key ID（密钥轮换用）
+  string algorithm = 3;    // 签名算法，如 "RS256"
+  int64 expires_at = 4;    // 公钥过期时间戳（Unix 秒）
 }
 
-// BanUserRequest 封禁用户请求
+// ============================================================================
+// 用户管理相关消息
+// ============================================================================
+
+message GetUserRequest {
+  string user_id = 1;
+}
+
 message BanUserRequest {
   string user_id = 1;
   string reason = 2;
   int64 duration_seconds = 3;  // 0 表示永久封禁
 }
 
-// BanUserResponse 封禁用户响应
 message BanUserResponse {
   bool success = 1;
 }
 
-// CheckBannedRequest 检查封禁状态请求
 message CheckBannedRequest {
   string user_id = 1;
 }
 
-// CheckBannedResponse 检查封禁状态响应
 message CheckBannedResponse {
   bool banned = 1;
   string reason = 2;
-  int64 expires_at = 3;       // 封禁到期时间戳，0 表示永久
-}
-
-// GetUserRequest 获取用户请求
-message GetUserRequest {
-  string user_id = 1;
+  int64 expires_at = 3;  // 封禁到期时间戳，0 表示永久
 }

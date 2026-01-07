@@ -7,88 +7,10 @@ import "common/common.proto";
 import "content/content.proto";
 
 // ============================================================================
-// Feed 流相关消息
-// ============================================================================
-
-// FeedItem Feed 流中的单个条目
-message FeedItem {
-  content.Content content = 1;    // 内容详情
-  bool is_liked = 2;              // 当前用户是否已点赞
-  bool is_bookmarked = 3;         // 当前用户是否已收藏
-  bool is_reposted = 4;           // 当前用户是否已转发
-}
-
-// ============================================================================
-// 请求/响应消息
-// ============================================================================
-
-// GetFollowingFeedRequest 获取关注用户 Feed 流请求
-message GetFollowingFeedRequest {
-  string user_id = 1;             // 当前用户 ID
-  common.Pagination pagination = 2;
-}
-
-// GetFollowingFeedResponse 获取关注用户 Feed 流响应
-message GetFollowingFeedResponse {
-  repeated FeedItem items = 1;
-  common.Pagination pagination = 2;
-}
-
-// GetRecommendFeedRequest 获取推荐 Feed 流请求（预留）
-message GetRecommendFeedRequest {
-  string user_id = 1;             // 当前用户 ID（用于个性化推荐）
-  common.Pagination pagination = 2;
-}
-
-// GetRecommendFeedResponse 获取推荐 Feed 流响应（预留）
-message GetRecommendFeedResponse {
-  repeated FeedItem items = 1;
-  common.Pagination pagination = 2;
-}
-
-// GetUserFeedRequest 获取指定用户的 Feed（用户主页）
-message GetUserFeedRequest {
-  string user_id = 1;             // 目标用户 ID
-  string viewer_id = 2;           // 查看者 ID（用于计算点赞/收藏状态）
-  common.Pagination pagination = 3;
-}
-
-// GetUserFeedResponse 获取指定用户的 Feed 响应
-message GetUserFeedResponse {
-  repeated FeedItem items = 1;
-  common.Pagination pagination = 2;
-}
-
-// GetHotFeedRequest 获取热门 Feed 请求
-message GetHotFeedRequest {
-  string user_id = 1;             // 当前用户 ID（用于计算交互状态）
-  common.Pagination pagination = 2;
-  string time_range = 3;          // 时间范围：day, week, month
-}
-
-// GetHotFeedResponse 获取热门 Feed 响应
-message GetHotFeedResponse {
-  repeated FeedItem items = 1;
-  common.Pagination pagination = 2;
-}
-
-// GetContentDetailRequest 获取内容详情请求（包含交互状态）
-message GetContentDetailRequest {
-  string content_id = 1;
-  string viewer_id = 2;
-}
-
-// GetContentDetailResponse 获取内容详情响应
-message GetContentDetailResponse {
-  FeedItem item = 1;
-}
-
-// ============================================================================
-// 服务定义
-// ============================================================================
-
-// TimelineService 时间线服务
+// TimelineService 时间线服务 (端口: 50057)
 // 提供 Feed 流聚合功能
+// ============================================================================
+
 service TimelineService {
   // 获取关注用户的 Feed
   rpc GetFollowingFeed(GetFollowingFeedRequest) returns (GetFollowingFeedResponse);
@@ -104,4 +26,70 @@ service TimelineService {
   
   // 获取内容详情（包含交互状态）
   rpc GetContentDetail(GetContentDetailRequest) returns (GetContentDetailResponse);
+}
+
+// ============================================================================
+// 实体定义
+// ============================================================================
+
+message FeedItem {
+  content.Content content = 1;
+  bool is_liked = 2;
+  bool is_bookmarked = 3;
+  bool is_reposted = 4;
+}
+
+// ============================================================================
+// 请求/响应消息
+// ============================================================================
+
+message GetFollowingFeedRequest {
+  string user_id = 1;
+  common.Pagination pagination = 2;
+}
+
+message GetFollowingFeedResponse {
+  repeated FeedItem items = 1;
+  common.Pagination pagination = 2;
+}
+
+message GetRecommendFeedRequest {
+  string user_id = 1;
+  common.Pagination pagination = 2;
+}
+
+message GetRecommendFeedResponse {
+  repeated FeedItem items = 1;
+  common.Pagination pagination = 2;
+}
+
+message GetUserFeedRequest {
+  string user_id = 1;
+  string viewer_id = 2;
+  common.Pagination pagination = 3;
+}
+
+message GetUserFeedResponse {
+  repeated FeedItem items = 1;
+  common.Pagination pagination = 2;
+}
+
+message GetHotFeedRequest {
+  string user_id = 1;
+  common.Pagination pagination = 2;
+  string time_range = 3;  // day, week, month
+}
+
+message GetHotFeedResponse {
+  repeated FeedItem items = 1;
+  common.Pagination pagination = 2;
+}
+
+message GetContentDetailRequest {
+  string content_id = 1;
+  string viewer_id = 2;
+}
+
+message GetContentDetailResponse {
+  FeedItem item = 1;
 }

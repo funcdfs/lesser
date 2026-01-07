@@ -33,9 +33,6 @@ const (
 // InteractionServiceClient is the client API for InteractionService service.
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
-//
-// InteractionService 交互服务
-// 提供点赞、收藏、转发功能
 type InteractionServiceClient interface {
 	// ---- 点赞 ----
 	Like(ctx context.Context, in *LikeRequest, opts ...grpc.CallOption) (*LikeResponse, error)
@@ -153,9 +150,6 @@ func (c *interactionServiceClient) BatchGetInteractionStatus(ctx context.Context
 // InteractionServiceServer is the server API for InteractionService service.
 // All implementations must embed UnimplementedInteractionServiceServer
 // for forward compatibility.
-//
-// InteractionService 交互服务
-// 提供点赞、收藏、转发功能
 type InteractionServiceServer interface {
 	// ---- 点赞 ----
 	Like(context.Context, *LikeRequest) (*LikeResponse, error)

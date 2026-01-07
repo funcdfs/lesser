@@ -201,16 +201,22 @@ services:
     restart: unless-stopped
     environment:
       - GRPC_PORT=${GATEWAY_GRPC_PORT:-50051}
+      # 认证与用户
       - AUTH_SERVICE_ADDR=auth:50052
       - USER_SERVICE_ADDR=user:50053
+      - SUPERUSER_SERVICE_ADDR=superuser:50061
+      # 内容与交互
       - CONTENT_SERVICE_ADDR=content:50054
       - COMMENT_SERVICE_ADDR=comment:50055
       - INTERACTION_SERVICE_ADDR=interaction:50056
       - TIMELINE_SERVICE_ADDR=timeline:50057
+      # 搜索与通知
       - SEARCH_SERVICE_ADDR=search:50058
       - NOTIFICATION_SERVICE_ADDR=notification:50059
+      # 实时通信
       - CHAT_SERVICE_ADDR=chat:50060
       - CHANNEL_SERVICE_ADDR=channel:50062
+      # 缓存
       - REDIS_URL=redis://redis:6379/0
     volumes:
       - ../service:/app

@@ -22,14 +22,13 @@ const (
 	_ = protoimpl.EnforceVersion(protoimpl.MaxVersion - 20)
 )
 
-// CommentSortBy 评论排序方式
 type CommentSortBy int32
 
 const (
-	CommentSortBy_COMMENT_SORT_UNSPECIFIED CommentSortBy = 0 // 默认：最新优先
-	CommentSortBy_COMMENT_SORT_OLDEST      CommentSortBy = 1 // 最早优先（时间正序）
-	CommentSortBy_COMMENT_SORT_NEWEST      CommentSortBy = 2 // 最新优先（时间倒序）
-	CommentSortBy_COMMENT_SORT_HOTTEST     CommentSortBy = 3 // 最热门（点赞数倒序）
+	CommentSortBy_COMMENT_SORT_UNSPECIFIED CommentSortBy = 0
+	CommentSortBy_COMMENT_SORT_OLDEST      CommentSortBy = 1 // 最早优先
+	CommentSortBy_COMMENT_SORT_NEWEST      CommentSortBy = 2 // 最新优先
+	CommentSortBy_COMMENT_SORT_HOTTEST     CommentSortBy = 3 // 最热门
 	CommentSortBy_COMMENT_SORT_RECOMMENDED CommentSortBy = 4 // AI 推荐（预留）
 )
 
@@ -78,23 +77,22 @@ func (CommentSortBy) EnumDescriptor() ([]byte, []int) {
 	return file_comment_comment_proto_rawDescGZIP(), []int{0}
 }
 
-// Comment 评论实体
 type Comment struct {
 	state      protoimpl.MessageState `protogen:"open.v1"`
 	Id         string                 `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
 	AuthorId   string                 `protobuf:"bytes,2,opt,name=author_id,json=authorId,proto3" json:"author_id,omitempty"`
-	ContentId  string                 `protobuf:"bytes,3,opt,name=content_id,json=contentId,proto3" json:"content_id,omitempty"`  // 所属内容 ID
-	ParentId   string                 `protobuf:"bytes,4,opt,name=parent_id,json=parentId,proto3" json:"parent_id,omitempty"`     // 父评论 ID（用于回复）
-	Text       string                 `protobuf:"bytes,5,opt,name=text,proto3" json:"text,omitempty"`                             // 评论内容
-	IsDeleted  bool                   `protobuf:"varint,6,opt,name=is_deleted,json=isDeleted,proto3" json:"is_deleted,omitempty"` // 是否已删除
+	ContentId  string                 `protobuf:"bytes,3,opt,name=content_id,json=contentId,proto3" json:"content_id,omitempty"`
+	ParentId   string                 `protobuf:"bytes,4,opt,name=parent_id,json=parentId,proto3" json:"parent_id,omitempty"`
+	Text       string                 `protobuf:"bytes,5,opt,name=text,proto3" json:"text,omitempty"`
+	IsDeleted  bool                   `protobuf:"varint,6,opt,name=is_deleted,json=isDeleted,proto3" json:"is_deleted,omitempty"`
 	CreatedAt  *common.Timestamp      `protobuf:"bytes,7,opt,name=created_at,json=createdAt,proto3" json:"created_at,omitempty"`
 	UpdatedAt  *common.Timestamp      `protobuf:"bytes,8,opt,name=updated_at,json=updatedAt,proto3" json:"updated_at,omitempty"`
-	ReplyCount int32                  `protobuf:"varint,9,opt,name=reply_count,json=replyCount,proto3" json:"reply_count,omitempty"` // 回复数量
-	LikeCount  int32                  `protobuf:"varint,10,opt,name=like_count,json=likeCount,proto3" json:"like_count,omitempty"`   // 点赞数量
-	// 可选：作者信息（由调用方填充）
+	ReplyCount int32                  `protobuf:"varint,9,opt,name=reply_count,json=replyCount,proto3" json:"reply_count,omitempty"`
+	LikeCount  int32                  `protobuf:"varint,10,opt,name=like_count,json=likeCount,proto3" json:"like_count,omitempty"`
+	// 可选：作者信息
 	AuthorUsername string `protobuf:"bytes,11,opt,name=author_username,json=authorUsername,proto3" json:"author_username,omitempty"`
 	AuthorAvatar   string `protobuf:"bytes,12,opt,name=author_avatar,json=authorAvatar,proto3" json:"author_avatar,omitempty"`
-	// 可选：当前用户是否已点赞（由调用方填充）
+	// 可选：当前用户是否已点赞
 	IsLiked       bool `protobuf:"varint,13,opt,name=is_liked,json=isLiked,proto3" json:"is_liked,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
@@ -221,14 +219,13 @@ func (x *Comment) GetIsLiked() bool {
 	return false
 }
 
-// CreateCommentRequest 创建评论请求
 type CreateCommentRequest struct {
 	state            protoimpl.MessageState `protogen:"open.v1"`
 	AuthorId         string                 `protobuf:"bytes,1,opt,name=author_id,json=authorId,proto3" json:"author_id,omitempty"`
 	ContentId        string                 `protobuf:"bytes,2,opt,name=content_id,json=contentId,proto3" json:"content_id,omitempty"`
-	ParentId         string                 `protobuf:"bytes,3,opt,name=parent_id,json=parentId,proto3" json:"parent_id,omitempty"` // 可选，回复评论时使用
+	ParentId         string                 `protobuf:"bytes,3,opt,name=parent_id,json=parentId,proto3" json:"parent_id,omitempty"`
 	Text             string                 `protobuf:"bytes,4,opt,name=text,proto3" json:"text,omitempty"`
-	MentionedUserIds []string               `protobuf:"bytes,5,rep,name=mentioned_user_ids,json=mentionedUserIds,proto3" json:"mentioned_user_ids,omitempty"` // @ 提及的用户 ID 列表
+	MentionedUserIds []string               `protobuf:"bytes,5,rep,name=mentioned_user_ids,json=mentionedUserIds,proto3" json:"mentioned_user_ids,omitempty"`
 	unknownFields    protoimpl.UnknownFields
 	sizeCache        protoimpl.SizeCache
 }
@@ -298,11 +295,10 @@ func (x *CreateCommentRequest) GetMentionedUserIds() []string {
 	return nil
 }
 
-// CreateCommentResponse 创建评论响应
 type CreateCommentResponse struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Comment       *Comment               `protobuf:"bytes,1,opt,name=comment,proto3" json:"comment,omitempty"`
-	CommentCount  int32                  `protobuf:"varint,2,opt,name=comment_count,json=commentCount,proto3" json:"comment_count,omitempty"` // 更新后的评论总数
+	CommentCount  int32                  `protobuf:"varint,2,opt,name=comment_count,json=commentCount,proto3" json:"comment_count,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -351,7 +347,6 @@ func (x *CreateCommentResponse) GetCommentCount() int32 {
 	return 0
 }
 
-// GetCommentRequest 获取单条评论请求
 type GetCommentRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	CommentId     string                 `protobuf:"bytes,1,opt,name=comment_id,json=commentId,proto3" json:"comment_id,omitempty"`
@@ -396,7 +391,6 @@ func (x *GetCommentRequest) GetCommentId() string {
 	return ""
 }
 
-// GetCommentResponse 获取单条评论响应
 type GetCommentResponse struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Comment       *Comment               `protobuf:"bytes,1,opt,name=comment,proto3" json:"comment,omitempty"`
@@ -441,11 +435,10 @@ func (x *GetCommentResponse) GetComment() *Comment {
 	return nil
 }
 
-// DeleteCommentRequest 删除评论请求
 type DeleteCommentRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	CommentId     string                 `protobuf:"bytes,1,opt,name=comment_id,json=commentId,proto3" json:"comment_id,omitempty"`
-	UserId        string                 `protobuf:"bytes,2,opt,name=user_id,json=userId,proto3" json:"user_id,omitempty"` // 用于验证权限
+	UserId        string                 `protobuf:"bytes,2,opt,name=user_id,json=userId,proto3" json:"user_id,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -494,11 +487,10 @@ func (x *DeleteCommentRequest) GetUserId() string {
 	return ""
 }
 
-// DeleteCommentResponse 删除评论响应
 type DeleteCommentResponse struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Success       bool                   `protobuf:"varint,1,opt,name=success,proto3" json:"success,omitempty"`
-	CommentCount  int32                  `protobuf:"varint,2,opt,name=comment_count,json=commentCount,proto3" json:"comment_count,omitempty"` // 更新后的评论总数
+	CommentCount  int32                  `protobuf:"varint,2,opt,name=comment_count,json=commentCount,proto3" json:"comment_count,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -547,13 +539,12 @@ func (x *DeleteCommentResponse) GetCommentCount() int32 {
 	return 0
 }
 
-// ListCommentsRequest 获取评论列表请求
 type ListCommentsRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	ContentId     string                 `protobuf:"bytes,1,opt,name=content_id,json=contentId,proto3" json:"content_id,omitempty"`
-	ParentId      string                 `protobuf:"bytes,2,opt,name=parent_id,json=parentId,proto3" json:"parent_id,omitempty"` // 可选，获取某评论的回复
+	ParentId      string                 `protobuf:"bytes,2,opt,name=parent_id,json=parentId,proto3" json:"parent_id,omitempty"`
 	Pagination    *common.Pagination     `protobuf:"bytes,3,opt,name=pagination,proto3" json:"pagination,omitempty"`
-	SortBy        CommentSortBy          `protobuf:"varint,4,opt,name=sort_by,json=sortBy,proto3,enum=comment.CommentSortBy" json:"sort_by,omitempty"` // 排序方式
+	SortBy        CommentSortBy          `protobuf:"varint,4,opt,name=sort_by,json=sortBy,proto3,enum=comment.CommentSortBy" json:"sort_by,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -616,7 +607,6 @@ func (x *ListCommentsRequest) GetSortBy() CommentSortBy {
 	return CommentSortBy_COMMENT_SORT_UNSPECIFIED
 }
 
-// ListCommentsResponse 评论列表响应
 type ListCommentsResponse struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Comments      []*Comment             `protobuf:"bytes,1,rep,name=comments,proto3" json:"comments,omitempty"`
@@ -669,7 +659,6 @@ func (x *ListCommentsResponse) GetPagination() *common.Pagination {
 	return nil
 }
 
-// GetCommentCountRequest 获取评论数量请求
 type GetCommentCountRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	ContentId     string                 `protobuf:"bytes,1,opt,name=content_id,json=contentId,proto3" json:"content_id,omitempty"`
@@ -714,7 +703,6 @@ func (x *GetCommentCountRequest) GetContentId() string {
 	return ""
 }
 
-// GetCommentCountResponse 获取评论数量响应
 type GetCommentCountResponse struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Count         int32                  `protobuf:"varint,1,opt,name=count,proto3" json:"count,omitempty"`
@@ -759,7 +747,6 @@ func (x *GetCommentCountResponse) GetCount() int32 {
 	return 0
 }
 
-// BatchGetCommentCountRequest 批量获取评论数量请求
 type BatchGetCommentCountRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	ContentIds    []string               `protobuf:"bytes,1,rep,name=content_ids,json=contentIds,proto3" json:"content_ids,omitempty"`
@@ -804,7 +791,6 @@ func (x *BatchGetCommentCountRequest) GetContentIds() []string {
 	return nil
 }
 
-// CommentCount 单个内容的评论数量
 type CommentCount struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	ContentId     string                 `protobuf:"bytes,1,opt,name=content_id,json=contentId,proto3" json:"content_id,omitempty"`
@@ -857,7 +843,6 @@ func (x *CommentCount) GetCount() int32 {
 	return 0
 }
 
-// BatchGetCommentCountResponse 批量获取评论数量响应
 type BatchGetCommentCountResponse struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Counts        []*CommentCount        `protobuf:"bytes,1,rep,name=counts,proto3" json:"counts,omitempty"`
@@ -902,7 +887,6 @@ func (x *BatchGetCommentCountResponse) GetCounts() []*CommentCount {
 	return nil
 }
 
-// LikeCommentRequest 点赞评论请求
 type LikeCommentRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	UserId        string                 `protobuf:"bytes,1,opt,name=user_id,json=userId,proto3" json:"user_id,omitempty"`
@@ -955,11 +939,10 @@ func (x *LikeCommentRequest) GetCommentId() string {
 	return ""
 }
 
-// LikeCommentResponse 点赞评论响应
 type LikeCommentResponse struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Success       bool                   `protobuf:"varint,1,opt,name=success,proto3" json:"success,omitempty"`
-	LikeCount     int32                  `protobuf:"varint,2,opt,name=like_count,json=likeCount,proto3" json:"like_count,omitempty"` // 更新后的点赞数
+	LikeCount     int32                  `protobuf:"varint,2,opt,name=like_count,json=likeCount,proto3" json:"like_count,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -1008,7 +991,6 @@ func (x *LikeCommentResponse) GetLikeCount() int32 {
 	return 0
 }
 
-// UnlikeCommentRequest 取消点赞评论请求
 type UnlikeCommentRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	UserId        string                 `protobuf:"bytes,1,opt,name=user_id,json=userId,proto3" json:"user_id,omitempty"`
@@ -1061,7 +1043,6 @@ func (x *UnlikeCommentRequest) GetCommentId() string {
 	return ""
 }
 
-// UnlikeCommentResponse 取消点赞评论响应
 type UnlikeCommentResponse struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Success       bool                   `protobuf:"varint,1,opt,name=success,proto3" json:"success,omitempty"`

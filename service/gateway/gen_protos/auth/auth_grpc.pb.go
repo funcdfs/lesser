@@ -25,35 +25,26 @@ const (
 	AuthService_Logout_FullMethodName       = "/auth.AuthService/Logout"
 	AuthService_RefreshToken_FullMethodName = "/auth.AuthService/RefreshToken"
 	AuthService_GetPublicKey_FullMethodName = "/auth.AuthService/GetPublicKey"
+	AuthService_GetUser_FullMethodName      = "/auth.AuthService/GetUser"
 	AuthService_BanUser_FullMethodName      = "/auth.AuthService/BanUser"
 	AuthService_CheckBanned_FullMethodName  = "/auth.AuthService/CheckBanned"
-	AuthService_GetUser_FullMethodName      = "/auth.AuthService/GetUser"
 )
 
 // AuthServiceClient is the client API for AuthService service.
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
-//
-// AuthService 认证服务
-// 处理用户登录、注册、Token 管理
-// Gateway 启动时获取公钥用于本地 JWT 验签
 type AuthServiceClient interface {
-	// 用户注册（低频，强一致）
+	// ---- 用户认证 ----
 	Register(ctx context.Context, in *RegisterRequest, opts ...grpc.CallOption) (*AuthResponse, error)
-	// 用户登录（低频，强一致）
 	Login(ctx context.Context, in *LoginRequest, opts ...grpc.CallOption) (*AuthResponse, error)
-	// 登出并使 Token 失效
 	Logout(ctx context.Context, in *LogoutRequest, opts ...grpc.CallOption) (*common.Empty, error)
-	// 使用 Refresh Token 刷新 Access Token
 	RefreshToken(ctx context.Context, in *RefreshRequest, opts ...grpc.CallOption) (*AuthResponse, error)
-	// 获取 JWT 公钥（Gateway 启动时调用，用于本地验签）
+	// ---- JWT 公钥 ----
 	GetPublicKey(ctx context.Context, in *GetPublicKeyRequest, opts ...grpc.CallOption) (*GetPublicKeyResponse, error)
-	// 封禁用户（管理接口）
-	BanUser(ctx context.Context, in *BanUserRequest, opts ...grpc.CallOption) (*BanUserResponse, error)
-	// 检查用户是否被封禁
-	CheckBanned(ctx context.Context, in *CheckBannedRequest, opts ...grpc.CallOption) (*CheckBannedResponse, error)
-	// 根据 ID 获取用户信息
+	// ---- 用户管理 ----
 	GetUser(ctx context.Context, in *GetUserRequest, opts ...grpc.CallOption) (*User, error)
+	BanUser(ctx context.Context, in *BanUserRequest, opts ...grpc.CallOption) (*BanUserResponse, error)
+	CheckBanned(ctx context.Context, in *CheckBannedRequest, opts ...grpc.CallOption) (*CheckBannedResponse, error)
 }
 
 type authServiceClient struct {
@@ -114,6 +105,16 @@ func (c *authServiceClient) GetPublicKey(ctx context.Context, in *GetPublicKeyRe
 	return out, nil
 }
 
+func (c *authServiceClient) GetUser(ctx context.Context, in *GetUserRequest, opts ...grpc.CallOption) (*User, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(User)
+	err := c.cc.Invoke(ctx, AuthService_GetUser_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 func (c *authServiceClient) BanUser(ctx context.Context, in *BanUserRequest, opts ...grpc.CallOption) (*BanUserResponse, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(BanUserResponse)
@@ -134,40 +135,21 @@ func (c *authServiceClient) CheckBanned(ctx context.Context, in *CheckBannedRequ
 	return out, nil
 }
 
-func (c *authServiceClient) GetUser(ctx context.Context, in *GetUserRequest, opts ...grpc.CallOption) (*User, error) {
-	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
-	out := new(User)
-	err := c.cc.Invoke(ctx, AuthService_GetUser_FullMethodName, in, out, cOpts...)
-	if err != nil {
-		return nil, err
-	}
-	return out, nil
-}
-
 // AuthServiceServer is the server API for AuthService service.
 // All implementations must embed UnimplementedAuthServiceServer
 // for forward compatibility.
-//
-// AuthService 认证服务
-// 处理用户登录、注册、Token 管理
-// Gateway 启动时获取公钥用于本地 JWT 验签
 type AuthServiceServer interface {
-	// 用户注册（低频，强一致）
+	// ---- 用户认证 ----
 	Register(context.Context, *RegisterRequest) (*AuthResponse, error)
-	// 用户登录（低频，强一致）
 	Login(context.Context, *LoginRequest) (*AuthResponse, error)
-	// 登出并使 Token 失效
 	Logout(context.Context, *LogoutRequest) (*common.Empty, error)
-	// 使用 Refresh Token 刷新 Access Token
 	RefreshToken(context.Context, *RefreshRequest) (*AuthResponse, error)
-	// 获取 JWT 公钥（Gateway 启动时调用，用于本地验签）
+	// ---- JWT 公钥 ----
 	GetPublicKey(context.Context, *GetPublicKeyRequest) (*GetPublicKeyResponse, error)
-	// 封禁用户（管理接口）
-	BanUser(context.Context, *BanUserRequest) (*BanUserResponse, error)
-	// 检查用户是否被封禁
-	CheckBanned(context.Context, *CheckBannedRequest) (*CheckBannedResponse, error)
-	// 根据 ID 获取用户信息
+	// ---- 用户管理 ----
 	GetUser(context.Context, *GetUserRequest) (*User, error)
+	BanUser(context.Context, *BanUserRequest) (*BanUserResponse, error)
+	CheckBanned(context.Context, *CheckBannedRequest) (*CheckBannedResponse, error)
 	mustEmbedUnimplementedAuthServiceServer()
 }
 
@@ -193,14 +175,14 @@ func (UnimplementedAuthServiceServer) RefreshToken(context.Context, *RefreshRequ
 func (UnimplementedAuthServiceServer) GetPublicKey(context.Context, *GetPublicKeyRequest) (*GetPublicKeyResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method GetPublicKey not implemented")
 }
+func (UnimplementedAuthServiceServer) GetUser(context.Context, *GetUserRequest) (*User, error) {
+	return nil, status.Error(codes.Unimplemented, "method GetUser not implemented")
+}
 func (UnimplementedAuthServiceServer) BanUser(context.Context, *BanUserRequest) (*BanUserResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method BanUser not implemented")
 }
 func (UnimplementedAuthServiceServer) CheckBanned(context.Context, *CheckBannedRequest) (*CheckBannedResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method CheckBanned not implemented")
-}
-func (UnimplementedAuthServiceServer) GetUser(context.Context, *GetUserRequest) (*User, error) {
-	return nil, status.Error(codes.Unimplemented, "method GetUser not implemented")
 }
 func (UnimplementedAuthServiceServer) mustEmbedUnimplementedAuthServiceServer() {}
 func (UnimplementedAuthServiceServer) testEmbeddedByValue()                     {}
@@ -313,6 +295,24 @@ func _AuthService_GetPublicKey_Handler(srv interface{}, ctx context.Context, dec
 	return interceptor(ctx, in, info, handler)
 }
 
+func _AuthService_GetUser_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GetUserRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(AuthServiceServer).GetUser(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: AuthService_GetUser_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(AuthServiceServer).GetUser(ctx, req.(*GetUserRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 func _AuthService_BanUser_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(BanUserRequest)
 	if err := dec(in); err != nil {
@@ -349,24 +349,6 @@ func _AuthService_CheckBanned_Handler(srv interface{}, ctx context.Context, dec 
 	return interceptor(ctx, in, info, handler)
 }
 
-func _AuthService_GetUser_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(GetUserRequest)
-	if err := dec(in); err != nil {
-		return nil, err
-	}
-	if interceptor == nil {
-		return srv.(AuthServiceServer).GetUser(ctx, in)
-	}
-	info := &grpc.UnaryServerInfo{
-		Server:     srv,
-		FullMethod: AuthService_GetUser_FullMethodName,
-	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(AuthServiceServer).GetUser(ctx, req.(*GetUserRequest))
-	}
-	return interceptor(ctx, in, info, handler)
-}
-
 // AuthService_ServiceDesc is the grpc.ServiceDesc for AuthService service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -395,16 +377,16 @@ var AuthService_ServiceDesc = grpc.ServiceDesc{
 			Handler:    _AuthService_GetPublicKey_Handler,
 		},
 		{
+			MethodName: "GetUser",
+			Handler:    _AuthService_GetUser_Handler,
+		},
+		{
 			MethodName: "BanUser",
 			Handler:    _AuthService_BanUser_Handler,
 		},
 		{
 			MethodName: "CheckBanned",
 			Handler:    _AuthService_CheckBanned_Handler,
-		},
-		{
-			MethodName: "GetUser",
-			Handler:    _AuthService_GetUser_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},

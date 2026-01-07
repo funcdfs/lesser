@@ -83,15 +83,24 @@ func TestRouter_Close_Idempotent(t *testing.T) {
 func TestServiceName_Constants(t *testing.T) {
 	// 验证服务名称常量
 	expectedServices := map[ServiceName]string{
-		ServiceAuth:         "auth",
-		ServiceUser:         "user",
-		ServiceContent:      "content",
-		ServiceInteraction:  "interaction",
-		ServiceComment:      "comment",
-		ServiceTimeline:     "timeline",
-		ServiceChat:         "chat",
+		// 认证与用户
+		ServiceAuth:      "auth",
+		ServiceUser:      "user",
+		ServiceSuperUser: "superuser",
+
+		// 内容与交互
+		ServiceContent:     "content",
+		ServiceComment:     "comment",
+		ServiceInteraction: "interaction",
+		ServiceTimeline:    "timeline",
+
+		// 搜索与通知
 		ServiceSearch:       "search",
 		ServiceNotification: "notification",
+
+		// 实时通信
+		ServiceChat:    "chat",
+		ServiceChannel: "channel",
 	}
 
 	for name, expected := range expectedServices {
@@ -109,13 +118,22 @@ func TestRouter_GetSpecificConns(t *testing.T) {
 	defer router.Close()
 
 	// 测试所有 Get*Conn 方法都不会 panic
+	// 认证与用户
 	_ = router.GetAuthConn()
 	_ = router.GetUserConn()
+	_ = router.GetSuperUserConn()
+
+	// 内容与交互
 	_ = router.GetContentConn()
-	_ = router.GetInteractionConn()
 	_ = router.GetCommentConn()
+	_ = router.GetInteractionConn()
 	_ = router.GetTimelineConn()
-	_ = router.GetChatConn()
+
+	// 搜索与通知
 	_ = router.GetSearchConn()
 	_ = router.GetNotificationConn()
+
+	// 实时通信
+	_ = router.GetChatConn()
+	_ = router.GetChannelConn()
 }

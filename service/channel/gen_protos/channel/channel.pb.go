@@ -22,25 +22,24 @@ const (
 	_ = protoimpl.EnforceVersion(protoimpl.MaxVersion - 20)
 )
 
-// Channel 频道实体
 type Channel struct {
 	state           protoimpl.MessageState `protogen:"open.v1"`
-	Id              string                 `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`                                                   // 频道 ID
-	Name            string                 `protobuf:"bytes,2,opt,name=name,proto3" json:"name,omitempty"`                                               // 频道名称
-	Description     string                 `protobuf:"bytes,3,opt,name=description,proto3" json:"description,omitempty"`                                 // 频道描述
-	AvatarUrl       string                 `protobuf:"bytes,4,opt,name=avatar_url,json=avatarUrl,proto3" json:"avatar_url,omitempty"`                    // 频道头像 URL
-	OwnerId         string                 `protobuf:"bytes,5,opt,name=owner_id,json=ownerId,proto3" json:"owner_id,omitempty"`                          // 所有者 ID
-	AdminIds        []string               `protobuf:"bytes,6,rep,name=admin_ids,json=adminIds,proto3" json:"admin_ids,omitempty"`                       // 管理员 ID 列表
-	SubscriberCount int64                  `protobuf:"varint,7,opt,name=subscriber_count,json=subscriberCount,proto3" json:"subscriber_count,omitempty"` // 订阅者数量
-	PostCount       int64                  `protobuf:"varint,8,opt,name=post_count,json=postCount,proto3" json:"post_count,omitempty"`                   // 内容数量
-	CreatedAt       *common.Timestamp      `protobuf:"bytes,9,opt,name=created_at,json=createdAt,proto3" json:"created_at,omitempty"`                    // 创建时间
-	UpdatedAt       *common.Timestamp      `protobuf:"bytes,10,opt,name=updated_at,json=updatedAt,proto3" json:"updated_at,omitempty"`                   // 更新时间
-	IsSubscribed    bool                   `protobuf:"varint,11,opt,name=is_subscribed,json=isSubscribed,proto3" json:"is_subscribed,omitempty"`         // 当前用户是否已订阅
-	IsAdmin         bool                   `protobuf:"varint,12,opt,name=is_admin,json=isAdmin,proto3" json:"is_admin,omitempty"`                        // 当前用户是否为管理员
-	IsOwner         bool                   `protobuf:"varint,13,opt,name=is_owner,json=isOwner,proto3" json:"is_owner,omitempty"`                        // 当前用户是否为所有者
-	PinnedPost      *ChannelPost           `protobuf:"bytes,14,opt,name=pinned_post,json=pinnedPost,proto3" json:"pinned_post,omitempty"`                // 置顶内容
-	Username        string                 `protobuf:"bytes,15,opt,name=username,proto3" json:"username,omitempty"`                                      // 频道用户名（用于链接分享，如 @channel_name）
-	IsPublic        bool                   `protobuf:"varint,16,opt,name=is_public,json=isPublic,proto3" json:"is_public,omitempty"`                     // 是否公开频道
+	Id              string                 `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
+	Name            string                 `protobuf:"bytes,2,opt,name=name,proto3" json:"name,omitempty"`
+	Description     string                 `protobuf:"bytes,3,opt,name=description,proto3" json:"description,omitempty"`
+	AvatarUrl       string                 `protobuf:"bytes,4,opt,name=avatar_url,json=avatarUrl,proto3" json:"avatar_url,omitempty"`
+	OwnerId         string                 `protobuf:"bytes,5,opt,name=owner_id,json=ownerId,proto3" json:"owner_id,omitempty"`
+	AdminIds        []string               `protobuf:"bytes,6,rep,name=admin_ids,json=adminIds,proto3" json:"admin_ids,omitempty"`
+	SubscriberCount int64                  `protobuf:"varint,7,opt,name=subscriber_count,json=subscriberCount,proto3" json:"subscriber_count,omitempty"`
+	PostCount       int64                  `protobuf:"varint,8,opt,name=post_count,json=postCount,proto3" json:"post_count,omitempty"`
+	CreatedAt       *common.Timestamp      `protobuf:"bytes,9,opt,name=created_at,json=createdAt,proto3" json:"created_at,omitempty"`
+	UpdatedAt       *common.Timestamp      `protobuf:"bytes,10,opt,name=updated_at,json=updatedAt,proto3" json:"updated_at,omitempty"`
+	IsSubscribed    bool                   `protobuf:"varint,11,opt,name=is_subscribed,json=isSubscribed,proto3" json:"is_subscribed,omitempty"`
+	IsAdmin         bool                   `protobuf:"varint,12,opt,name=is_admin,json=isAdmin,proto3" json:"is_admin,omitempty"`
+	IsOwner         bool                   `protobuf:"varint,13,opt,name=is_owner,json=isOwner,proto3" json:"is_owner,omitempty"`
+	PinnedPost      *ChannelPost           `protobuf:"bytes,14,opt,name=pinned_post,json=pinnedPost,proto3" json:"pinned_post,omitempty"`
+	Username        string                 `protobuf:"bytes,15,opt,name=username,proto3" json:"username,omitempty"`
+	IsPublic        bool                   `protobuf:"varint,16,opt,name=is_public,json=isPublic,proto3" json:"is_public,omitempty"`
 	unknownFields   protoimpl.UnknownFields
 	sizeCache       protoimpl.SizeCache
 }
@@ -187,20 +186,19 @@ func (x *Channel) GetIsPublic() bool {
 	return false
 }
 
-// ChannelPost 频道内容
 type ChannelPost struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Id            string                 `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`                                    // 内容 ID
-	ChannelId     string                 `protobuf:"bytes,2,opt,name=channel_id,json=channelId,proto3" json:"channel_id,omitempty"`     // 所属频道 ID
-	AuthorId      string                 `protobuf:"bytes,3,opt,name=author_id,json=authorId,proto3" json:"author_id,omitempty"`        // 作者 ID（发布者）
-	Content       string                 `protobuf:"bytes,4,opt,name=content,proto3" json:"content,omitempty"`                          // 文本内容
-	MediaUrls     []string               `protobuf:"bytes,5,rep,name=media_urls,json=mediaUrls,proto3" json:"media_urls,omitempty"`     // 媒体文件 URL 列表
-	ViewCount     int64                  `protobuf:"varint,6,opt,name=view_count,json=viewCount,proto3" json:"view_count,omitempty"`    // 浏览次数
-	CreatedAt     *common.Timestamp      `protobuf:"bytes,7,opt,name=created_at,json=createdAt,proto3" json:"created_at,omitempty"`     // 创建时间
-	UpdatedAt     *common.Timestamp      `protobuf:"bytes,8,opt,name=updated_at,json=updatedAt,proto3" json:"updated_at,omitempty"`     // 更新时间
-	IsPinned      bool                   `protobuf:"varint,9,opt,name=is_pinned,json=isPinned,proto3" json:"is_pinned,omitempty"`       // 是否置顶
-	IsEdited      bool                   `protobuf:"varint,10,opt,name=is_edited,json=isEdited,proto3" json:"is_edited,omitempty"`      // 是否已编辑
-	AuthorName    string                 `protobuf:"bytes,11,opt,name=author_name,json=authorName,proto3" json:"author_name,omitempty"` // 作者名称（冗余字段，方便展示）
+	Id            string                 `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
+	ChannelId     string                 `protobuf:"bytes,2,opt,name=channel_id,json=channelId,proto3" json:"channel_id,omitempty"`
+	AuthorId      string                 `protobuf:"bytes,3,opt,name=author_id,json=authorId,proto3" json:"author_id,omitempty"`
+	Content       string                 `protobuf:"bytes,4,opt,name=content,proto3" json:"content,omitempty"`
+	MediaUrls     []string               `protobuf:"bytes,5,rep,name=media_urls,json=mediaUrls,proto3" json:"media_urls,omitempty"`
+	ViewCount     int64                  `protobuf:"varint,6,opt,name=view_count,json=viewCount,proto3" json:"view_count,omitempty"`
+	CreatedAt     *common.Timestamp      `protobuf:"bytes,7,opt,name=created_at,json=createdAt,proto3" json:"created_at,omitempty"`
+	UpdatedAt     *common.Timestamp      `protobuf:"bytes,8,opt,name=updated_at,json=updatedAt,proto3" json:"updated_at,omitempty"`
+	IsPinned      bool                   `protobuf:"varint,9,opt,name=is_pinned,json=isPinned,proto3" json:"is_pinned,omitempty"`
+	IsEdited      bool                   `protobuf:"varint,10,opt,name=is_edited,json=isEdited,proto3" json:"is_edited,omitempty"`
+	AuthorName    string                 `protobuf:"bytes,11,opt,name=author_name,json=authorName,proto3" json:"author_name,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -312,13 +310,12 @@ func (x *ChannelPost) GetAuthorName() string {
 	return ""
 }
 
-// Subscriber 订阅者信息
 type Subscriber struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	UserId        string                 `protobuf:"bytes,1,opt,name=user_id,json=userId,proto3" json:"user_id,omitempty"`                   // 用户 ID
-	Username      string                 `protobuf:"bytes,2,opt,name=username,proto3" json:"username,omitempty"`                             // 用户名
-	AvatarUrl     string                 `protobuf:"bytes,3,opt,name=avatar_url,json=avatarUrl,proto3" json:"avatar_url,omitempty"`          // 头像 URL
-	SubscribedAt  *common.Timestamp      `protobuf:"bytes,4,opt,name=subscribed_at,json=subscribedAt,proto3" json:"subscribed_at,omitempty"` // 订阅时间
+	UserId        string                 `protobuf:"bytes,1,opt,name=user_id,json=userId,proto3" json:"user_id,omitempty"`
+	Username      string                 `protobuf:"bytes,2,opt,name=username,proto3" json:"username,omitempty"`
+	AvatarUrl     string                 `protobuf:"bytes,3,opt,name=avatar_url,json=avatarUrl,proto3" json:"avatar_url,omitempty"`
+	SubscribedAt  *common.Timestamp      `protobuf:"bytes,4,opt,name=subscribed_at,json=subscribedAt,proto3" json:"subscribed_at,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -381,14 +378,13 @@ func (x *Subscriber) GetSubscribedAt() *common.Timestamp {
 	return nil
 }
 
-// Admin 管理员信息
 type Admin struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	UserId        string                 `protobuf:"bytes,1,opt,name=user_id,json=userId,proto3" json:"user_id,omitempty"`          // 用户 ID
-	Username      string                 `protobuf:"bytes,2,opt,name=username,proto3" json:"username,omitempty"`                    // 用户名
-	AvatarUrl     string                 `protobuf:"bytes,3,opt,name=avatar_url,json=avatarUrl,proto3" json:"avatar_url,omitempty"` // 头像 URL
-	IsOwner       bool                   `protobuf:"varint,4,opt,name=is_owner,json=isOwner,proto3" json:"is_owner,omitempty"`      // 是否为所有者
-	AddedAt       *common.Timestamp      `protobuf:"bytes,5,opt,name=added_at,json=addedAt,proto3" json:"added_at,omitempty"`       // 添加时间
+	UserId        string                 `protobuf:"bytes,1,opt,name=user_id,json=userId,proto3" json:"user_id,omitempty"`
+	Username      string                 `protobuf:"bytes,2,opt,name=username,proto3" json:"username,omitempty"`
+	AvatarUrl     string                 `protobuf:"bytes,3,opt,name=avatar_url,json=avatarUrl,proto3" json:"avatar_url,omitempty"`
+	IsOwner       bool                   `protobuf:"varint,4,opt,name=is_owner,json=isOwner,proto3" json:"is_owner,omitempty"`
+	AddedAt       *common.Timestamp      `protobuf:"bytes,5,opt,name=added_at,json=addedAt,proto3" json:"added_at,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -458,14 +454,13 @@ func (x *Admin) GetAddedAt() *common.Timestamp {
 	return nil
 }
 
-// CreateChannelRequest 创建频道请求
 type CreateChannelRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Name          string                 `protobuf:"bytes,1,opt,name=name,proto3" json:"name,omitempty"`                            // 频道名称
-	Description   string                 `protobuf:"bytes,2,opt,name=description,proto3" json:"description,omitempty"`              // 频道描述
-	AvatarUrl     string                 `protobuf:"bytes,3,opt,name=avatar_url,json=avatarUrl,proto3" json:"avatar_url,omitempty"` // 频道头像 URL
-	Username      string                 `protobuf:"bytes,4,opt,name=username,proto3" json:"username,omitempty"`                    // 频道用户名（可选，用于链接分享）
-	IsPublic      bool                   `protobuf:"varint,5,opt,name=is_public,json=isPublic,proto3" json:"is_public,omitempty"`   // 是否公开频道
+	Name          string                 `protobuf:"bytes,1,opt,name=name,proto3" json:"name,omitempty"`
+	Description   string                 `protobuf:"bytes,2,opt,name=description,proto3" json:"description,omitempty"`
+	AvatarUrl     string                 `protobuf:"bytes,3,opt,name=avatar_url,json=avatarUrl,proto3" json:"avatar_url,omitempty"`
+	Username      string                 `protobuf:"bytes,4,opt,name=username,proto3" json:"username,omitempty"`
+	IsPublic      bool                   `protobuf:"varint,5,opt,name=is_public,json=isPublic,proto3" json:"is_public,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -535,10 +530,9 @@ func (x *CreateChannelRequest) GetIsPublic() bool {
 	return false
 }
 
-// GetChannelRequest 获取频道请求
 type GetChannelRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	ChannelId     string                 `protobuf:"bytes,1,opt,name=channel_id,json=channelId,proto3" json:"channel_id,omitempty"` // 频道 ID
+	ChannelId     string                 `protobuf:"bytes,1,opt,name=channel_id,json=channelId,proto3" json:"channel_id,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -580,15 +574,14 @@ func (x *GetChannelRequest) GetChannelId() string {
 	return ""
 }
 
-// UpdateChannelRequest 更新频道请求
 type UpdateChannelRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	ChannelId     string                 `protobuf:"bytes,1,opt,name=channel_id,json=channelId,proto3" json:"channel_id,omitempty"` // 频道 ID
-	Name          string                 `protobuf:"bytes,2,opt,name=name,proto3" json:"name,omitempty"`                            // 新名称（可选）
-	Description   string                 `protobuf:"bytes,3,opt,name=description,proto3" json:"description,omitempty"`              // 新描述（可选）
-	AvatarUrl     string                 `protobuf:"bytes,4,opt,name=avatar_url,json=avatarUrl,proto3" json:"avatar_url,omitempty"` // 新头像 URL（可选）
-	Username      string                 `protobuf:"bytes,5,opt,name=username,proto3" json:"username,omitempty"`                    // 新用户名（可选）
-	IsPublic      bool                   `protobuf:"varint,6,opt,name=is_public,json=isPublic,proto3" json:"is_public,omitempty"`   // 是否公开（可选）
+	ChannelId     string                 `protobuf:"bytes,1,opt,name=channel_id,json=channelId,proto3" json:"channel_id,omitempty"`
+	Name          string                 `protobuf:"bytes,2,opt,name=name,proto3" json:"name,omitempty"`
+	Description   string                 `protobuf:"bytes,3,opt,name=description,proto3" json:"description,omitempty"`
+	AvatarUrl     string                 `protobuf:"bytes,4,opt,name=avatar_url,json=avatarUrl,proto3" json:"avatar_url,omitempty"`
+	Username      string                 `protobuf:"bytes,5,opt,name=username,proto3" json:"username,omitempty"`
+	IsPublic      bool                   `protobuf:"varint,6,opt,name=is_public,json=isPublic,proto3" json:"is_public,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -665,10 +658,9 @@ func (x *UpdateChannelRequest) GetIsPublic() bool {
 	return false
 }
 
-// DeleteChannelRequest 删除频道请求
 type DeleteChannelRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	ChannelId     string                 `protobuf:"bytes,1,opt,name=channel_id,json=channelId,proto3" json:"channel_id,omitempty"` // 频道 ID
+	ChannelId     string                 `protobuf:"bytes,1,opt,name=channel_id,json=channelId,proto3" json:"channel_id,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -710,11 +702,10 @@ func (x *DeleteChannelRequest) GetChannelId() string {
 	return ""
 }
 
-// GetSubscribedChannelsRequest 获取订阅频道列表请求
 type GetSubscribedChannelsRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	UserId        string                 `protobuf:"bytes,1,opt,name=user_id,json=userId,proto3" json:"user_id,omitempty"` // 用户 ID
-	Pagination    *common.Pagination     `protobuf:"bytes,2,opt,name=pagination,proto3" json:"pagination,omitempty"`       // 分页参数
+	UserId        string                 `protobuf:"bytes,1,opt,name=user_id,json=userId,proto3" json:"user_id,omitempty"`
+	Pagination    *common.Pagination     `protobuf:"bytes,2,opt,name=pagination,proto3" json:"pagination,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -763,11 +754,10 @@ func (x *GetSubscribedChannelsRequest) GetPagination() *common.Pagination {
 	return nil
 }
 
-// GetOwnedChannelsRequest 获取管理频道列表请求
 type GetOwnedChannelsRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	UserId        string                 `protobuf:"bytes,1,opt,name=user_id,json=userId,proto3" json:"user_id,omitempty"` // 用户 ID
-	Pagination    *common.Pagination     `protobuf:"bytes,2,opt,name=pagination,proto3" json:"pagination,omitempty"`       // 分页参数
+	UserId        string                 `protobuf:"bytes,1,opt,name=user_id,json=userId,proto3" json:"user_id,omitempty"`
+	Pagination    *common.Pagination     `protobuf:"bytes,2,opt,name=pagination,proto3" json:"pagination,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -816,11 +806,10 @@ func (x *GetOwnedChannelsRequest) GetPagination() *common.Pagination {
 	return nil
 }
 
-// SearchChannelsRequest 搜索频道请求
 type SearchChannelsRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Query         string                 `protobuf:"bytes,1,opt,name=query,proto3" json:"query,omitempty"`           // 搜索关键词
-	Pagination    *common.Pagination     `protobuf:"bytes,2,opt,name=pagination,proto3" json:"pagination,omitempty"` // 分页参数
+	Query         string                 `protobuf:"bytes,1,opt,name=query,proto3" json:"query,omitempty"`
+	Pagination    *common.Pagination     `protobuf:"bytes,2,opt,name=pagination,proto3" json:"pagination,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -869,11 +858,10 @@ func (x *SearchChannelsRequest) GetPagination() *common.Pagination {
 	return nil
 }
 
-// ChannelsResponse 频道列表响应
 type ChannelsResponse struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Channels      []*Channel             `protobuf:"bytes,1,rep,name=channels,proto3" json:"channels,omitempty"`     // 频道列表
-	Pagination    *common.Pagination     `protobuf:"bytes,2,opt,name=pagination,proto3" json:"pagination,omitempty"` // 分页信息
+	Channels      []*Channel             `protobuf:"bytes,1,rep,name=channels,proto3" json:"channels,omitempty"`
+	Pagination    *common.Pagination     `protobuf:"bytes,2,opt,name=pagination,proto3" json:"pagination,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -922,10 +910,9 @@ func (x *ChannelsResponse) GetPagination() *common.Pagination {
 	return nil
 }
 
-// SubscribeRequest 订阅频道请求
 type SubscribeRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	ChannelId     string                 `protobuf:"bytes,1,opt,name=channel_id,json=channelId,proto3" json:"channel_id,omitempty"` // 频道 ID
+	ChannelId     string                 `protobuf:"bytes,1,opt,name=channel_id,json=channelId,proto3" json:"channel_id,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -967,10 +954,9 @@ func (x *SubscribeRequest) GetChannelId() string {
 	return ""
 }
 
-// UnsubscribeRequest 取消订阅请求
 type UnsubscribeRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	ChannelId     string                 `protobuf:"bytes,1,opt,name=channel_id,json=channelId,proto3" json:"channel_id,omitempty"` // 频道 ID
+	ChannelId     string                 `protobuf:"bytes,1,opt,name=channel_id,json=channelId,proto3" json:"channel_id,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -1012,11 +998,10 @@ func (x *UnsubscribeRequest) GetChannelId() string {
 	return ""
 }
 
-// GetSubscribersRequest 获取订阅者列表请求
 type GetSubscribersRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	ChannelId     string                 `protobuf:"bytes,1,opt,name=channel_id,json=channelId,proto3" json:"channel_id,omitempty"` // 频道 ID
-	Pagination    *common.Pagination     `protobuf:"bytes,2,opt,name=pagination,proto3" json:"pagination,omitempty"`                // 分页参数
+	ChannelId     string                 `protobuf:"bytes,1,opt,name=channel_id,json=channelId,proto3" json:"channel_id,omitempty"`
+	Pagination    *common.Pagination     `protobuf:"bytes,2,opt,name=pagination,proto3" json:"pagination,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -1065,11 +1050,10 @@ func (x *GetSubscribersRequest) GetPagination() *common.Pagination {
 	return nil
 }
 
-// SubscribersResponse 订阅者列表响应
 type SubscribersResponse struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Subscribers   []*Subscriber          `protobuf:"bytes,1,rep,name=subscribers,proto3" json:"subscribers,omitempty"` // 订阅者列表
-	Pagination    *common.Pagination     `protobuf:"bytes,2,opt,name=pagination,proto3" json:"pagination,omitempty"`   // 分页信息
+	Subscribers   []*Subscriber          `protobuf:"bytes,1,rep,name=subscribers,proto3" json:"subscribers,omitempty"`
+	Pagination    *common.Pagination     `protobuf:"bytes,2,opt,name=pagination,proto3" json:"pagination,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -1118,10 +1102,9 @@ func (x *SubscribersResponse) GetPagination() *common.Pagination {
 	return nil
 }
 
-// CheckSubscriptionRequest 检查订阅状态请求
 type CheckSubscriptionRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	ChannelId     string                 `protobuf:"bytes,1,opt,name=channel_id,json=channelId,proto3" json:"channel_id,omitempty"` // 频道 ID
+	ChannelId     string                 `protobuf:"bytes,1,opt,name=channel_id,json=channelId,proto3" json:"channel_id,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -1163,10 +1146,9 @@ func (x *CheckSubscriptionRequest) GetChannelId() string {
 	return ""
 }
 
-// CheckSubscriptionResponse 检查订阅状态响应
 type CheckSubscriptionResponse struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	IsSubscribed  bool                   `protobuf:"varint,1,opt,name=is_subscribed,json=isSubscribed,proto3" json:"is_subscribed,omitempty"` // 是否已订阅
+	IsSubscribed  bool                   `protobuf:"varint,1,opt,name=is_subscribed,json=isSubscribed,proto3" json:"is_subscribed,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -1208,11 +1190,10 @@ func (x *CheckSubscriptionResponse) GetIsSubscribed() bool {
 	return false
 }
 
-// AddAdminRequest 添加管理员请求
 type AddAdminRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	ChannelId     string                 `protobuf:"bytes,1,opt,name=channel_id,json=channelId,proto3" json:"channel_id,omitempty"` // 频道 ID
-	UserId        string                 `protobuf:"bytes,2,opt,name=user_id,json=userId,proto3" json:"user_id,omitempty"`          // 要添加的用户 ID
+	ChannelId     string                 `protobuf:"bytes,1,opt,name=channel_id,json=channelId,proto3" json:"channel_id,omitempty"`
+	UserId        string                 `protobuf:"bytes,2,opt,name=user_id,json=userId,proto3" json:"user_id,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -1261,11 +1242,10 @@ func (x *AddAdminRequest) GetUserId() string {
 	return ""
 }
 
-// RemoveAdminRequest 移除管理员请求
 type RemoveAdminRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	ChannelId     string                 `protobuf:"bytes,1,opt,name=channel_id,json=channelId,proto3" json:"channel_id,omitempty"` // 频道 ID
-	UserId        string                 `protobuf:"bytes,2,opt,name=user_id,json=userId,proto3" json:"user_id,omitempty"`          // 要移除的用户 ID
+	ChannelId     string                 `protobuf:"bytes,1,opt,name=channel_id,json=channelId,proto3" json:"channel_id,omitempty"`
+	UserId        string                 `protobuf:"bytes,2,opt,name=user_id,json=userId,proto3" json:"user_id,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -1314,10 +1294,9 @@ func (x *RemoveAdminRequest) GetUserId() string {
 	return ""
 }
 
-// GetAdminsRequest 获取管理员列表请求
 type GetAdminsRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	ChannelId     string                 `protobuf:"bytes,1,opt,name=channel_id,json=channelId,proto3" json:"channel_id,omitempty"` // 频道 ID
+	ChannelId     string                 `protobuf:"bytes,1,opt,name=channel_id,json=channelId,proto3" json:"channel_id,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -1359,10 +1338,9 @@ func (x *GetAdminsRequest) GetChannelId() string {
 	return ""
 }
 
-// AdminsResponse 管理员列表响应
 type AdminsResponse struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Admins        []*Admin               `protobuf:"bytes,1,rep,name=admins,proto3" json:"admins,omitempty"` // 管理员列表
+	Admins        []*Admin               `protobuf:"bytes,1,rep,name=admins,proto3" json:"admins,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -1404,12 +1382,11 @@ func (x *AdminsResponse) GetAdmins() []*Admin {
 	return nil
 }
 
-// PublishPostRequest 发布内容请求
 type PublishPostRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	ChannelId     string                 `protobuf:"bytes,1,opt,name=channel_id,json=channelId,proto3" json:"channel_id,omitempty"` // 频道 ID
-	Content       string                 `protobuf:"bytes,2,opt,name=content,proto3" json:"content,omitempty"`                      // 文本内容
-	MediaUrls     []string               `protobuf:"bytes,3,rep,name=media_urls,json=mediaUrls,proto3" json:"media_urls,omitempty"` // 媒体文件 URL 列表
+	ChannelId     string                 `protobuf:"bytes,1,opt,name=channel_id,json=channelId,proto3" json:"channel_id,omitempty"`
+	Content       string                 `protobuf:"bytes,2,opt,name=content,proto3" json:"content,omitempty"`
+	MediaUrls     []string               `protobuf:"bytes,3,rep,name=media_urls,json=mediaUrls,proto3" json:"media_urls,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -1465,11 +1442,10 @@ func (x *PublishPostRequest) GetMediaUrls() []string {
 	return nil
 }
 
-// GetPostsRequest 获取内容列表请求
 type GetPostsRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	ChannelId     string                 `protobuf:"bytes,1,opt,name=channel_id,json=channelId,proto3" json:"channel_id,omitempty"` // 频道 ID
-	Pagination    *common.Pagination     `protobuf:"bytes,2,opt,name=pagination,proto3" json:"pagination,omitempty"`                // 分页参数
+	ChannelId     string                 `protobuf:"bytes,1,opt,name=channel_id,json=channelId,proto3" json:"channel_id,omitempty"`
+	Pagination    *common.Pagination     `protobuf:"bytes,2,opt,name=pagination,proto3" json:"pagination,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -1518,10 +1494,9 @@ func (x *GetPostsRequest) GetPagination() *common.Pagination {
 	return nil
 }
 
-// GetPostRequest 获取单个内容请求
 type GetPostRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	PostId        string                 `protobuf:"bytes,1,opt,name=post_id,json=postId,proto3" json:"post_id,omitempty"` // 内容 ID
+	PostId        string                 `protobuf:"bytes,1,opt,name=post_id,json=postId,proto3" json:"post_id,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -1563,12 +1538,11 @@ func (x *GetPostRequest) GetPostId() string {
 	return ""
 }
 
-// EditPostRequest 编辑内容请求
 type EditPostRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	PostId        string                 `protobuf:"bytes,1,opt,name=post_id,json=postId,proto3" json:"post_id,omitempty"`          // 内容 ID
-	Content       string                 `protobuf:"bytes,2,opt,name=content,proto3" json:"content,omitempty"`                      // 新文本内容
-	MediaUrls     []string               `protobuf:"bytes,3,rep,name=media_urls,json=mediaUrls,proto3" json:"media_urls,omitempty"` // 新媒体文件 URL 列表
+	PostId        string                 `protobuf:"bytes,1,opt,name=post_id,json=postId,proto3" json:"post_id,omitempty"`
+	Content       string                 `protobuf:"bytes,2,opt,name=content,proto3" json:"content,omitempty"`
+	MediaUrls     []string               `protobuf:"bytes,3,rep,name=media_urls,json=mediaUrls,proto3" json:"media_urls,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -1624,10 +1598,9 @@ func (x *EditPostRequest) GetMediaUrls() []string {
 	return nil
 }
 
-// DeletePostRequest 删除内容请求
 type DeletePostRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	PostId        string                 `protobuf:"bytes,1,opt,name=post_id,json=postId,proto3" json:"post_id,omitempty"` // 内容 ID
+	PostId        string                 `protobuf:"bytes,1,opt,name=post_id,json=postId,proto3" json:"post_id,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -1669,10 +1642,9 @@ func (x *DeletePostRequest) GetPostId() string {
 	return ""
 }
 
-// PinPostRequest 置顶内容请求
 type PinPostRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	PostId        string                 `protobuf:"bytes,1,opt,name=post_id,json=postId,proto3" json:"post_id,omitempty"` // 内容 ID
+	PostId        string                 `protobuf:"bytes,1,opt,name=post_id,json=postId,proto3" json:"post_id,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -1714,10 +1686,9 @@ func (x *PinPostRequest) GetPostId() string {
 	return ""
 }
 
-// UnpinPostRequest 取消置顶请求
 type UnpinPostRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	PostId        string                 `protobuf:"bytes,1,opt,name=post_id,json=postId,proto3" json:"post_id,omitempty"` // 内容 ID
+	PostId        string                 `protobuf:"bytes,1,opt,name=post_id,json=postId,proto3" json:"post_id,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -1759,11 +1730,10 @@ func (x *UnpinPostRequest) GetPostId() string {
 	return ""
 }
 
-// PostsResponse 内容列表响应
 type PostsResponse struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Posts         []*ChannelPost         `protobuf:"bytes,1,rep,name=posts,proto3" json:"posts,omitempty"`           // 内容列表
-	Pagination    *common.Pagination     `protobuf:"bytes,2,opt,name=pagination,proto3" json:"pagination,omitempty"` // 分页信息
+	Posts         []*ChannelPost         `protobuf:"bytes,1,rep,name=posts,proto3" json:"posts,omitempty"`
+	Pagination    *common.Pagination     `protobuf:"bytes,2,opt,name=pagination,proto3" json:"pagination,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -1812,7 +1782,6 @@ func (x *PostsResponse) GetPagination() *common.Pagination {
 	return nil
 }
 
-// ChannelClientEvent 客户端发送的事件
 type ChannelClientEvent struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
 	// Types that are valid to be assigned to Event:
@@ -1894,15 +1863,15 @@ type isChannelClientEvent_Event interface {
 }
 
 type ChannelClientEvent_Subscribe struct {
-	Subscribe *ChannelSubscribeEvent `protobuf:"bytes,1,opt,name=subscribe,proto3,oneof"` // 订阅频道更新
+	Subscribe *ChannelSubscribeEvent `protobuf:"bytes,1,opt,name=subscribe,proto3,oneof"`
 }
 
 type ChannelClientEvent_Unsubscribe struct {
-	Unsubscribe *ChannelUnsubscribeEvent `protobuf:"bytes,2,opt,name=unsubscribe,proto3,oneof"` // 取消订阅更新
+	Unsubscribe *ChannelUnsubscribeEvent `protobuf:"bytes,2,opt,name=unsubscribe,proto3,oneof"`
 }
 
 type ChannelClientEvent_Ping struct {
-	Ping *ChannelPingEvent `protobuf:"bytes,3,opt,name=ping,proto3,oneof"` // 心跳
+	Ping *ChannelPingEvent `protobuf:"bytes,3,opt,name=ping,proto3,oneof"`
 }
 
 func (*ChannelClientEvent_Subscribe) isChannelClientEvent_Event() {}
@@ -1911,10 +1880,9 @@ func (*ChannelClientEvent_Unsubscribe) isChannelClientEvent_Event() {}
 
 func (*ChannelClientEvent_Ping) isChannelClientEvent_Event() {}
 
-// ChannelSubscribeEvent 订阅频道更新事件
 type ChannelSubscribeEvent struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	ChannelId     string                 `protobuf:"bytes,1,opt,name=channel_id,json=channelId,proto3" json:"channel_id,omitempty"` // 频道 ID
+	ChannelId     string                 `protobuf:"bytes,1,opt,name=channel_id,json=channelId,proto3" json:"channel_id,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -1956,10 +1924,9 @@ func (x *ChannelSubscribeEvent) GetChannelId() string {
 	return ""
 }
 
-// ChannelUnsubscribeEvent 取消订阅更新事件
 type ChannelUnsubscribeEvent struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	ChannelId     string                 `protobuf:"bytes,1,opt,name=channel_id,json=channelId,proto3" json:"channel_id,omitempty"` // 频道 ID
+	ChannelId     string                 `protobuf:"bytes,1,opt,name=channel_id,json=channelId,proto3" json:"channel_id,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -2001,7 +1968,6 @@ func (x *ChannelUnsubscribeEvent) GetChannelId() string {
 	return ""
 }
 
-// ChannelPingEvent 心跳事件
 type ChannelPingEvent struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	unknownFields protoimpl.UnknownFields
@@ -2038,7 +2004,6 @@ func (*ChannelPingEvent) Descriptor() ([]byte, []int) {
 	return file_channel_channel_proto_rawDescGZIP(), []int{33}
 }
 
-// ChannelServerEvent 服务端推送的事件
 type ChannelServerEvent struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
 	// Types that are valid to be assigned to Event:
@@ -2200,47 +2165,47 @@ type isChannelServerEvent_Event interface {
 }
 
 type ChannelServerEvent_NewPost struct {
-	NewPost *NewPostEvent `protobuf:"bytes,1,opt,name=new_post,json=newPost,proto3,oneof"` // 新内容发布
+	NewPost *NewPostEvent `protobuf:"bytes,1,opt,name=new_post,json=newPost,proto3,oneof"`
 }
 
 type ChannelServerEvent_PostEdited struct {
-	PostEdited *PostEditedEvent `protobuf:"bytes,2,opt,name=post_edited,json=postEdited,proto3,oneof"` // 内容已编辑
+	PostEdited *PostEditedEvent `protobuf:"bytes,2,opt,name=post_edited,json=postEdited,proto3,oneof"`
 }
 
 type ChannelServerEvent_PostDeleted struct {
-	PostDeleted *PostDeletedEvent `protobuf:"bytes,3,opt,name=post_deleted,json=postDeleted,proto3,oneof"` // 内容已删除
+	PostDeleted *PostDeletedEvent `protobuf:"bytes,3,opt,name=post_deleted,json=postDeleted,proto3,oneof"`
 }
 
 type ChannelServerEvent_PostPinned struct {
-	PostPinned *PostPinnedEvent `protobuf:"bytes,4,opt,name=post_pinned,json=postPinned,proto3,oneof"` // 内容已置顶
+	PostPinned *PostPinnedEvent `protobuf:"bytes,4,opt,name=post_pinned,json=postPinned,proto3,oneof"`
 }
 
 type ChannelServerEvent_PostUnpinned struct {
-	PostUnpinned *PostUnpinnedEvent `protobuf:"bytes,5,opt,name=post_unpinned,json=postUnpinned,proto3,oneof"` // 内容已取消置顶
+	PostUnpinned *PostUnpinnedEvent `protobuf:"bytes,5,opt,name=post_unpinned,json=postUnpinned,proto3,oneof"`
 }
 
 type ChannelServerEvent_ChannelUpdated struct {
-	ChannelUpdated *ChannelUpdatedEvent `protobuf:"bytes,6,opt,name=channel_updated,json=channelUpdated,proto3,oneof"` // 频道信息更新
+	ChannelUpdated *ChannelUpdatedEvent `protobuf:"bytes,6,opt,name=channel_updated,json=channelUpdated,proto3,oneof"`
 }
 
 type ChannelServerEvent_ChannelDeleted struct {
-	ChannelDeleted *ChannelDeletedEvent `protobuf:"bytes,7,opt,name=channel_deleted,json=channelDeleted,proto3,oneof"` // 频道已删除
+	ChannelDeleted *ChannelDeletedEvent `protobuf:"bytes,7,opt,name=channel_deleted,json=channelDeleted,proto3,oneof"`
 }
 
 type ChannelServerEvent_Subscribed struct {
-	Subscribed *ChannelSubscribedEvent `protobuf:"bytes,8,opt,name=subscribed,proto3,oneof"` // 订阅成功
+	Subscribed *ChannelSubscribedEvent `protobuf:"bytes,8,opt,name=subscribed,proto3,oneof"`
 }
 
 type ChannelServerEvent_Unsubscribed struct {
-	Unsubscribed *ChannelUnsubscribedEvent `protobuf:"bytes,9,opt,name=unsubscribed,proto3,oneof"` // 取消订阅成功
+	Unsubscribed *ChannelUnsubscribedEvent `protobuf:"bytes,9,opt,name=unsubscribed,proto3,oneof"`
 }
 
 type ChannelServerEvent_Pong struct {
-	Pong *ChannelPongEvent `protobuf:"bytes,10,opt,name=pong,proto3,oneof"` // 心跳响应
+	Pong *ChannelPongEvent `protobuf:"bytes,10,opt,name=pong,proto3,oneof"`
 }
 
 type ChannelServerEvent_Error struct {
-	Error *ChannelErrorEvent `protobuf:"bytes,11,opt,name=error,proto3,oneof"` // 错误事件
+	Error *ChannelErrorEvent `protobuf:"bytes,11,opt,name=error,proto3,oneof"`
 }
 
 func (*ChannelServerEvent_NewPost) isChannelServerEvent_Event() {}
@@ -2265,10 +2230,9 @@ func (*ChannelServerEvent_Pong) isChannelServerEvent_Event() {}
 
 func (*ChannelServerEvent_Error) isChannelServerEvent_Event() {}
 
-// NewPostEvent 新内容发布事件
 type NewPostEvent struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Post          *ChannelPost           `protobuf:"bytes,1,opt,name=post,proto3" json:"post,omitempty"` // 新发布的内容
+	Post          *ChannelPost           `protobuf:"bytes,1,opt,name=post,proto3" json:"post,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -2310,10 +2274,9 @@ func (x *NewPostEvent) GetPost() *ChannelPost {
 	return nil
 }
 
-// PostEditedEvent 内容已编辑事件
 type PostEditedEvent struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Post          *ChannelPost           `protobuf:"bytes,1,opt,name=post,proto3" json:"post,omitempty"` // 编辑后的内容
+	Post          *ChannelPost           `protobuf:"bytes,1,opt,name=post,proto3" json:"post,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -2355,11 +2318,10 @@ func (x *PostEditedEvent) GetPost() *ChannelPost {
 	return nil
 }
 
-// PostDeletedEvent 内容已删除事件
 type PostDeletedEvent struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	PostId        string                 `protobuf:"bytes,1,opt,name=post_id,json=postId,proto3" json:"post_id,omitempty"`          // 被删除的内容 ID
-	ChannelId     string                 `protobuf:"bytes,2,opt,name=channel_id,json=channelId,proto3" json:"channel_id,omitempty"` // 所属频道 ID
+	PostId        string                 `protobuf:"bytes,1,opt,name=post_id,json=postId,proto3" json:"post_id,omitempty"`
+	ChannelId     string                 `protobuf:"bytes,2,opt,name=channel_id,json=channelId,proto3" json:"channel_id,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -2408,10 +2370,9 @@ func (x *PostDeletedEvent) GetChannelId() string {
 	return ""
 }
 
-// PostPinnedEvent 内容已置顶事件
 type PostPinnedEvent struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Post          *ChannelPost           `protobuf:"bytes,1,opt,name=post,proto3" json:"post,omitempty"` // 被置顶的内容
+	Post          *ChannelPost           `protobuf:"bytes,1,opt,name=post,proto3" json:"post,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -2453,11 +2414,10 @@ func (x *PostPinnedEvent) GetPost() *ChannelPost {
 	return nil
 }
 
-// PostUnpinnedEvent 内容已取消置顶事件
 type PostUnpinnedEvent struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	PostId        string                 `protobuf:"bytes,1,opt,name=post_id,json=postId,proto3" json:"post_id,omitempty"`          // 被取消置顶的内容 ID
-	ChannelId     string                 `protobuf:"bytes,2,opt,name=channel_id,json=channelId,proto3" json:"channel_id,omitempty"` // 所属频道 ID
+	PostId        string                 `protobuf:"bytes,1,opt,name=post_id,json=postId,proto3" json:"post_id,omitempty"`
+	ChannelId     string                 `protobuf:"bytes,2,opt,name=channel_id,json=channelId,proto3" json:"channel_id,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -2506,10 +2466,9 @@ func (x *PostUnpinnedEvent) GetChannelId() string {
 	return ""
 }
 
-// ChannelUpdatedEvent 频道信息更新事件
 type ChannelUpdatedEvent struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Channel       *Channel               `protobuf:"bytes,1,opt,name=channel,proto3" json:"channel,omitempty"` // 更新后的频道信息
+	Channel       *Channel               `protobuf:"bytes,1,opt,name=channel,proto3" json:"channel,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -2551,10 +2510,9 @@ func (x *ChannelUpdatedEvent) GetChannel() *Channel {
 	return nil
 }
 
-// ChannelDeletedEvent 频道已删除事件
 type ChannelDeletedEvent struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	ChannelId     string                 `protobuf:"bytes,1,opt,name=channel_id,json=channelId,proto3" json:"channel_id,omitempty"` // 被删除的频道 ID
+	ChannelId     string                 `protobuf:"bytes,1,opt,name=channel_id,json=channelId,proto3" json:"channel_id,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -2596,10 +2554,9 @@ func (x *ChannelDeletedEvent) GetChannelId() string {
 	return ""
 }
 
-// ChannelSubscribedEvent 订阅成功事件
 type ChannelSubscribedEvent struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	ChannelId     string                 `protobuf:"bytes,1,opt,name=channel_id,json=channelId,proto3" json:"channel_id,omitempty"` // 频道 ID
+	ChannelId     string                 `protobuf:"bytes,1,opt,name=channel_id,json=channelId,proto3" json:"channel_id,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -2641,10 +2598,9 @@ func (x *ChannelSubscribedEvent) GetChannelId() string {
 	return ""
 }
 
-// ChannelUnsubscribedEvent 取消订阅成功事件
 type ChannelUnsubscribedEvent struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	ChannelId     string                 `protobuf:"bytes,1,opt,name=channel_id,json=channelId,proto3" json:"channel_id,omitempty"` // 频道 ID
+	ChannelId     string                 `protobuf:"bytes,1,opt,name=channel_id,json=channelId,proto3" json:"channel_id,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -2686,7 +2642,6 @@ func (x *ChannelUnsubscribedEvent) GetChannelId() string {
 	return ""
 }
 
-// ChannelPongEvent 心跳响应
 type ChannelPongEvent struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	unknownFields protoimpl.UnknownFields
@@ -2723,12 +2678,11 @@ func (*ChannelPongEvent) Descriptor() ([]byte, []int) {
 	return file_channel_channel_proto_rawDescGZIP(), []int{44}
 }
 
-// ChannelErrorEvent 错误事件
 type ChannelErrorEvent struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Code          string                 `protobuf:"bytes,1,opt,name=code,proto3" json:"code,omitempty"`       // 错误码
-	Message       string                 `protobuf:"bytes,2,opt,name=message,proto3" json:"message,omitempty"` // 错误消息
-	Action        string                 `protobuf:"bytes,3,opt,name=action,proto3" json:"action,omitempty"`   // 触发错误的操作
+	Code          string                 `protobuf:"bytes,1,opt,name=code,proto3" json:"code,omitempty"`
+	Message       string                 `protobuf:"bytes,2,opt,name=message,proto3" json:"message,omitempty"`
+	Action        string                 `protobuf:"bytes,3,opt,name=action,proto3" json:"action,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }

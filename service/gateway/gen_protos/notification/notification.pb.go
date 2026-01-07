@@ -22,7 +22,7 @@ const (
 	_ = protoimpl.EnforceVersion(protoimpl.MaxVersion - 20)
 )
 
-// NotificationType 通知类型
+// NotificationType: 1=点赞, 2=评论, 3=回复, 4=收藏, 5=提及, 6=关注, 7=转发
 type NotificationType int32
 
 const (
@@ -87,7 +87,6 @@ func (NotificationType) EnumDescriptor() ([]byte, []int) {
 	return file_notification_notification_proto_rawDescGZIP(), []int{0}
 }
 
-// Notification 通知实体
 type Notification struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Id            string                 `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
@@ -196,11 +195,10 @@ func (x *Notification) GetCreatedAt() *common.Timestamp {
 	return nil
 }
 
-// ListNotificationsRequest 获取通知列表请求
 type ListNotificationsRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	UserId        string                 `protobuf:"bytes,1,opt,name=user_id,json=userId,proto3" json:"user_id,omitempty"`
-	UnreadOnly    bool                   `protobuf:"varint,2,opt,name=unread_only,json=unreadOnly,proto3" json:"unread_only,omitempty"` // 是否只获取未读
+	UnreadOnly    bool                   `protobuf:"varint,2,opt,name=unread_only,json=unreadOnly,proto3" json:"unread_only,omitempty"`
 	Pagination    *common.Pagination     `protobuf:"bytes,3,opt,name=pagination,proto3" json:"pagination,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
@@ -257,7 +255,6 @@ func (x *ListNotificationsRequest) GetPagination() *common.Pagination {
 	return nil
 }
 
-// ListNotificationsResponse 通知列表响应
 type ListNotificationsResponse struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Notifications []*Notification        `protobuf:"bytes,1,rep,name=notifications,proto3" json:"notifications,omitempty"`
@@ -310,7 +307,6 @@ func (x *ListNotificationsResponse) GetPagination() *common.Pagination {
 	return nil
 }
 
-// ReadNotificationRequest 标记单条通知已读请求
 type ReadNotificationRequest struct {
 	state          protoimpl.MessageState `protogen:"open.v1"`
 	NotificationId string                 `protobuf:"bytes,1,opt,name=notification_id,json=notificationId,proto3" json:"notification_id,omitempty"`
@@ -363,7 +359,6 @@ func (x *ReadNotificationRequest) GetUserId() string {
 	return ""
 }
 
-// ReadAllNotificationsRequest 标记所有通知已读请求
 type ReadAllNotificationsRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	UserId        string                 `protobuf:"bytes,1,opt,name=user_id,json=userId,proto3" json:"user_id,omitempty"`
@@ -408,7 +403,6 @@ func (x *ReadAllNotificationsRequest) GetUserId() string {
 	return ""
 }
 
-// GetUnreadCountRequest 获取未读数请求
 type GetUnreadCountRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	UserId        string                 `protobuf:"bytes,1,opt,name=user_id,json=userId,proto3" json:"user_id,omitempty"`
@@ -453,7 +447,6 @@ func (x *GetUnreadCountRequest) GetUserId() string {
 	return ""
 }
 
-// UnreadCountResponse 未读数响应
 type UnreadCountResponse struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Count         int32                  `protobuf:"varint,1,opt,name=count,proto3" json:"count,omitempty"`
@@ -498,7 +491,6 @@ func (x *UnreadCountResponse) GetCount() int32 {
 	return 0
 }
 
-// CreateNotificationRequest 创建通知请求（内部使用）
 type CreateNotificationRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	UserId        string                 `protobuf:"bytes,1,opt,name=user_id,json=userId,proto3" json:"user_id,omitempty"`

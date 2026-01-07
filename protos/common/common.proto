@@ -3,48 +3,49 @@ package common;
 
 option go_package = "github.com/funcdfs/lesser/pkg/gen_protos/common";
 
-// Pagination message for paginated requests and responses
-message Pagination {
-  int32 page = 1;
-  int32 page_size = 2;
-  int32 total = 3;
-}
+// ============================================================================
+// 通用消息定义
+// 供所有服务共享使用
+// ============================================================================
 
-// Timestamp message for consistent time representation
-message Timestamp {
-  int64 seconds = 1;
-  int32 nanos = 2;
-}
-
-// UUID message for consistent ID representation
-message UUID {
-  string value = 1;
-}
-
-// Empty message for void responses
+// Empty 空消息，用于无返回值的响应
 message Empty {}
 
-// Error details for structured error responses
-message ErrorDetail {
-  string code = 1;
-  string message = 2;
-  map<string, string> metadata = 3;
+// Pagination 分页参数
+message Pagination {
+  int32 page = 1;       // 页码，从 1 开始
+  int32 page_size = 2;  // 每页数量
+  int32 total = 3;      // 总数（响应时填充）
 }
 
-// Health check service for service discovery
+// Timestamp 时间戳
+message Timestamp {
+  int64 seconds = 1;  // Unix 秒
+  int32 nanos = 2;    // 纳秒部分
+}
+
+// ErrorDetail 错误详情
+message ErrorDetail {
+  string code = 1;               // 错误码
+  string message = 2;            // 错误消息
+  map<string, string> metadata = 3;  // 附加信息
+}
+
+// ============================================================================
+// 健康检查服务
+// ============================================================================
+
 service HealthService {
-  // Check service health
+  // 检查服务健康状态
   rpc Check(HealthCheckRequest) returns (HealthCheckResponse);
-  // Watch service health changes (streaming)
+  // 监听服务健康状态变化（流式）
   rpc Watch(HealthCheckRequest) returns (stream HealthCheckResponse);
 }
 
-// Health check request
 message HealthCheckRequest {
-  string service = 1;  // Service name to check, empty for overall health
+  string service = 1;  // 服务名称，空表示检查整体健康
 }
 
-// Health check response
 message HealthCheckResponse {
   enum ServingStatus {
     UNKNOWN = 0;

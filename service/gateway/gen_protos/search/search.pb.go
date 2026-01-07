@@ -22,68 +22,6 @@ const (
 	_ = protoimpl.EnforceVersion(protoimpl.MaxVersion - 20)
 )
 
-// SearchPostsRequest 搜索帖子请求
-type SearchPostsRequest struct {
-	state         protoimpl.MessageState `protogen:"open.v1"`
-	Query         string                 `protobuf:"bytes,1,opt,name=query,proto3" json:"query,omitempty"`
-	Pagination    *common.Pagination     `protobuf:"bytes,2,opt,name=pagination,proto3" json:"pagination,omitempty"`
-	UseSemantic   bool                   `protobuf:"varint,3,opt,name=use_semantic,json=useSemantic,proto3" json:"use_semantic,omitempty"` // 是否使用语义搜索（pgvector）
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
-}
-
-func (x *SearchPostsRequest) Reset() {
-	*x = SearchPostsRequest{}
-	mi := &file_search_search_proto_msgTypes[0]
-	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-	ms.StoreMessageInfo(mi)
-}
-
-func (x *SearchPostsRequest) String() string {
-	return protoimpl.X.MessageStringOf(x)
-}
-
-func (*SearchPostsRequest) ProtoMessage() {}
-
-func (x *SearchPostsRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_search_search_proto_msgTypes[0]
-	if x != nil {
-		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-		if ms.LoadMessageInfo() == nil {
-			ms.StoreMessageInfo(mi)
-		}
-		return ms
-	}
-	return mi.MessageOf(x)
-}
-
-// Deprecated: Use SearchPostsRequest.ProtoReflect.Descriptor instead.
-func (*SearchPostsRequest) Descriptor() ([]byte, []int) {
-	return file_search_search_proto_rawDescGZIP(), []int{0}
-}
-
-func (x *SearchPostsRequest) GetQuery() string {
-	if x != nil {
-		return x.Query
-	}
-	return ""
-}
-
-func (x *SearchPostsRequest) GetPagination() *common.Pagination {
-	if x != nil {
-		return x.Pagination
-	}
-	return nil
-}
-
-func (x *SearchPostsRequest) GetUseSemantic() bool {
-	if x != nil {
-		return x.UseSemantic
-	}
-	return false
-}
-
-// PostResult 帖子搜索结果
 type PostResult struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Id            string                 `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
@@ -92,14 +30,14 @@ type PostResult struct {
 	Content       string                 `protobuf:"bytes,4,opt,name=content,proto3" json:"content,omitempty"`
 	MediaUrls     []string               `protobuf:"bytes,5,rep,name=media_urls,json=mediaUrls,proto3" json:"media_urls,omitempty"`
 	CreatedAt     *common.Timestamp      `protobuf:"bytes,6,opt,name=created_at,json=createdAt,proto3" json:"created_at,omitempty"`
-	Score         float32                `protobuf:"fixed32,7,opt,name=score,proto3" json:"score,omitempty"` // 相关性得分
+	Score         float32                `protobuf:"fixed32,7,opt,name=score,proto3" json:"score,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
 
 func (x *PostResult) Reset() {
 	*x = PostResult{}
-	mi := &file_search_search_proto_msgTypes[1]
+	mi := &file_search_search_proto_msgTypes[0]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -111,7 +49,7 @@ func (x *PostResult) String() string {
 func (*PostResult) ProtoMessage() {}
 
 func (x *PostResult) ProtoReflect() protoreflect.Message {
-	mi := &file_search_search_proto_msgTypes[1]
+	mi := &file_search_search_proto_msgTypes[0]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -124,7 +62,7 @@ func (x *PostResult) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use PostResult.ProtoReflect.Descriptor instead.
 func (*PostResult) Descriptor() ([]byte, []int) {
-	return file_search_search_proto_rawDescGZIP(), []int{1}
+	return file_search_search_proto_rawDescGZIP(), []int{0}
 }
 
 func (x *PostResult) GetId() string {
@@ -176,121 +114,6 @@ func (x *PostResult) GetScore() float32 {
 	return 0
 }
 
-// SearchPostsResponse 搜索帖子响应
-type SearchPostsResponse struct {
-	state         protoimpl.MessageState `protogen:"open.v1"`
-	Posts         []*PostResult          `protobuf:"bytes,1,rep,name=posts,proto3" json:"posts,omitempty"`
-	Pagination    *common.Pagination     `protobuf:"bytes,2,opt,name=pagination,proto3" json:"pagination,omitempty"`
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
-}
-
-func (x *SearchPostsResponse) Reset() {
-	*x = SearchPostsResponse{}
-	mi := &file_search_search_proto_msgTypes[2]
-	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-	ms.StoreMessageInfo(mi)
-}
-
-func (x *SearchPostsResponse) String() string {
-	return protoimpl.X.MessageStringOf(x)
-}
-
-func (*SearchPostsResponse) ProtoMessage() {}
-
-func (x *SearchPostsResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_search_search_proto_msgTypes[2]
-	if x != nil {
-		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-		if ms.LoadMessageInfo() == nil {
-			ms.StoreMessageInfo(mi)
-		}
-		return ms
-	}
-	return mi.MessageOf(x)
-}
-
-// Deprecated: Use SearchPostsResponse.ProtoReflect.Descriptor instead.
-func (*SearchPostsResponse) Descriptor() ([]byte, []int) {
-	return file_search_search_proto_rawDescGZIP(), []int{2}
-}
-
-func (x *SearchPostsResponse) GetPosts() []*PostResult {
-	if x != nil {
-		return x.Posts
-	}
-	return nil
-}
-
-func (x *SearchPostsResponse) GetPagination() *common.Pagination {
-	if x != nil {
-		return x.Pagination
-	}
-	return nil
-}
-
-// SearchUsersRequest 搜索用户请求
-type SearchUsersRequest struct {
-	state         protoimpl.MessageState `protogen:"open.v1"`
-	Query         string                 `protobuf:"bytes,1,opt,name=query,proto3" json:"query,omitempty"`
-	Pagination    *common.Pagination     `protobuf:"bytes,2,opt,name=pagination,proto3" json:"pagination,omitempty"`
-	UseSemantic   bool                   `protobuf:"varint,3,opt,name=use_semantic,json=useSemantic,proto3" json:"use_semantic,omitempty"`
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
-}
-
-func (x *SearchUsersRequest) Reset() {
-	*x = SearchUsersRequest{}
-	mi := &file_search_search_proto_msgTypes[3]
-	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-	ms.StoreMessageInfo(mi)
-}
-
-func (x *SearchUsersRequest) String() string {
-	return protoimpl.X.MessageStringOf(x)
-}
-
-func (*SearchUsersRequest) ProtoMessage() {}
-
-func (x *SearchUsersRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_search_search_proto_msgTypes[3]
-	if x != nil {
-		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-		if ms.LoadMessageInfo() == nil {
-			ms.StoreMessageInfo(mi)
-		}
-		return ms
-	}
-	return mi.MessageOf(x)
-}
-
-// Deprecated: Use SearchUsersRequest.ProtoReflect.Descriptor instead.
-func (*SearchUsersRequest) Descriptor() ([]byte, []int) {
-	return file_search_search_proto_rawDescGZIP(), []int{3}
-}
-
-func (x *SearchUsersRequest) GetQuery() string {
-	if x != nil {
-		return x.Query
-	}
-	return ""
-}
-
-func (x *SearchUsersRequest) GetPagination() *common.Pagination {
-	if x != nil {
-		return x.Pagination
-	}
-	return nil
-}
-
-func (x *SearchUsersRequest) GetUseSemantic() bool {
-	if x != nil {
-		return x.UseSemantic
-	}
-	return false
-}
-
-// UserResult 用户搜索结果
 type UserResult struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Id            string                 `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
@@ -305,7 +128,7 @@ type UserResult struct {
 
 func (x *UserResult) Reset() {
 	*x = UserResult{}
-	mi := &file_search_search_proto_msgTypes[4]
+	mi := &file_search_search_proto_msgTypes[1]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -317,7 +140,7 @@ func (x *UserResult) String() string {
 func (*UserResult) ProtoMessage() {}
 
 func (x *UserResult) ProtoReflect() protoreflect.Message {
-	mi := &file_search_search_proto_msgTypes[4]
+	mi := &file_search_search_proto_msgTypes[1]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -330,7 +153,7 @@ func (x *UserResult) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use UserResult.ProtoReflect.Descriptor instead.
 func (*UserResult) Descriptor() ([]byte, []int) {
-	return file_search_search_proto_rawDescGZIP(), []int{4}
+	return file_search_search_proto_rawDescGZIP(), []int{1}
 }
 
 func (x *UserResult) GetId() string {
@@ -375,129 +198,6 @@ func (x *UserResult) GetScore() float32 {
 	return 0
 }
 
-// SearchUsersResponse 搜索用户响应
-type SearchUsersResponse struct {
-	state         protoimpl.MessageState `protogen:"open.v1"`
-	Users         []*UserResult          `protobuf:"bytes,1,rep,name=users,proto3" json:"users,omitempty"`
-	Pagination    *common.Pagination     `protobuf:"bytes,2,opt,name=pagination,proto3" json:"pagination,omitempty"`
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
-}
-
-func (x *SearchUsersResponse) Reset() {
-	*x = SearchUsersResponse{}
-	mi := &file_search_search_proto_msgTypes[5]
-	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-	ms.StoreMessageInfo(mi)
-}
-
-func (x *SearchUsersResponse) String() string {
-	return protoimpl.X.MessageStringOf(x)
-}
-
-func (*SearchUsersResponse) ProtoMessage() {}
-
-func (x *SearchUsersResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_search_search_proto_msgTypes[5]
-	if x != nil {
-		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-		if ms.LoadMessageInfo() == nil {
-			ms.StoreMessageInfo(mi)
-		}
-		return ms
-	}
-	return mi.MessageOf(x)
-}
-
-// Deprecated: Use SearchUsersResponse.ProtoReflect.Descriptor instead.
-func (*SearchUsersResponse) Descriptor() ([]byte, []int) {
-	return file_search_search_proto_rawDescGZIP(), []int{5}
-}
-
-func (x *SearchUsersResponse) GetUsers() []*UserResult {
-	if x != nil {
-		return x.Users
-	}
-	return nil
-}
-
-func (x *SearchUsersResponse) GetPagination() *common.Pagination {
-	if x != nil {
-		return x.Pagination
-	}
-	return nil
-}
-
-// SearchCommentsRequest 搜索评论请求
-type SearchCommentsRequest struct {
-	state         protoimpl.MessageState `protogen:"open.v1"`
-	Query         string                 `protobuf:"bytes,1,opt,name=query,proto3" json:"query,omitempty"`
-	Pagination    *common.Pagination     `protobuf:"bytes,2,opt,name=pagination,proto3" json:"pagination,omitempty"`
-	UseSemantic   bool                   `protobuf:"varint,3,opt,name=use_semantic,json=useSemantic,proto3" json:"use_semantic,omitempty"`
-	PostId        string                 `protobuf:"bytes,4,opt,name=post_id,json=postId,proto3" json:"post_id,omitempty"` // 可选：限定在某个帖子下搜索
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
-}
-
-func (x *SearchCommentsRequest) Reset() {
-	*x = SearchCommentsRequest{}
-	mi := &file_search_search_proto_msgTypes[6]
-	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-	ms.StoreMessageInfo(mi)
-}
-
-func (x *SearchCommentsRequest) String() string {
-	return protoimpl.X.MessageStringOf(x)
-}
-
-func (*SearchCommentsRequest) ProtoMessage() {}
-
-func (x *SearchCommentsRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_search_search_proto_msgTypes[6]
-	if x != nil {
-		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-		if ms.LoadMessageInfo() == nil {
-			ms.StoreMessageInfo(mi)
-		}
-		return ms
-	}
-	return mi.MessageOf(x)
-}
-
-// Deprecated: Use SearchCommentsRequest.ProtoReflect.Descriptor instead.
-func (*SearchCommentsRequest) Descriptor() ([]byte, []int) {
-	return file_search_search_proto_rawDescGZIP(), []int{6}
-}
-
-func (x *SearchCommentsRequest) GetQuery() string {
-	if x != nil {
-		return x.Query
-	}
-	return ""
-}
-
-func (x *SearchCommentsRequest) GetPagination() *common.Pagination {
-	if x != nil {
-		return x.Pagination
-	}
-	return nil
-}
-
-func (x *SearchCommentsRequest) GetUseSemantic() bool {
-	if x != nil {
-		return x.UseSemantic
-	}
-	return false
-}
-
-func (x *SearchCommentsRequest) GetPostId() string {
-	if x != nil {
-		return x.PostId
-	}
-	return ""
-}
-
-// CommentResult 评论搜索结果
 type CommentResult struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Id            string                 `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
@@ -512,7 +212,7 @@ type CommentResult struct {
 
 func (x *CommentResult) Reset() {
 	*x = CommentResult{}
-	mi := &file_search_search_proto_msgTypes[7]
+	mi := &file_search_search_proto_msgTypes[2]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -524,7 +224,7 @@ func (x *CommentResult) String() string {
 func (*CommentResult) ProtoMessage() {}
 
 func (x *CommentResult) ProtoReflect() protoreflect.Message {
-	mi := &file_search_search_proto_msgTypes[7]
+	mi := &file_search_search_proto_msgTypes[2]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -537,7 +237,7 @@ func (x *CommentResult) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use CommentResult.ProtoReflect.Descriptor instead.
 func (*CommentResult) Descriptor() ([]byte, []int) {
-	return file_search_search_proto_rawDescGZIP(), []int{7}
+	return file_search_search_proto_rawDescGZIP(), []int{2}
 }
 
 func (x *CommentResult) GetId() string {
@@ -582,7 +282,298 @@ func (x *CommentResult) GetScore() float32 {
 	return 0
 }
 
-// SearchCommentsResponse 搜索评论响应
+type SearchPostsRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Query         string                 `protobuf:"bytes,1,opt,name=query,proto3" json:"query,omitempty"`
+	Pagination    *common.Pagination     `protobuf:"bytes,2,opt,name=pagination,proto3" json:"pagination,omitempty"`
+	UseSemantic   bool                   `protobuf:"varint,3,opt,name=use_semantic,json=useSemantic,proto3" json:"use_semantic,omitempty"` // 是否使用语义搜索（pgvector）
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *SearchPostsRequest) Reset() {
+	*x = SearchPostsRequest{}
+	mi := &file_search_search_proto_msgTypes[3]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *SearchPostsRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*SearchPostsRequest) ProtoMessage() {}
+
+func (x *SearchPostsRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_search_search_proto_msgTypes[3]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use SearchPostsRequest.ProtoReflect.Descriptor instead.
+func (*SearchPostsRequest) Descriptor() ([]byte, []int) {
+	return file_search_search_proto_rawDescGZIP(), []int{3}
+}
+
+func (x *SearchPostsRequest) GetQuery() string {
+	if x != nil {
+		return x.Query
+	}
+	return ""
+}
+
+func (x *SearchPostsRequest) GetPagination() *common.Pagination {
+	if x != nil {
+		return x.Pagination
+	}
+	return nil
+}
+
+func (x *SearchPostsRequest) GetUseSemantic() bool {
+	if x != nil {
+		return x.UseSemantic
+	}
+	return false
+}
+
+type SearchPostsResponse struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Posts         []*PostResult          `protobuf:"bytes,1,rep,name=posts,proto3" json:"posts,omitempty"`
+	Pagination    *common.Pagination     `protobuf:"bytes,2,opt,name=pagination,proto3" json:"pagination,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *SearchPostsResponse) Reset() {
+	*x = SearchPostsResponse{}
+	mi := &file_search_search_proto_msgTypes[4]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *SearchPostsResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*SearchPostsResponse) ProtoMessage() {}
+
+func (x *SearchPostsResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_search_search_proto_msgTypes[4]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use SearchPostsResponse.ProtoReflect.Descriptor instead.
+func (*SearchPostsResponse) Descriptor() ([]byte, []int) {
+	return file_search_search_proto_rawDescGZIP(), []int{4}
+}
+
+func (x *SearchPostsResponse) GetPosts() []*PostResult {
+	if x != nil {
+		return x.Posts
+	}
+	return nil
+}
+
+func (x *SearchPostsResponse) GetPagination() *common.Pagination {
+	if x != nil {
+		return x.Pagination
+	}
+	return nil
+}
+
+type SearchUsersRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Query         string                 `protobuf:"bytes,1,opt,name=query,proto3" json:"query,omitempty"`
+	Pagination    *common.Pagination     `protobuf:"bytes,2,opt,name=pagination,proto3" json:"pagination,omitempty"`
+	UseSemantic   bool                   `protobuf:"varint,3,opt,name=use_semantic,json=useSemantic,proto3" json:"use_semantic,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *SearchUsersRequest) Reset() {
+	*x = SearchUsersRequest{}
+	mi := &file_search_search_proto_msgTypes[5]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *SearchUsersRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*SearchUsersRequest) ProtoMessage() {}
+
+func (x *SearchUsersRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_search_search_proto_msgTypes[5]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use SearchUsersRequest.ProtoReflect.Descriptor instead.
+func (*SearchUsersRequest) Descriptor() ([]byte, []int) {
+	return file_search_search_proto_rawDescGZIP(), []int{5}
+}
+
+func (x *SearchUsersRequest) GetQuery() string {
+	if x != nil {
+		return x.Query
+	}
+	return ""
+}
+
+func (x *SearchUsersRequest) GetPagination() *common.Pagination {
+	if x != nil {
+		return x.Pagination
+	}
+	return nil
+}
+
+func (x *SearchUsersRequest) GetUseSemantic() bool {
+	if x != nil {
+		return x.UseSemantic
+	}
+	return false
+}
+
+type SearchUsersResponse struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Users         []*UserResult          `protobuf:"bytes,1,rep,name=users,proto3" json:"users,omitempty"`
+	Pagination    *common.Pagination     `protobuf:"bytes,2,opt,name=pagination,proto3" json:"pagination,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *SearchUsersResponse) Reset() {
+	*x = SearchUsersResponse{}
+	mi := &file_search_search_proto_msgTypes[6]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *SearchUsersResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*SearchUsersResponse) ProtoMessage() {}
+
+func (x *SearchUsersResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_search_search_proto_msgTypes[6]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use SearchUsersResponse.ProtoReflect.Descriptor instead.
+func (*SearchUsersResponse) Descriptor() ([]byte, []int) {
+	return file_search_search_proto_rawDescGZIP(), []int{6}
+}
+
+func (x *SearchUsersResponse) GetUsers() []*UserResult {
+	if x != nil {
+		return x.Users
+	}
+	return nil
+}
+
+func (x *SearchUsersResponse) GetPagination() *common.Pagination {
+	if x != nil {
+		return x.Pagination
+	}
+	return nil
+}
+
+type SearchCommentsRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Query         string                 `protobuf:"bytes,1,opt,name=query,proto3" json:"query,omitempty"`
+	Pagination    *common.Pagination     `protobuf:"bytes,2,opt,name=pagination,proto3" json:"pagination,omitempty"`
+	UseSemantic   bool                   `protobuf:"varint,3,opt,name=use_semantic,json=useSemantic,proto3" json:"use_semantic,omitempty"`
+	PostId        string                 `protobuf:"bytes,4,opt,name=post_id,json=postId,proto3" json:"post_id,omitempty"` // 可选：限定在某个帖子下搜索
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *SearchCommentsRequest) Reset() {
+	*x = SearchCommentsRequest{}
+	mi := &file_search_search_proto_msgTypes[7]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *SearchCommentsRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*SearchCommentsRequest) ProtoMessage() {}
+
+func (x *SearchCommentsRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_search_search_proto_msgTypes[7]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use SearchCommentsRequest.ProtoReflect.Descriptor instead.
+func (*SearchCommentsRequest) Descriptor() ([]byte, []int) {
+	return file_search_search_proto_rawDescGZIP(), []int{7}
+}
+
+func (x *SearchCommentsRequest) GetQuery() string {
+	if x != nil {
+		return x.Query
+	}
+	return ""
+}
+
+func (x *SearchCommentsRequest) GetPagination() *common.Pagination {
+	if x != nil {
+		return x.Pagination
+	}
+	return nil
+}
+
+func (x *SearchCommentsRequest) GetUseSemantic() bool {
+	if x != nil {
+		return x.UseSemantic
+	}
+	return false
+}
+
+func (x *SearchCommentsRequest) GetPostId() string {
+	if x != nil {
+		return x.PostId
+	}
+	return ""
+}
+
 type SearchCommentsResponse struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Comments      []*CommentResult       `protobuf:"bytes,1,rep,name=comments,proto3" json:"comments,omitempty"`
@@ -635,7 +626,6 @@ func (x *SearchCommentsResponse) GetPagination() *common.Pagination {
 	return nil
 }
 
-// SearchAllRequest 综合搜索请求
 type SearchAllRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Query         string                 `protobuf:"bytes,1,opt,name=query,proto3" json:"query,omitempty"`
@@ -696,7 +686,6 @@ func (x *SearchAllRequest) GetUseSemantic() bool {
 	return false
 }
 
-// SearchAllResponse 综合搜索响应
 type SearchAllResponse struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Posts         []*PostResult          `protobuf:"bytes,1,rep,name=posts,proto3" json:"posts,omitempty"`
@@ -761,13 +750,7 @@ var File_search_search_proto protoreflect.FileDescriptor
 
 const file_search_search_proto_rawDesc = "" +
 	"\n" +
-	"\x13search/search.proto\x12\x06search\x1a\x13common/common.proto\"\x81\x01\n" +
-	"\x12SearchPostsRequest\x12\x14\n" +
-	"\x05query\x18\x01 \x01(\tR\x05query\x122\n" +
-	"\n" +
-	"pagination\x18\x02 \x01(\v2\x12.common.PaginationR\n" +
-	"pagination\x12!\n" +
-	"\fuse_semantic\x18\x03 \x01(\bR\vuseSemantic\"\xd0\x01\n" +
+	"\x13search/search.proto\x12\x06search\x1a\x13common/common.proto\"\xd0\x01\n" +
 	"\n" +
 	"PostResult\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\tR\x02id\x12\x1b\n" +
@@ -778,7 +761,30 @@ const file_search_search_proto_rawDesc = "" +
 	"media_urls\x18\x05 \x03(\tR\tmediaUrls\x120\n" +
 	"\n" +
 	"created_at\x18\x06 \x01(\v2\x11.common.TimestampR\tcreatedAt\x12\x14\n" +
-	"\x05score\x18\a \x01(\x02R\x05score\"s\n" +
+	"\x05score\x18\a \x01(\x02R\x05score\"\xa2\x01\n" +
+	"\n" +
+	"UserResult\x12\x0e\n" +
+	"\x02id\x18\x01 \x01(\tR\x02id\x12\x1a\n" +
+	"\busername\x18\x02 \x01(\tR\busername\x12!\n" +
+	"\fdisplay_name\x18\x03 \x01(\tR\vdisplayName\x12\x1d\n" +
+	"\n" +
+	"avatar_url\x18\x04 \x01(\tR\tavatarUrl\x12\x10\n" +
+	"\x03bio\x18\x05 \x01(\tR\x03bio\x12\x14\n" +
+	"\x05score\x18\x06 \x01(\x02R\x05score\"\xb7\x01\n" +
+	"\rCommentResult\x12\x0e\n" +
+	"\x02id\x18\x01 \x01(\tR\x02id\x12\x1b\n" +
+	"\tauthor_id\x18\x02 \x01(\tR\bauthorId\x12\x17\n" +
+	"\apost_id\x18\x03 \x01(\tR\x06postId\x12\x18\n" +
+	"\acontent\x18\x04 \x01(\tR\acontent\x120\n" +
+	"\n" +
+	"created_at\x18\x05 \x01(\v2\x11.common.TimestampR\tcreatedAt\x12\x14\n" +
+	"\x05score\x18\x06 \x01(\x02R\x05score\"\x81\x01\n" +
+	"\x12SearchPostsRequest\x12\x14\n" +
+	"\x05query\x18\x01 \x01(\tR\x05query\x122\n" +
+	"\n" +
+	"pagination\x18\x02 \x01(\v2\x12.common.PaginationR\n" +
+	"pagination\x12!\n" +
+	"\fuse_semantic\x18\x03 \x01(\bR\vuseSemantic\"s\n" +
 	"\x13SearchPostsResponse\x12(\n" +
 	"\x05posts\x18\x01 \x03(\v2\x12.search.PostResultR\x05posts\x122\n" +
 	"\n" +
@@ -789,16 +795,7 @@ const file_search_search_proto_rawDesc = "" +
 	"\n" +
 	"pagination\x18\x02 \x01(\v2\x12.common.PaginationR\n" +
 	"pagination\x12!\n" +
-	"\fuse_semantic\x18\x03 \x01(\bR\vuseSemantic\"\xa2\x01\n" +
-	"\n" +
-	"UserResult\x12\x0e\n" +
-	"\x02id\x18\x01 \x01(\tR\x02id\x12\x1a\n" +
-	"\busername\x18\x02 \x01(\tR\busername\x12!\n" +
-	"\fdisplay_name\x18\x03 \x01(\tR\vdisplayName\x12\x1d\n" +
-	"\n" +
-	"avatar_url\x18\x04 \x01(\tR\tavatarUrl\x12\x10\n" +
-	"\x03bio\x18\x05 \x01(\tR\x03bio\x12\x14\n" +
-	"\x05score\x18\x06 \x01(\x02R\x05score\"s\n" +
+	"\fuse_semantic\x18\x03 \x01(\bR\vuseSemantic\"s\n" +
 	"\x13SearchUsersResponse\x12(\n" +
 	"\x05users\x18\x01 \x03(\v2\x12.search.UserResultR\x05users\x122\n" +
 	"\n" +
@@ -810,15 +807,7 @@ const file_search_search_proto_rawDesc = "" +
 	"pagination\x18\x02 \x01(\v2\x12.common.PaginationR\n" +
 	"pagination\x12!\n" +
 	"\fuse_semantic\x18\x03 \x01(\bR\vuseSemantic\x12\x17\n" +
-	"\apost_id\x18\x04 \x01(\tR\x06postId\"\xb7\x01\n" +
-	"\rCommentResult\x12\x0e\n" +
-	"\x02id\x18\x01 \x01(\tR\x02id\x12\x1b\n" +
-	"\tauthor_id\x18\x02 \x01(\tR\bauthorId\x12\x17\n" +
-	"\apost_id\x18\x03 \x01(\tR\x06postId\x12\x18\n" +
-	"\acontent\x18\x04 \x01(\tR\acontent\x120\n" +
-	"\n" +
-	"created_at\x18\x05 \x01(\v2\x11.common.TimestampR\tcreatedAt\x12\x14\n" +
-	"\x05score\x18\x06 \x01(\x02R\x05score\"\x7f\n" +
+	"\apost_id\x18\x04 \x01(\tR\x06postId\"\x7f\n" +
 	"\x16SearchCommentsResponse\x121\n" +
 	"\bcomments\x18\x01 \x03(\v2\x15.search.CommentResultR\bcomments\x122\n" +
 	"\n" +
@@ -852,41 +841,41 @@ func file_search_search_proto_rawDescGZIP() []byte {
 
 var file_search_search_proto_msgTypes = make([]protoimpl.MessageInfo, 11)
 var file_search_search_proto_goTypes = []any{
-	(*SearchPostsRequest)(nil),     // 0: search.SearchPostsRequest
-	(*PostResult)(nil),             // 1: search.PostResult
-	(*SearchPostsResponse)(nil),    // 2: search.SearchPostsResponse
-	(*SearchUsersRequest)(nil),     // 3: search.SearchUsersRequest
-	(*UserResult)(nil),             // 4: search.UserResult
-	(*SearchUsersResponse)(nil),    // 5: search.SearchUsersResponse
-	(*SearchCommentsRequest)(nil),  // 6: search.SearchCommentsRequest
-	(*CommentResult)(nil),          // 7: search.CommentResult
+	(*PostResult)(nil),             // 0: search.PostResult
+	(*UserResult)(nil),             // 1: search.UserResult
+	(*CommentResult)(nil),          // 2: search.CommentResult
+	(*SearchPostsRequest)(nil),     // 3: search.SearchPostsRequest
+	(*SearchPostsResponse)(nil),    // 4: search.SearchPostsResponse
+	(*SearchUsersRequest)(nil),     // 5: search.SearchUsersRequest
+	(*SearchUsersResponse)(nil),    // 6: search.SearchUsersResponse
+	(*SearchCommentsRequest)(nil),  // 7: search.SearchCommentsRequest
 	(*SearchCommentsResponse)(nil), // 8: search.SearchCommentsResponse
 	(*SearchAllRequest)(nil),       // 9: search.SearchAllRequest
 	(*SearchAllResponse)(nil),      // 10: search.SearchAllResponse
-	(*common.Pagination)(nil),      // 11: common.Pagination
-	(*common.Timestamp)(nil),       // 12: common.Timestamp
+	(*common.Timestamp)(nil),       // 11: common.Timestamp
+	(*common.Pagination)(nil),      // 12: common.Pagination
 }
 var file_search_search_proto_depIdxs = []int32{
-	11, // 0: search.SearchPostsRequest.pagination:type_name -> common.Pagination
-	12, // 1: search.PostResult.created_at:type_name -> common.Timestamp
-	1,  // 2: search.SearchPostsResponse.posts:type_name -> search.PostResult
-	11, // 3: search.SearchPostsResponse.pagination:type_name -> common.Pagination
-	11, // 4: search.SearchUsersRequest.pagination:type_name -> common.Pagination
-	4,  // 5: search.SearchUsersResponse.users:type_name -> search.UserResult
-	11, // 6: search.SearchUsersResponse.pagination:type_name -> common.Pagination
-	11, // 7: search.SearchCommentsRequest.pagination:type_name -> common.Pagination
-	12, // 8: search.CommentResult.created_at:type_name -> common.Timestamp
-	7,  // 9: search.SearchCommentsResponse.comments:type_name -> search.CommentResult
-	11, // 10: search.SearchCommentsResponse.pagination:type_name -> common.Pagination
-	1,  // 11: search.SearchAllResponse.posts:type_name -> search.PostResult
-	7,  // 12: search.SearchAllResponse.comments:type_name -> search.CommentResult
-	4,  // 13: search.SearchAllResponse.users:type_name -> search.UserResult
-	0,  // 14: search.SearchService.SearchPosts:input_type -> search.SearchPostsRequest
-	3,  // 15: search.SearchService.SearchUsers:input_type -> search.SearchUsersRequest
-	6,  // 16: search.SearchService.SearchComments:input_type -> search.SearchCommentsRequest
+	11, // 0: search.PostResult.created_at:type_name -> common.Timestamp
+	11, // 1: search.CommentResult.created_at:type_name -> common.Timestamp
+	12, // 2: search.SearchPostsRequest.pagination:type_name -> common.Pagination
+	0,  // 3: search.SearchPostsResponse.posts:type_name -> search.PostResult
+	12, // 4: search.SearchPostsResponse.pagination:type_name -> common.Pagination
+	12, // 5: search.SearchUsersRequest.pagination:type_name -> common.Pagination
+	1,  // 6: search.SearchUsersResponse.users:type_name -> search.UserResult
+	12, // 7: search.SearchUsersResponse.pagination:type_name -> common.Pagination
+	12, // 8: search.SearchCommentsRequest.pagination:type_name -> common.Pagination
+	2,  // 9: search.SearchCommentsResponse.comments:type_name -> search.CommentResult
+	12, // 10: search.SearchCommentsResponse.pagination:type_name -> common.Pagination
+	0,  // 11: search.SearchAllResponse.posts:type_name -> search.PostResult
+	2,  // 12: search.SearchAllResponse.comments:type_name -> search.CommentResult
+	1,  // 13: search.SearchAllResponse.users:type_name -> search.UserResult
+	3,  // 14: search.SearchService.SearchPosts:input_type -> search.SearchPostsRequest
+	5,  // 15: search.SearchService.SearchUsers:input_type -> search.SearchUsersRequest
+	7,  // 16: search.SearchService.SearchComments:input_type -> search.SearchCommentsRequest
 	9,  // 17: search.SearchService.SearchAll:input_type -> search.SearchAllRequest
-	2,  // 18: search.SearchService.SearchPosts:output_type -> search.SearchPostsResponse
-	5,  // 19: search.SearchService.SearchUsers:output_type -> search.SearchUsersResponse
+	4,  // 18: search.SearchService.SearchPosts:output_type -> search.SearchPostsResponse
+	6,  // 19: search.SearchService.SearchUsers:output_type -> search.SearchUsersResponse
 	8,  // 20: search.SearchService.SearchComments:output_type -> search.SearchCommentsResponse
 	10, // 21: search.SearchService.SearchAll:output_type -> search.SearchAllResponse
 	18, // [18:22] is the sub-list for method output_type

@@ -22,310 +22,6 @@ const (
 	_ = protoimpl.EnforceVersion(protoimpl.MaxVersion - 20)
 )
 
-type SuperUserLoginRequest struct {
-	state         protoimpl.MessageState `protogen:"open.v1"`
-	Username      string                 `protobuf:"bytes,1,opt,name=username,proto3" json:"username,omitempty"`
-	Password      string                 `protobuf:"bytes,2,opt,name=password,proto3" json:"password,omitempty"`
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
-}
-
-func (x *SuperUserLoginRequest) Reset() {
-	*x = SuperUserLoginRequest{}
-	mi := &file_superuser_superuser_proto_msgTypes[0]
-	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-	ms.StoreMessageInfo(mi)
-}
-
-func (x *SuperUserLoginRequest) String() string {
-	return protoimpl.X.MessageStringOf(x)
-}
-
-func (*SuperUserLoginRequest) ProtoMessage() {}
-
-func (x *SuperUserLoginRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_superuser_superuser_proto_msgTypes[0]
-	if x != nil {
-		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-		if ms.LoadMessageInfo() == nil {
-			ms.StoreMessageInfo(mi)
-		}
-		return ms
-	}
-	return mi.MessageOf(x)
-}
-
-// Deprecated: Use SuperUserLoginRequest.ProtoReflect.Descriptor instead.
-func (*SuperUserLoginRequest) Descriptor() ([]byte, []int) {
-	return file_superuser_superuser_proto_rawDescGZIP(), []int{0}
-}
-
-func (x *SuperUserLoginRequest) GetUsername() string {
-	if x != nil {
-		return x.Username
-	}
-	return ""
-}
-
-func (x *SuperUserLoginRequest) GetPassword() string {
-	if x != nil {
-		return x.Password
-	}
-	return ""
-}
-
-type SuperUserLoginResponse struct {
-	state         protoimpl.MessageState `protogen:"open.v1"`
-	Superuser     *SuperUser             `protobuf:"bytes,1,opt,name=superuser,proto3" json:"superuser,omitempty"`
-	AccessToken   string                 `protobuf:"bytes,2,opt,name=access_token,json=accessToken,proto3" json:"access_token,omitempty"`
-	RefreshToken  string                 `protobuf:"bytes,3,opt,name=refresh_token,json=refreshToken,proto3" json:"refresh_token,omitempty"`
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
-}
-
-func (x *SuperUserLoginResponse) Reset() {
-	*x = SuperUserLoginResponse{}
-	mi := &file_superuser_superuser_proto_msgTypes[1]
-	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-	ms.StoreMessageInfo(mi)
-}
-
-func (x *SuperUserLoginResponse) String() string {
-	return protoimpl.X.MessageStringOf(x)
-}
-
-func (*SuperUserLoginResponse) ProtoMessage() {}
-
-func (x *SuperUserLoginResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_superuser_superuser_proto_msgTypes[1]
-	if x != nil {
-		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-		if ms.LoadMessageInfo() == nil {
-			ms.StoreMessageInfo(mi)
-		}
-		return ms
-	}
-	return mi.MessageOf(x)
-}
-
-// Deprecated: Use SuperUserLoginResponse.ProtoReflect.Descriptor instead.
-func (*SuperUserLoginResponse) Descriptor() ([]byte, []int) {
-	return file_superuser_superuser_proto_rawDescGZIP(), []int{1}
-}
-
-func (x *SuperUserLoginResponse) GetSuperuser() *SuperUser {
-	if x != nil {
-		return x.Superuser
-	}
-	return nil
-}
-
-func (x *SuperUserLoginResponse) GetAccessToken() string {
-	if x != nil {
-		return x.AccessToken
-	}
-	return ""
-}
-
-func (x *SuperUserLoginResponse) GetRefreshToken() string {
-	if x != nil {
-		return x.RefreshToken
-	}
-	return ""
-}
-
-type SuperUserLogoutRequest struct {
-	state         protoimpl.MessageState `protogen:"open.v1"`
-	AccessToken   string                 `protobuf:"bytes,1,opt,name=access_token,json=accessToken,proto3" json:"access_token,omitempty"`
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
-}
-
-func (x *SuperUserLogoutRequest) Reset() {
-	*x = SuperUserLogoutRequest{}
-	mi := &file_superuser_superuser_proto_msgTypes[2]
-	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-	ms.StoreMessageInfo(mi)
-}
-
-func (x *SuperUserLogoutRequest) String() string {
-	return protoimpl.X.MessageStringOf(x)
-}
-
-func (*SuperUserLogoutRequest) ProtoMessage() {}
-
-func (x *SuperUserLogoutRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_superuser_superuser_proto_msgTypes[2]
-	if x != nil {
-		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-		if ms.LoadMessageInfo() == nil {
-			ms.StoreMessageInfo(mi)
-		}
-		return ms
-	}
-	return mi.MessageOf(x)
-}
-
-// Deprecated: Use SuperUserLogoutRequest.ProtoReflect.Descriptor instead.
-func (*SuperUserLogoutRequest) Descriptor() ([]byte, []int) {
-	return file_superuser_superuser_proto_rawDescGZIP(), []int{2}
-}
-
-func (x *SuperUserLogoutRequest) GetAccessToken() string {
-	if x != nil {
-		return x.AccessToken
-	}
-	return ""
-}
-
-type SuperUserRefreshRequest struct {
-	state         protoimpl.MessageState `protogen:"open.v1"`
-	RefreshToken  string                 `protobuf:"bytes,1,opt,name=refresh_token,json=refreshToken,proto3" json:"refresh_token,omitempty"`
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
-}
-
-func (x *SuperUserRefreshRequest) Reset() {
-	*x = SuperUserRefreshRequest{}
-	mi := &file_superuser_superuser_proto_msgTypes[3]
-	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-	ms.StoreMessageInfo(mi)
-}
-
-func (x *SuperUserRefreshRequest) String() string {
-	return protoimpl.X.MessageStringOf(x)
-}
-
-func (*SuperUserRefreshRequest) ProtoMessage() {}
-
-func (x *SuperUserRefreshRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_superuser_superuser_proto_msgTypes[3]
-	if x != nil {
-		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-		if ms.LoadMessageInfo() == nil {
-			ms.StoreMessageInfo(mi)
-		}
-		return ms
-	}
-	return mi.MessageOf(x)
-}
-
-// Deprecated: Use SuperUserRefreshRequest.ProtoReflect.Descriptor instead.
-func (*SuperUserRefreshRequest) Descriptor() ([]byte, []int) {
-	return file_superuser_superuser_proto_rawDescGZIP(), []int{3}
-}
-
-func (x *SuperUserRefreshRequest) GetRefreshToken() string {
-	if x != nil {
-		return x.RefreshToken
-	}
-	return ""
-}
-
-type ValidateTokenRequest struct {
-	state         protoimpl.MessageState `protogen:"open.v1"`
-	AccessToken   string                 `protobuf:"bytes,1,opt,name=access_token,json=accessToken,proto3" json:"access_token,omitempty"`
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
-}
-
-func (x *ValidateTokenRequest) Reset() {
-	*x = ValidateTokenRequest{}
-	mi := &file_superuser_superuser_proto_msgTypes[4]
-	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-	ms.StoreMessageInfo(mi)
-}
-
-func (x *ValidateTokenRequest) String() string {
-	return protoimpl.X.MessageStringOf(x)
-}
-
-func (*ValidateTokenRequest) ProtoMessage() {}
-
-func (x *ValidateTokenRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_superuser_superuser_proto_msgTypes[4]
-	if x != nil {
-		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-		if ms.LoadMessageInfo() == nil {
-			ms.StoreMessageInfo(mi)
-		}
-		return ms
-	}
-	return mi.MessageOf(x)
-}
-
-// Deprecated: Use ValidateTokenRequest.ProtoReflect.Descriptor instead.
-func (*ValidateTokenRequest) Descriptor() ([]byte, []int) {
-	return file_superuser_superuser_proto_rawDescGZIP(), []int{4}
-}
-
-func (x *ValidateTokenRequest) GetAccessToken() string {
-	if x != nil {
-		return x.AccessToken
-	}
-	return ""
-}
-
-type ValidateTokenResponse struct {
-	state         protoimpl.MessageState `protogen:"open.v1"`
-	Valid         bool                   `protobuf:"varint,1,opt,name=valid,proto3" json:"valid,omitempty"`
-	SuperuserId   string                 `protobuf:"bytes,2,opt,name=superuser_id,json=superuserId,proto3" json:"superuser_id,omitempty"`
-	Username      string                 `protobuf:"bytes,3,opt,name=username,proto3" json:"username,omitempty"`
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
-}
-
-func (x *ValidateTokenResponse) Reset() {
-	*x = ValidateTokenResponse{}
-	mi := &file_superuser_superuser_proto_msgTypes[5]
-	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-	ms.StoreMessageInfo(mi)
-}
-
-func (x *ValidateTokenResponse) String() string {
-	return protoimpl.X.MessageStringOf(x)
-}
-
-func (*ValidateTokenResponse) ProtoMessage() {}
-
-func (x *ValidateTokenResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_superuser_superuser_proto_msgTypes[5]
-	if x != nil {
-		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-		if ms.LoadMessageInfo() == nil {
-			ms.StoreMessageInfo(mi)
-		}
-		return ms
-	}
-	return mi.MessageOf(x)
-}
-
-// Deprecated: Use ValidateTokenResponse.ProtoReflect.Descriptor instead.
-func (*ValidateTokenResponse) Descriptor() ([]byte, []int) {
-	return file_superuser_superuser_proto_rawDescGZIP(), []int{5}
-}
-
-func (x *ValidateTokenResponse) GetValid() bool {
-	if x != nil {
-		return x.Valid
-	}
-	return false
-}
-
-func (x *ValidateTokenResponse) GetSuperuserId() string {
-	if x != nil {
-		return x.SuperuserId
-	}
-	return ""
-}
-
-func (x *ValidateTokenResponse) GetUsername() string {
-	if x != nil {
-		return x.Username
-	}
-	return ""
-}
-
 type SuperUser struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Id            string                 `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
@@ -340,7 +36,7 @@ type SuperUser struct {
 
 func (x *SuperUser) Reset() {
 	*x = SuperUser{}
-	mi := &file_superuser_superuser_proto_msgTypes[6]
+	mi := &file_superuser_superuser_proto_msgTypes[0]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -352,7 +48,7 @@ func (x *SuperUser) String() string {
 func (*SuperUser) ProtoMessage() {}
 
 func (x *SuperUser) ProtoReflect() protoreflect.Message {
-	mi := &file_superuser_superuser_proto_msgTypes[6]
+	mi := &file_superuser_superuser_proto_msgTypes[0]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -365,7 +61,7 @@ func (x *SuperUser) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use SuperUser.ProtoReflect.Descriptor instead.
 func (*SuperUser) Descriptor() ([]byte, []int) {
-	return file_superuser_superuser_proto_rawDescGZIP(), []int{6}
+	return file_superuser_superuser_proto_rawDescGZIP(), []int{0}
 }
 
 func (x *SuperUser) GetId() string {
@@ -433,7 +129,7 @@ type UserDetail struct {
 
 func (x *UserDetail) Reset() {
 	*x = UserDetail{}
-	mi := &file_superuser_superuser_proto_msgTypes[7]
+	mi := &file_superuser_superuser_proto_msgTypes[1]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -445,7 +141,7 @@ func (x *UserDetail) String() string {
 func (*UserDetail) ProtoMessage() {}
 
 func (x *UserDetail) ProtoReflect() protoreflect.Message {
-	mi := &file_superuser_superuser_proto_msgTypes[7]
+	mi := &file_superuser_superuser_proto_msgTypes[1]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -458,7 +154,7 @@ func (x *UserDetail) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use UserDetail.ProtoReflect.Descriptor instead.
 func (*UserDetail) Descriptor() ([]byte, []int) {
-	return file_superuser_superuser_proto_rawDescGZIP(), []int{7}
+	return file_superuser_superuser_proto_rawDescGZIP(), []int{1}
 }
 
 func (x *UserDetail) GetId() string {
@@ -589,7 +285,7 @@ type ContentDetail struct {
 
 func (x *ContentDetail) Reset() {
 	*x = ContentDetail{}
-	mi := &file_superuser_superuser_proto_msgTypes[8]
+	mi := &file_superuser_superuser_proto_msgTypes[2]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -601,7 +297,7 @@ func (x *ContentDetail) String() string {
 func (*ContentDetail) ProtoMessage() {}
 
 func (x *ContentDetail) ProtoReflect() protoreflect.Message {
-	mi := &file_superuser_superuser_proto_msgTypes[8]
+	mi := &file_superuser_superuser_proto_msgTypes[2]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -614,7 +310,7 @@ func (x *ContentDetail) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ContentDetail.ProtoReflect.Descriptor instead.
 func (*ContentDetail) Descriptor() ([]byte, []int) {
-	return file_superuser_superuser_proto_rawDescGZIP(), []int{8}
+	return file_superuser_superuser_proto_rawDescGZIP(), []int{2}
 }
 
 func (x *ContentDetail) GetId() string {
@@ -720,6 +416,310 @@ func (x *ContentDetail) GetPublishedAt() *common.Timestamp {
 		return x.PublishedAt
 	}
 	return nil
+}
+
+type SuperUserLoginRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Username      string                 `protobuf:"bytes,1,opt,name=username,proto3" json:"username,omitempty"`
+	Password      string                 `protobuf:"bytes,2,opt,name=password,proto3" json:"password,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *SuperUserLoginRequest) Reset() {
+	*x = SuperUserLoginRequest{}
+	mi := &file_superuser_superuser_proto_msgTypes[3]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *SuperUserLoginRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*SuperUserLoginRequest) ProtoMessage() {}
+
+func (x *SuperUserLoginRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_superuser_superuser_proto_msgTypes[3]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use SuperUserLoginRequest.ProtoReflect.Descriptor instead.
+func (*SuperUserLoginRequest) Descriptor() ([]byte, []int) {
+	return file_superuser_superuser_proto_rawDescGZIP(), []int{3}
+}
+
+func (x *SuperUserLoginRequest) GetUsername() string {
+	if x != nil {
+		return x.Username
+	}
+	return ""
+}
+
+func (x *SuperUserLoginRequest) GetPassword() string {
+	if x != nil {
+		return x.Password
+	}
+	return ""
+}
+
+type SuperUserLoginResponse struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Superuser     *SuperUser             `protobuf:"bytes,1,opt,name=superuser,proto3" json:"superuser,omitempty"`
+	AccessToken   string                 `protobuf:"bytes,2,opt,name=access_token,json=accessToken,proto3" json:"access_token,omitempty"`
+	RefreshToken  string                 `protobuf:"bytes,3,opt,name=refresh_token,json=refreshToken,proto3" json:"refresh_token,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *SuperUserLoginResponse) Reset() {
+	*x = SuperUserLoginResponse{}
+	mi := &file_superuser_superuser_proto_msgTypes[4]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *SuperUserLoginResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*SuperUserLoginResponse) ProtoMessage() {}
+
+func (x *SuperUserLoginResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_superuser_superuser_proto_msgTypes[4]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use SuperUserLoginResponse.ProtoReflect.Descriptor instead.
+func (*SuperUserLoginResponse) Descriptor() ([]byte, []int) {
+	return file_superuser_superuser_proto_rawDescGZIP(), []int{4}
+}
+
+func (x *SuperUserLoginResponse) GetSuperuser() *SuperUser {
+	if x != nil {
+		return x.Superuser
+	}
+	return nil
+}
+
+func (x *SuperUserLoginResponse) GetAccessToken() string {
+	if x != nil {
+		return x.AccessToken
+	}
+	return ""
+}
+
+func (x *SuperUserLoginResponse) GetRefreshToken() string {
+	if x != nil {
+		return x.RefreshToken
+	}
+	return ""
+}
+
+type SuperUserLogoutRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	AccessToken   string                 `protobuf:"bytes,1,opt,name=access_token,json=accessToken,proto3" json:"access_token,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *SuperUserLogoutRequest) Reset() {
+	*x = SuperUserLogoutRequest{}
+	mi := &file_superuser_superuser_proto_msgTypes[5]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *SuperUserLogoutRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*SuperUserLogoutRequest) ProtoMessage() {}
+
+func (x *SuperUserLogoutRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_superuser_superuser_proto_msgTypes[5]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use SuperUserLogoutRequest.ProtoReflect.Descriptor instead.
+func (*SuperUserLogoutRequest) Descriptor() ([]byte, []int) {
+	return file_superuser_superuser_proto_rawDescGZIP(), []int{5}
+}
+
+func (x *SuperUserLogoutRequest) GetAccessToken() string {
+	if x != nil {
+		return x.AccessToken
+	}
+	return ""
+}
+
+type SuperUserRefreshRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	RefreshToken  string                 `protobuf:"bytes,1,opt,name=refresh_token,json=refreshToken,proto3" json:"refresh_token,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *SuperUserRefreshRequest) Reset() {
+	*x = SuperUserRefreshRequest{}
+	mi := &file_superuser_superuser_proto_msgTypes[6]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *SuperUserRefreshRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*SuperUserRefreshRequest) ProtoMessage() {}
+
+func (x *SuperUserRefreshRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_superuser_superuser_proto_msgTypes[6]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use SuperUserRefreshRequest.ProtoReflect.Descriptor instead.
+func (*SuperUserRefreshRequest) Descriptor() ([]byte, []int) {
+	return file_superuser_superuser_proto_rawDescGZIP(), []int{6}
+}
+
+func (x *SuperUserRefreshRequest) GetRefreshToken() string {
+	if x != nil {
+		return x.RefreshToken
+	}
+	return ""
+}
+
+type ValidateTokenRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	AccessToken   string                 `protobuf:"bytes,1,opt,name=access_token,json=accessToken,proto3" json:"access_token,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *ValidateTokenRequest) Reset() {
+	*x = ValidateTokenRequest{}
+	mi := &file_superuser_superuser_proto_msgTypes[7]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *ValidateTokenRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ValidateTokenRequest) ProtoMessage() {}
+
+func (x *ValidateTokenRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_superuser_superuser_proto_msgTypes[7]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use ValidateTokenRequest.ProtoReflect.Descriptor instead.
+func (*ValidateTokenRequest) Descriptor() ([]byte, []int) {
+	return file_superuser_superuser_proto_rawDescGZIP(), []int{7}
+}
+
+func (x *ValidateTokenRequest) GetAccessToken() string {
+	if x != nil {
+		return x.AccessToken
+	}
+	return ""
+}
+
+type ValidateTokenResponse struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Valid         bool                   `protobuf:"varint,1,opt,name=valid,proto3" json:"valid,omitempty"`
+	SuperuserId   string                 `protobuf:"bytes,2,opt,name=superuser_id,json=superuserId,proto3" json:"superuser_id,omitempty"`
+	Username      string                 `protobuf:"bytes,3,opt,name=username,proto3" json:"username,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *ValidateTokenResponse) Reset() {
+	*x = ValidateTokenResponse{}
+	mi := &file_superuser_superuser_proto_msgTypes[8]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *ValidateTokenResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ValidateTokenResponse) ProtoMessage() {}
+
+func (x *ValidateTokenResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_superuser_superuser_proto_msgTypes[8]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use ValidateTokenResponse.ProtoReflect.Descriptor instead.
+func (*ValidateTokenResponse) Descriptor() ([]byte, []int) {
+	return file_superuser_superuser_proto_rawDescGZIP(), []int{8}
+}
+
+func (x *ValidateTokenResponse) GetValid() bool {
+	if x != nil {
+		return x.Valid
+	}
+	return false
+}
+
+func (x *ValidateTokenResponse) GetSuperuserId() string {
+	if x != nil {
+		return x.SuperuserId
+	}
+	return ""
+}
+
+func (x *ValidateTokenResponse) GetUsername() string {
+	if x != nil {
+		return x.Username
+	}
+	return ""
 }
 
 type ListUsersRequest struct {
@@ -918,318 +918,6 @@ func (x *GetUserRequest) GetUserId() string {
 	return ""
 }
 
-type BanUserRequest struct {
-	state           protoimpl.MessageState `protogen:"open.v1"`
-	UserId          string                 `protobuf:"bytes,1,opt,name=user_id,json=userId,proto3" json:"user_id,omitempty"`
-	Reason          string                 `protobuf:"bytes,2,opt,name=reason,proto3" json:"reason,omitempty"`
-	DurationSeconds int64                  `protobuf:"varint,3,opt,name=duration_seconds,json=durationSeconds,proto3" json:"duration_seconds,omitempty"` // 0 表示永久封禁
-	unknownFields   protoimpl.UnknownFields
-	sizeCache       protoimpl.SizeCache
-}
-
-func (x *BanUserRequest) Reset() {
-	*x = BanUserRequest{}
-	mi := &file_superuser_superuser_proto_msgTypes[12]
-	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-	ms.StoreMessageInfo(mi)
-}
-
-func (x *BanUserRequest) String() string {
-	return protoimpl.X.MessageStringOf(x)
-}
-
-func (*BanUserRequest) ProtoMessage() {}
-
-func (x *BanUserRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_superuser_superuser_proto_msgTypes[12]
-	if x != nil {
-		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-		if ms.LoadMessageInfo() == nil {
-			ms.StoreMessageInfo(mi)
-		}
-		return ms
-	}
-	return mi.MessageOf(x)
-}
-
-// Deprecated: Use BanUserRequest.ProtoReflect.Descriptor instead.
-func (*BanUserRequest) Descriptor() ([]byte, []int) {
-	return file_superuser_superuser_proto_rawDescGZIP(), []int{12}
-}
-
-func (x *BanUserRequest) GetUserId() string {
-	if x != nil {
-		return x.UserId
-	}
-	return ""
-}
-
-func (x *BanUserRequest) GetReason() string {
-	if x != nil {
-		return x.Reason
-	}
-	return ""
-}
-
-func (x *BanUserRequest) GetDurationSeconds() int64 {
-	if x != nil {
-		return x.DurationSeconds
-	}
-	return 0
-}
-
-type BanUserResponse struct {
-	state         protoimpl.MessageState `protogen:"open.v1"`
-	Success       bool                   `protobuf:"varint,1,opt,name=success,proto3" json:"success,omitempty"`
-	Message       string                 `protobuf:"bytes,2,opt,name=message,proto3" json:"message,omitempty"`
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
-}
-
-func (x *BanUserResponse) Reset() {
-	*x = BanUserResponse{}
-	mi := &file_superuser_superuser_proto_msgTypes[13]
-	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-	ms.StoreMessageInfo(mi)
-}
-
-func (x *BanUserResponse) String() string {
-	return protoimpl.X.MessageStringOf(x)
-}
-
-func (*BanUserResponse) ProtoMessage() {}
-
-func (x *BanUserResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_superuser_superuser_proto_msgTypes[13]
-	if x != nil {
-		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-		if ms.LoadMessageInfo() == nil {
-			ms.StoreMessageInfo(mi)
-		}
-		return ms
-	}
-	return mi.MessageOf(x)
-}
-
-// Deprecated: Use BanUserResponse.ProtoReflect.Descriptor instead.
-func (*BanUserResponse) Descriptor() ([]byte, []int) {
-	return file_superuser_superuser_proto_rawDescGZIP(), []int{13}
-}
-
-func (x *BanUserResponse) GetSuccess() bool {
-	if x != nil {
-		return x.Success
-	}
-	return false
-}
-
-func (x *BanUserResponse) GetMessage() string {
-	if x != nil {
-		return x.Message
-	}
-	return ""
-}
-
-type UnbanUserRequest struct {
-	state         protoimpl.MessageState `protogen:"open.v1"`
-	UserId        string                 `protobuf:"bytes,1,opt,name=user_id,json=userId,proto3" json:"user_id,omitempty"`
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
-}
-
-func (x *UnbanUserRequest) Reset() {
-	*x = UnbanUserRequest{}
-	mi := &file_superuser_superuser_proto_msgTypes[14]
-	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-	ms.StoreMessageInfo(mi)
-}
-
-func (x *UnbanUserRequest) String() string {
-	return protoimpl.X.MessageStringOf(x)
-}
-
-func (*UnbanUserRequest) ProtoMessage() {}
-
-func (x *UnbanUserRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_superuser_superuser_proto_msgTypes[14]
-	if x != nil {
-		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-		if ms.LoadMessageInfo() == nil {
-			ms.StoreMessageInfo(mi)
-		}
-		return ms
-	}
-	return mi.MessageOf(x)
-}
-
-// Deprecated: Use UnbanUserRequest.ProtoReflect.Descriptor instead.
-func (*UnbanUserRequest) Descriptor() ([]byte, []int) {
-	return file_superuser_superuser_proto_rawDescGZIP(), []int{14}
-}
-
-func (x *UnbanUserRequest) GetUserId() string {
-	if x != nil {
-		return x.UserId
-	}
-	return ""
-}
-
-type UnbanUserResponse struct {
-	state         protoimpl.MessageState `protogen:"open.v1"`
-	Success       bool                   `protobuf:"varint,1,opt,name=success,proto3" json:"success,omitempty"`
-	Message       string                 `protobuf:"bytes,2,opt,name=message,proto3" json:"message,omitempty"`
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
-}
-
-func (x *UnbanUserResponse) Reset() {
-	*x = UnbanUserResponse{}
-	mi := &file_superuser_superuser_proto_msgTypes[15]
-	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-	ms.StoreMessageInfo(mi)
-}
-
-func (x *UnbanUserResponse) String() string {
-	return protoimpl.X.MessageStringOf(x)
-}
-
-func (*UnbanUserResponse) ProtoMessage() {}
-
-func (x *UnbanUserResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_superuser_superuser_proto_msgTypes[15]
-	if x != nil {
-		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-		if ms.LoadMessageInfo() == nil {
-			ms.StoreMessageInfo(mi)
-		}
-		return ms
-	}
-	return mi.MessageOf(x)
-}
-
-// Deprecated: Use UnbanUserResponse.ProtoReflect.Descriptor instead.
-func (*UnbanUserResponse) Descriptor() ([]byte, []int) {
-	return file_superuser_superuser_proto_rawDescGZIP(), []int{15}
-}
-
-func (x *UnbanUserResponse) GetSuccess() bool {
-	if x != nil {
-		return x.Success
-	}
-	return false
-}
-
-func (x *UnbanUserResponse) GetMessage() string {
-	if x != nil {
-		return x.Message
-	}
-	return ""
-}
-
-type DeleteUserRequest struct {
-	state         protoimpl.MessageState `protogen:"open.v1"`
-	UserId        string                 `protobuf:"bytes,1,opt,name=user_id,json=userId,proto3" json:"user_id,omitempty"`
-	HardDelete    bool                   `protobuf:"varint,2,opt,name=hard_delete,json=hardDelete,proto3" json:"hard_delete,omitempty"` // true=物理删除, false=软删除
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
-}
-
-func (x *DeleteUserRequest) Reset() {
-	*x = DeleteUserRequest{}
-	mi := &file_superuser_superuser_proto_msgTypes[16]
-	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-	ms.StoreMessageInfo(mi)
-}
-
-func (x *DeleteUserRequest) String() string {
-	return protoimpl.X.MessageStringOf(x)
-}
-
-func (*DeleteUserRequest) ProtoMessage() {}
-
-func (x *DeleteUserRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_superuser_superuser_proto_msgTypes[16]
-	if x != nil {
-		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-		if ms.LoadMessageInfo() == nil {
-			ms.StoreMessageInfo(mi)
-		}
-		return ms
-	}
-	return mi.MessageOf(x)
-}
-
-// Deprecated: Use DeleteUserRequest.ProtoReflect.Descriptor instead.
-func (*DeleteUserRequest) Descriptor() ([]byte, []int) {
-	return file_superuser_superuser_proto_rawDescGZIP(), []int{16}
-}
-
-func (x *DeleteUserRequest) GetUserId() string {
-	if x != nil {
-		return x.UserId
-	}
-	return ""
-}
-
-func (x *DeleteUserRequest) GetHardDelete() bool {
-	if x != nil {
-		return x.HardDelete
-	}
-	return false
-}
-
-type DeleteUserResponse struct {
-	state         protoimpl.MessageState `protogen:"open.v1"`
-	Success       bool                   `protobuf:"varint,1,opt,name=success,proto3" json:"success,omitempty"`
-	Message       string                 `protobuf:"bytes,2,opt,name=message,proto3" json:"message,omitempty"`
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
-}
-
-func (x *DeleteUserResponse) Reset() {
-	*x = DeleteUserResponse{}
-	mi := &file_superuser_superuser_proto_msgTypes[17]
-	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-	ms.StoreMessageInfo(mi)
-}
-
-func (x *DeleteUserResponse) String() string {
-	return protoimpl.X.MessageStringOf(x)
-}
-
-func (*DeleteUserResponse) ProtoMessage() {}
-
-func (x *DeleteUserResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_superuser_superuser_proto_msgTypes[17]
-	if x != nil {
-		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-		if ms.LoadMessageInfo() == nil {
-			ms.StoreMessageInfo(mi)
-		}
-		return ms
-	}
-	return mi.MessageOf(x)
-}
-
-// Deprecated: Use DeleteUserResponse.ProtoReflect.Descriptor instead.
-func (*DeleteUserResponse) Descriptor() ([]byte, []int) {
-	return file_superuser_superuser_proto_rawDescGZIP(), []int{17}
-}
-
-func (x *DeleteUserResponse) GetSuccess() bool {
-	if x != nil {
-		return x.Success
-	}
-	return false
-}
-
-func (x *DeleteUserResponse) GetMessage() string {
-	if x != nil {
-		return x.Message
-	}
-	return ""
-}
-
 type UpdateUserRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	UserId        string                 `protobuf:"bytes,1,opt,name=user_id,json=userId,proto3" json:"user_id,omitempty"`
@@ -1245,7 +933,7 @@ type UpdateUserRequest struct {
 
 func (x *UpdateUserRequest) Reset() {
 	*x = UpdateUserRequest{}
-	mi := &file_superuser_superuser_proto_msgTypes[18]
+	mi := &file_superuser_superuser_proto_msgTypes[12]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1257,7 +945,7 @@ func (x *UpdateUserRequest) String() string {
 func (*UpdateUserRequest) ProtoMessage() {}
 
 func (x *UpdateUserRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_superuser_superuser_proto_msgTypes[18]
+	mi := &file_superuser_superuser_proto_msgTypes[12]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1270,7 +958,7 @@ func (x *UpdateUserRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use UpdateUserRequest.ProtoReflect.Descriptor instead.
 func (*UpdateUserRequest) Descriptor() ([]byte, []int) {
-	return file_superuser_superuser_proto_rawDescGZIP(), []int{18}
+	return file_superuser_superuser_proto_rawDescGZIP(), []int{12}
 }
 
 func (x *UpdateUserRequest) GetUserId() string {
@@ -1322,14 +1010,326 @@ func (x *UpdateUserRequest) GetIsVerified() bool {
 	return false
 }
 
+type BanUserRequest struct {
+	state           protoimpl.MessageState `protogen:"open.v1"`
+	UserId          string                 `protobuf:"bytes,1,opt,name=user_id,json=userId,proto3" json:"user_id,omitempty"`
+	Reason          string                 `protobuf:"bytes,2,opt,name=reason,proto3" json:"reason,omitempty"`
+	DurationSeconds int64                  `protobuf:"varint,3,opt,name=duration_seconds,json=durationSeconds,proto3" json:"duration_seconds,omitempty"` // 0 表示永久封禁
+	unknownFields   protoimpl.UnknownFields
+	sizeCache       protoimpl.SizeCache
+}
+
+func (x *BanUserRequest) Reset() {
+	*x = BanUserRequest{}
+	mi := &file_superuser_superuser_proto_msgTypes[13]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *BanUserRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*BanUserRequest) ProtoMessage() {}
+
+func (x *BanUserRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_superuser_superuser_proto_msgTypes[13]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use BanUserRequest.ProtoReflect.Descriptor instead.
+func (*BanUserRequest) Descriptor() ([]byte, []int) {
+	return file_superuser_superuser_proto_rawDescGZIP(), []int{13}
+}
+
+func (x *BanUserRequest) GetUserId() string {
+	if x != nil {
+		return x.UserId
+	}
+	return ""
+}
+
+func (x *BanUserRequest) GetReason() string {
+	if x != nil {
+		return x.Reason
+	}
+	return ""
+}
+
+func (x *BanUserRequest) GetDurationSeconds() int64 {
+	if x != nil {
+		return x.DurationSeconds
+	}
+	return 0
+}
+
+type BanUserResponse struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Success       bool                   `protobuf:"varint,1,opt,name=success,proto3" json:"success,omitempty"`
+	Message       string                 `protobuf:"bytes,2,opt,name=message,proto3" json:"message,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *BanUserResponse) Reset() {
+	*x = BanUserResponse{}
+	mi := &file_superuser_superuser_proto_msgTypes[14]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *BanUserResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*BanUserResponse) ProtoMessage() {}
+
+func (x *BanUserResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_superuser_superuser_proto_msgTypes[14]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use BanUserResponse.ProtoReflect.Descriptor instead.
+func (*BanUserResponse) Descriptor() ([]byte, []int) {
+	return file_superuser_superuser_proto_rawDescGZIP(), []int{14}
+}
+
+func (x *BanUserResponse) GetSuccess() bool {
+	if x != nil {
+		return x.Success
+	}
+	return false
+}
+
+func (x *BanUserResponse) GetMessage() string {
+	if x != nil {
+		return x.Message
+	}
+	return ""
+}
+
+type UnbanUserRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	UserId        string                 `protobuf:"bytes,1,opt,name=user_id,json=userId,proto3" json:"user_id,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *UnbanUserRequest) Reset() {
+	*x = UnbanUserRequest{}
+	mi := &file_superuser_superuser_proto_msgTypes[15]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *UnbanUserRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*UnbanUserRequest) ProtoMessage() {}
+
+func (x *UnbanUserRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_superuser_superuser_proto_msgTypes[15]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use UnbanUserRequest.ProtoReflect.Descriptor instead.
+func (*UnbanUserRequest) Descriptor() ([]byte, []int) {
+	return file_superuser_superuser_proto_rawDescGZIP(), []int{15}
+}
+
+func (x *UnbanUserRequest) GetUserId() string {
+	if x != nil {
+		return x.UserId
+	}
+	return ""
+}
+
+type UnbanUserResponse struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Success       bool                   `protobuf:"varint,1,opt,name=success,proto3" json:"success,omitempty"`
+	Message       string                 `protobuf:"bytes,2,opt,name=message,proto3" json:"message,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *UnbanUserResponse) Reset() {
+	*x = UnbanUserResponse{}
+	mi := &file_superuser_superuser_proto_msgTypes[16]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *UnbanUserResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*UnbanUserResponse) ProtoMessage() {}
+
+func (x *UnbanUserResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_superuser_superuser_proto_msgTypes[16]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use UnbanUserResponse.ProtoReflect.Descriptor instead.
+func (*UnbanUserResponse) Descriptor() ([]byte, []int) {
+	return file_superuser_superuser_proto_rawDescGZIP(), []int{16}
+}
+
+func (x *UnbanUserResponse) GetSuccess() bool {
+	if x != nil {
+		return x.Success
+	}
+	return false
+}
+
+func (x *UnbanUserResponse) GetMessage() string {
+	if x != nil {
+		return x.Message
+	}
+	return ""
+}
+
+type DeleteUserRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	UserId        string                 `protobuf:"bytes,1,opt,name=user_id,json=userId,proto3" json:"user_id,omitempty"`
+	HardDelete    bool                   `protobuf:"varint,2,opt,name=hard_delete,json=hardDelete,proto3" json:"hard_delete,omitempty"` // true=物理删除, false=软删除
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *DeleteUserRequest) Reset() {
+	*x = DeleteUserRequest{}
+	mi := &file_superuser_superuser_proto_msgTypes[17]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *DeleteUserRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*DeleteUserRequest) ProtoMessage() {}
+
+func (x *DeleteUserRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_superuser_superuser_proto_msgTypes[17]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use DeleteUserRequest.ProtoReflect.Descriptor instead.
+func (*DeleteUserRequest) Descriptor() ([]byte, []int) {
+	return file_superuser_superuser_proto_rawDescGZIP(), []int{17}
+}
+
+func (x *DeleteUserRequest) GetUserId() string {
+	if x != nil {
+		return x.UserId
+	}
+	return ""
+}
+
+func (x *DeleteUserRequest) GetHardDelete() bool {
+	if x != nil {
+		return x.HardDelete
+	}
+	return false
+}
+
+type DeleteUserResponse struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Success       bool                   `protobuf:"varint,1,opt,name=success,proto3" json:"success,omitempty"`
+	Message       string                 `protobuf:"bytes,2,opt,name=message,proto3" json:"message,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *DeleteUserResponse) Reset() {
+	*x = DeleteUserResponse{}
+	mi := &file_superuser_superuser_proto_msgTypes[18]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *DeleteUserResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*DeleteUserResponse) ProtoMessage() {}
+
+func (x *DeleteUserResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_superuser_superuser_proto_msgTypes[18]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use DeleteUserResponse.ProtoReflect.Descriptor instead.
+func (*DeleteUserResponse) Descriptor() ([]byte, []int) {
+	return file_superuser_superuser_proto_rawDescGZIP(), []int{18}
+}
+
+func (x *DeleteUserResponse) GetSuccess() bool {
+	if x != nil {
+		return x.Success
+	}
+	return false
+}
+
+func (x *DeleteUserResponse) GetMessage() string {
+	if x != nil {
+		return x.Message
+	}
+	return ""
+}
+
 type ListContentsRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Page          int32                  `protobuf:"varint,1,opt,name=page,proto3" json:"page,omitempty"`
 	PageSize      int32                  `protobuf:"varint,2,opt,name=page_size,json=pageSize,proto3" json:"page_size,omitempty"`
-	AuthorId      string                 `protobuf:"bytes,3,opt,name=author_id,json=authorId,proto3" json:"author_id,omitempty"` // 按作者筛选
-	Type          int32                  `protobuf:"varint,4,opt,name=type,proto3" json:"type,omitempty"`                        // 按类型筛选
-	Status        int32                  `protobuf:"varint,5,opt,name=status,proto3" json:"status,omitempty"`                    // 按状态筛选
-	Search        string                 `protobuf:"bytes,6,opt,name=search,proto3" json:"search,omitempty"`                     // 搜索内容
+	AuthorId      string                 `protobuf:"bytes,3,opt,name=author_id,json=authorId,proto3" json:"author_id,omitempty"`
+	Type          int32                  `protobuf:"varint,4,opt,name=type,proto3" json:"type,omitempty"`
+	Status        int32                  `protobuf:"varint,5,opt,name=status,proto3" json:"status,omitempty"`
+	Search        string                 `protobuf:"bytes,6,opt,name=search,proto3" json:"search,omitempty"`
 	SortBy        string                 `protobuf:"bytes,7,opt,name=sort_by,json=sortBy,proto3" json:"sort_by,omitempty"`
 	SortOrder     string                 `protobuf:"bytes,8,opt,name=sort_order,json=sortOrder,proto3" json:"sort_order,omitempty"`
 	unknownFields protoimpl.UnknownFields
@@ -2810,8 +2810,8 @@ type GetAuditLogsRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Page          int32                  `protobuf:"varint,1,opt,name=page,proto3" json:"page,omitempty"`
 	PageSize      int32                  `protobuf:"varint,2,opt,name=page_size,json=pageSize,proto3" json:"page_size,omitempty"`
-	SuperuserId   string                 `protobuf:"bytes,3,opt,name=superuser_id,json=superuserId,proto3" json:"superuser_id,omitempty"` // 按操作者筛选
-	Action        string                 `protobuf:"bytes,4,opt,name=action,proto3" json:"action,omitempty"`                              // 按操作类型筛选
+	SuperuserId   string                 `protobuf:"bytes,3,opt,name=superuser_id,json=superuserId,proto3" json:"superuser_id,omitempty"`
+	Action        string                 `protobuf:"bytes,4,opt,name=action,proto3" json:"action,omitempty"`
 	StartTime     *common.Timestamp      `protobuf:"bytes,5,opt,name=start_time,json=startTime,proto3" json:"start_time,omitempty"`
 	EndTime       *common.Timestamp      `protobuf:"bytes,6,opt,name=end_time,json=endTime,proto3" json:"end_time,omitempty"`
 	unknownFields protoimpl.UnknownFields
@@ -2963,10 +2963,10 @@ type AuditLog struct {
 	Id                string                 `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
 	SuperuserId       string                 `protobuf:"bytes,2,opt,name=superuser_id,json=superuserId,proto3" json:"superuser_id,omitempty"`
 	SuperuserUsername string                 `protobuf:"bytes,3,opt,name=superuser_username,json=superuserUsername,proto3" json:"superuser_username,omitempty"`
-	Action            string                 `protobuf:"bytes,4,opt,name=action,proto3" json:"action,omitempty"`                           // LOGIN, LOGOUT, BAN_USER, DELETE_USER, DELETE_CONTENT, EXECUTE_QUERY 等
-	TargetType        string                 `protobuf:"bytes,5,opt,name=target_type,json=targetType,proto3" json:"target_type,omitempty"` // USER, CONTENT, SYSTEM 等
+	Action            string                 `protobuf:"bytes,4,opt,name=action,proto3" json:"action,omitempty"`                           // LOGIN, LOGOUT, BAN_USER, DELETE_USER, etc.
+	TargetType        string                 `protobuf:"bytes,5,opt,name=target_type,json=targetType,proto3" json:"target_type,omitempty"` // USER, CONTENT, SYSTEM
 	TargetId          string                 `protobuf:"bytes,6,opt,name=target_id,json=targetId,proto3" json:"target_id,omitempty"`
-	Details           string                 `protobuf:"bytes,7,opt,name=details,proto3" json:"details,omitempty"` // JSON 格式的详细信息
+	Details           string                 `protobuf:"bytes,7,opt,name=details,proto3" json:"details,omitempty"` // JSON 格式
 	IpAddress         string                 `protobuf:"bytes,8,opt,name=ip_address,json=ipAddress,proto3" json:"ip_address,omitempty"`
 	CreatedAt         *common.Timestamp      `protobuf:"bytes,9,opt,name=created_at,json=createdAt,proto3" json:"created_at,omitempty"`
 	unknownFields     protoimpl.UnknownFields
@@ -3070,24 +3070,7 @@ var File_superuser_superuser_proto protoreflect.FileDescriptor
 
 const file_superuser_superuser_proto_rawDesc = "" +
 	"\n" +
-	"\x19superuser/superuser.proto\x12\tsuperuser\x1a\x13common/common.proto\"O\n" +
-	"\x15SuperUserLoginRequest\x12\x1a\n" +
-	"\busername\x18\x01 \x01(\tR\busername\x12\x1a\n" +
-	"\bpassword\x18\x02 \x01(\tR\bpassword\"\x94\x01\n" +
-	"\x16SuperUserLoginResponse\x122\n" +
-	"\tsuperuser\x18\x01 \x01(\v2\x14.superuser.SuperUserR\tsuperuser\x12!\n" +
-	"\faccess_token\x18\x02 \x01(\tR\vaccessToken\x12#\n" +
-	"\rrefresh_token\x18\x03 \x01(\tR\frefreshToken\";\n" +
-	"\x16SuperUserLogoutRequest\x12!\n" +
-	"\faccess_token\x18\x01 \x01(\tR\vaccessToken\">\n" +
-	"\x17SuperUserRefreshRequest\x12#\n" +
-	"\rrefresh_token\x18\x01 \x01(\tR\frefreshToken\"9\n" +
-	"\x14ValidateTokenRequest\x12!\n" +
-	"\faccess_token\x18\x01 \x01(\tR\vaccessToken\"l\n" +
-	"\x15ValidateTokenResponse\x12\x14\n" +
-	"\x05valid\x18\x01 \x01(\bR\x05valid\x12!\n" +
-	"\fsuperuser_id\x18\x02 \x01(\tR\vsuperuserId\x12\x1a\n" +
-	"\busername\x18\x03 \x01(\tR\busername\"\xd9\x01\n" +
+	"\x19superuser/superuser.proto\x12\tsuperuser\x1a\x13common/common.proto\"\xd9\x01\n" +
 	"\tSuperUser\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\tR\x02id\x12\x1a\n" +
 	"\busername\x18\x02 \x01(\tR\busername\x12\x14\n" +
@@ -3139,7 +3122,24 @@ const file_superuser_superuser_proto_rawDesc = "" +
 	"view_count\x18\r \x01(\x05R\tviewCount\x120\n" +
 	"\n" +
 	"created_at\x18\x0e \x01(\v2\x11.common.TimestampR\tcreatedAt\x124\n" +
-	"\fpublished_at\x18\x0f \x01(\v2\x11.common.TimestampR\vpublishedAt\"\xab\x01\n" +
+	"\fpublished_at\x18\x0f \x01(\v2\x11.common.TimestampR\vpublishedAt\"O\n" +
+	"\x15SuperUserLoginRequest\x12\x1a\n" +
+	"\busername\x18\x01 \x01(\tR\busername\x12\x1a\n" +
+	"\bpassword\x18\x02 \x01(\tR\bpassword\"\x94\x01\n" +
+	"\x16SuperUserLoginResponse\x122\n" +
+	"\tsuperuser\x18\x01 \x01(\v2\x14.superuser.SuperUserR\tsuperuser\x12!\n" +
+	"\faccess_token\x18\x02 \x01(\tR\vaccessToken\x12#\n" +
+	"\rrefresh_token\x18\x03 \x01(\tR\frefreshToken\";\n" +
+	"\x16SuperUserLogoutRequest\x12!\n" +
+	"\faccess_token\x18\x01 \x01(\tR\vaccessToken\">\n" +
+	"\x17SuperUserRefreshRequest\x12#\n" +
+	"\rrefresh_token\x18\x01 \x01(\tR\frefreshToken\"9\n" +
+	"\x14ValidateTokenRequest\x12!\n" +
+	"\faccess_token\x18\x01 \x01(\tR\vaccessToken\"l\n" +
+	"\x15ValidateTokenResponse\x12\x14\n" +
+	"\x05valid\x18\x01 \x01(\bR\x05valid\x12!\n" +
+	"\fsuperuser_id\x18\x02 \x01(\tR\vsuperuserId\x12\x1a\n" +
+	"\busername\x18\x03 \x01(\tR\busername\"\xab\x01\n" +
 	"\x10ListUsersRequest\x12\x12\n" +
 	"\x04page\x18\x01 \x01(\x05R\x04page\x12\x1b\n" +
 	"\tpage_size\x18\x02 \x01(\x05R\bpageSize\x12\x16\n" +
@@ -3154,7 +3154,23 @@ const file_superuser_superuser_proto_rawDesc = "" +
 	"\x04page\x18\x03 \x01(\x05R\x04page\x12\x1b\n" +
 	"\tpage_size\x18\x04 \x01(\x05R\bpageSize\")\n" +
 	"\x0eGetUserRequest\x12\x17\n" +
-	"\auser_id\x18\x01 \x01(\tR\x06userId\"l\n" +
+	"\auser_id\x18\x01 \x01(\tR\x06userId\"\xbd\x02\n" +
+	"\x11UpdateUserRequest\x12\x17\n" +
+	"\auser_id\x18\x01 \x01(\tR\x06userId\x12\x1f\n" +
+	"\busername\x18\x02 \x01(\tH\x00R\busername\x88\x01\x01\x12\x19\n" +
+	"\x05email\x18\x03 \x01(\tH\x01R\x05email\x88\x01\x01\x12&\n" +
+	"\fdisplay_name\x18\x04 \x01(\tH\x02R\vdisplayName\x88\x01\x01\x12\x15\n" +
+	"\x03bio\x18\x05 \x01(\tH\x03R\x03bio\x88\x01\x01\x12 \n" +
+	"\tis_active\x18\x06 \x01(\bH\x04R\bisActive\x88\x01\x01\x12$\n" +
+	"\vis_verified\x18\a \x01(\bH\x05R\n" +
+	"isVerified\x88\x01\x01B\v\n" +
+	"\t_usernameB\b\n" +
+	"\x06_emailB\x0f\n" +
+	"\r_display_nameB\x06\n" +
+	"\x04_bioB\f\n" +
+	"\n" +
+	"_is_activeB\x0e\n" +
+	"\f_is_verified\"l\n" +
 	"\x0eBanUserRequest\x12\x17\n" +
 	"\auser_id\x18\x01 \x01(\tR\x06userId\x12\x16\n" +
 	"\x06reason\x18\x02 \x01(\tR\x06reason\x12)\n" +
@@ -3173,23 +3189,7 @@ const file_superuser_superuser_proto_rawDesc = "" +
 	"hardDelete\"H\n" +
 	"\x12DeleteUserResponse\x12\x18\n" +
 	"\asuccess\x18\x01 \x01(\bR\asuccess\x12\x18\n" +
-	"\amessage\x18\x02 \x01(\tR\amessage\"\xbd\x02\n" +
-	"\x11UpdateUserRequest\x12\x17\n" +
-	"\auser_id\x18\x01 \x01(\tR\x06userId\x12\x1f\n" +
-	"\busername\x18\x02 \x01(\tH\x00R\busername\x88\x01\x01\x12\x19\n" +
-	"\x05email\x18\x03 \x01(\tH\x01R\x05email\x88\x01\x01\x12&\n" +
-	"\fdisplay_name\x18\x04 \x01(\tH\x02R\vdisplayName\x88\x01\x01\x12\x15\n" +
-	"\x03bio\x18\x05 \x01(\tH\x03R\x03bio\x88\x01\x01\x12 \n" +
-	"\tis_active\x18\x06 \x01(\bH\x04R\bisActive\x88\x01\x01\x12$\n" +
-	"\vis_verified\x18\a \x01(\bH\x05R\n" +
-	"isVerified\x88\x01\x01B\v\n" +
-	"\t_usernameB\b\n" +
-	"\x06_emailB\x0f\n" +
-	"\r_display_nameB\x06\n" +
-	"\x04_bioB\f\n" +
-	"\n" +
-	"_is_activeB\x0e\n" +
-	"\f_is_verified\"\xdf\x01\n" +
+	"\amessage\x18\x02 \x01(\tR\amessage\"\xdf\x01\n" +
 	"\x13ListContentsRequest\x12\x12\n" +
 	"\x04page\x18\x01 \x01(\x05R\x04page\x12\x1b\n" +
 	"\tpage_size\x18\x02 \x01(\x05R\bpageSize\x12\x1b\n" +
@@ -3334,13 +3334,13 @@ const file_superuser_superuser_proto_rawDesc = "" +
 	"\fRefreshToken\x12\".superuser.SuperUserRefreshRequest\x1a!.superuser.SuperUserLoginResponse\x12R\n" +
 	"\rValidateToken\x12\x1f.superuser.ValidateTokenRequest\x1a .superuser.ValidateTokenResponse\x12F\n" +
 	"\tListUsers\x12\x1b.superuser.ListUsersRequest\x1a\x1c.superuser.ListUsersResponse\x12;\n" +
-	"\aGetUser\x12\x19.superuser.GetUserRequest\x1a\x15.superuser.UserDetail\x12@\n" +
+	"\aGetUser\x12\x19.superuser.GetUserRequest\x1a\x15.superuser.UserDetail\x12A\n" +
+	"\n" +
+	"UpdateUser\x12\x1c.superuser.UpdateUserRequest\x1a\x15.superuser.UserDetail\x12@\n" +
 	"\aBanUser\x12\x19.superuser.BanUserRequest\x1a\x1a.superuser.BanUserResponse\x12F\n" +
 	"\tUnbanUser\x12\x1b.superuser.UnbanUserRequest\x1a\x1c.superuser.UnbanUserResponse\x12I\n" +
 	"\n" +
-	"DeleteUser\x12\x1c.superuser.DeleteUserRequest\x1a\x1d.superuser.DeleteUserResponse\x12A\n" +
-	"\n" +
-	"UpdateUser\x12\x1c.superuser.UpdateUserRequest\x1a\x15.superuser.UserDetail\x12O\n" +
+	"DeleteUser\x12\x1c.superuser.DeleteUserRequest\x1a\x1d.superuser.DeleteUserResponse\x12O\n" +
 	"\fListContents\x12\x1e.superuser.ListContentsRequest\x1a\x1f.superuser.ListContentsResponse\x12R\n" +
 	"\rDeleteContent\x12\x1f.superuser.DeleteContentRequest\x1a .superuser.DeleteContentResponse\x12d\n" +
 	"\x13BatchDeleteContents\x12%.superuser.BatchDeleteContentsRequest\x1a&.superuser.BatchDeleteContentsResponse\x12J\n" +
@@ -3368,25 +3368,25 @@ func file_superuser_superuser_proto_rawDescGZIP() []byte {
 
 var file_superuser_superuser_proto_msgTypes = make([]protoimpl.MessageInfo, 47)
 var file_superuser_superuser_proto_goTypes = []any{
-	(*SuperUserLoginRequest)(nil),       // 0: superuser.SuperUserLoginRequest
-	(*SuperUserLoginResponse)(nil),      // 1: superuser.SuperUserLoginResponse
-	(*SuperUserLogoutRequest)(nil),      // 2: superuser.SuperUserLogoutRequest
-	(*SuperUserRefreshRequest)(nil),     // 3: superuser.SuperUserRefreshRequest
-	(*ValidateTokenRequest)(nil),        // 4: superuser.ValidateTokenRequest
-	(*ValidateTokenResponse)(nil),       // 5: superuser.ValidateTokenResponse
-	(*SuperUser)(nil),                   // 6: superuser.SuperUser
-	(*UserDetail)(nil),                  // 7: superuser.UserDetail
-	(*ContentDetail)(nil),               // 8: superuser.ContentDetail
+	(*SuperUser)(nil),                   // 0: superuser.SuperUser
+	(*UserDetail)(nil),                  // 1: superuser.UserDetail
+	(*ContentDetail)(nil),               // 2: superuser.ContentDetail
+	(*SuperUserLoginRequest)(nil),       // 3: superuser.SuperUserLoginRequest
+	(*SuperUserLoginResponse)(nil),      // 4: superuser.SuperUserLoginResponse
+	(*SuperUserLogoutRequest)(nil),      // 5: superuser.SuperUserLogoutRequest
+	(*SuperUserRefreshRequest)(nil),     // 6: superuser.SuperUserRefreshRequest
+	(*ValidateTokenRequest)(nil),        // 7: superuser.ValidateTokenRequest
+	(*ValidateTokenResponse)(nil),       // 8: superuser.ValidateTokenResponse
 	(*ListUsersRequest)(nil),            // 9: superuser.ListUsersRequest
 	(*ListUsersResponse)(nil),           // 10: superuser.ListUsersResponse
 	(*GetUserRequest)(nil),              // 11: superuser.GetUserRequest
-	(*BanUserRequest)(nil),              // 12: superuser.BanUserRequest
-	(*BanUserResponse)(nil),             // 13: superuser.BanUserResponse
-	(*UnbanUserRequest)(nil),            // 14: superuser.UnbanUserRequest
-	(*UnbanUserResponse)(nil),           // 15: superuser.UnbanUserResponse
-	(*DeleteUserRequest)(nil),           // 16: superuser.DeleteUserRequest
-	(*DeleteUserResponse)(nil),          // 17: superuser.DeleteUserResponse
-	(*UpdateUserRequest)(nil),           // 18: superuser.UpdateUserRequest
+	(*UpdateUserRequest)(nil),           // 12: superuser.UpdateUserRequest
+	(*BanUserRequest)(nil),              // 13: superuser.BanUserRequest
+	(*BanUserResponse)(nil),             // 14: superuser.BanUserResponse
+	(*UnbanUserRequest)(nil),            // 15: superuser.UnbanUserRequest
+	(*UnbanUserResponse)(nil),           // 16: superuser.UnbanUserResponse
+	(*DeleteUserRequest)(nil),           // 17: superuser.DeleteUserRequest
+	(*DeleteUserResponse)(nil),          // 18: superuser.DeleteUserResponse
 	(*ListContentsRequest)(nil),         // 19: superuser.ListContentsRequest
 	(*ListContentsResponse)(nil),        // 20: superuser.ListContentsResponse
 	(*DeleteContentRequest)(nil),        // 21: superuser.DeleteContentRequest
@@ -3419,16 +3419,16 @@ var file_superuser_superuser_proto_goTypes = []any{
 	(*common.Empty)(nil),                // 48: common.Empty
 }
 var file_superuser_superuser_proto_depIdxs = []int32{
-	6,  // 0: superuser.SuperUserLoginResponse.superuser:type_name -> superuser.SuperUser
-	47, // 1: superuser.SuperUser.created_at:type_name -> common.Timestamp
-	47, // 2: superuser.SuperUser.last_login_at:type_name -> common.Timestamp
-	47, // 3: superuser.UserDetail.ban_expires_at:type_name -> common.Timestamp
-	47, // 4: superuser.UserDetail.created_at:type_name -> common.Timestamp
-	47, // 5: superuser.UserDetail.updated_at:type_name -> common.Timestamp
-	47, // 6: superuser.ContentDetail.created_at:type_name -> common.Timestamp
-	47, // 7: superuser.ContentDetail.published_at:type_name -> common.Timestamp
-	7,  // 8: superuser.ListUsersResponse.users:type_name -> superuser.UserDetail
-	8,  // 9: superuser.ListContentsResponse.contents:type_name -> superuser.ContentDetail
+	47, // 0: superuser.SuperUser.created_at:type_name -> common.Timestamp
+	47, // 1: superuser.SuperUser.last_login_at:type_name -> common.Timestamp
+	47, // 2: superuser.UserDetail.ban_expires_at:type_name -> common.Timestamp
+	47, // 3: superuser.UserDetail.created_at:type_name -> common.Timestamp
+	47, // 4: superuser.UserDetail.updated_at:type_name -> common.Timestamp
+	47, // 5: superuser.ContentDetail.created_at:type_name -> common.Timestamp
+	47, // 6: superuser.ContentDetail.published_at:type_name -> common.Timestamp
+	0,  // 7: superuser.SuperUserLoginResponse.superuser:type_name -> superuser.SuperUser
+	1,  // 8: superuser.ListUsersResponse.users:type_name -> superuser.UserDetail
+	2,  // 9: superuser.ListContentsResponse.contents:type_name -> superuser.ContentDetail
 	47, // 10: superuser.SystemStats.stats_at:type_name -> common.Timestamp
 	29, // 11: superuser.DatabaseStatus.tables:type_name -> superuser.TableInfo
 	34, // 12: superuser.RabbitMQStatus.queues:type_name -> superuser.QueueInfo
@@ -3439,16 +3439,16 @@ var file_superuser_superuser_proto_depIdxs = []int32{
 	47, // 17: superuser.GetAuditLogsRequest.end_time:type_name -> common.Timestamp
 	46, // 18: superuser.AuditLogsResponse.logs:type_name -> superuser.AuditLog
 	47, // 19: superuser.AuditLog.created_at:type_name -> common.Timestamp
-	0,  // 20: superuser.SuperUserService.Login:input_type -> superuser.SuperUserLoginRequest
-	2,  // 21: superuser.SuperUserService.Logout:input_type -> superuser.SuperUserLogoutRequest
-	3,  // 22: superuser.SuperUserService.RefreshToken:input_type -> superuser.SuperUserRefreshRequest
-	4,  // 23: superuser.SuperUserService.ValidateToken:input_type -> superuser.ValidateTokenRequest
+	3,  // 20: superuser.SuperUserService.Login:input_type -> superuser.SuperUserLoginRequest
+	5,  // 21: superuser.SuperUserService.Logout:input_type -> superuser.SuperUserLogoutRequest
+	6,  // 22: superuser.SuperUserService.RefreshToken:input_type -> superuser.SuperUserRefreshRequest
+	7,  // 23: superuser.SuperUserService.ValidateToken:input_type -> superuser.ValidateTokenRequest
 	9,  // 24: superuser.SuperUserService.ListUsers:input_type -> superuser.ListUsersRequest
 	11, // 25: superuser.SuperUserService.GetUser:input_type -> superuser.GetUserRequest
-	12, // 26: superuser.SuperUserService.BanUser:input_type -> superuser.BanUserRequest
-	14, // 27: superuser.SuperUserService.UnbanUser:input_type -> superuser.UnbanUserRequest
-	16, // 28: superuser.SuperUserService.DeleteUser:input_type -> superuser.DeleteUserRequest
-	18, // 29: superuser.SuperUserService.UpdateUser:input_type -> superuser.UpdateUserRequest
+	12, // 26: superuser.SuperUserService.UpdateUser:input_type -> superuser.UpdateUserRequest
+	13, // 27: superuser.SuperUserService.BanUser:input_type -> superuser.BanUserRequest
+	15, // 28: superuser.SuperUserService.UnbanUser:input_type -> superuser.UnbanUserRequest
+	17, // 29: superuser.SuperUserService.DeleteUser:input_type -> superuser.DeleteUserRequest
 	19, // 30: superuser.SuperUserService.ListContents:input_type -> superuser.ListContentsRequest
 	21, // 31: superuser.SuperUserService.DeleteContent:input_type -> superuser.DeleteContentRequest
 	23, // 32: superuser.SuperUserService.BatchDeleteContents:input_type -> superuser.BatchDeleteContentsRequest
@@ -3460,16 +3460,16 @@ var file_superuser_superuser_proto_depIdxs = []int32{
 	38, // 38: superuser.SuperUserService.GetTableSchema:input_type -> superuser.GetTableSchemaRequest
 	42, // 39: superuser.SuperUserService.ListTables:input_type -> superuser.ListTablesRequest
 	44, // 40: superuser.SuperUserService.GetAuditLogs:input_type -> superuser.GetAuditLogsRequest
-	1,  // 41: superuser.SuperUserService.Login:output_type -> superuser.SuperUserLoginResponse
+	4,  // 41: superuser.SuperUserService.Login:output_type -> superuser.SuperUserLoginResponse
 	48, // 42: superuser.SuperUserService.Logout:output_type -> common.Empty
-	1,  // 43: superuser.SuperUserService.RefreshToken:output_type -> superuser.SuperUserLoginResponse
-	5,  // 44: superuser.SuperUserService.ValidateToken:output_type -> superuser.ValidateTokenResponse
+	4,  // 43: superuser.SuperUserService.RefreshToken:output_type -> superuser.SuperUserLoginResponse
+	8,  // 44: superuser.SuperUserService.ValidateToken:output_type -> superuser.ValidateTokenResponse
 	10, // 45: superuser.SuperUserService.ListUsers:output_type -> superuser.ListUsersResponse
-	7,  // 46: superuser.SuperUserService.GetUser:output_type -> superuser.UserDetail
-	13, // 47: superuser.SuperUserService.BanUser:output_type -> superuser.BanUserResponse
-	15, // 48: superuser.SuperUserService.UnbanUser:output_type -> superuser.UnbanUserResponse
-	17, // 49: superuser.SuperUserService.DeleteUser:output_type -> superuser.DeleteUserResponse
-	7,  // 50: superuser.SuperUserService.UpdateUser:output_type -> superuser.UserDetail
+	1,  // 46: superuser.SuperUserService.GetUser:output_type -> superuser.UserDetail
+	1,  // 47: superuser.SuperUserService.UpdateUser:output_type -> superuser.UserDetail
+	14, // 48: superuser.SuperUserService.BanUser:output_type -> superuser.BanUserResponse
+	16, // 49: superuser.SuperUserService.UnbanUser:output_type -> superuser.UnbanUserResponse
+	18, // 50: superuser.SuperUserService.DeleteUser:output_type -> superuser.DeleteUserResponse
 	20, // 51: superuser.SuperUserService.ListContents:output_type -> superuser.ListContentsResponse
 	22, // 52: superuser.SuperUserService.DeleteContent:output_type -> superuser.DeleteContentResponse
 	24, // 53: superuser.SuperUserService.BatchDeleteContents:output_type -> superuser.BatchDeleteContentsResponse
@@ -3493,7 +3493,7 @@ func file_superuser_superuser_proto_init() {
 	if File_superuser_superuser_proto != nil {
 		return
 	}
-	file_superuser_superuser_proto_msgTypes[18].OneofWrappers = []any{}
+	file_superuser_superuser_proto_msgTypes[12].OneofWrappers = []any{}
 	type x struct{}
 	out := protoimpl.TypeBuilder{
 		File: protoimpl.DescBuilder{

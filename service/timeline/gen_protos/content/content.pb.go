@@ -28,8 +28,8 @@ type ContentType int32
 const (
 	ContentType_CONTENT_TYPE_UNSPECIFIED ContentType = 0
 	ContentType_STORY                    ContentType = 1 // 小瞬间，24h 自动过期
-	ContentType_SHORT                    ContentType = 2 // 短文本，类似 Twitter（280 字符限制）
-	ContentType_ARTICLE                  ContentType = 3 // 长文章/专栏，支持富文本
+	ContentType_SHORT                    ContentType = 2 // 短文本，类似 Twitter
+	ContentType_ARTICLE                  ContentType = 3 // 长文章，支持富文本
 )
 
 // Enum value maps for ContentType.
@@ -80,7 +80,7 @@ type ContentStatus int32
 
 const (
 	ContentStatus_CONTENT_STATUS_UNSPECIFIED ContentStatus = 0
-	ContentStatus_DRAFT                      ContentStatus = 1 // 草稿（仅 ARTICLE 支持）
+	ContentStatus_DRAFT                      ContentStatus = 1 // 草稿（仅 ARTICLE）
 	ContentStatus_PUBLISHED                  ContentStatus = 2 // 已发布
 	ContentStatus_ARCHIVED                   ContentStatus = 3 // 已归档
 	ContentStatus_DELETED                    ContentStatus = 4 // 已删除
@@ -243,13 +243,12 @@ func (CounterType) EnumDescriptor() ([]byte, []int) {
 	return file_content_content_proto_rawDescGZIP(), []int{3}
 }
 
-// Media 媒体附件
 type Media struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Id            string                 `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
 	Type          MediaType              `protobuf:"varint,2,opt,name=type,proto3,enum=content.MediaType" json:"type,omitempty"`
 	Url           string                 `protobuf:"bytes,3,opt,name=url,proto3" json:"url,omitempty"`
-	ThumbnailUrl  string                 `protobuf:"bytes,4,opt,name=thumbnail_url,json=thumbnailUrl,proto3" json:"thumbnail_url,omitempty"` // 缩略图 URL
+	ThumbnailUrl  string                 `protobuf:"bytes,4,opt,name=thumbnail_url,json=thumbnailUrl,proto3" json:"thumbnail_url,omitempty"`
 	Width         int32                  `protobuf:"varint,5,opt,name=width,proto3" json:"width,omitempty"`
 	Height        int32                  `protobuf:"varint,6,opt,name=height,proto3" json:"height,omitempty"`
 	Duration      int32                  `protobuf:"varint,7,opt,name=duration,proto3" json:"duration,omitempty"`             // 视频/音频时长（秒）
@@ -344,7 +343,6 @@ func (x *Media) GetAltText() string {
 	return ""
 }
 
-// Content 内容实体
 type Content struct {
 	state    protoimpl.MessageState `protogen:"open.v1"`
 	Id       string                 `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
@@ -352,14 +350,14 @@ type Content struct {
 	Type     ContentType            `protobuf:"varint,3,opt,name=type,proto3,enum=content.ContentType" json:"type,omitempty"`
 	Status   ContentStatus          `protobuf:"varint,4,opt,name=status,proto3,enum=content.ContentStatus" json:"status,omitempty"`
 	// 内容字段
-	Title   string   `protobuf:"bytes,5,opt,name=title,proto3" json:"title,omitempty"`     // 标题（ARTICLE 必填，其他可选）
-	Text    string   `protobuf:"bytes,6,opt,name=text,proto3" json:"text,omitempty"`       // 正文内容
-	Summary string   `protobuf:"bytes,7,opt,name=summary,proto3" json:"summary,omitempty"` // 摘要（ARTICLE 用于预览）
-	Media   []*Media `protobuf:"bytes,8,rep,name=media,proto3" json:"media,omitempty"`     // 媒体附件
-	Tags    []string `protobuf:"bytes,9,rep,name=tags,proto3" json:"tags,omitempty"`       // 标签
+	Title   string   `protobuf:"bytes,5,opt,name=title,proto3" json:"title,omitempty"`
+	Text    string   `protobuf:"bytes,6,opt,name=text,proto3" json:"text,omitempty"`
+	Summary string   `protobuf:"bytes,7,opt,name=summary,proto3" json:"summary,omitempty"`
+	Media   []*Media `protobuf:"bytes,8,rep,name=media,proto3" json:"media,omitempty"`
+	Tags    []string `protobuf:"bytes,9,rep,name=tags,proto3" json:"tags,omitempty"`
 	// 引用关系
-	ReplyToId string `protobuf:"bytes,10,opt,name=reply_to_id,json=replyToId,proto3" json:"reply_to_id,omitempty"` // 回复的内容 ID（用于评论/回复）
-	QuoteId   string `protobuf:"bytes,11,opt,name=quote_id,json=quoteId,proto3" json:"quote_id,omitempty"`         // 引用的内容 ID（用于转发引用）
+	ReplyToId string `protobuf:"bytes,10,opt,name=reply_to_id,json=replyToId,proto3" json:"reply_to_id,omitempty"`
+	QuoteId   string `protobuf:"bytes,11,opt,name=quote_id,json=quoteId,proto3" json:"quote_id,omitempty"`
 	// 统计数据
 	LikeCount     int32 `protobuf:"varint,20,opt,name=like_count,json=likeCount,proto3" json:"like_count,omitempty"`
 	CommentCount  int32 `protobuf:"varint,21,opt,name=comment_count,json=commentCount,proto3" json:"comment_count,omitempty"`
@@ -369,12 +367,12 @@ type Content struct {
 	// 时间戳
 	CreatedAt   *common.Timestamp `protobuf:"bytes,30,opt,name=created_at,json=createdAt,proto3" json:"created_at,omitempty"`
 	UpdatedAt   *common.Timestamp `protobuf:"bytes,31,opt,name=updated_at,json=updatedAt,proto3" json:"updated_at,omitempty"`
-	PublishedAt *common.Timestamp `protobuf:"bytes,32,opt,name=published_at,json=publishedAt,proto3" json:"published_at,omitempty"` // 发布时间（草稿发布后设置）
-	ExpiresAt   *common.Timestamp `protobuf:"bytes,33,opt,name=expires_at,json=expiresAt,proto3" json:"expires_at,omitempty"`       // 过期时间（STORY 用）
+	PublishedAt *common.Timestamp `protobuf:"bytes,32,opt,name=published_at,json=publishedAt,proto3" json:"published_at,omitempty"`
+	ExpiresAt   *common.Timestamp `protobuf:"bytes,33,opt,name=expires_at,json=expiresAt,proto3" json:"expires_at,omitempty"` // STORY 用
 	// 元数据
-	IsPinned         bool   `protobuf:"varint,40,opt,name=is_pinned,json=isPinned,proto3" json:"is_pinned,omitempty"`                         // 是否置顶
-	CommentsDisabled bool   `protobuf:"varint,41,opt,name=comments_disabled,json=commentsDisabled,proto3" json:"comments_disabled,omitempty"` // 是否禁止评论
-	Language         string `protobuf:"bytes,42,opt,name=language,proto3" json:"language,omitempty"`                                          // 内容语言
+	IsPinned         bool   `protobuf:"varint,40,opt,name=is_pinned,json=isPinned,proto3" json:"is_pinned,omitempty"`
+	CommentsDisabled bool   `protobuf:"varint,41,opt,name=comments_disabled,json=commentsDisabled,proto3" json:"comments_disabled,omitempty"`
+	Language         string `protobuf:"bytes,42,opt,name=language,proto3" json:"language,omitempty"`
 	unknownFields    protoimpl.UnknownFields
 	sizeCache        protoimpl.SizeCache
 }
@@ -570,7 +568,6 @@ func (x *Content) GetLanguage() string {
 	return ""
 }
 
-// CreateContentRequest 创建内容请求
 type CreateContentRequest struct {
 	state            protoimpl.MessageState `protogen:"open.v1"`
 	AuthorId         string                 `protobuf:"bytes,1,opt,name=author_id,json=authorId,proto3" json:"author_id,omitempty"`
@@ -580,11 +577,11 @@ type CreateContentRequest struct {
 	Summary          string                 `protobuf:"bytes,5,opt,name=summary,proto3" json:"summary,omitempty"`
 	Media            []*Media               `protobuf:"bytes,6,rep,name=media,proto3" json:"media,omitempty"`
 	Tags             []string               `protobuf:"bytes,7,rep,name=tags,proto3" json:"tags,omitempty"`
-	ReplyToId        string                 `protobuf:"bytes,8,opt,name=reply_to_id,json=replyToId,proto3" json:"reply_to_id,omitempty"` // 回复某内容
-	QuoteId          string                 `protobuf:"bytes,9,opt,name=quote_id,json=quoteId,proto3" json:"quote_id,omitempty"`         // 引用某内容
-	IsDraft          bool                   `protobuf:"varint,10,opt,name=is_draft,json=isDraft,proto3" json:"is_draft,omitempty"`       // 是否保存为草稿（仅 ARTICLE）
+	ReplyToId        string                 `protobuf:"bytes,8,opt,name=reply_to_id,json=replyToId,proto3" json:"reply_to_id,omitempty"`
+	QuoteId          string                 `protobuf:"bytes,9,opt,name=quote_id,json=quoteId,proto3" json:"quote_id,omitempty"`
+	IsDraft          bool                   `protobuf:"varint,10,opt,name=is_draft,json=isDraft,proto3" json:"is_draft,omitempty"`
 	CommentsDisabled bool                   `protobuf:"varint,11,opt,name=comments_disabled,json=commentsDisabled,proto3" json:"comments_disabled,omitempty"`
-	MentionedUserIds []string               `protobuf:"bytes,12,rep,name=mentioned_user_ids,json=mentionedUserIds,proto3" json:"mentioned_user_ids,omitempty"` // @ 提及的用户 ID 列表
+	MentionedUserIds []string               `protobuf:"bytes,12,rep,name=mentioned_user_ids,json=mentionedUserIds,proto3" json:"mentioned_user_ids,omitempty"`
 	unknownFields    protoimpl.UnknownFields
 	sizeCache        protoimpl.SizeCache
 }
@@ -703,7 +700,6 @@ func (x *CreateContentRequest) GetMentionedUserIds() []string {
 	return nil
 }
 
-// CreateContentResponse 创建内容响应
 type CreateContentResponse struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Content       *Content               `protobuf:"bytes,1,opt,name=content,proto3" json:"content,omitempty"`
@@ -748,11 +744,10 @@ func (x *CreateContentResponse) GetContent() *Content {
 	return nil
 }
 
-// GetContentRequest 获取内容请求
 type GetContentRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	ContentId     string                 `protobuf:"bytes,1,opt,name=content_id,json=contentId,proto3" json:"content_id,omitempty"`
-	ViewerId      string                 `protobuf:"bytes,2,opt,name=viewer_id,json=viewerId,proto3" json:"viewer_id,omitempty"` // 查看者 ID，用于统计和权限检查
+	ViewerId      string                 `protobuf:"bytes,2,opt,name=viewer_id,json=viewerId,proto3" json:"viewer_id,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -801,13 +796,12 @@ func (x *GetContentRequest) GetViewerId() string {
 	return ""
 }
 
-// GetContentResponse 获取内容响应
 type GetContentResponse struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Content       *Content               `protobuf:"bytes,1,opt,name=content,proto3" json:"content,omitempty"`
-	IsLiked       bool                   `protobuf:"varint,2,opt,name=is_liked,json=isLiked,proto3" json:"is_liked,omitempty"`                // 当前用户是否已点赞
-	IsBookmarked  bool                   `protobuf:"varint,3,opt,name=is_bookmarked,json=isBookmarked,proto3" json:"is_bookmarked,omitempty"` // 当前用户是否已收藏
-	IsReposted    bool                   `protobuf:"varint,4,opt,name=is_reposted,json=isReposted,proto3" json:"is_reposted,omitempty"`       // 当前用户是否已转发
+	IsLiked       bool                   `protobuf:"varint,2,opt,name=is_liked,json=isLiked,proto3" json:"is_liked,omitempty"`
+	IsBookmarked  bool                   `protobuf:"varint,3,opt,name=is_bookmarked,json=isBookmarked,proto3" json:"is_bookmarked,omitempty"`
+	IsReposted    bool                   `protobuf:"varint,4,opt,name=is_reposted,json=isReposted,proto3" json:"is_reposted,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -870,18 +864,17 @@ func (x *GetContentResponse) GetIsReposted() bool {
 	return false
 }
 
-// UpdateContentRequest 更新内容请求
 type UpdateContentRequest struct {
 	state            protoimpl.MessageState `protogen:"open.v1"`
 	ContentId        string                 `protobuf:"bytes,1,opt,name=content_id,json=contentId,proto3" json:"content_id,omitempty"`
-	UserId           string                 `protobuf:"bytes,2,opt,name=user_id,json=userId,proto3" json:"user_id,omitempty"` // 用于权限验证
+	UserId           string                 `protobuf:"bytes,2,opt,name=user_id,json=userId,proto3" json:"user_id,omitempty"`
 	Title            string                 `protobuf:"bytes,3,opt,name=title,proto3" json:"title,omitempty"`
 	Text             string                 `protobuf:"bytes,4,opt,name=text,proto3" json:"text,omitempty"`
 	Summary          string                 `protobuf:"bytes,5,opt,name=summary,proto3" json:"summary,omitempty"`
 	Media            []*Media               `protobuf:"bytes,6,rep,name=media,proto3" json:"media,omitempty"`
 	Tags             []string               `protobuf:"bytes,7,rep,name=tags,proto3" json:"tags,omitempty"`
 	CommentsDisabled bool                   `protobuf:"varint,8,opt,name=comments_disabled,json=commentsDisabled,proto3" json:"comments_disabled,omitempty"`
-	MentionedUserIds []string               `protobuf:"bytes,9,rep,name=mentioned_user_ids,json=mentionedUserIds,proto3" json:"mentioned_user_ids,omitempty"` // @ 提及的用户 ID 列表（新增的）
+	MentionedUserIds []string               `protobuf:"bytes,9,rep,name=mentioned_user_ids,json=mentionedUserIds,proto3" json:"mentioned_user_ids,omitempty"`
 	unknownFields    protoimpl.UnknownFields
 	sizeCache        protoimpl.SizeCache
 }
@@ -979,7 +972,6 @@ func (x *UpdateContentRequest) GetMentionedUserIds() []string {
 	return nil
 }
 
-// UpdateContentResponse 更新内容响应
 type UpdateContentResponse struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Content       *Content               `protobuf:"bytes,1,opt,name=content,proto3" json:"content,omitempty"`
@@ -1024,11 +1016,10 @@ func (x *UpdateContentResponse) GetContent() *Content {
 	return nil
 }
 
-// DeleteContentRequest 删除内容请求
 type DeleteContentRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	ContentId     string                 `protobuf:"bytes,1,opt,name=content_id,json=contentId,proto3" json:"content_id,omitempty"`
-	UserId        string                 `protobuf:"bytes,2,opt,name=user_id,json=userId,proto3" json:"user_id,omitempty"` // 用于权限验证
+	UserId        string                 `protobuf:"bytes,2,opt,name=user_id,json=userId,proto3" json:"user_id,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -1077,7 +1068,6 @@ func (x *DeleteContentRequest) GetUserId() string {
 	return ""
 }
 
-// DeleteContentResponse 删除内容响应
 type DeleteContentResponse struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Success       bool                   `protobuf:"varint,1,opt,name=success,proto3" json:"success,omitempty"`
@@ -1122,124 +1112,22 @@ func (x *DeleteContentResponse) GetSuccess() bool {
 	return false
 }
 
-// PublishDraftRequest 发布草稿请求
-type PublishDraftRequest struct {
-	state         protoimpl.MessageState `protogen:"open.v1"`
-	ContentId     string                 `protobuf:"bytes,1,opt,name=content_id,json=contentId,proto3" json:"content_id,omitempty"`
-	UserId        string                 `protobuf:"bytes,2,opt,name=user_id,json=userId,proto3" json:"user_id,omitempty"`
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
-}
-
-func (x *PublishDraftRequest) Reset() {
-	*x = PublishDraftRequest{}
-	mi := &file_content_content_proto_msgTypes[10]
-	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-	ms.StoreMessageInfo(mi)
-}
-
-func (x *PublishDraftRequest) String() string {
-	return protoimpl.X.MessageStringOf(x)
-}
-
-func (*PublishDraftRequest) ProtoMessage() {}
-
-func (x *PublishDraftRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_content_content_proto_msgTypes[10]
-	if x != nil {
-		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-		if ms.LoadMessageInfo() == nil {
-			ms.StoreMessageInfo(mi)
-		}
-		return ms
-	}
-	return mi.MessageOf(x)
-}
-
-// Deprecated: Use PublishDraftRequest.ProtoReflect.Descriptor instead.
-func (*PublishDraftRequest) Descriptor() ([]byte, []int) {
-	return file_content_content_proto_rawDescGZIP(), []int{10}
-}
-
-func (x *PublishDraftRequest) GetContentId() string {
-	if x != nil {
-		return x.ContentId
-	}
-	return ""
-}
-
-func (x *PublishDraftRequest) GetUserId() string {
-	if x != nil {
-		return x.UserId
-	}
-	return ""
-}
-
-// PublishDraftResponse 发布草稿响应
-type PublishDraftResponse struct {
-	state         protoimpl.MessageState `protogen:"open.v1"`
-	Content       *Content               `protobuf:"bytes,1,opt,name=content,proto3" json:"content,omitempty"`
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
-}
-
-func (x *PublishDraftResponse) Reset() {
-	*x = PublishDraftResponse{}
-	mi := &file_content_content_proto_msgTypes[11]
-	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-	ms.StoreMessageInfo(mi)
-}
-
-func (x *PublishDraftResponse) String() string {
-	return protoimpl.X.MessageStringOf(x)
-}
-
-func (*PublishDraftResponse) ProtoMessage() {}
-
-func (x *PublishDraftResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_content_content_proto_msgTypes[11]
-	if x != nil {
-		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-		if ms.LoadMessageInfo() == nil {
-			ms.StoreMessageInfo(mi)
-		}
-		return ms
-	}
-	return mi.MessageOf(x)
-}
-
-// Deprecated: Use PublishDraftResponse.ProtoReflect.Descriptor instead.
-func (*PublishDraftResponse) Descriptor() ([]byte, []int) {
-	return file_content_content_proto_rawDescGZIP(), []int{11}
-}
-
-func (x *PublishDraftResponse) GetContent() *Content {
-	if x != nil {
-		return x.Content
-	}
-	return nil
-}
-
-// ListContentsRequest 获取内容列表请求
 type ListContentsRequest struct {
-	state protoimpl.MessageState `protogen:"open.v1"`
-	// 筛选条件
-	AuthorId string        `protobuf:"bytes,1,opt,name=author_id,json=authorId,proto3" json:"author_id,omitempty"`         // 按作者筛选
-	Type     ContentType   `protobuf:"varint,2,opt,name=type,proto3,enum=content.ContentType" json:"type,omitempty"`       // 按类型筛选
-	Status   ContentStatus `protobuf:"varint,3,opt,name=status,proto3,enum=content.ContentStatus" json:"status,omitempty"` // 按状态筛选
-	Tags     []string      `protobuf:"bytes,4,rep,name=tags,proto3" json:"tags,omitempty"`                                 // 按标签筛选
-	// 分页
-	Pagination *common.Pagination `protobuf:"bytes,10,opt,name=pagination,proto3" json:"pagination,omitempty"`
-	// 排序
-	OrderBy       string `protobuf:"bytes,11,opt,name=order_by,json=orderBy,proto3" json:"order_by,omitempty"` // created_at, updated_at, like_count 等
-	Descending    bool   `protobuf:"varint,12,opt,name=descending,proto3" json:"descending,omitempty"`         // 是否降序
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	AuthorId      string                 `protobuf:"bytes,1,opt,name=author_id,json=authorId,proto3" json:"author_id,omitempty"`
+	Type          ContentType            `protobuf:"varint,2,opt,name=type,proto3,enum=content.ContentType" json:"type,omitempty"`
+	Status        ContentStatus          `protobuf:"varint,3,opt,name=status,proto3,enum=content.ContentStatus" json:"status,omitempty"`
+	Tags          []string               `protobuf:"bytes,4,rep,name=tags,proto3" json:"tags,omitempty"`
+	Pagination    *common.Pagination     `protobuf:"bytes,10,opt,name=pagination,proto3" json:"pagination,omitempty"`
+	OrderBy       string                 `protobuf:"bytes,11,opt,name=order_by,json=orderBy,proto3" json:"order_by,omitempty"`
+	Descending    bool                   `protobuf:"varint,12,opt,name=descending,proto3" json:"descending,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
 
 func (x *ListContentsRequest) Reset() {
 	*x = ListContentsRequest{}
-	mi := &file_content_content_proto_msgTypes[12]
+	mi := &file_content_content_proto_msgTypes[10]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1251,7 +1139,7 @@ func (x *ListContentsRequest) String() string {
 func (*ListContentsRequest) ProtoMessage() {}
 
 func (x *ListContentsRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_content_content_proto_msgTypes[12]
+	mi := &file_content_content_proto_msgTypes[10]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1264,7 +1152,7 @@ func (x *ListContentsRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ListContentsRequest.ProtoReflect.Descriptor instead.
 func (*ListContentsRequest) Descriptor() ([]byte, []int) {
-	return file_content_content_proto_rawDescGZIP(), []int{12}
+	return file_content_content_proto_rawDescGZIP(), []int{10}
 }
 
 func (x *ListContentsRequest) GetAuthorId() string {
@@ -1316,7 +1204,6 @@ func (x *ListContentsRequest) GetDescending() bool {
 	return false
 }
 
-// ListContentsResponse 内容列表响应
 type ListContentsResponse struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Contents      []*Content             `protobuf:"bytes,1,rep,name=contents,proto3" json:"contents,omitempty"`
@@ -1327,7 +1214,7 @@ type ListContentsResponse struct {
 
 func (x *ListContentsResponse) Reset() {
 	*x = ListContentsResponse{}
-	mi := &file_content_content_proto_msgTypes[13]
+	mi := &file_content_content_proto_msgTypes[11]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1339,7 +1226,7 @@ func (x *ListContentsResponse) String() string {
 func (*ListContentsResponse) ProtoMessage() {}
 
 func (x *ListContentsResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_content_content_proto_msgTypes[13]
+	mi := &file_content_content_proto_msgTypes[11]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1352,7 +1239,7 @@ func (x *ListContentsResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ListContentsResponse.ProtoReflect.Descriptor instead.
 func (*ListContentsResponse) Descriptor() ([]byte, []int) {
-	return file_content_content_proto_rawDescGZIP(), []int{13}
+	return file_content_content_proto_rawDescGZIP(), []int{11}
 }
 
 func (x *ListContentsResponse) GetContents() []*Content {
@@ -1369,7 +1256,102 @@ func (x *ListContentsResponse) GetPagination() *common.Pagination {
 	return nil
 }
 
-// GetUserDraftsRequest 获取用户草稿列表请求
+type BatchGetContentsRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	ContentIds    []string               `protobuf:"bytes,1,rep,name=content_ids,json=contentIds,proto3" json:"content_ids,omitempty"`
+	ViewerId      string                 `protobuf:"bytes,2,opt,name=viewer_id,json=viewerId,proto3" json:"viewer_id,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *BatchGetContentsRequest) Reset() {
+	*x = BatchGetContentsRequest{}
+	mi := &file_content_content_proto_msgTypes[12]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *BatchGetContentsRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*BatchGetContentsRequest) ProtoMessage() {}
+
+func (x *BatchGetContentsRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_content_content_proto_msgTypes[12]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use BatchGetContentsRequest.ProtoReflect.Descriptor instead.
+func (*BatchGetContentsRequest) Descriptor() ([]byte, []int) {
+	return file_content_content_proto_rawDescGZIP(), []int{12}
+}
+
+func (x *BatchGetContentsRequest) GetContentIds() []string {
+	if x != nil {
+		return x.ContentIds
+	}
+	return nil
+}
+
+func (x *BatchGetContentsRequest) GetViewerId() string {
+	if x != nil {
+		return x.ViewerId
+	}
+	return ""
+}
+
+type BatchGetContentsResponse struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Contents      []*Content             `protobuf:"bytes,1,rep,name=contents,proto3" json:"contents,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *BatchGetContentsResponse) Reset() {
+	*x = BatchGetContentsResponse{}
+	mi := &file_content_content_proto_msgTypes[13]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *BatchGetContentsResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*BatchGetContentsResponse) ProtoMessage() {}
+
+func (x *BatchGetContentsResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_content_content_proto_msgTypes[13]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use BatchGetContentsResponse.ProtoReflect.Descriptor instead.
+func (*BatchGetContentsResponse) Descriptor() ([]byte, []int) {
+	return file_content_content_proto_rawDescGZIP(), []int{13}
+}
+
+func (x *BatchGetContentsResponse) GetContents() []*Content {
+	if x != nil {
+		return x.Contents
+	}
+	return nil
+}
+
 type GetUserDraftsRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	UserId        string                 `protobuf:"bytes,1,opt,name=user_id,json=userId,proto3" json:"user_id,omitempty"`
@@ -1422,7 +1404,6 @@ func (x *GetUserDraftsRequest) GetPagination() *common.Pagination {
 	return nil
 }
 
-// GetUserDraftsResponse 用户草稿列表响应
 type GetUserDraftsResponse struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Drafts        []*Content             `protobuf:"bytes,1,rep,name=drafts,proto3" json:"drafts,omitempty"`
@@ -1475,10 +1456,105 @@ func (x *GetUserDraftsResponse) GetPagination() *common.Pagination {
 	return nil
 }
 
-// GetRepliesRequest 获取回复列表请求
+type PublishDraftRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	ContentId     string                 `protobuf:"bytes,1,opt,name=content_id,json=contentId,proto3" json:"content_id,omitempty"`
+	UserId        string                 `protobuf:"bytes,2,opt,name=user_id,json=userId,proto3" json:"user_id,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *PublishDraftRequest) Reset() {
+	*x = PublishDraftRequest{}
+	mi := &file_content_content_proto_msgTypes[16]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *PublishDraftRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*PublishDraftRequest) ProtoMessage() {}
+
+func (x *PublishDraftRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_content_content_proto_msgTypes[16]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use PublishDraftRequest.ProtoReflect.Descriptor instead.
+func (*PublishDraftRequest) Descriptor() ([]byte, []int) {
+	return file_content_content_proto_rawDescGZIP(), []int{16}
+}
+
+func (x *PublishDraftRequest) GetContentId() string {
+	if x != nil {
+		return x.ContentId
+	}
+	return ""
+}
+
+func (x *PublishDraftRequest) GetUserId() string {
+	if x != nil {
+		return x.UserId
+	}
+	return ""
+}
+
+type PublishDraftResponse struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Content       *Content               `protobuf:"bytes,1,opt,name=content,proto3" json:"content,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *PublishDraftResponse) Reset() {
+	*x = PublishDraftResponse{}
+	mi := &file_content_content_proto_msgTypes[17]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *PublishDraftResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*PublishDraftResponse) ProtoMessage() {}
+
+func (x *PublishDraftResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_content_content_proto_msgTypes[17]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use PublishDraftResponse.ProtoReflect.Descriptor instead.
+func (*PublishDraftResponse) Descriptor() ([]byte, []int) {
+	return file_content_content_proto_rawDescGZIP(), []int{17}
+}
+
+func (x *PublishDraftResponse) GetContent() *Content {
+	if x != nil {
+		return x.Content
+	}
+	return nil
+}
+
 type GetRepliesRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	ContentId     string                 `protobuf:"bytes,1,opt,name=content_id,json=contentId,proto3" json:"content_id,omitempty"` // 获取该内容的回复
+	ContentId     string                 `protobuf:"bytes,1,opt,name=content_id,json=contentId,proto3" json:"content_id,omitempty"`
 	Pagination    *common.Pagination     `protobuf:"bytes,2,opt,name=pagination,proto3" json:"pagination,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
@@ -1486,7 +1562,7 @@ type GetRepliesRequest struct {
 
 func (x *GetRepliesRequest) Reset() {
 	*x = GetRepliesRequest{}
-	mi := &file_content_content_proto_msgTypes[16]
+	mi := &file_content_content_proto_msgTypes[18]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1498,7 +1574,7 @@ func (x *GetRepliesRequest) String() string {
 func (*GetRepliesRequest) ProtoMessage() {}
 
 func (x *GetRepliesRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_content_content_proto_msgTypes[16]
+	mi := &file_content_content_proto_msgTypes[18]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1511,7 +1587,7 @@ func (x *GetRepliesRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GetRepliesRequest.ProtoReflect.Descriptor instead.
 func (*GetRepliesRequest) Descriptor() ([]byte, []int) {
-	return file_content_content_proto_rawDescGZIP(), []int{16}
+	return file_content_content_proto_rawDescGZIP(), []int{18}
 }
 
 func (x *GetRepliesRequest) GetContentId() string {
@@ -1528,7 +1604,6 @@ func (x *GetRepliesRequest) GetPagination() *common.Pagination {
 	return nil
 }
 
-// GetRepliesResponse 回复列表响应
 type GetRepliesResponse struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Replies       []*Content             `protobuf:"bytes,1,rep,name=replies,proto3" json:"replies,omitempty"`
@@ -1539,7 +1614,7 @@ type GetRepliesResponse struct {
 
 func (x *GetRepliesResponse) Reset() {
 	*x = GetRepliesResponse{}
-	mi := &file_content_content_proto_msgTypes[17]
+	mi := &file_content_content_proto_msgTypes[19]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1551,7 +1626,7 @@ func (x *GetRepliesResponse) String() string {
 func (*GetRepliesResponse) ProtoMessage() {}
 
 func (x *GetRepliesResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_content_content_proto_msgTypes[17]
+	mi := &file_content_content_proto_msgTypes[19]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1564,7 +1639,7 @@ func (x *GetRepliesResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GetRepliesResponse.ProtoReflect.Descriptor instead.
 func (*GetRepliesResponse) Descriptor() ([]byte, []int) {
-	return file_content_content_proto_rawDescGZIP(), []int{17}
+	return file_content_content_proto_rawDescGZIP(), []int{19}
 }
 
 func (x *GetRepliesResponse) GetReplies() []*Content {
@@ -1581,18 +1656,17 @@ func (x *GetRepliesResponse) GetPagination() *common.Pagination {
 	return nil
 }
 
-// GetUserStoriesRequest 获取用户 Story 列表请求
 type GetUserStoriesRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	UserId        string                 `protobuf:"bytes,1,opt,name=user_id,json=userId,proto3" json:"user_id,omitempty"`
-	ViewerId      string                 `protobuf:"bytes,2,opt,name=viewer_id,json=viewerId,proto3" json:"viewer_id,omitempty"` // 查看者 ID
+	ViewerId      string                 `protobuf:"bytes,2,opt,name=viewer_id,json=viewerId,proto3" json:"viewer_id,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
 
 func (x *GetUserStoriesRequest) Reset() {
 	*x = GetUserStoriesRequest{}
-	mi := &file_content_content_proto_msgTypes[18]
+	mi := &file_content_content_proto_msgTypes[20]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1604,7 +1678,7 @@ func (x *GetUserStoriesRequest) String() string {
 func (*GetUserStoriesRequest) ProtoMessage() {}
 
 func (x *GetUserStoriesRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_content_content_proto_msgTypes[18]
+	mi := &file_content_content_proto_msgTypes[20]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1617,7 +1691,7 @@ func (x *GetUserStoriesRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GetUserStoriesRequest.ProtoReflect.Descriptor instead.
 func (*GetUserStoriesRequest) Descriptor() ([]byte, []int) {
-	return file_content_content_proto_rawDescGZIP(), []int{18}
+	return file_content_content_proto_rawDescGZIP(), []int{20}
 }
 
 func (x *GetUserStoriesRequest) GetUserId() string {
@@ -1634,18 +1708,17 @@ func (x *GetUserStoriesRequest) GetViewerId() string {
 	return ""
 }
 
-// GetUserStoriesResponse 用户 Story 列表响应
 type GetUserStoriesResponse struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Stories       []*Content             `protobuf:"bytes,1,rep,name=stories,proto3" json:"stories,omitempty"`
-	HasUnseen     bool                   `protobuf:"varint,2,opt,name=has_unseen,json=hasUnseen,proto3" json:"has_unseen,omitempty"` // 是否有未看过的 Story
+	HasUnseen     bool                   `protobuf:"varint,2,opt,name=has_unseen,json=hasUnseen,proto3" json:"has_unseen,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
 
 func (x *GetUserStoriesResponse) Reset() {
 	*x = GetUserStoriesResponse{}
-	mi := &file_content_content_proto_msgTypes[19]
+	mi := &file_content_content_proto_msgTypes[21]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1657,7 +1730,7 @@ func (x *GetUserStoriesResponse) String() string {
 func (*GetUserStoriesResponse) ProtoMessage() {}
 
 func (x *GetUserStoriesResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_content_content_proto_msgTypes[19]
+	mi := &file_content_content_proto_msgTypes[21]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1670,7 +1743,7 @@ func (x *GetUserStoriesResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GetUserStoriesResponse.ProtoReflect.Descriptor instead.
 func (*GetUserStoriesResponse) Descriptor() ([]byte, []int) {
-	return file_content_content_proto_rawDescGZIP(), []int{19}
+	return file_content_content_proto_rawDescGZIP(), []int{21}
 }
 
 func (x *GetUserStoriesResponse) GetStories() []*Content {
@@ -1687,110 +1760,11 @@ func (x *GetUserStoriesResponse) GetHasUnseen() bool {
 	return false
 }
 
-// BatchGetContentsRequest 批量获取内容请求
-type BatchGetContentsRequest struct {
-	state         protoimpl.MessageState `protogen:"open.v1"`
-	ContentIds    []string               `protobuf:"bytes,1,rep,name=content_ids,json=contentIds,proto3" json:"content_ids,omitempty"`
-	ViewerId      string                 `protobuf:"bytes,2,opt,name=viewer_id,json=viewerId,proto3" json:"viewer_id,omitempty"`
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
-}
-
-func (x *BatchGetContentsRequest) Reset() {
-	*x = BatchGetContentsRequest{}
-	mi := &file_content_content_proto_msgTypes[20]
-	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-	ms.StoreMessageInfo(mi)
-}
-
-func (x *BatchGetContentsRequest) String() string {
-	return protoimpl.X.MessageStringOf(x)
-}
-
-func (*BatchGetContentsRequest) ProtoMessage() {}
-
-func (x *BatchGetContentsRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_content_content_proto_msgTypes[20]
-	if x != nil {
-		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-		if ms.LoadMessageInfo() == nil {
-			ms.StoreMessageInfo(mi)
-		}
-		return ms
-	}
-	return mi.MessageOf(x)
-}
-
-// Deprecated: Use BatchGetContentsRequest.ProtoReflect.Descriptor instead.
-func (*BatchGetContentsRequest) Descriptor() ([]byte, []int) {
-	return file_content_content_proto_rawDescGZIP(), []int{20}
-}
-
-func (x *BatchGetContentsRequest) GetContentIds() []string {
-	if x != nil {
-		return x.ContentIds
-	}
-	return nil
-}
-
-func (x *BatchGetContentsRequest) GetViewerId() string {
-	if x != nil {
-		return x.ViewerId
-	}
-	return ""
-}
-
-// BatchGetContentsResponse 批量获取内容响应
-type BatchGetContentsResponse struct {
-	state         protoimpl.MessageState `protogen:"open.v1"`
-	Contents      []*Content             `protobuf:"bytes,1,rep,name=contents,proto3" json:"contents,omitempty"`
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
-}
-
-func (x *BatchGetContentsResponse) Reset() {
-	*x = BatchGetContentsResponse{}
-	mi := &file_content_content_proto_msgTypes[21]
-	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-	ms.StoreMessageInfo(mi)
-}
-
-func (x *BatchGetContentsResponse) String() string {
-	return protoimpl.X.MessageStringOf(x)
-}
-
-func (*BatchGetContentsResponse) ProtoMessage() {}
-
-func (x *BatchGetContentsResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_content_content_proto_msgTypes[21]
-	if x != nil {
-		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-		if ms.LoadMessageInfo() == nil {
-			ms.StoreMessageInfo(mi)
-		}
-		return ms
-	}
-	return mi.MessageOf(x)
-}
-
-// Deprecated: Use BatchGetContentsResponse.ProtoReflect.Descriptor instead.
-func (*BatchGetContentsResponse) Descriptor() ([]byte, []int) {
-	return file_content_content_proto_rawDescGZIP(), []int{21}
-}
-
-func (x *BatchGetContentsResponse) GetContents() []*Content {
-	if x != nil {
-		return x.Contents
-	}
-	return nil
-}
-
-// PinContentRequest 置顶内容请求
 type PinContentRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	ContentId     string                 `protobuf:"bytes,1,opt,name=content_id,json=contentId,proto3" json:"content_id,omitempty"`
 	UserId        string                 `protobuf:"bytes,2,opt,name=user_id,json=userId,proto3" json:"user_id,omitempty"`
-	Pin           bool                   `protobuf:"varint,3,opt,name=pin,proto3" json:"pin,omitempty"` // true 置顶，false 取消置顶
+	Pin           bool                   `protobuf:"varint,3,opt,name=pin,proto3" json:"pin,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -1846,7 +1820,6 @@ func (x *PinContentRequest) GetPin() bool {
 	return false
 }
 
-// PinContentResponse 置顶内容响应
 type PinContentResponse struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Success       bool                   `protobuf:"varint,1,opt,name=success,proto3" json:"success,omitempty"`
@@ -1891,12 +1864,11 @@ func (x *PinContentResponse) GetSuccess() bool {
 	return false
 }
 
-// UpdateCounterRequest 更新计数器请求
 type UpdateCounterRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	ContentId     string                 `protobuf:"bytes,1,opt,name=content_id,json=contentId,proto3" json:"content_id,omitempty"`
 	CounterType   CounterType            `protobuf:"varint,2,opt,name=counter_type,json=counterType,proto3,enum=content.CounterType" json:"counter_type,omitempty"`
-	Delta         int32                  `protobuf:"varint,3,opt,name=delta,proto3" json:"delta,omitempty"` // 增量，正数增加，负数减少
+	Delta         int32                  `protobuf:"varint,3,opt,name=delta,proto3" json:"delta,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -1952,10 +1924,9 @@ func (x *UpdateCounterRequest) GetDelta() int32 {
 	return 0
 }
 
-// UpdateCounterResponse 更新计数器响应
 type UpdateCounterResponse struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	NewCount      int32                  `protobuf:"varint,1,opt,name=new_count,json=newCount,proto3" json:"new_count,omitempty"` // 更新后的计数值
+	NewCount      int32                  `protobuf:"varint,1,opt,name=new_count,json=newCount,proto3" json:"new_count,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -1997,7 +1968,6 @@ func (x *UpdateCounterResponse) GetNewCount() int32 {
 	return 0
 }
 
-// CheckContentExistsRequest 检查内容是否存在请求
 type CheckContentExistsRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	ContentId     string                 `protobuf:"bytes,1,opt,name=content_id,json=contentId,proto3" json:"content_id,omitempty"`
@@ -2042,11 +2012,10 @@ func (x *CheckContentExistsRequest) GetContentId() string {
 	return ""
 }
 
-// CheckContentExistsResponse 检查内容是否存在响应
 type CheckContentExistsResponse struct {
 	state            protoimpl.MessageState `protogen:"open.v1"`
 	Exists           bool                   `protobuf:"varint,1,opt,name=exists,proto3" json:"exists,omitempty"`
-	CommentsDisabled bool                   `protobuf:"varint,2,opt,name=comments_disabled,json=commentsDisabled,proto3" json:"comments_disabled,omitempty"` // 是否禁止评论
+	CommentsDisabled bool                   `protobuf:"varint,2,opt,name=comments_disabled,json=commentsDisabled,proto3" json:"comments_disabled,omitempty"`
 	unknownFields    protoimpl.UnknownFields
 	sizeCache        protoimpl.SizeCache
 }
@@ -2183,13 +2152,7 @@ const file_content_content_proto_rawDesc = "" +
 	"content_id\x18\x01 \x01(\tR\tcontentId\x12\x17\n" +
 	"\auser_id\x18\x02 \x01(\tR\x06userId\"1\n" +
 	"\x15DeleteContentResponse\x12\x18\n" +
-	"\asuccess\x18\x01 \x01(\bR\asuccess\"M\n" +
-	"\x13PublishDraftRequest\x12\x1d\n" +
-	"\n" +
-	"content_id\x18\x01 \x01(\tR\tcontentId\x12\x17\n" +
-	"\auser_id\x18\x02 \x01(\tR\x06userId\"B\n" +
-	"\x14PublishDraftResponse\x12*\n" +
-	"\acontent\x18\x01 \x01(\v2\x10.content.ContentR\acontent\"\x8f\x02\n" +
+	"\asuccess\x18\x01 \x01(\bR\asuccess\"\x8f\x02\n" +
 	"\x13ListContentsRequest\x12\x1b\n" +
 	"\tauthor_id\x18\x01 \x01(\tR\bauthorId\x12(\n" +
 	"\x04type\x18\x02 \x01(\x0e2\x14.content.ContentTypeR\x04type\x12.\n" +
@@ -2207,7 +2170,13 @@ const file_content_content_proto_rawDesc = "" +
 	"\bcontents\x18\x01 \x03(\v2\x10.content.ContentR\bcontents\x122\n" +
 	"\n" +
 	"pagination\x18\x02 \x01(\v2\x12.common.PaginationR\n" +
-	"pagination\"c\n" +
+	"pagination\"W\n" +
+	"\x17BatchGetContentsRequest\x12\x1f\n" +
+	"\vcontent_ids\x18\x01 \x03(\tR\n" +
+	"contentIds\x12\x1b\n" +
+	"\tviewer_id\x18\x02 \x01(\tR\bviewerId\"H\n" +
+	"\x18BatchGetContentsResponse\x12,\n" +
+	"\bcontents\x18\x01 \x03(\v2\x10.content.ContentR\bcontents\"c\n" +
 	"\x14GetUserDraftsRequest\x12\x17\n" +
 	"\auser_id\x18\x01 \x01(\tR\x06userId\x122\n" +
 	"\n" +
@@ -2217,7 +2186,13 @@ const file_content_content_proto_rawDesc = "" +
 	"\x06drafts\x18\x01 \x03(\v2\x10.content.ContentR\x06drafts\x122\n" +
 	"\n" +
 	"pagination\x18\x02 \x01(\v2\x12.common.PaginationR\n" +
-	"pagination\"f\n" +
+	"pagination\"M\n" +
+	"\x13PublishDraftRequest\x12\x1d\n" +
+	"\n" +
+	"content_id\x18\x01 \x01(\tR\tcontentId\x12\x17\n" +
+	"\auser_id\x18\x02 \x01(\tR\x06userId\"B\n" +
+	"\x14PublishDraftResponse\x12*\n" +
+	"\acontent\x18\x01 \x01(\v2\x10.content.ContentR\acontent\"f\n" +
 	"\x11GetRepliesRequest\x12\x1d\n" +
 	"\n" +
 	"content_id\x18\x01 \x01(\tR\tcontentId\x122\n" +
@@ -2235,13 +2210,7 @@ const file_content_content_proto_rawDesc = "" +
 	"\x16GetUserStoriesResponse\x12*\n" +
 	"\astories\x18\x01 \x03(\v2\x10.content.ContentR\astories\x12\x1d\n" +
 	"\n" +
-	"has_unseen\x18\x02 \x01(\bR\thasUnseen\"W\n" +
-	"\x17BatchGetContentsRequest\x12\x1f\n" +
-	"\vcontent_ids\x18\x01 \x03(\tR\n" +
-	"contentIds\x12\x1b\n" +
-	"\tviewer_id\x18\x02 \x01(\tR\bviewerId\"H\n" +
-	"\x18BatchGetContentsResponse\x12,\n" +
-	"\bcontents\x18\x01 \x03(\v2\x10.content.ContentR\bcontents\"]\n" +
+	"has_unseen\x18\x02 \x01(\bR\thasUnseen\"]\n" +
 	"\x11PinContentRequest\x12\x1d\n" +
 	"\n" +
 	"content_id\x18\x01 \x01(\tR\tcontentId\x12\x17\n" +
@@ -2332,18 +2301,18 @@ var file_content_content_proto_goTypes = []any{
 	(*UpdateContentResponse)(nil),      // 11: content.UpdateContentResponse
 	(*DeleteContentRequest)(nil),       // 12: content.DeleteContentRequest
 	(*DeleteContentResponse)(nil),      // 13: content.DeleteContentResponse
-	(*PublishDraftRequest)(nil),        // 14: content.PublishDraftRequest
-	(*PublishDraftResponse)(nil),       // 15: content.PublishDraftResponse
-	(*ListContentsRequest)(nil),        // 16: content.ListContentsRequest
-	(*ListContentsResponse)(nil),       // 17: content.ListContentsResponse
+	(*ListContentsRequest)(nil),        // 14: content.ListContentsRequest
+	(*ListContentsResponse)(nil),       // 15: content.ListContentsResponse
+	(*BatchGetContentsRequest)(nil),    // 16: content.BatchGetContentsRequest
+	(*BatchGetContentsResponse)(nil),   // 17: content.BatchGetContentsResponse
 	(*GetUserDraftsRequest)(nil),       // 18: content.GetUserDraftsRequest
 	(*GetUserDraftsResponse)(nil),      // 19: content.GetUserDraftsResponse
-	(*GetRepliesRequest)(nil),          // 20: content.GetRepliesRequest
-	(*GetRepliesResponse)(nil),         // 21: content.GetRepliesResponse
-	(*GetUserStoriesRequest)(nil),      // 22: content.GetUserStoriesRequest
-	(*GetUserStoriesResponse)(nil),     // 23: content.GetUserStoriesResponse
-	(*BatchGetContentsRequest)(nil),    // 24: content.BatchGetContentsRequest
-	(*BatchGetContentsResponse)(nil),   // 25: content.BatchGetContentsResponse
+	(*PublishDraftRequest)(nil),        // 20: content.PublishDraftRequest
+	(*PublishDraftResponse)(nil),       // 21: content.PublishDraftResponse
+	(*GetRepliesRequest)(nil),          // 22: content.GetRepliesRequest
+	(*GetRepliesResponse)(nil),         // 23: content.GetRepliesResponse
+	(*GetUserStoriesRequest)(nil),      // 24: content.GetUserStoriesRequest
+	(*GetUserStoriesResponse)(nil),     // 25: content.GetUserStoriesResponse
 	(*PinContentRequest)(nil),          // 26: content.PinContentRequest
 	(*PinContentResponse)(nil),         // 27: content.PinContentResponse
 	(*UpdateCounterRequest)(nil),       // 28: content.UpdateCounterRequest
@@ -2368,31 +2337,31 @@ var file_content_content_proto_depIdxs = []int32{
 	5,  // 11: content.GetContentResponse.content:type_name -> content.Content
 	4,  // 12: content.UpdateContentRequest.media:type_name -> content.Media
 	5,  // 13: content.UpdateContentResponse.content:type_name -> content.Content
-	5,  // 14: content.PublishDraftResponse.content:type_name -> content.Content
-	0,  // 15: content.ListContentsRequest.type:type_name -> content.ContentType
-	1,  // 16: content.ListContentsRequest.status:type_name -> content.ContentStatus
-	33, // 17: content.ListContentsRequest.pagination:type_name -> common.Pagination
-	5,  // 18: content.ListContentsResponse.contents:type_name -> content.Content
-	33, // 19: content.ListContentsResponse.pagination:type_name -> common.Pagination
+	0,  // 14: content.ListContentsRequest.type:type_name -> content.ContentType
+	1,  // 15: content.ListContentsRequest.status:type_name -> content.ContentStatus
+	33, // 16: content.ListContentsRequest.pagination:type_name -> common.Pagination
+	5,  // 17: content.ListContentsResponse.contents:type_name -> content.Content
+	33, // 18: content.ListContentsResponse.pagination:type_name -> common.Pagination
+	5,  // 19: content.BatchGetContentsResponse.contents:type_name -> content.Content
 	33, // 20: content.GetUserDraftsRequest.pagination:type_name -> common.Pagination
 	5,  // 21: content.GetUserDraftsResponse.drafts:type_name -> content.Content
 	33, // 22: content.GetUserDraftsResponse.pagination:type_name -> common.Pagination
-	33, // 23: content.GetRepliesRequest.pagination:type_name -> common.Pagination
-	5,  // 24: content.GetRepliesResponse.replies:type_name -> content.Content
-	33, // 25: content.GetRepliesResponse.pagination:type_name -> common.Pagination
-	5,  // 26: content.GetUserStoriesResponse.stories:type_name -> content.Content
-	5,  // 27: content.BatchGetContentsResponse.contents:type_name -> content.Content
+	5,  // 23: content.PublishDraftResponse.content:type_name -> content.Content
+	33, // 24: content.GetRepliesRequest.pagination:type_name -> common.Pagination
+	5,  // 25: content.GetRepliesResponse.replies:type_name -> content.Content
+	33, // 26: content.GetRepliesResponse.pagination:type_name -> common.Pagination
+	5,  // 27: content.GetUserStoriesResponse.stories:type_name -> content.Content
 	3,  // 28: content.UpdateCounterRequest.counter_type:type_name -> content.CounterType
 	6,  // 29: content.ContentService.CreateContent:input_type -> content.CreateContentRequest
 	8,  // 30: content.ContentService.GetContent:input_type -> content.GetContentRequest
 	10, // 31: content.ContentService.UpdateContent:input_type -> content.UpdateContentRequest
 	12, // 32: content.ContentService.DeleteContent:input_type -> content.DeleteContentRequest
-	16, // 33: content.ContentService.ListContents:input_type -> content.ListContentsRequest
-	24, // 34: content.ContentService.BatchGetContents:input_type -> content.BatchGetContentsRequest
+	14, // 33: content.ContentService.ListContents:input_type -> content.ListContentsRequest
+	16, // 34: content.ContentService.BatchGetContents:input_type -> content.BatchGetContentsRequest
 	18, // 35: content.ContentService.GetUserDrafts:input_type -> content.GetUserDraftsRequest
-	14, // 36: content.ContentService.PublishDraft:input_type -> content.PublishDraftRequest
-	20, // 37: content.ContentService.GetReplies:input_type -> content.GetRepliesRequest
-	22, // 38: content.ContentService.GetUserStories:input_type -> content.GetUserStoriesRequest
+	20, // 36: content.ContentService.PublishDraft:input_type -> content.PublishDraftRequest
+	22, // 37: content.ContentService.GetReplies:input_type -> content.GetRepliesRequest
+	24, // 38: content.ContentService.GetUserStories:input_type -> content.GetUserStoriesRequest
 	26, // 39: content.ContentService.PinContent:input_type -> content.PinContentRequest
 	28, // 40: content.ContentService.UpdateCounter:input_type -> content.UpdateCounterRequest
 	30, // 41: content.ContentService.CheckContentExists:input_type -> content.CheckContentExistsRequest
@@ -2400,12 +2369,12 @@ var file_content_content_proto_depIdxs = []int32{
 	9,  // 43: content.ContentService.GetContent:output_type -> content.GetContentResponse
 	11, // 44: content.ContentService.UpdateContent:output_type -> content.UpdateContentResponse
 	13, // 45: content.ContentService.DeleteContent:output_type -> content.DeleteContentResponse
-	17, // 46: content.ContentService.ListContents:output_type -> content.ListContentsResponse
-	25, // 47: content.ContentService.BatchGetContents:output_type -> content.BatchGetContentsResponse
+	15, // 46: content.ContentService.ListContents:output_type -> content.ListContentsResponse
+	17, // 47: content.ContentService.BatchGetContents:output_type -> content.BatchGetContentsResponse
 	19, // 48: content.ContentService.GetUserDrafts:output_type -> content.GetUserDraftsResponse
-	15, // 49: content.ContentService.PublishDraft:output_type -> content.PublishDraftResponse
-	21, // 50: content.ContentService.GetReplies:output_type -> content.GetRepliesResponse
-	23, // 51: content.ContentService.GetUserStories:output_type -> content.GetUserStoriesResponse
+	21, // 49: content.ContentService.PublishDraft:output_type -> content.PublishDraftResponse
+	23, // 50: content.ContentService.GetReplies:output_type -> content.GetRepliesResponse
+	25, // 51: content.ContentService.GetUserStories:output_type -> content.GetUserStoriesResponse
 	27, // 52: content.ContentService.PinContent:output_type -> content.PinContentResponse
 	29, // 53: content.ContentService.UpdateCounter:output_type -> content.UpdateCounterResponse
 	31, // 54: content.ContentService.CheckContentExists:output_type -> content.CheckContentExistsResponse

@@ -5,26 +5,29 @@ option go_package = "github.com/funcdfs/lesser/search/gen_protos/search";
 
 import "common/common.proto";
 
-// SearchService 搜索服务
+// ============================================================================
+// SearchService 搜索服务 (端口: 50058)
+// 提供内容、用户、评论的全文搜索和语义搜索
+// ============================================================================
+
 service SearchService {
   // 搜索内容（帖子）
   rpc SearchPosts(SearchPostsRequest) returns (SearchPostsResponse);
+  
   // 搜索用户
   rpc SearchUsers(SearchUsersRequest) returns (SearchUsersResponse);
+  
   // 搜索评论
   rpc SearchComments(SearchCommentsRequest) returns (SearchCommentsResponse);
-  // 综合搜索（内容+评论+用户）
+  
+  // 综合搜索
   rpc SearchAll(SearchAllRequest) returns (SearchAllResponse);
 }
 
-// SearchPostsRequest 搜索帖子请求
-message SearchPostsRequest {
-  string query = 1;
-  common.Pagination pagination = 2;
-  bool use_semantic = 3;  // 是否使用语义搜索（pgvector）
-}
+// ============================================================================
+// 搜索结果实体
+// ============================================================================
 
-// PostResult 帖子搜索结果
 message PostResult {
   string id = 1;
   string author_id = 2;
@@ -32,23 +35,9 @@ message PostResult {
   string content = 4;
   repeated string media_urls = 5;
   common.Timestamp created_at = 6;
-  float score = 7;  // 相关性得分
+  float score = 7;
 }
 
-// SearchPostsResponse 搜索帖子响应
-message SearchPostsResponse {
-  repeated PostResult posts = 1;
-  common.Pagination pagination = 2;
-}
-
-// SearchUsersRequest 搜索用户请求
-message SearchUsersRequest {
-  string query = 1;
-  common.Pagination pagination = 2;
-  bool use_semantic = 3;
-}
-
-// UserResult 用户搜索结果
 message UserResult {
   string id = 1;
   string username = 2;
@@ -58,21 +47,6 @@ message UserResult {
   float score = 6;
 }
 
-// SearchUsersResponse 搜索用户响应
-message SearchUsersResponse {
-  repeated UserResult users = 1;
-  common.Pagination pagination = 2;
-}
-
-// SearchCommentsRequest 搜索评论请求
-message SearchCommentsRequest {
-  string query = 1;
-  common.Pagination pagination = 2;
-  bool use_semantic = 3;
-  string post_id = 4;  // 可选：限定在某个帖子下搜索
-}
-
-// CommentResult 评论搜索结果
 message CommentResult {
   string id = 1;
   string author_id = 2;
@@ -82,20 +56,50 @@ message CommentResult {
   float score = 6;
 }
 
-// SearchCommentsResponse 搜索评论响应
+// ============================================================================
+// 请求/响应消息
+// ============================================================================
+
+message SearchPostsRequest {
+  string query = 1;
+  common.Pagination pagination = 2;
+  bool use_semantic = 3;  // 是否使用语义搜索（pgvector）
+}
+
+message SearchPostsResponse {
+  repeated PostResult posts = 1;
+  common.Pagination pagination = 2;
+}
+
+message SearchUsersRequest {
+  string query = 1;
+  common.Pagination pagination = 2;
+  bool use_semantic = 3;
+}
+
+message SearchUsersResponse {
+  repeated UserResult users = 1;
+  common.Pagination pagination = 2;
+}
+
+message SearchCommentsRequest {
+  string query = 1;
+  common.Pagination pagination = 2;
+  bool use_semantic = 3;
+  string post_id = 4;  // 可选：限定在某个帖子下搜索
+}
+
 message SearchCommentsResponse {
   repeated CommentResult comments = 1;
   common.Pagination pagination = 2;
 }
 
-// SearchAllRequest 综合搜索请求
 message SearchAllRequest {
   string query = 1;
   int32 limit = 2;  // 每种类型返回的最大数量
   bool use_semantic = 3;
 }
 
-// SearchAllResponse 综合搜索响应
 message SearchAllResponse {
   repeated PostResult posts = 1;
   repeated CommentResult comments = 2;

@@ -26,10 +26,10 @@ const (
 	SuperUserService_ValidateToken_FullMethodName       = "/superuser.SuperUserService/ValidateToken"
 	SuperUserService_ListUsers_FullMethodName           = "/superuser.SuperUserService/ListUsers"
 	SuperUserService_GetUser_FullMethodName             = "/superuser.SuperUserService/GetUser"
+	SuperUserService_UpdateUser_FullMethodName          = "/superuser.SuperUserService/UpdateUser"
 	SuperUserService_BanUser_FullMethodName             = "/superuser.SuperUserService/BanUser"
 	SuperUserService_UnbanUser_FullMethodName           = "/superuser.SuperUserService/UnbanUser"
 	SuperUserService_DeleteUser_FullMethodName          = "/superuser.SuperUserService/DeleteUser"
-	SuperUserService_UpdateUser_FullMethodName          = "/superuser.SuperUserService/UpdateUser"
 	SuperUserService_ListContents_FullMethodName        = "/superuser.SuperUserService/ListContents"
 	SuperUserService_DeleteContent_FullMethodName       = "/superuser.SuperUserService/DeleteContent"
 	SuperUserService_BatchDeleteContents_FullMethodName = "/superuser.SuperUserService/BatchDeleteContents"
@@ -46,58 +46,33 @@ const (
 // SuperUserServiceClient is the client API for SuperUserService service.
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
-//
-// SuperUserService 超级管理员服务
-// 系统级管理员，拥有访问数据库、RabbitMQ、管理所有用户等上帝级权限
-// 与普通用户完全隔离，采用独立的认证和权限体系
 type SuperUserServiceClient interface {
-	// ========== 认证相关 ==========
-	// 超级管理员登录
+	// ---- 认证 ----
 	Login(ctx context.Context, in *SuperUserLoginRequest, opts ...grpc.CallOption) (*SuperUserLoginResponse, error)
-	// 登出
 	Logout(ctx context.Context, in *SuperUserLogoutRequest, opts ...grpc.CallOption) (*common.Empty, error)
-	// 刷新 Token
 	RefreshToken(ctx context.Context, in *SuperUserRefreshRequest, opts ...grpc.CallOption) (*SuperUserLoginResponse, error)
-	// 验证 Token（内部服务调用）
 	ValidateToken(ctx context.Context, in *ValidateTokenRequest, opts ...grpc.CallOption) (*ValidateTokenResponse, error)
-	// ========== 用户管理 ==========
-	// 获取所有用户列表
+	// ---- 用户管理 ----
 	ListUsers(ctx context.Context, in *ListUsersRequest, opts ...grpc.CallOption) (*ListUsersResponse, error)
-	// 获取用户详情
 	GetUser(ctx context.Context, in *GetUserRequest, opts ...grpc.CallOption) (*UserDetail, error)
-	// 封禁用户
-	BanUser(ctx context.Context, in *BanUserRequest, opts ...grpc.CallOption) (*BanUserResponse, error)
-	// 解封用户
-	UnbanUser(ctx context.Context, in *UnbanUserRequest, opts ...grpc.CallOption) (*UnbanUserResponse, error)
-	// 删除用户
-	DeleteUser(ctx context.Context, in *DeleteUserRequest, opts ...grpc.CallOption) (*DeleteUserResponse, error)
-	// 强制修改用户信息
 	UpdateUser(ctx context.Context, in *UpdateUserRequest, opts ...grpc.CallOption) (*UserDetail, error)
-	// ========== 内容管理 ==========
-	// 获取所有内容列表
+	BanUser(ctx context.Context, in *BanUserRequest, opts ...grpc.CallOption) (*BanUserResponse, error)
+	UnbanUser(ctx context.Context, in *UnbanUserRequest, opts ...grpc.CallOption) (*UnbanUserResponse, error)
+	DeleteUser(ctx context.Context, in *DeleteUserRequest, opts ...grpc.CallOption) (*DeleteUserResponse, error)
+	// ---- 内容管理 ----
 	ListContents(ctx context.Context, in *ListContentsRequest, opts ...grpc.CallOption) (*ListContentsResponse, error)
-	// 删除内容
 	DeleteContent(ctx context.Context, in *DeleteContentRequest, opts ...grpc.CallOption) (*DeleteContentResponse, error)
-	// 批量删除内容
 	BatchDeleteContents(ctx context.Context, in *BatchDeleteContentsRequest, opts ...grpc.CallOption) (*BatchDeleteContentsResponse, error)
-	// ========== 系统监控 ==========
-	// 获取系统统计信息
+	// ---- 系统监控 ----
 	GetSystemStats(ctx context.Context, in *GetSystemStatsRequest, opts ...grpc.CallOption) (*SystemStats, error)
-	// 获取数据库状态
 	GetDatabaseStatus(ctx context.Context, in *GetDatabaseStatusRequest, opts ...grpc.CallOption) (*DatabaseStatus, error)
-	// 获取 Redis 状态
 	GetRedisStatus(ctx context.Context, in *GetRedisStatusRequest, opts ...grpc.CallOption) (*RedisStatus, error)
-	// 获取 RabbitMQ 状态
 	GetRabbitMQStatus(ctx context.Context, in *GetRabbitMQStatusRequest, opts ...grpc.CallOption) (*RabbitMQStatus, error)
-	// ========== 数据库操作 ==========
-	// 执行只读 SQL 查询
+	// ---- 数据库操作 ----
 	ExecuteQuery(ctx context.Context, in *ExecuteQueryRequest, opts ...grpc.CallOption) (*ExecuteQueryResponse, error)
-	// 获取表结构
 	GetTableSchema(ctx context.Context, in *GetTableSchemaRequest, opts ...grpc.CallOption) (*TableSchema, error)
-	// 获取所有表列表
 	ListTables(ctx context.Context, in *ListTablesRequest, opts ...grpc.CallOption) (*ListTablesResponse, error)
-	// ========== 审计日志 ==========
-	// 获取操作日志
+	// ---- 审计日志 ----
 	GetAuditLogs(ctx context.Context, in *GetAuditLogsRequest, opts ...grpc.CallOption) (*AuditLogsResponse, error)
 }
 
@@ -169,6 +144,16 @@ func (c *superUserServiceClient) GetUser(ctx context.Context, in *GetUserRequest
 	return out, nil
 }
 
+func (c *superUserServiceClient) UpdateUser(ctx context.Context, in *UpdateUserRequest, opts ...grpc.CallOption) (*UserDetail, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(UserDetail)
+	err := c.cc.Invoke(ctx, SuperUserService_UpdateUser_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 func (c *superUserServiceClient) BanUser(ctx context.Context, in *BanUserRequest, opts ...grpc.CallOption) (*BanUserResponse, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(BanUserResponse)
@@ -193,16 +178,6 @@ func (c *superUserServiceClient) DeleteUser(ctx context.Context, in *DeleteUserR
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(DeleteUserResponse)
 	err := c.cc.Invoke(ctx, SuperUserService_DeleteUser_FullMethodName, in, out, cOpts...)
-	if err != nil {
-		return nil, err
-	}
-	return out, nil
-}
-
-func (c *superUserServiceClient) UpdateUser(ctx context.Context, in *UpdateUserRequest, opts ...grpc.CallOption) (*UserDetail, error) {
-	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
-	out := new(UserDetail)
-	err := c.cc.Invoke(ctx, SuperUserService_UpdateUser_FullMethodName, in, out, cOpts...)
 	if err != nil {
 		return nil, err
 	}
@@ -322,58 +297,33 @@ func (c *superUserServiceClient) GetAuditLogs(ctx context.Context, in *GetAuditL
 // SuperUserServiceServer is the server API for SuperUserService service.
 // All implementations must embed UnimplementedSuperUserServiceServer
 // for forward compatibility.
-//
-// SuperUserService 超级管理员服务
-// 系统级管理员，拥有访问数据库、RabbitMQ、管理所有用户等上帝级权限
-// 与普通用户完全隔离，采用独立的认证和权限体系
 type SuperUserServiceServer interface {
-	// ========== 认证相关 ==========
-	// 超级管理员登录
+	// ---- 认证 ----
 	Login(context.Context, *SuperUserLoginRequest) (*SuperUserLoginResponse, error)
-	// 登出
 	Logout(context.Context, *SuperUserLogoutRequest) (*common.Empty, error)
-	// 刷新 Token
 	RefreshToken(context.Context, *SuperUserRefreshRequest) (*SuperUserLoginResponse, error)
-	// 验证 Token（内部服务调用）
 	ValidateToken(context.Context, *ValidateTokenRequest) (*ValidateTokenResponse, error)
-	// ========== 用户管理 ==========
-	// 获取所有用户列表
+	// ---- 用户管理 ----
 	ListUsers(context.Context, *ListUsersRequest) (*ListUsersResponse, error)
-	// 获取用户详情
 	GetUser(context.Context, *GetUserRequest) (*UserDetail, error)
-	// 封禁用户
-	BanUser(context.Context, *BanUserRequest) (*BanUserResponse, error)
-	// 解封用户
-	UnbanUser(context.Context, *UnbanUserRequest) (*UnbanUserResponse, error)
-	// 删除用户
-	DeleteUser(context.Context, *DeleteUserRequest) (*DeleteUserResponse, error)
-	// 强制修改用户信息
 	UpdateUser(context.Context, *UpdateUserRequest) (*UserDetail, error)
-	// ========== 内容管理 ==========
-	// 获取所有内容列表
+	BanUser(context.Context, *BanUserRequest) (*BanUserResponse, error)
+	UnbanUser(context.Context, *UnbanUserRequest) (*UnbanUserResponse, error)
+	DeleteUser(context.Context, *DeleteUserRequest) (*DeleteUserResponse, error)
+	// ---- 内容管理 ----
 	ListContents(context.Context, *ListContentsRequest) (*ListContentsResponse, error)
-	// 删除内容
 	DeleteContent(context.Context, *DeleteContentRequest) (*DeleteContentResponse, error)
-	// 批量删除内容
 	BatchDeleteContents(context.Context, *BatchDeleteContentsRequest) (*BatchDeleteContentsResponse, error)
-	// ========== 系统监控 ==========
-	// 获取系统统计信息
+	// ---- 系统监控 ----
 	GetSystemStats(context.Context, *GetSystemStatsRequest) (*SystemStats, error)
-	// 获取数据库状态
 	GetDatabaseStatus(context.Context, *GetDatabaseStatusRequest) (*DatabaseStatus, error)
-	// 获取 Redis 状态
 	GetRedisStatus(context.Context, *GetRedisStatusRequest) (*RedisStatus, error)
-	// 获取 RabbitMQ 状态
 	GetRabbitMQStatus(context.Context, *GetRabbitMQStatusRequest) (*RabbitMQStatus, error)
-	// ========== 数据库操作 ==========
-	// 执行只读 SQL 查询
+	// ---- 数据库操作 ----
 	ExecuteQuery(context.Context, *ExecuteQueryRequest) (*ExecuteQueryResponse, error)
-	// 获取表结构
 	GetTableSchema(context.Context, *GetTableSchemaRequest) (*TableSchema, error)
-	// 获取所有表列表
 	ListTables(context.Context, *ListTablesRequest) (*ListTablesResponse, error)
-	// ========== 审计日志 ==========
-	// 获取操作日志
+	// ---- 审计日志 ----
 	GetAuditLogs(context.Context, *GetAuditLogsRequest) (*AuditLogsResponse, error)
 	mustEmbedUnimplementedSuperUserServiceServer()
 }
@@ -403,6 +353,9 @@ func (UnimplementedSuperUserServiceServer) ListUsers(context.Context, *ListUsers
 func (UnimplementedSuperUserServiceServer) GetUser(context.Context, *GetUserRequest) (*UserDetail, error) {
 	return nil, status.Error(codes.Unimplemented, "method GetUser not implemented")
 }
+func (UnimplementedSuperUserServiceServer) UpdateUser(context.Context, *UpdateUserRequest) (*UserDetail, error) {
+	return nil, status.Error(codes.Unimplemented, "method UpdateUser not implemented")
+}
 func (UnimplementedSuperUserServiceServer) BanUser(context.Context, *BanUserRequest) (*BanUserResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method BanUser not implemented")
 }
@@ -411,9 +364,6 @@ func (UnimplementedSuperUserServiceServer) UnbanUser(context.Context, *UnbanUser
 }
 func (UnimplementedSuperUserServiceServer) DeleteUser(context.Context, *DeleteUserRequest) (*DeleteUserResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method DeleteUser not implemented")
-}
-func (UnimplementedSuperUserServiceServer) UpdateUser(context.Context, *UpdateUserRequest) (*UserDetail, error) {
-	return nil, status.Error(codes.Unimplemented, "method UpdateUser not implemented")
 }
 func (UnimplementedSuperUserServiceServer) ListContents(context.Context, *ListContentsRequest) (*ListContentsResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method ListContents not implemented")
@@ -577,6 +527,24 @@ func _SuperUserService_GetUser_Handler(srv interface{}, ctx context.Context, dec
 	return interceptor(ctx, in, info, handler)
 }
 
+func _SuperUserService_UpdateUser_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(UpdateUserRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(SuperUserServiceServer).UpdateUser(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: SuperUserService_UpdateUser_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(SuperUserServiceServer).UpdateUser(ctx, req.(*UpdateUserRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 func _SuperUserService_BanUser_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(BanUserRequest)
 	if err := dec(in); err != nil {
@@ -627,24 +595,6 @@ func _SuperUserService_DeleteUser_Handler(srv interface{}, ctx context.Context, 
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
 		return srv.(SuperUserServiceServer).DeleteUser(ctx, req.(*DeleteUserRequest))
-	}
-	return interceptor(ctx, in, info, handler)
-}
-
-func _SuperUserService_UpdateUser_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(UpdateUserRequest)
-	if err := dec(in); err != nil {
-		return nil, err
-	}
-	if interceptor == nil {
-		return srv.(SuperUserServiceServer).UpdateUser(ctx, in)
-	}
-	info := &grpc.UnaryServerInfo{
-		Server:     srv,
-		FullMethod: SuperUserService_UpdateUser_FullMethodName,
-	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(SuperUserServiceServer).UpdateUser(ctx, req.(*UpdateUserRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -879,6 +829,10 @@ var SuperUserService_ServiceDesc = grpc.ServiceDesc{
 			Handler:    _SuperUserService_GetUser_Handler,
 		},
 		{
+			MethodName: "UpdateUser",
+			Handler:    _SuperUserService_UpdateUser_Handler,
+		},
+		{
 			MethodName: "BanUser",
 			Handler:    _SuperUserService_BanUser_Handler,
 		},
@@ -889,10 +843,6 @@ var SuperUserService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "DeleteUser",
 			Handler:    _SuperUserService_DeleteUser_Handler,
-		},
-		{
-			MethodName: "UpdateUser",
-			Handler:    _SuperUserService_UpdateUser_Handler,
 		},
 		{
 			MethodName: "ListContents",

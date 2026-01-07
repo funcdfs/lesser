@@ -29,12 +29,14 @@ const (
 // NotificationServiceClient is the client API for NotificationService service.
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
-//
-// NotificationService 通知服务
 type NotificationServiceClient interface {
+	// 获取通知列表
 	List(ctx context.Context, in *ListNotificationsRequest, opts ...grpc.CallOption) (*ListNotificationsResponse, error)
+	// 标记单条通知已读
 	Read(ctx context.Context, in *ReadNotificationRequest, opts ...grpc.CallOption) (*common.Empty, error)
+	// 标记所有通知已读
 	ReadAll(ctx context.Context, in *ReadAllNotificationsRequest, opts ...grpc.CallOption) (*common.Empty, error)
+	// 获取未读数
 	GetUnreadCount(ctx context.Context, in *GetUnreadCountRequest, opts ...grpc.CallOption) (*UnreadCountResponse, error)
 }
 
@@ -89,12 +91,14 @@ func (c *notificationServiceClient) GetUnreadCount(ctx context.Context, in *GetU
 // NotificationServiceServer is the server API for NotificationService service.
 // All implementations must embed UnimplementedNotificationServiceServer
 // for forward compatibility.
-//
-// NotificationService 通知服务
 type NotificationServiceServer interface {
+	// 获取通知列表
 	List(context.Context, *ListNotificationsRequest) (*ListNotificationsResponse, error)
+	// 标记单条通知已读
 	Read(context.Context, *ReadNotificationRequest) (*common.Empty, error)
+	// 标记所有通知已读
 	ReadAll(context.Context, *ReadAllNotificationsRequest) (*common.Empty, error)
+	// 获取未读数
 	GetUnreadCount(context.Context, *GetUnreadCountRequest) (*UnreadCountResponse, error)
 	mustEmbedUnimplementedNotificationServiceServer()
 }

@@ -6,40 +6,61 @@ option go_package = "github.com/funcdfs/lesser/comment/gen_protos/comment";
 import "common/common.proto";
 
 // ============================================================================
+// CommentService 评论服务 (端口: 50055)
+// 处理评论的 CRUD、点赞、排序等功能
+// ============================================================================
+
+service CommentService {
+  // ---- 基础 CRUD ----
+  rpc CreateComment(CreateCommentRequest) returns (CreateCommentResponse);
+  rpc GetComment(GetCommentRequest) returns (GetCommentResponse);
+  rpc DeleteComment(DeleteCommentRequest) returns (DeleteCommentResponse);
+  
+  // ---- 列表查询 ----
+  rpc ListComments(ListCommentsRequest) returns (ListCommentsResponse);
+  
+  // ---- 统计 ----
+  rpc GetCommentCount(GetCommentCountRequest) returns (GetCommentCountResponse);
+  rpc BatchGetCommentCount(BatchGetCommentCountRequest) returns (BatchGetCommentCountResponse);
+  
+  // ---- 评论点赞 ----
+  rpc LikeComment(LikeCommentRequest) returns (LikeCommentResponse);
+  rpc UnlikeComment(UnlikeCommentRequest) returns (UnlikeCommentResponse);
+}
+
+// ============================================================================
 // 枚举定义
 // ============================================================================
 
-// CommentSortBy 评论排序方式
 enum CommentSortBy {
-  COMMENT_SORT_UNSPECIFIED = 0;  // 默认：最新优先
-  COMMENT_SORT_OLDEST = 1;       // 最早优先（时间正序）
-  COMMENT_SORT_NEWEST = 2;       // 最新优先（时间倒序）
-  COMMENT_SORT_HOTTEST = 3;      // 最热门（点赞数倒序）
-  COMMENT_SORT_RECOMMENDED = 4;  // AI 推荐（预留）
+  COMMENT_SORT_UNSPECIFIED = 0;
+  COMMENT_SORT_OLDEST = 1;      // 最早优先
+  COMMENT_SORT_NEWEST = 2;      // 最新优先
+  COMMENT_SORT_HOTTEST = 3;     // 最热门
+  COMMENT_SORT_RECOMMENDED = 4; // AI 推荐（预留）
 }
 
 // ============================================================================
 // 实体定义
 // ============================================================================
 
-// Comment 评论实体
 message Comment {
   string id = 1;
   string author_id = 2;
-  string content_id = 3;      // 所属内容 ID
-  string parent_id = 4;       // 父评论 ID（用于回复）
-  string text = 5;            // 评论内容
-  bool is_deleted = 6;        // 是否已删除
+  string content_id = 3;
+  string parent_id = 4;
+  string text = 5;
+  bool is_deleted = 6;
   common.Timestamp created_at = 7;
   common.Timestamp updated_at = 8;
-  int32 reply_count = 9;      // 回复数量
-  int32 like_count = 10;      // 点赞数量
+  int32 reply_count = 9;
+  int32 like_count = 10;
   
-  // 可选：作者信息（由调用方填充）
+  // 可选：作者信息
   string author_username = 11;
   string author_avatar = 12;
   
-  // 可选：当前用户是否已点赞（由调用方填充）
+  // 可选：当前用户是否已点赞
   bool is_liked = 13;
 }
 
@@ -47,130 +68,86 @@ message Comment {
 // 请求/响应消息
 // ============================================================================
 
-// CreateCommentRequest 创建评论请求
 message CreateCommentRequest {
   string author_id = 1;
   string content_id = 2;
-  string parent_id = 3;  // 可选，回复评论时使用
+  string parent_id = 3;
   string text = 4;
-  repeated string mentioned_user_ids = 5;  // @ 提及的用户 ID 列表
+  repeated string mentioned_user_ids = 5;
 }
 
-// CreateCommentResponse 创建评论响应
 message CreateCommentResponse {
   Comment comment = 1;
-  int32 comment_count = 2;  // 更新后的评论总数
+  int32 comment_count = 2;
 }
 
-// GetCommentRequest 获取单条评论请求
 message GetCommentRequest {
   string comment_id = 1;
 }
 
-// GetCommentResponse 获取单条评论响应
 message GetCommentResponse {
   Comment comment = 1;
 }
 
-// DeleteCommentRequest 删除评论请求
 message DeleteCommentRequest {
   string comment_id = 1;
-  string user_id = 2;  // 用于验证权限
+  string user_id = 2;
 }
 
-// DeleteCommentResponse 删除评论响应
 message DeleteCommentResponse {
   bool success = 1;
-  int32 comment_count = 2;  // 更新后的评论总数
+  int32 comment_count = 2;
 }
 
-// ListCommentsRequest 获取评论列表请求
 message ListCommentsRequest {
   string content_id = 1;
-  string parent_id = 2;       // 可选，获取某评论的回复
+  string parent_id = 2;
   common.Pagination pagination = 3;
-  CommentSortBy sort_by = 4;  // 排序方式
+  CommentSortBy sort_by = 4;
 }
 
-// ListCommentsResponse 评论列表响应
 message ListCommentsResponse {
   repeated Comment comments = 1;
   common.Pagination pagination = 2;
 }
 
-// GetCommentCountRequest 获取评论数量请求
 message GetCommentCountRequest {
   string content_id = 1;
 }
 
-// GetCommentCountResponse 获取评论数量响应
 message GetCommentCountResponse {
   int32 count = 1;
 }
 
-// BatchGetCommentCountRequest 批量获取评论数量请求
 message BatchGetCommentCountRequest {
   repeated string content_ids = 1;
 }
 
-// CommentCount 单个内容的评论数量
 message CommentCount {
   string content_id = 1;
   int32 count = 2;
 }
 
-// BatchGetCommentCountResponse 批量获取评论数量响应
 message BatchGetCommentCountResponse {
   repeated CommentCount counts = 1;
 }
 
-// ============================================================================
-// 评论点赞相关
-// ============================================================================
-
-// LikeCommentRequest 点赞评论请求
 message LikeCommentRequest {
   string user_id = 1;
   string comment_id = 2;
 }
 
-// LikeCommentResponse 点赞评论响应
 message LikeCommentResponse {
   bool success = 1;
-  int32 like_count = 2;  // 更新后的点赞数
+  int32 like_count = 2;
 }
 
-// UnlikeCommentRequest 取消点赞评论请求
 message UnlikeCommentRequest {
   string user_id = 1;
   string comment_id = 2;
 }
 
-// UnlikeCommentResponse 取消点赞评论响应
 message UnlikeCommentResponse {
   bool success = 1;
   int32 like_count = 2;
-}
-
-// ============================================================================
-// 服务定义
-// ============================================================================
-
-// CommentService 评论服务
-service CommentService {
-  // 基础 CRUD
-  rpc CreateComment(CreateCommentRequest) returns (CreateCommentResponse);
-  rpc GetComment(GetCommentRequest) returns (GetCommentResponse);
-  rpc DeleteComment(DeleteCommentRequest) returns (DeleteCommentResponse);
-  
-  // 列表查询（支持排序）
-  rpc ListComments(ListCommentsRequest) returns (ListCommentsResponse);
-  
-  // 统计
-  rpc GetCommentCount(GetCommentCountRequest) returns (GetCommentCountResponse);
-  rpc BatchGetCommentCount(BatchGetCommentCountRequest) returns (BatchGetCommentCountResponse);
-  
-  // 评论点赞
-  rpc LikeComment(LikeCommentRequest) returns (LikeCommentResponse);
-  rpc UnlikeComment(UnlikeCommentRequest) returns (UnlikeCommentResponse);
 }

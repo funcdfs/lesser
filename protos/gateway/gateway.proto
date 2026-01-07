@@ -3,24 +3,28 @@ package gateway;
 
 option go_package = "github.com/funcdfs/lesser/gateway/gen_protos/gateway";
 
-// GatewayService API 网关服务
+// ============================================================================
+// GatewayService API 网关服务 (端口: 50051)
 // Gateway 只做：鉴权（JWT 本地验签）、限流、路由转发
 // 不处理任何业务逻辑
+// ============================================================================
+
 service GatewayService {
   // 健康检查
   rpc Health(HealthRequest) returns (HealthResponse);
 }
 
-// HealthRequest 健康检查请求
+// ============================================================================
+// 请求/响应消息
+// ============================================================================
+
 message HealthRequest {}
 
-// HealthResponse 健康检查响应
 message HealthResponse {
   bool healthy = 1;
   map<string, ServiceStatus> services = 2;
 }
 
-// ServiceStatus 服务状态
 message ServiceStatus {
   bool healthy = 1;
   string message = 2;

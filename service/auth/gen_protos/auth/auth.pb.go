@@ -115,7 +115,6 @@ func (x *User) GetCreatedAt() *common.Timestamp {
 	return nil
 }
 
-// RegisterRequest 注册请求
 type RegisterRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Username      string                 `protobuf:"bytes,1,opt,name=username,proto3" json:"username,omitempty"`
@@ -184,7 +183,6 @@ func (x *RegisterRequest) GetDisplayName() string {
 	return ""
 }
 
-// LoginRequest 登录请求
 type LoginRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Email         string                 `protobuf:"bytes,1,opt,name=email,proto3" json:"email,omitempty"`
@@ -237,7 +235,6 @@ func (x *LoginRequest) GetPassword() string {
 	return ""
 }
 
-// AuthResponse 认证响应
 type AuthResponse struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	User          *User                  `protobuf:"bytes,1,opt,name=user,proto3" json:"user,omitempty"`
@@ -298,7 +295,6 @@ func (x *AuthResponse) GetRefreshToken() string {
 	return ""
 }
 
-// LogoutRequest 登出请求
 type LogoutRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	AccessToken   string                 `protobuf:"bytes,1,opt,name=access_token,json=accessToken,proto3" json:"access_token,omitempty"`
@@ -343,7 +339,6 @@ func (x *LogoutRequest) GetAccessToken() string {
 	return ""
 }
 
-// RefreshRequest 刷新 Token 请求
 type RefreshRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	RefreshToken  string                 `protobuf:"bytes,1,opt,name=refresh_token,json=refreshToken,proto3" json:"refresh_token,omitempty"`
@@ -388,7 +383,6 @@ func (x *RefreshRequest) GetRefreshToken() string {
 	return ""
 }
 
-// GetPublicKeyRequest 获取公钥请求
 type GetPublicKeyRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	unknownFields protoimpl.UnknownFields
@@ -425,11 +419,10 @@ func (*GetPublicKeyRequest) Descriptor() ([]byte, []int) {
 	return file_auth_auth_proto_rawDescGZIP(), []int{6}
 }
 
-// GetPublicKeyResponse 获取公钥响应
 type GetPublicKeyResponse struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	PublicKey     string                 `protobuf:"bytes,1,opt,name=public_key,json=publicKey,proto3" json:"public_key,omitempty"`  // PEM 格式的公钥
-	KeyId         string                 `protobuf:"bytes,2,opt,name=key_id,json=keyId,proto3" json:"key_id,omitempty"`              // Key ID，用于密钥轮换
+	PublicKey     string                 `protobuf:"bytes,1,opt,name=public_key,json=publicKey,proto3" json:"public_key,omitempty"`  // PEM 格式公钥
+	KeyId         string                 `protobuf:"bytes,2,opt,name=key_id,json=keyId,proto3" json:"key_id,omitempty"`              // Key ID（密钥轮换用）
 	Algorithm     string                 `protobuf:"bytes,3,opt,name=algorithm,proto3" json:"algorithm,omitempty"`                   // 签名算法，如 "RS256"
 	ExpiresAt     int64                  `protobuf:"varint,4,opt,name=expires_at,json=expiresAt,proto3" json:"expires_at,omitempty"` // 公钥过期时间戳（Unix 秒）
 	unknownFields protoimpl.UnknownFields
@@ -494,7 +487,50 @@ func (x *GetPublicKeyResponse) GetExpiresAt() int64 {
 	return 0
 }
 
-// BanUserRequest 封禁用户请求
+type GetUserRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	UserId        string                 `protobuf:"bytes,1,opt,name=user_id,json=userId,proto3" json:"user_id,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *GetUserRequest) Reset() {
+	*x = GetUserRequest{}
+	mi := &file_auth_auth_proto_msgTypes[8]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *GetUserRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*GetUserRequest) ProtoMessage() {}
+
+func (x *GetUserRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_auth_auth_proto_msgTypes[8]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use GetUserRequest.ProtoReflect.Descriptor instead.
+func (*GetUserRequest) Descriptor() ([]byte, []int) {
+	return file_auth_auth_proto_rawDescGZIP(), []int{8}
+}
+
+func (x *GetUserRequest) GetUserId() string {
+	if x != nil {
+		return x.UserId
+	}
+	return ""
+}
+
 type BanUserRequest struct {
 	state           protoimpl.MessageState `protogen:"open.v1"`
 	UserId          string                 `protobuf:"bytes,1,opt,name=user_id,json=userId,proto3" json:"user_id,omitempty"`
@@ -506,7 +542,7 @@ type BanUserRequest struct {
 
 func (x *BanUserRequest) Reset() {
 	*x = BanUserRequest{}
-	mi := &file_auth_auth_proto_msgTypes[8]
+	mi := &file_auth_auth_proto_msgTypes[9]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -518,7 +554,7 @@ func (x *BanUserRequest) String() string {
 func (*BanUserRequest) ProtoMessage() {}
 
 func (x *BanUserRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_auth_auth_proto_msgTypes[8]
+	mi := &file_auth_auth_proto_msgTypes[9]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -531,7 +567,7 @@ func (x *BanUserRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use BanUserRequest.ProtoReflect.Descriptor instead.
 func (*BanUserRequest) Descriptor() ([]byte, []int) {
-	return file_auth_auth_proto_rawDescGZIP(), []int{8}
+	return file_auth_auth_proto_rawDescGZIP(), []int{9}
 }
 
 func (x *BanUserRequest) GetUserId() string {
@@ -555,7 +591,6 @@ func (x *BanUserRequest) GetDurationSeconds() int64 {
 	return 0
 }
 
-// BanUserResponse 封禁用户响应
 type BanUserResponse struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Success       bool                   `protobuf:"varint,1,opt,name=success,proto3" json:"success,omitempty"`
@@ -565,7 +600,7 @@ type BanUserResponse struct {
 
 func (x *BanUserResponse) Reset() {
 	*x = BanUserResponse{}
-	mi := &file_auth_auth_proto_msgTypes[9]
+	mi := &file_auth_auth_proto_msgTypes[10]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -577,7 +612,7 @@ func (x *BanUserResponse) String() string {
 func (*BanUserResponse) ProtoMessage() {}
 
 func (x *BanUserResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_auth_auth_proto_msgTypes[9]
+	mi := &file_auth_auth_proto_msgTypes[10]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -590,7 +625,7 @@ func (x *BanUserResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use BanUserResponse.ProtoReflect.Descriptor instead.
 func (*BanUserResponse) Descriptor() ([]byte, []int) {
-	return file_auth_auth_proto_rawDescGZIP(), []int{9}
+	return file_auth_auth_proto_rawDescGZIP(), []int{10}
 }
 
 func (x *BanUserResponse) GetSuccess() bool {
@@ -600,7 +635,6 @@ func (x *BanUserResponse) GetSuccess() bool {
 	return false
 }
 
-// CheckBannedRequest 检查封禁状态请求
 type CheckBannedRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	UserId        string                 `protobuf:"bytes,1,opt,name=user_id,json=userId,proto3" json:"user_id,omitempty"`
@@ -610,7 +644,7 @@ type CheckBannedRequest struct {
 
 func (x *CheckBannedRequest) Reset() {
 	*x = CheckBannedRequest{}
-	mi := &file_auth_auth_proto_msgTypes[10]
+	mi := &file_auth_auth_proto_msgTypes[11]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -622,7 +656,7 @@ func (x *CheckBannedRequest) String() string {
 func (*CheckBannedRequest) ProtoMessage() {}
 
 func (x *CheckBannedRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_auth_auth_proto_msgTypes[10]
+	mi := &file_auth_auth_proto_msgTypes[11]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -635,7 +669,7 @@ func (x *CheckBannedRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use CheckBannedRequest.ProtoReflect.Descriptor instead.
 func (*CheckBannedRequest) Descriptor() ([]byte, []int) {
-	return file_auth_auth_proto_rawDescGZIP(), []int{10}
+	return file_auth_auth_proto_rawDescGZIP(), []int{11}
 }
 
 func (x *CheckBannedRequest) GetUserId() string {
@@ -645,7 +679,6 @@ func (x *CheckBannedRequest) GetUserId() string {
 	return ""
 }
 
-// CheckBannedResponse 检查封禁状态响应
 type CheckBannedResponse struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Banned        bool                   `protobuf:"varint,1,opt,name=banned,proto3" json:"banned,omitempty"`
@@ -657,7 +690,7 @@ type CheckBannedResponse struct {
 
 func (x *CheckBannedResponse) Reset() {
 	*x = CheckBannedResponse{}
-	mi := &file_auth_auth_proto_msgTypes[11]
+	mi := &file_auth_auth_proto_msgTypes[12]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -669,7 +702,7 @@ func (x *CheckBannedResponse) String() string {
 func (*CheckBannedResponse) ProtoMessage() {}
 
 func (x *CheckBannedResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_auth_auth_proto_msgTypes[11]
+	mi := &file_auth_auth_proto_msgTypes[12]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -682,7 +715,7 @@ func (x *CheckBannedResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use CheckBannedResponse.ProtoReflect.Descriptor instead.
 func (*CheckBannedResponse) Descriptor() ([]byte, []int) {
-	return file_auth_auth_proto_rawDescGZIP(), []int{11}
+	return file_auth_auth_proto_rawDescGZIP(), []int{12}
 }
 
 func (x *CheckBannedResponse) GetBanned() bool {
@@ -704,51 +737,6 @@ func (x *CheckBannedResponse) GetExpiresAt() int64 {
 		return x.ExpiresAt
 	}
 	return 0
-}
-
-// GetUserRequest 获取用户请求
-type GetUserRequest struct {
-	state         protoimpl.MessageState `protogen:"open.v1"`
-	UserId        string                 `protobuf:"bytes,1,opt,name=user_id,json=userId,proto3" json:"user_id,omitempty"`
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
-}
-
-func (x *GetUserRequest) Reset() {
-	*x = GetUserRequest{}
-	mi := &file_auth_auth_proto_msgTypes[12]
-	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-	ms.StoreMessageInfo(mi)
-}
-
-func (x *GetUserRequest) String() string {
-	return protoimpl.X.MessageStringOf(x)
-}
-
-func (*GetUserRequest) ProtoMessage() {}
-
-func (x *GetUserRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_auth_auth_proto_msgTypes[12]
-	if x != nil {
-		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-		if ms.LoadMessageInfo() == nil {
-			ms.StoreMessageInfo(mi)
-		}
-		return ms
-	}
-	return mi.MessageOf(x)
-}
-
-// Deprecated: Use GetUserRequest.ProtoReflect.Descriptor instead.
-func (*GetUserRequest) Descriptor() ([]byte, []int) {
-	return file_auth_auth_proto_rawDescGZIP(), []int{12}
-}
-
-func (x *GetUserRequest) GetUserId() string {
-	if x != nil {
-		return x.UserId
-	}
-	return ""
 }
 
 var File_auth_auth_proto protoreflect.FileDescriptor
@@ -790,7 +778,9 @@ const file_auth_auth_proto_rawDesc = "" +
 	"\x06key_id\x18\x02 \x01(\tR\x05keyId\x12\x1c\n" +
 	"\talgorithm\x18\x03 \x01(\tR\talgorithm\x12\x1d\n" +
 	"\n" +
-	"expires_at\x18\x04 \x01(\x03R\texpiresAt\"l\n" +
+	"expires_at\x18\x04 \x01(\x03R\texpiresAt\")\n" +
+	"\x0eGetUserRequest\x12\x17\n" +
+	"\auser_id\x18\x01 \x01(\tR\x06userId\"l\n" +
 	"\x0eBanUserRequest\x12\x17\n" +
 	"\auser_id\x18\x01 \x01(\tR\x06userId\x12\x16\n" +
 	"\x06reason\x18\x02 \x01(\tR\x06reason\x12)\n" +
@@ -803,19 +793,17 @@ const file_auth_auth_proto_rawDesc = "" +
 	"\x06banned\x18\x01 \x01(\bR\x06banned\x12\x16\n" +
 	"\x06reason\x18\x02 \x01(\tR\x06reason\x12\x1d\n" +
 	"\n" +
-	"expires_at\x18\x03 \x01(\x03R\texpiresAt\")\n" +
-	"\x0eGetUserRequest\x12\x17\n" +
-	"\auser_id\x18\x01 \x01(\tR\x06userId2\xcd\x03\n" +
+	"expires_at\x18\x03 \x01(\x03R\texpiresAt2\xcd\x03\n" +
 	"\vAuthService\x125\n" +
 	"\bRegister\x12\x15.auth.RegisterRequest\x1a\x12.auth.AuthResponse\x12/\n" +
 	"\x05Login\x12\x12.auth.LoginRequest\x1a\x12.auth.AuthResponse\x12,\n" +
 	"\x06Logout\x12\x13.auth.LogoutRequest\x1a\r.common.Empty\x128\n" +
 	"\fRefreshToken\x12\x14.auth.RefreshRequest\x1a\x12.auth.AuthResponse\x12E\n" +
-	"\fGetPublicKey\x12\x19.auth.GetPublicKeyRequest\x1a\x1a.auth.GetPublicKeyResponse\x126\n" +
-	"\aBanUser\x12\x14.auth.BanUserRequest\x1a\x15.auth.BanUserResponse\x12B\n" +
-	"\vCheckBanned\x12\x18.auth.CheckBannedRequest\x1a\x19.auth.CheckBannedResponse\x12+\n" +
+	"\fGetPublicKey\x12\x19.auth.GetPublicKeyRequest\x1a\x1a.auth.GetPublicKeyResponse\x12+\n" +
 	"\aGetUser\x12\x14.auth.GetUserRequest\x1a\n" +
-	".auth.UserB0Z.github.com/funcdfs/lesser/auth/gen_protos/authb\x06proto3"
+	".auth.User\x126\n" +
+	"\aBanUser\x12\x14.auth.BanUserRequest\x1a\x15.auth.BanUserResponse\x12B\n" +
+	"\vCheckBanned\x12\x18.auth.CheckBannedRequest\x1a\x19.auth.CheckBannedResponseB0Z.github.com/funcdfs/lesser/auth/gen_protos/authb\x06proto3"
 
 var (
 	file_auth_auth_proto_rawDescOnce sync.Once
@@ -839,11 +827,11 @@ var file_auth_auth_proto_goTypes = []any{
 	(*RefreshRequest)(nil),       // 5: auth.RefreshRequest
 	(*GetPublicKeyRequest)(nil),  // 6: auth.GetPublicKeyRequest
 	(*GetPublicKeyResponse)(nil), // 7: auth.GetPublicKeyResponse
-	(*BanUserRequest)(nil),       // 8: auth.BanUserRequest
-	(*BanUserResponse)(nil),      // 9: auth.BanUserResponse
-	(*CheckBannedRequest)(nil),   // 10: auth.CheckBannedRequest
-	(*CheckBannedResponse)(nil),  // 11: auth.CheckBannedResponse
-	(*GetUserRequest)(nil),       // 12: auth.GetUserRequest
+	(*GetUserRequest)(nil),       // 8: auth.GetUserRequest
+	(*BanUserRequest)(nil),       // 9: auth.BanUserRequest
+	(*BanUserResponse)(nil),      // 10: auth.BanUserResponse
+	(*CheckBannedRequest)(nil),   // 11: auth.CheckBannedRequest
+	(*CheckBannedResponse)(nil),  // 12: auth.CheckBannedResponse
 	(*common.Timestamp)(nil),     // 13: common.Timestamp
 	(*common.Empty)(nil),         // 14: common.Empty
 }
@@ -855,17 +843,17 @@ var file_auth_auth_proto_depIdxs = []int32{
 	4,  // 4: auth.AuthService.Logout:input_type -> auth.LogoutRequest
 	5,  // 5: auth.AuthService.RefreshToken:input_type -> auth.RefreshRequest
 	6,  // 6: auth.AuthService.GetPublicKey:input_type -> auth.GetPublicKeyRequest
-	8,  // 7: auth.AuthService.BanUser:input_type -> auth.BanUserRequest
-	10, // 8: auth.AuthService.CheckBanned:input_type -> auth.CheckBannedRequest
-	12, // 9: auth.AuthService.GetUser:input_type -> auth.GetUserRequest
+	8,  // 7: auth.AuthService.GetUser:input_type -> auth.GetUserRequest
+	9,  // 8: auth.AuthService.BanUser:input_type -> auth.BanUserRequest
+	11, // 9: auth.AuthService.CheckBanned:input_type -> auth.CheckBannedRequest
 	3,  // 10: auth.AuthService.Register:output_type -> auth.AuthResponse
 	3,  // 11: auth.AuthService.Login:output_type -> auth.AuthResponse
 	14, // 12: auth.AuthService.Logout:output_type -> common.Empty
 	3,  // 13: auth.AuthService.RefreshToken:output_type -> auth.AuthResponse
 	7,  // 14: auth.AuthService.GetPublicKey:output_type -> auth.GetPublicKeyResponse
-	9,  // 15: auth.AuthService.BanUser:output_type -> auth.BanUserResponse
-	11, // 16: auth.AuthService.CheckBanned:output_type -> auth.CheckBannedResponse
-	0,  // 17: auth.AuthService.GetUser:output_type -> auth.User
+	0,  // 15: auth.AuthService.GetUser:output_type -> auth.User
+	10, // 16: auth.AuthService.BanUser:output_type -> auth.BanUserResponse
+	12, // 17: auth.AuthService.CheckBanned:output_type -> auth.CheckBannedResponse
 	10, // [10:18] is the sub-list for method output_type
 	2,  // [2:10] is the sub-list for method input_type
 	2,  // [2:2] is the sub-list for extension type_name

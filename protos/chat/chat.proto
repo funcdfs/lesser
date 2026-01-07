@@ -5,44 +5,44 @@ option go_package = "github.com/funcdfs/lesser/chat/gen_protos/chat";
 
 import "common/common.proto";
 
-// ChatService 聊天服务
-// 处理会话管理、消息收发、实时通信
+// ============================================================================
+// ChatService 聊天服务 (端口: 50060)
+// 处理私聊/群聊的会话管理、消息收发、实时通信
+// 使用 gRPC 双向流替代 WebSocket
+// ============================================================================
+
 service ChatService {
-  // 获取用户的所有会话
+  // ---- 会话管理 ----
   rpc GetConversations(GetConversationsRequest) returns (ConversationsResponse);
-  // 根据 ID 获取单个会话
   rpc GetConversation(GetConversationRequest) returns (Conversation);
-  // 创建新会话
   rpc CreateConversation(CreateConversationRequest) returns (Conversation);
-  // 获取会话中的消息
+  
+  // ---- 消息管理 ----
   rpc GetMessages(GetMessagesRequest) returns (MessagesResponse);
-  // 发送消息到会话
   rpc SendMessage(SendMessageRequest) returns (Message);
-  // 标记单条消息为已读
+  
+  // ---- 已读状态 ----
   rpc MarkAsRead(MarkAsReadRequest) returns (ReadReceipt);
-  // 标记会话中所有消息为已读
   rpc MarkConversationAsRead(MarkConversationAsReadRequest) returns (BatchReadReceipt);
-  // 批量获取多个会话的未读数
   rpc GetUnreadCounts(GetUnreadCountsRequest) returns (GetUnreadCountsResponse);
   
-  // 双向流：实时事件（替代 WebSocket）
-  // 客户端通过此流订阅会话、发送消息、接收实时事件
+  // ---- 实时通信（双向流）----
   rpc StreamEvents(stream ClientEvent) returns (stream ServerEvent);
 }
 
 // ============================================================================
-// 会话相关消息
+// 枚举定义
 // ============================================================================
 
-// ConversationType 会话类型
-// 注意：CHANNEL 类型已迁移到独立的 Channel 服务 (protos/channel/channel.proto)
 enum ConversationType {
   PRIVATE = 0;  // 一对一私聊
   GROUP = 1;    // 多人群聊
-  // CHANNEL = 2; // 已废弃，请使用 Channel 服务
 }
 
-// Conversation 会话实体
+// ============================================================================
+// 实体定义
+// ============================================================================
+
 message Conversation {
   string id = 1;
   ConversationType type = 2;
@@ -54,7 +54,6 @@ message Conversation {
   int64 unread_count = 8;
 }
 
-// Message 消息实体
 message Message {
   string id = 1;
   string conversation_id = 2;
@@ -62,11 +61,9 @@ message Message {
   string content = 4;
   string message_type = 5;  // text, image, file, video, link, system
   common.Timestamp created_at = 6;
-  common.Timestamp read_at = 7;  // 已读时间戳，null 表示未读
+  common.Timestamp read_at = 7;
 }
 
-
-// ReadReceipt 单条消息已读回执
 message ReadReceipt {
   string message_id = 1;
   string conversation_id = 2;
@@ -74,7 +71,6 @@ message ReadReceipt {
   common.Timestamp read_at = 4;
 }
 
-// BatchReadReceipt 批量已读回执
 message BatchReadReceipt {
   string conversation_id = 1;
   string reader_id = 2;
@@ -86,24 +82,20 @@ message BatchReadReceipt {
 // 请求/响应消息
 // ============================================================================
 
-// GetConversationsRequest 获取会话列表请求
 message GetConversationsRequest {
   string user_id = 1;
   common.Pagination pagination = 2;
 }
 
-// ConversationsResponse 会话列表响应
 message ConversationsResponse {
   repeated Conversation conversations = 1;
   common.Pagination pagination = 2;
 }
 
-// GetConversationRequest 获取单个会话请求
 message GetConversationRequest {
   string conversation_id = 1;
 }
 
-// CreateConversationRequest 创建会话请求
 message CreateConversationRequest {
   ConversationType type = 1;
   string name = 2;
@@ -111,19 +103,16 @@ message CreateConversationRequest {
   string creator_id = 4;
 }
 
-// GetMessagesRequest 获取消息列表请求
 message GetMessagesRequest {
   string conversation_id = 1;
   common.Pagination pagination = 2;
 }
 
-// MessagesResponse 消息列表响应
 message MessagesResponse {
   repeated Message messages = 1;
   common.Pagination pagination = 2;
 }
 
-// SendMessageRequest 发送消息请求
 message SendMessageRequest {
   string conversation_id = 1;
   string sender_id = 2;
@@ -131,41 +120,36 @@ message SendMessageRequest {
   string message_type = 4;
 }
 
-// MarkAsReadRequest 标记单条消息已读请求
 message MarkAsReadRequest {
   string message_id = 1;
   string user_id = 2;
 }
 
-// MarkConversationAsReadRequest 标记会话所有消息已读请求
 message MarkConversationAsReadRequest {
   string conversation_id = 1;
   string user_id = 2;
 }
 
-// GetUnreadCountsRequest 批量获取未读数请求
 message GetUnreadCountsRequest {
   string user_id = 1;
   repeated string conversation_ids = 2;
 }
 
-// UnreadCount 单个会话的未读数
 message UnreadCount {
   string conversation_id = 1;
   int64 count = 2;
 }
 
-// GetUnreadCountsResponse 批量获取未读数响应
 message GetUnreadCountsResponse {
   repeated UnreadCount unread_counts = 1;
 }
 
-
 // ============================================================================
-// 双向流事件消息（替代 WebSocket）
+// 双向流事件
 // ============================================================================
 
-// ClientEvent 客户端发送的事件
+// ---- 客户端事件 ----
+
 message ClientEvent {
   oneof event {
     SubscribeRequest subscribe = 1;
@@ -176,34 +160,30 @@ message ClientEvent {
   }
 }
 
-// SubscribeRequest 订阅会话请求
 message SubscribeRequest {
   string conversation_id = 1;
 }
 
-// UnsubscribeRequest 取消订阅请求
 message UnsubscribeRequest {
   string conversation_id = 1;
 }
 
-// SendMessageEvent 通过流发送消息事件
 message SendMessageEvent {
   string conversation_id = 1;
   string content = 2;
   string message_type = 3;
-  string client_message_id = 4;  // 客户端生成的临时 ID，用于乐观更新
+  string client_message_id = 4;  // 客户端临时 ID
 }
 
-// PingEvent 心跳事件
 message PingEvent {}
 
-// TypingEvent 正在输入事件
 message TypingEvent {
   string conversation_id = 1;
   bool is_typing = 2;
 }
 
-// ServerEvent 服务端推送的事件
+// ---- 服务端事件 ----
+
 message ServerEvent {
   oneof event {
     NewMessageEvent new_message = 1;
@@ -220,69 +200,58 @@ message ServerEvent {
   }
 }
 
-// NewMessageEvent 新消息事件
 message NewMessageEvent {
   Message message = 1;
 }
 
-// MessageReadEvent 消息已读事件
 message MessageReadEvent {
   string message_id = 1;
   string conversation_id = 2;
   string reader_id = 3;
   common.Timestamp read_at = 4;
-  repeated string message_ids = 5;  // 批量已读时使用
+  repeated string message_ids = 5;
 }
 
-// ConversationUpdateEvent 会话更新事件
 message ConversationUpdateEvent {
   string conversation_id = 1;
   Message last_message = 2;
   int64 unread_count = 3;
 }
 
-// UnreadCountUpdateEvent 未读数更新事件
 message UnreadCountUpdateEvent {
   string conversation_id = 1;
   int64 count = 2;
 }
 
-// UserStatusEvent 用户在线状态事件
 message UserStatusEvent {
   string user_id = 1;
   bool is_online = 2;
   common.Timestamp last_seen = 3;
 }
 
-// TypingIndicatorEvent 正在输入指示器事件
 message TypingIndicatorEvent {
   string conversation_id = 1;
   string user_id = 2;
   bool is_typing = 3;
 }
 
-// SubscribedEvent 订阅成功事件
 message SubscribedEvent {
   string conversation_id = 1;
 }
 
-// UnsubscribedEvent 取消订阅成功事件
 message UnsubscribedEvent {
   string conversation_id = 1;
 }
 
-// PongEvent 心跳响应
 message PongEvent {}
 
-// ErrorEvent 错误事件
 message ErrorEvent {
   string code = 1;
   string message = 2;
   string action = 3;
 }
 
-// MessageSentEvent 消息发送成功事件
 message MessageSentEvent {
-  string client_message_id = 1;  // 客户端临时 ID
-  Message message = 2;           // 服务端生成的正式消息
+  string client_message_id = 1;
+  Message message = 2;
 }

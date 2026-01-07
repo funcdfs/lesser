@@ -47,54 +47,33 @@ const (
 // ChannelServiceClient is the client API for ChannelService service.
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
-//
-// ChannelService 广播频道服务
-// 处理频道管理、内容发布、订阅管理
-// 类似 Telegram Channel，支持单向广播模式
 type ChannelServiceClient interface {
-	// 创建频道
+	// ---- 频道管理 ----
 	CreateChannel(ctx context.Context, in *CreateChannelRequest, opts ...grpc.CallOption) (*Channel, error)
-	// 获取频道信息
 	GetChannel(ctx context.Context, in *GetChannelRequest, opts ...grpc.CallOption) (*Channel, error)
-	// 更新频道信息（仅管理员）
 	UpdateChannel(ctx context.Context, in *UpdateChannelRequest, opts ...grpc.CallOption) (*Channel, error)
-	// 删除频道（仅所有者）
 	DeleteChannel(ctx context.Context, in *DeleteChannelRequest, opts ...grpc.CallOption) (*common.Empty, error)
-	// 获取用户订阅的频道列表
 	GetSubscribedChannels(ctx context.Context, in *GetSubscribedChannelsRequest, opts ...grpc.CallOption) (*ChannelsResponse, error)
-	// 获取用户管理的频道列表
 	GetOwnedChannels(ctx context.Context, in *GetOwnedChannelsRequest, opts ...grpc.CallOption) (*ChannelsResponse, error)
-	// 搜索频道
 	SearchChannels(ctx context.Context, in *SearchChannelsRequest, opts ...grpc.CallOption) (*ChannelsResponse, error)
-	// 订阅频道
+	// ---- 订阅管理 ----
 	Subscribe(ctx context.Context, in *SubscribeRequest, opts ...grpc.CallOption) (*common.Empty, error)
-	// 取消订阅
 	Unsubscribe(ctx context.Context, in *UnsubscribeRequest, opts ...grpc.CallOption) (*common.Empty, error)
-	// 获取频道订阅者列表
 	GetSubscribers(ctx context.Context, in *GetSubscribersRequest, opts ...grpc.CallOption) (*SubscribersResponse, error)
-	// 检查是否已订阅
 	CheckSubscription(ctx context.Context, in *CheckSubscriptionRequest, opts ...grpc.CallOption) (*CheckSubscriptionResponse, error)
-	// 添加管理员（仅所有者）
+	// ---- 管理员管理 ----
 	AddAdmin(ctx context.Context, in *AddAdminRequest, opts ...grpc.CallOption) (*common.Empty, error)
-	// 移除管理员（仅所有者）
 	RemoveAdmin(ctx context.Context, in *RemoveAdminRequest, opts ...grpc.CallOption) (*common.Empty, error)
-	// 获取管理员列表
 	GetAdmins(ctx context.Context, in *GetAdminsRequest, opts ...grpc.CallOption) (*AdminsResponse, error)
-	// 发布频道内容（仅管理员）
+	// ---- 内容发布 ----
 	PublishPost(ctx context.Context, in *PublishPostRequest, opts ...grpc.CallOption) (*ChannelPost, error)
-	// 获取频道内容列表
 	GetPosts(ctx context.Context, in *GetPostsRequest, opts ...grpc.CallOption) (*PostsResponse, error)
-	// 获取单个内容详情
 	GetPost(ctx context.Context, in *GetPostRequest, opts ...grpc.CallOption) (*ChannelPost, error)
-	// 编辑频道内容（仅作者或管理员）
 	EditPost(ctx context.Context, in *EditPostRequest, opts ...grpc.CallOption) (*ChannelPost, error)
-	// 删除频道内容（仅作者或管理员）
 	DeletePost(ctx context.Context, in *DeletePostRequest, opts ...grpc.CallOption) (*common.Empty, error)
-	// 置顶内容（仅管理员）
 	PinPost(ctx context.Context, in *PinPostRequest, opts ...grpc.CallOption) (*common.Empty, error)
-	// 取消置顶（仅管理员）
 	UnpinPost(ctx context.Context, in *UnpinPostRequest, opts ...grpc.CallOption) (*common.Empty, error)
-	// 双向流：实时频道更新
+	// ---- 实时更新（双向流）----
 	StreamUpdates(ctx context.Context, opts ...grpc.CallOption) (grpc.BidiStreamingClient[ChannelClientEvent, ChannelServerEvent], error)
 }
 
@@ -332,54 +311,33 @@ type ChannelService_StreamUpdatesClient = grpc.BidiStreamingClient[ChannelClient
 // ChannelServiceServer is the server API for ChannelService service.
 // All implementations must embed UnimplementedChannelServiceServer
 // for forward compatibility.
-//
-// ChannelService 广播频道服务
-// 处理频道管理、内容发布、订阅管理
-// 类似 Telegram Channel，支持单向广播模式
 type ChannelServiceServer interface {
-	// 创建频道
+	// ---- 频道管理 ----
 	CreateChannel(context.Context, *CreateChannelRequest) (*Channel, error)
-	// 获取频道信息
 	GetChannel(context.Context, *GetChannelRequest) (*Channel, error)
-	// 更新频道信息（仅管理员）
 	UpdateChannel(context.Context, *UpdateChannelRequest) (*Channel, error)
-	// 删除频道（仅所有者）
 	DeleteChannel(context.Context, *DeleteChannelRequest) (*common.Empty, error)
-	// 获取用户订阅的频道列表
 	GetSubscribedChannels(context.Context, *GetSubscribedChannelsRequest) (*ChannelsResponse, error)
-	// 获取用户管理的频道列表
 	GetOwnedChannels(context.Context, *GetOwnedChannelsRequest) (*ChannelsResponse, error)
-	// 搜索频道
 	SearchChannels(context.Context, *SearchChannelsRequest) (*ChannelsResponse, error)
-	// 订阅频道
+	// ---- 订阅管理 ----
 	Subscribe(context.Context, *SubscribeRequest) (*common.Empty, error)
-	// 取消订阅
 	Unsubscribe(context.Context, *UnsubscribeRequest) (*common.Empty, error)
-	// 获取频道订阅者列表
 	GetSubscribers(context.Context, *GetSubscribersRequest) (*SubscribersResponse, error)
-	// 检查是否已订阅
 	CheckSubscription(context.Context, *CheckSubscriptionRequest) (*CheckSubscriptionResponse, error)
-	// 添加管理员（仅所有者）
+	// ---- 管理员管理 ----
 	AddAdmin(context.Context, *AddAdminRequest) (*common.Empty, error)
-	// 移除管理员（仅所有者）
 	RemoveAdmin(context.Context, *RemoveAdminRequest) (*common.Empty, error)
-	// 获取管理员列表
 	GetAdmins(context.Context, *GetAdminsRequest) (*AdminsResponse, error)
-	// 发布频道内容（仅管理员）
+	// ---- 内容发布 ----
 	PublishPost(context.Context, *PublishPostRequest) (*ChannelPost, error)
-	// 获取频道内容列表
 	GetPosts(context.Context, *GetPostsRequest) (*PostsResponse, error)
-	// 获取单个内容详情
 	GetPost(context.Context, *GetPostRequest) (*ChannelPost, error)
-	// 编辑频道内容（仅作者或管理员）
 	EditPost(context.Context, *EditPostRequest) (*ChannelPost, error)
-	// 删除频道内容（仅作者或管理员）
 	DeletePost(context.Context, *DeletePostRequest) (*common.Empty, error)
-	// 置顶内容（仅管理员）
 	PinPost(context.Context, *PinPostRequest) (*common.Empty, error)
-	// 取消置顶（仅管理员）
 	UnpinPost(context.Context, *UnpinPostRequest) (*common.Empty, error)
-	// 双向流：实时频道更新
+	// ---- 实时更新（双向流）----
 	StreamUpdates(grpc.BidiStreamingServer[ChannelClientEvent, ChannelServerEvent]) error
 	mustEmbedUnimplementedChannelServiceServer()
 }

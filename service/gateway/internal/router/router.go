@@ -15,37 +15,62 @@ import (
 	"github.com/funcdfs/lesser/pkg/log"
 )
 
-// ServiceName 服务名称常量
+// ============================================================================
+// 服务名称常量（按功能分组排序）
+// ============================================================================
+
 type ServiceName string
 
 const (
-	ServiceAuth         ServiceName = "auth"
-	ServiceUser         ServiceName = "user"
-	ServiceContent      ServiceName = "content"
-	ServiceInteraction  ServiceName = "interaction"
-	ServiceComment      ServiceName = "comment"
-	ServiceTimeline     ServiceName = "timeline"
-	ServiceChat         ServiceName = "chat"
-	ServiceChannel      ServiceName = "channel"
-	ServiceSearch       ServiceName = "search"
-	ServiceNotification ServiceName = "notification"
+	// 认证与用户
+	ServiceAuth      ServiceName = "auth"      // 50052
+	ServiceUser      ServiceName = "user"      // 50053
+	ServiceSuperUser ServiceName = "superuser" // 50061
+
+	// 内容与交互
+	ServiceContent     ServiceName = "content"     // 50054
+	ServiceComment     ServiceName = "comment"     // 50055
+	ServiceInteraction ServiceName = "interaction" // 50056
+	ServiceTimeline    ServiceName = "timeline"    // 50057
+
+	// 搜索与通知
+	ServiceSearch       ServiceName = "search"       // 50058
+	ServiceNotification ServiceName = "notification" // 50059
+
+	// 实时通信
+	ServiceChat    ServiceName = "chat"    // 50060
+	ServiceChannel ServiceName = "channel" // 50062
 )
 
-// ServiceConfig 服务地址配置
+// ============================================================================
+// 服务配置
+// ============================================================================
+
 type ServiceConfig struct {
-	AuthAddr         string
-	UserAddr         string
-	ContentAddr      string
-	InteractionAddr  string
-	CommentAddr      string
-	TimelineAddr     string
-	ChatAddr         string
-	ChannelAddr      string
+	// 认证与用户
+	AuthAddr      string
+	UserAddr      string
+	SuperUserAddr string
+
+	// 内容与交互
+	ContentAddr     string
+	CommentAddr     string
+	InteractionAddr string
+	TimelineAddr    string
+
+	// 搜索与通知
 	SearchAddr       string
 	NotificationAddr string
+
+	// 实时通信
+	ChatAddr    string
+	ChannelAddr string
 }
 
-// Router gRPC 服务路由器
+// ============================================================================
+// Router 路由器
+// ============================================================================
+
 type Router struct {
 	mu    sync.RWMutex
 	conns map[ServiceName]*grpc.ClientConn
@@ -63,21 +88,29 @@ func NewRouter(cfg ServiceConfig, logger *log.Logger) (*Router, error) {
 		log:   logger.With(log.String("component", "router")),
 	}
 
-	// 服务地址映射
+	// 服务地址映射（按功能分组）
 	services := map[ServiceName]string{
-		ServiceAuth:         cfg.AuthAddr,
-		ServiceUser:         cfg.UserAddr,
-		ServiceContent:      cfg.ContentAddr,
-		ServiceInteraction:  cfg.InteractionAddr,
-		ServiceComment:      cfg.CommentAddr,
-		ServiceTimeline:     cfg.TimelineAddr,
-		ServiceChat:         cfg.ChatAddr,
-		ServiceChannel:      cfg.ChannelAddr,
+		// 认证与用户
+		ServiceAuth:      cfg.AuthAddr,
+		ServiceUser:      cfg.UserAddr,
+		ServiceSuperUser: cfg.SuperUserAddr,
+
+		// 内容与交互
+		ServiceContent:     cfg.ContentAddr,
+		ServiceComment:     cfg.CommentAddr,
+		ServiceInteraction: cfg.InteractionAddr,
+		ServiceTimeline:    cfg.TimelineAddr,
+
+		// 搜索与通知
 		ServiceSearch:       cfg.SearchAddr,
 		ServiceNotification: cfg.NotificationAddr,
+
+		// 实时通信
+		ServiceChat:    cfg.ChatAddr,
+		ServiceChannel: cfg.ChannelAddr,
 	}
 
-	// 建立连接（暂时移除 keepalive 配置以排查问题）
+	// 建立连接
 	for name, addr := range services {
 		if addr == "" {
 			continue
@@ -86,7 +119,7 @@ func NewRouter(cfg ServiceConfig, logger *log.Logger) (*Router, error) {
 			grpc.WithTransportCredentials(insecure.NewCredentials()),
 		)
 		if err != nil {
-			r.Close() // 清理已建立的连接
+			r.Close()
 			return nil, fmt.Errorf("连接 %s 服务失败: %w", name, err)
 		}
 		r.conns[name] = conn
@@ -96,6 +129,10 @@ func NewRouter(cfg ServiceConfig, logger *log.Logger) (*Router, error) {
 	return r, nil
 }
 
+// ============================================================================
+// 连接获取方法
+// ============================================================================
+
 // GetConn 获取指定服务的连接
 func (r *Router) GetConn(name ServiceName) *grpc.ClientConn {
 	r.mu.RLock()
@@ -103,55 +140,61 @@ func (r *Router) GetConn(name ServiceName) *grpc.ClientConn {
 	return r.conns[name]
 }
 
-// GetAuthConn 获取 Auth 服务连接
+// ---- 认证与用户 ----
+
 func (r *Router) GetAuthConn() *grpc.ClientConn {
 	return r.GetConn(ServiceAuth)
 }
 
-// GetUserConn 获取 User 服务连接
 func (r *Router) GetUserConn() *grpc.ClientConn {
 	return r.GetConn(ServiceUser)
 }
 
-// GetContentConn 获取 Content 服务连接
+func (r *Router) GetSuperUserConn() *grpc.ClientConn {
+	return r.GetConn(ServiceSuperUser)
+}
+
+// ---- 内容与交互 ----
+
 func (r *Router) GetContentConn() *grpc.ClientConn {
 	return r.GetConn(ServiceContent)
 }
 
-// GetInteractionConn 获取 Interaction 服务连接
-func (r *Router) GetInteractionConn() *grpc.ClientConn {
-	return r.GetConn(ServiceInteraction)
-}
-
-// GetCommentConn 获取 Comment 服务连接
 func (r *Router) GetCommentConn() *grpc.ClientConn {
 	return r.GetConn(ServiceComment)
 }
 
-// GetTimelineConn 获取 Timeline 服务连接
+func (r *Router) GetInteractionConn() *grpc.ClientConn {
+	return r.GetConn(ServiceInteraction)
+}
+
 func (r *Router) GetTimelineConn() *grpc.ClientConn {
 	return r.GetConn(ServiceTimeline)
 }
 
-// GetChatConn 获取 Chat 服务连接
-func (r *Router) GetChatConn() *grpc.ClientConn {
-	return r.GetConn(ServiceChat)
-}
+// ---- 搜索与通知 ----
 
-// GetChannelConn 获取 Channel 服务连接
-func (r *Router) GetChannelConn() *grpc.ClientConn {
-	return r.GetConn(ServiceChannel)
-}
-
-// GetSearchConn 获取 Search 服务连接
 func (r *Router) GetSearchConn() *grpc.ClientConn {
 	return r.GetConn(ServiceSearch)
 }
 
-// GetNotificationConn 获取 Notification 服务连接
 func (r *Router) GetNotificationConn() *grpc.ClientConn {
 	return r.GetConn(ServiceNotification)
 }
+
+// ---- 实时通信 ----
+
+func (r *Router) GetChatConn() *grpc.ClientConn {
+	return r.GetConn(ServiceChat)
+}
+
+func (r *Router) GetChannelConn() *grpc.ClientConn {
+	return r.GetConn(ServiceChannel)
+}
+
+// ============================================================================
+// 路由与健康检查
+// ============================================================================
 
 // RouteByService 根据服务名路由，返回连接或错误
 func (r *Router) RouteByService(name string) (*grpc.ClientConn, error) {

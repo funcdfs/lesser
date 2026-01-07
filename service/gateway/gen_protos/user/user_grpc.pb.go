@@ -24,6 +24,7 @@ const (
 	UserService_GetProfileByUsername_FullMethodName = "/user.UserService/GetProfileByUsername"
 	UserService_UpdateProfile_FullMethodName        = "/user.UserService/UpdateProfile"
 	UserService_BatchGetProfiles_FullMethodName     = "/user.UserService/BatchGetProfiles"
+	UserService_SearchUsers_FullMethodName          = "/user.UserService/SearchUsers"
 	UserService_Follow_FullMethodName               = "/user.UserService/Follow"
 	UserService_Unfollow_FullMethodName             = "/user.UserService/Unfollow"
 	UserService_GetFollowers_FullMethodName         = "/user.UserService/GetFollowers"
@@ -37,23 +38,18 @@ const (
 	UserService_CheckBlocked_FullMethodName         = "/user.UserService/CheckBlocked"
 	UserService_GetUserSettings_FullMethodName      = "/user.UserService/GetUserSettings"
 	UserService_UpdateUserSettings_FullMethodName   = "/user.UserService/UpdateUserSettings"
-	UserService_SearchUsers_FullMethodName          = "/user.UserService/SearchUsers"
 )
 
 // UserServiceClient is the client API for UserService service.
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
-//
-// ============================================================================
-// UserService 用户服务
-// 提供用户资料管理、关注关系、屏蔽系统、隐私设置等功能
-// ============================================================================
 type UserServiceClient interface {
 	// ---- 用户资料 ----
 	GetProfile(ctx context.Context, in *GetProfileRequest, opts ...grpc.CallOption) (*Profile, error)
 	GetProfileByUsername(ctx context.Context, in *GetProfileByUsernameRequest, opts ...grpc.CallOption) (*Profile, error)
 	UpdateProfile(ctx context.Context, in *UpdateProfileRequest, opts ...grpc.CallOption) (*Profile, error)
 	BatchGetProfiles(ctx context.Context, in *BatchGetProfilesRequest, opts ...grpc.CallOption) (*BatchGetProfilesResponse, error)
+	SearchUsers(ctx context.Context, in *SearchUsersRequest, opts ...grpc.CallOption) (*SearchUsersResponse, error)
 	// ---- 关注系统 ----
 	Follow(ctx context.Context, in *FollowRequest, opts ...grpc.CallOption) (*common.Empty, error)
 	Unfollow(ctx context.Context, in *UnfollowRequest, opts ...grpc.CallOption) (*common.Empty, error)
@@ -63,7 +59,6 @@ type UserServiceClient interface {
 	GetRelationship(ctx context.Context, in *GetRelationshipRequest, opts ...grpc.CallOption) (*GetRelationshipResponse, error)
 	GetMutualFollowers(ctx context.Context, in *GetMutualFollowersRequest, opts ...grpc.CallOption) (*FollowListResponse, error)
 	// ---- 屏蔽系统 ----
-	// BlockType: HIDE_POSTS(不看他), HIDE_ME(不让他看我), BLOCK(拉黑，同时开启两者)
 	Block(ctx context.Context, in *BlockRequest, opts ...grpc.CallOption) (*common.Empty, error)
 	Unblock(ctx context.Context, in *UnblockRequest, opts ...grpc.CallOption) (*common.Empty, error)
 	GetBlockList(ctx context.Context, in *GetBlockListRequest, opts ...grpc.CallOption) (*BlockListResponse, error)
@@ -71,8 +66,6 @@ type UserServiceClient interface {
 	// ---- 用户设置 ----
 	GetUserSettings(ctx context.Context, in *GetUserSettingsRequest, opts ...grpc.CallOption) (*UserSettings, error)
 	UpdateUserSettings(ctx context.Context, in *UpdateUserSettingsRequest, opts ...grpc.CallOption) (*UserSettings, error)
-	// ---- 用户搜索 ----
-	SearchUsers(ctx context.Context, in *SearchUsersRequest, opts ...grpc.CallOption) (*SearchUsersResponse, error)
 }
 
 type userServiceClient struct {
@@ -117,6 +110,16 @@ func (c *userServiceClient) BatchGetProfiles(ctx context.Context, in *BatchGetPr
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(BatchGetProfilesResponse)
 	err := c.cc.Invoke(ctx, UserService_BatchGetProfiles_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *userServiceClient) SearchUsers(ctx context.Context, in *SearchUsersRequest, opts ...grpc.CallOption) (*SearchUsersResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(SearchUsersResponse)
+	err := c.cc.Invoke(ctx, UserService_SearchUsers_FullMethodName, in, out, cOpts...)
 	if err != nil {
 		return nil, err
 	}
@@ -253,30 +256,16 @@ func (c *userServiceClient) UpdateUserSettings(ctx context.Context, in *UpdateUs
 	return out, nil
 }
 
-func (c *userServiceClient) SearchUsers(ctx context.Context, in *SearchUsersRequest, opts ...grpc.CallOption) (*SearchUsersResponse, error) {
-	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
-	out := new(SearchUsersResponse)
-	err := c.cc.Invoke(ctx, UserService_SearchUsers_FullMethodName, in, out, cOpts...)
-	if err != nil {
-		return nil, err
-	}
-	return out, nil
-}
-
 // UserServiceServer is the server API for UserService service.
 // All implementations must embed UnimplementedUserServiceServer
 // for forward compatibility.
-//
-// ============================================================================
-// UserService 用户服务
-// 提供用户资料管理、关注关系、屏蔽系统、隐私设置等功能
-// ============================================================================
 type UserServiceServer interface {
 	// ---- 用户资料 ----
 	GetProfile(context.Context, *GetProfileRequest) (*Profile, error)
 	GetProfileByUsername(context.Context, *GetProfileByUsernameRequest) (*Profile, error)
 	UpdateProfile(context.Context, *UpdateProfileRequest) (*Profile, error)
 	BatchGetProfiles(context.Context, *BatchGetProfilesRequest) (*BatchGetProfilesResponse, error)
+	SearchUsers(context.Context, *SearchUsersRequest) (*SearchUsersResponse, error)
 	// ---- 关注系统 ----
 	Follow(context.Context, *FollowRequest) (*common.Empty, error)
 	Unfollow(context.Context, *UnfollowRequest) (*common.Empty, error)
@@ -286,7 +275,6 @@ type UserServiceServer interface {
 	GetRelationship(context.Context, *GetRelationshipRequest) (*GetRelationshipResponse, error)
 	GetMutualFollowers(context.Context, *GetMutualFollowersRequest) (*FollowListResponse, error)
 	// ---- 屏蔽系统 ----
-	// BlockType: HIDE_POSTS(不看他), HIDE_ME(不让他看我), BLOCK(拉黑，同时开启两者)
 	Block(context.Context, *BlockRequest) (*common.Empty, error)
 	Unblock(context.Context, *UnblockRequest) (*common.Empty, error)
 	GetBlockList(context.Context, *GetBlockListRequest) (*BlockListResponse, error)
@@ -294,8 +282,6 @@ type UserServiceServer interface {
 	// ---- 用户设置 ----
 	GetUserSettings(context.Context, *GetUserSettingsRequest) (*UserSettings, error)
 	UpdateUserSettings(context.Context, *UpdateUserSettingsRequest) (*UserSettings, error)
-	// ---- 用户搜索 ----
-	SearchUsers(context.Context, *SearchUsersRequest) (*SearchUsersResponse, error)
 	mustEmbedUnimplementedUserServiceServer()
 }
 
@@ -317,6 +303,9 @@ func (UnimplementedUserServiceServer) UpdateProfile(context.Context, *UpdateProf
 }
 func (UnimplementedUserServiceServer) BatchGetProfiles(context.Context, *BatchGetProfilesRequest) (*BatchGetProfilesResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method BatchGetProfiles not implemented")
+}
+func (UnimplementedUserServiceServer) SearchUsers(context.Context, *SearchUsersRequest) (*SearchUsersResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method SearchUsers not implemented")
 }
 func (UnimplementedUserServiceServer) Follow(context.Context, *FollowRequest) (*common.Empty, error) {
 	return nil, status.Error(codes.Unimplemented, "method Follow not implemented")
@@ -356,9 +345,6 @@ func (UnimplementedUserServiceServer) GetUserSettings(context.Context, *GetUserS
 }
 func (UnimplementedUserServiceServer) UpdateUserSettings(context.Context, *UpdateUserSettingsRequest) (*UserSettings, error) {
 	return nil, status.Error(codes.Unimplemented, "method UpdateUserSettings not implemented")
-}
-func (UnimplementedUserServiceServer) SearchUsers(context.Context, *SearchUsersRequest) (*SearchUsersResponse, error) {
-	return nil, status.Error(codes.Unimplemented, "method SearchUsers not implemented")
 }
 func (UnimplementedUserServiceServer) mustEmbedUnimplementedUserServiceServer() {}
 func (UnimplementedUserServiceServer) testEmbeddedByValue()                     {}
@@ -449,6 +435,24 @@ func _UserService_BatchGetProfiles_Handler(srv interface{}, ctx context.Context,
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
 		return srv.(UserServiceServer).BatchGetProfiles(ctx, req.(*BatchGetProfilesRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _UserService_SearchUsers_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(SearchUsersRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(UserServiceServer).SearchUsers(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: UserService_SearchUsers_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(UserServiceServer).SearchUsers(ctx, req.(*SearchUsersRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -687,24 +691,6 @@ func _UserService_UpdateUserSettings_Handler(srv interface{}, ctx context.Contex
 	return interceptor(ctx, in, info, handler)
 }
 
-func _UserService_SearchUsers_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(SearchUsersRequest)
-	if err := dec(in); err != nil {
-		return nil, err
-	}
-	if interceptor == nil {
-		return srv.(UserServiceServer).SearchUsers(ctx, in)
-	}
-	info := &grpc.UnaryServerInfo{
-		Server:     srv,
-		FullMethod: UserService_SearchUsers_FullMethodName,
-	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(UserServiceServer).SearchUsers(ctx, req.(*SearchUsersRequest))
-	}
-	return interceptor(ctx, in, info, handler)
-}
-
 // UserService_ServiceDesc is the grpc.ServiceDesc for UserService service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -727,6 +713,10 @@ var UserService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "BatchGetProfiles",
 			Handler:    _UserService_BatchGetProfiles_Handler,
+		},
+		{
+			MethodName: "SearchUsers",
+			Handler:    _UserService_SearchUsers_Handler,
 		},
 		{
 			MethodName: "Follow",
@@ -779,10 +769,6 @@ var UserService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "UpdateUserSettings",
 			Handler:    _UserService_UpdateUserSettings_Handler,
-		},
-		{
-			MethodName: "SearchUsers",
-			Handler:    _UserService_SearchUsers_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},

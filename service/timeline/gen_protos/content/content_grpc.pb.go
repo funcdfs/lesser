@@ -37,30 +37,25 @@ const (
 // ContentServiceClient is the client API for ContentService service.
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
-//
-// ContentService 内容服务
 type ContentServiceClient interface {
-	// 基础 CRUD
+	// ---- 基础 CRUD ----
 	CreateContent(ctx context.Context, in *CreateContentRequest, opts ...grpc.CallOption) (*CreateContentResponse, error)
 	GetContent(ctx context.Context, in *GetContentRequest, opts ...grpc.CallOption) (*GetContentResponse, error)
 	UpdateContent(ctx context.Context, in *UpdateContentRequest, opts ...grpc.CallOption) (*UpdateContentResponse, error)
 	DeleteContent(ctx context.Context, in *DeleteContentRequest, opts ...grpc.CallOption) (*DeleteContentResponse, error)
-	// 列表查询
+	// ---- 列表查询 ----
 	ListContents(ctx context.Context, in *ListContentsRequest, opts ...grpc.CallOption) (*ListContentsResponse, error)
 	BatchGetContents(ctx context.Context, in *BatchGetContentsRequest, opts ...grpc.CallOption) (*BatchGetContentsResponse, error)
-	// 草稿管理
+	// ---- 草稿管理 ----
 	GetUserDrafts(ctx context.Context, in *GetUserDraftsRequest, opts ...grpc.CallOption) (*GetUserDraftsResponse, error)
 	PublishDraft(ctx context.Context, in *PublishDraftRequest, opts ...grpc.CallOption) (*PublishDraftResponse, error)
-	// 回复/评论
+	// ---- 回复/Story ----
 	GetReplies(ctx context.Context, in *GetRepliesRequest, opts ...grpc.CallOption) (*GetRepliesResponse, error)
-	// Story 专用
 	GetUserStories(ctx context.Context, in *GetUserStoriesRequest, opts ...grpc.CallOption) (*GetUserStoriesResponse, error)
-	// 置顶
+	// ---- 置顶 ----
 	PinContent(ctx context.Context, in *PinContentRequest, opts ...grpc.CallOption) (*PinContentResponse, error)
-	// ---- 内部 API（供 Feed Service 调用）----
-	// 更新统计计数
+	// ---- 内部 API（供其他服务调用）----
 	UpdateCounter(ctx context.Context, in *UpdateCounterRequest, opts ...grpc.CallOption) (*UpdateCounterResponse, error)
-	// 检查内容是否存在
 	CheckContentExists(ctx context.Context, in *CheckContentExistsRequest, opts ...grpc.CallOption) (*CheckContentExistsResponse, error)
 }
 
@@ -205,30 +200,25 @@ func (c *contentServiceClient) CheckContentExists(ctx context.Context, in *Check
 // ContentServiceServer is the server API for ContentService service.
 // All implementations must embed UnimplementedContentServiceServer
 // for forward compatibility.
-//
-// ContentService 内容服务
 type ContentServiceServer interface {
-	// 基础 CRUD
+	// ---- 基础 CRUD ----
 	CreateContent(context.Context, *CreateContentRequest) (*CreateContentResponse, error)
 	GetContent(context.Context, *GetContentRequest) (*GetContentResponse, error)
 	UpdateContent(context.Context, *UpdateContentRequest) (*UpdateContentResponse, error)
 	DeleteContent(context.Context, *DeleteContentRequest) (*DeleteContentResponse, error)
-	// 列表查询
+	// ---- 列表查询 ----
 	ListContents(context.Context, *ListContentsRequest) (*ListContentsResponse, error)
 	BatchGetContents(context.Context, *BatchGetContentsRequest) (*BatchGetContentsResponse, error)
-	// 草稿管理
+	// ---- 草稿管理 ----
 	GetUserDrafts(context.Context, *GetUserDraftsRequest) (*GetUserDraftsResponse, error)
 	PublishDraft(context.Context, *PublishDraftRequest) (*PublishDraftResponse, error)
-	// 回复/评论
+	// ---- 回复/Story ----
 	GetReplies(context.Context, *GetRepliesRequest) (*GetRepliesResponse, error)
-	// Story 专用
 	GetUserStories(context.Context, *GetUserStoriesRequest) (*GetUserStoriesResponse, error)
-	// 置顶
+	// ---- 置顶 ----
 	PinContent(context.Context, *PinContentRequest) (*PinContentResponse, error)
-	// ---- 内部 API（供 Feed Service 调用）----
-	// 更新统计计数
+	// ---- 内部 API（供其他服务调用）----
 	UpdateCounter(context.Context, *UpdateCounterRequest) (*UpdateCounterResponse, error)
-	// 检查内容是否存在
 	CheckContentExists(context.Context, *CheckContentExistsRequest) (*CheckContentExistsResponse, error)
 	mustEmbedUnimplementedContentServiceServer()
 }

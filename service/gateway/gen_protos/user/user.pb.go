@@ -22,14 +22,14 @@ const (
 	_ = protoimpl.EnforceVersion(protoimpl.MaxVersion - 20)
 )
 
-// BlockType 屏蔽类型
+// BlockType: 1=不看他, 2=不让他看我, 3=拉黑（双向）
 type BlockType int32
 
 const (
 	BlockType_BLOCK_TYPE_UNSPECIFIED BlockType = 0
-	BlockType_BLOCK_TYPE_HIDE_POSTS  BlockType = 1 // 不看他：隐藏他的内容，但他能看到我
-	BlockType_BLOCK_TYPE_HIDE_ME     BlockType = 2 // 不让他看我：他看不到我的内容，但我能看到他
-	BlockType_BLOCK_TYPE_BLOCK       BlockType = 3 // 拉黑：双向屏蔽，互相看不到
+	BlockType_BLOCK_TYPE_HIDE_POSTS  BlockType = 1 // 不看他
+	BlockType_BLOCK_TYPE_HIDE_ME     BlockType = 2 // 不让他看我
+	BlockType_BLOCK_TYPE_BLOCK       BlockType = 3 // 拉黑
 )
 
 // Enum value maps for BlockType.
@@ -75,7 +75,6 @@ func (BlockType) EnumDescriptor() ([]byte, []int) {
 	return file_user_user_proto_rawDescGZIP(), []int{0}
 }
 
-// Profile 用户资料
 type Profile struct {
 	state          protoimpl.MessageState `protogen:"open.v1"`
 	Id             string                 `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
@@ -84,20 +83,19 @@ type Profile struct {
 	DisplayName    string                 `protobuf:"bytes,4,opt,name=display_name,json=displayName,proto3" json:"display_name,omitempty"`
 	AvatarUrl      string                 `protobuf:"bytes,5,opt,name=avatar_url,json=avatarUrl,proto3" json:"avatar_url,omitempty"`
 	Bio            string                 `protobuf:"bytes,6,opt,name=bio,proto3" json:"bio,omitempty"`
-	Location       string                 `protobuf:"bytes,7,opt,name=location,proto3" json:"location,omitempty"`                         // 位置
-	Website        string                 `protobuf:"bytes,8,opt,name=website,proto3" json:"website,omitempty"`                           // 个人网站
-	Birthday       string                 `protobuf:"bytes,9,opt,name=birthday,proto3" json:"birthday,omitempty"`                         // 生日 (YYYY-MM-DD)
-	IsVerified     bool                   `protobuf:"varint,10,opt,name=is_verified,json=isVerified,proto3" json:"is_verified,omitempty"` // 是否认证
-	IsPrivate      bool                   `protobuf:"varint,11,opt,name=is_private,json=isPrivate,proto3" json:"is_private,omitempty"`    // 是否私密账户
+	Location       string                 `protobuf:"bytes,7,opt,name=location,proto3" json:"location,omitempty"`
+	Website        string                 `protobuf:"bytes,8,opt,name=website,proto3" json:"website,omitempty"`
+	Birthday       string                 `protobuf:"bytes,9,opt,name=birthday,proto3" json:"birthday,omitempty"` // YYYY-MM-DD
+	IsVerified     bool                   `protobuf:"varint,10,opt,name=is_verified,json=isVerified,proto3" json:"is_verified,omitempty"`
+	IsPrivate      bool                   `protobuf:"varint,11,opt,name=is_private,json=isPrivate,proto3" json:"is_private,omitempty"`
 	FollowersCount int32                  `protobuf:"varint,12,opt,name=followers_count,json=followersCount,proto3" json:"followers_count,omitempty"`
 	FollowingCount int32                  `protobuf:"varint,13,opt,name=following_count,json=followingCount,proto3" json:"following_count,omitempty"`
 	PostsCount     int32                  `protobuf:"varint,14,opt,name=posts_count,json=postsCount,proto3" json:"posts_count,omitempty"`
 	CreatedAt      *common.Timestamp      `protobuf:"bytes,15,opt,name=created_at,json=createdAt,proto3" json:"created_at,omitempty"`
 	UpdatedAt      *common.Timestamp      `protobuf:"bytes,16,opt,name=updated_at,json=updatedAt,proto3" json:"updated_at,omitempty"`
-	// 查看者视角的关系状态（可选，仅在需要时填充）
-	Relationship  *RelationshipStatus `protobuf:"bytes,17,opt,name=relationship,proto3" json:"relationship,omitempty"`
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
+	Relationship   *RelationshipStatus    `protobuf:"bytes,17,opt,name=relationship,proto3" json:"relationship,omitempty"` // 查看者视角的关系状态
+	unknownFields  protoimpl.UnknownFields
+	sizeCache      protoimpl.SizeCache
 }
 
 func (x *Profile) Reset() {
@@ -249,7 +247,6 @@ func (x *Profile) GetRelationship() *RelationshipStatus {
 	return nil
 }
 
-// RelationshipStatus 关系状态（从查看者视角）
 type RelationshipStatus struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	IsFollowing   bool                   `protobuf:"varint,1,opt,name=is_following,json=isFollowing,proto3" json:"is_following,omitempty"`      // 我是否关注了他
@@ -257,8 +254,8 @@ type RelationshipStatus struct {
 	IsMutual      bool                   `protobuf:"varint,3,opt,name=is_mutual,json=isMutual,proto3" json:"is_mutual,omitempty"`               // 是否互关
 	IsBlocking    bool                   `protobuf:"varint,4,opt,name=is_blocking,json=isBlocking,proto3" json:"is_blocking,omitempty"`         // 我是否屏蔽了他
 	IsBlockedBy   bool                   `protobuf:"varint,5,opt,name=is_blocked_by,json=isBlockedBy,proto3" json:"is_blocked_by,omitempty"`    // 他是否屏蔽了我
-	IsMuting      bool                   `protobuf:"varint,6,opt,name=is_muting,json=isMuting,proto3" json:"is_muting,omitempty"`               // 我是否静音了他（不看他的内容）
-	IsHidingFrom  bool                   `protobuf:"varint,7,opt,name=is_hiding_from,json=isHidingFrom,proto3" json:"is_hiding_from,omitempty"` // 我是否对他隐藏（不让他看我）
+	IsMuting      bool                   `protobuf:"varint,6,opt,name=is_muting,json=isMuting,proto3" json:"is_muting,omitempty"`               // 我是否静音了他
+	IsHidingFrom  bool                   `protobuf:"varint,7,opt,name=is_hiding_from,json=isHidingFrom,proto3" json:"is_hiding_from,omitempty"` // 我是否对他隐藏
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -342,11 +339,10 @@ func (x *RelationshipStatus) GetIsHidingFrom() bool {
 	return false
 }
 
-// GetProfileRequest 获取用户资料请求
 type GetProfileRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	UserId        string                 `protobuf:"bytes,1,opt,name=user_id,json=userId,proto3" json:"user_id,omitempty"`       // 目标用户 ID
-	ViewerId      string                 `protobuf:"bytes,2,opt,name=viewer_id,json=viewerId,proto3" json:"viewer_id,omitempty"` // 查看者 ID（可选，用于计算关系状态）
+	UserId        string                 `protobuf:"bytes,1,opt,name=user_id,json=userId,proto3" json:"user_id,omitempty"`
+	ViewerId      string                 `protobuf:"bytes,2,opt,name=viewer_id,json=viewerId,proto3" json:"viewer_id,omitempty"` // 可选，用于计算关系状态
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -395,7 +391,6 @@ func (x *GetProfileRequest) GetViewerId() string {
 	return ""
 }
 
-// GetProfileByUsernameRequest 通过用户名获取资料
 type GetProfileByUsernameRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Username      string                 `protobuf:"bytes,1,opt,name=username,proto3" json:"username,omitempty"`
@@ -448,7 +443,6 @@ func (x *GetProfileByUsernameRequest) GetViewerId() string {
 	return ""
 }
 
-// UpdateProfileRequest 更新用户资料请求
 type UpdateProfileRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	UserId        string                 `protobuf:"bytes,1,opt,name=user_id,json=userId,proto3" json:"user_id,omitempty"`
@@ -549,11 +543,10 @@ func (x *UpdateProfileRequest) GetIsPrivate() bool {
 	return false
 }
 
-// BatchGetProfilesRequest 批量获取用户资料
 type BatchGetProfilesRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	UserIds       []string               `protobuf:"bytes,1,rep,name=user_ids,json=userIds,proto3" json:"user_ids,omitempty"`    // 最多 100 个
-	ViewerId      string                 `protobuf:"bytes,2,opt,name=viewer_id,json=viewerId,proto3" json:"viewer_id,omitempty"` // 查看者 ID（可选）
+	UserIds       []string               `protobuf:"bytes,1,rep,name=user_ids,json=userIds,proto3" json:"user_ids,omitempty"` // 最多 100 个
+	ViewerId      string                 `protobuf:"bytes,2,opt,name=viewer_id,json=viewerId,proto3" json:"viewer_id,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -602,10 +595,9 @@ func (x *BatchGetProfilesRequest) GetViewerId() string {
 	return ""
 }
 
-// BatchGetProfilesResponse 批量获取用户资料响应
 type BatchGetProfilesResponse struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Profiles      map[string]*Profile    `protobuf:"bytes,1,rep,name=profiles,proto3" json:"profiles,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"` // user_id -> Profile
+	Profiles      map[string]*Profile    `protobuf:"bytes,1,rep,name=profiles,proto3" json:"profiles,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -647,18 +639,129 @@ func (x *BatchGetProfilesResponse) GetProfiles() map[string]*Profile {
 	return nil
 }
 
-// FollowRequest 关注请求
+type SearchUsersRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Query         string                 `protobuf:"bytes,1,opt,name=query,proto3" json:"query,omitempty"`
+	ViewerId      string                 `protobuf:"bytes,2,opt,name=viewer_id,json=viewerId,proto3" json:"viewer_id,omitempty"`
+	Pagination    *common.Pagination     `protobuf:"bytes,3,opt,name=pagination,proto3" json:"pagination,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *SearchUsersRequest) Reset() {
+	*x = SearchUsersRequest{}
+	mi := &file_user_user_proto_msgTypes[7]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *SearchUsersRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*SearchUsersRequest) ProtoMessage() {}
+
+func (x *SearchUsersRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_user_user_proto_msgTypes[7]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use SearchUsersRequest.ProtoReflect.Descriptor instead.
+func (*SearchUsersRequest) Descriptor() ([]byte, []int) {
+	return file_user_user_proto_rawDescGZIP(), []int{7}
+}
+
+func (x *SearchUsersRequest) GetQuery() string {
+	if x != nil {
+		return x.Query
+	}
+	return ""
+}
+
+func (x *SearchUsersRequest) GetViewerId() string {
+	if x != nil {
+		return x.ViewerId
+	}
+	return ""
+}
+
+func (x *SearchUsersRequest) GetPagination() *common.Pagination {
+	if x != nil {
+		return x.Pagination
+	}
+	return nil
+}
+
+type SearchUsersResponse struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Users         []*Profile             `protobuf:"bytes,1,rep,name=users,proto3" json:"users,omitempty"`
+	Pagination    *common.Pagination     `protobuf:"bytes,2,opt,name=pagination,proto3" json:"pagination,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *SearchUsersResponse) Reset() {
+	*x = SearchUsersResponse{}
+	mi := &file_user_user_proto_msgTypes[8]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *SearchUsersResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*SearchUsersResponse) ProtoMessage() {}
+
+func (x *SearchUsersResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_user_user_proto_msgTypes[8]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use SearchUsersResponse.ProtoReflect.Descriptor instead.
+func (*SearchUsersResponse) Descriptor() ([]byte, []int) {
+	return file_user_user_proto_rawDescGZIP(), []int{8}
+}
+
+func (x *SearchUsersResponse) GetUsers() []*Profile {
+	if x != nil {
+		return x.Users
+	}
+	return nil
+}
+
+func (x *SearchUsersResponse) GetPagination() *common.Pagination {
+	if x != nil {
+		return x.Pagination
+	}
+	return nil
+}
+
 type FollowRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	FollowerId    string                 `protobuf:"bytes,1,opt,name=follower_id,json=followerId,proto3" json:"follower_id,omitempty"`    // 关注者（发起人）
-	FollowingId   string                 `protobuf:"bytes,2,opt,name=following_id,json=followingId,proto3" json:"following_id,omitempty"` // 被关注者
+	FollowerId    string                 `protobuf:"bytes,1,opt,name=follower_id,json=followerId,proto3" json:"follower_id,omitempty"`
+	FollowingId   string                 `protobuf:"bytes,2,opt,name=following_id,json=followingId,proto3" json:"following_id,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
 
 func (x *FollowRequest) Reset() {
 	*x = FollowRequest{}
-	mi := &file_user_user_proto_msgTypes[7]
+	mi := &file_user_user_proto_msgTypes[9]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -670,7 +773,7 @@ func (x *FollowRequest) String() string {
 func (*FollowRequest) ProtoMessage() {}
 
 func (x *FollowRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_user_user_proto_msgTypes[7]
+	mi := &file_user_user_proto_msgTypes[9]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -683,7 +786,7 @@ func (x *FollowRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use FollowRequest.ProtoReflect.Descriptor instead.
 func (*FollowRequest) Descriptor() ([]byte, []int) {
-	return file_user_user_proto_rawDescGZIP(), []int{7}
+	return file_user_user_proto_rawDescGZIP(), []int{9}
 }
 
 func (x *FollowRequest) GetFollowerId() string {
@@ -700,7 +803,6 @@ func (x *FollowRequest) GetFollowingId() string {
 	return ""
 }
 
-// UnfollowRequest 取消关注请求
 type UnfollowRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	FollowerId    string                 `protobuf:"bytes,1,opt,name=follower_id,json=followerId,proto3" json:"follower_id,omitempty"`
@@ -711,7 +813,7 @@ type UnfollowRequest struct {
 
 func (x *UnfollowRequest) Reset() {
 	*x = UnfollowRequest{}
-	mi := &file_user_user_proto_msgTypes[8]
+	mi := &file_user_user_proto_msgTypes[10]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -723,7 +825,7 @@ func (x *UnfollowRequest) String() string {
 func (*UnfollowRequest) ProtoMessage() {}
 
 func (x *UnfollowRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_user_user_proto_msgTypes[8]
+	mi := &file_user_user_proto_msgTypes[10]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -736,7 +838,7 @@ func (x *UnfollowRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use UnfollowRequest.ProtoReflect.Descriptor instead.
 func (*UnfollowRequest) Descriptor() ([]byte, []int) {
-	return file_user_user_proto_rawDescGZIP(), []int{8}
+	return file_user_user_proto_rawDescGZIP(), []int{10}
 }
 
 func (x *UnfollowRequest) GetFollowerId() string {
@@ -753,11 +855,10 @@ func (x *UnfollowRequest) GetFollowingId() string {
 	return ""
 }
 
-// GetFollowersRequest 获取粉丝列表请求
 type GetFollowersRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	UserId        string                 `protobuf:"bytes,1,opt,name=user_id,json=userId,proto3" json:"user_id,omitempty"`
-	ViewerId      string                 `protobuf:"bytes,2,opt,name=viewer_id,json=viewerId,proto3" json:"viewer_id,omitempty"` // 查看者 ID（用于计算关系状态）
+	ViewerId      string                 `protobuf:"bytes,2,opt,name=viewer_id,json=viewerId,proto3" json:"viewer_id,omitempty"`
 	Pagination    *common.Pagination     `protobuf:"bytes,3,opt,name=pagination,proto3" json:"pagination,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
@@ -765,7 +866,7 @@ type GetFollowersRequest struct {
 
 func (x *GetFollowersRequest) Reset() {
 	*x = GetFollowersRequest{}
-	mi := &file_user_user_proto_msgTypes[9]
+	mi := &file_user_user_proto_msgTypes[11]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -777,7 +878,7 @@ func (x *GetFollowersRequest) String() string {
 func (*GetFollowersRequest) ProtoMessage() {}
 
 func (x *GetFollowersRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_user_user_proto_msgTypes[9]
+	mi := &file_user_user_proto_msgTypes[11]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -790,7 +891,7 @@ func (x *GetFollowersRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GetFollowersRequest.ProtoReflect.Descriptor instead.
 func (*GetFollowersRequest) Descriptor() ([]byte, []int) {
-	return file_user_user_proto_rawDescGZIP(), []int{9}
+	return file_user_user_proto_rawDescGZIP(), []int{11}
 }
 
 func (x *GetFollowersRequest) GetUserId() string {
@@ -814,7 +915,6 @@ func (x *GetFollowersRequest) GetPagination() *common.Pagination {
 	return nil
 }
 
-// GetFollowingRequest 获取关注列表请求
 type GetFollowingRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	UserId        string                 `protobuf:"bytes,1,opt,name=user_id,json=userId,proto3" json:"user_id,omitempty"`
@@ -826,7 +926,7 @@ type GetFollowingRequest struct {
 
 func (x *GetFollowingRequest) Reset() {
 	*x = GetFollowingRequest{}
-	mi := &file_user_user_proto_msgTypes[10]
+	mi := &file_user_user_proto_msgTypes[12]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -838,7 +938,7 @@ func (x *GetFollowingRequest) String() string {
 func (*GetFollowingRequest) ProtoMessage() {}
 
 func (x *GetFollowingRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_user_user_proto_msgTypes[10]
+	mi := &file_user_user_proto_msgTypes[12]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -851,7 +951,7 @@ func (x *GetFollowingRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GetFollowingRequest.ProtoReflect.Descriptor instead.
 func (*GetFollowingRequest) Descriptor() ([]byte, []int) {
-	return file_user_user_proto_rawDescGZIP(), []int{10}
+	return file_user_user_proto_rawDescGZIP(), []int{12}
 }
 
 func (x *GetFollowingRequest) GetUserId() string {
@@ -875,7 +975,6 @@ func (x *GetFollowingRequest) GetPagination() *common.Pagination {
 	return nil
 }
 
-// FollowListResponse 关注/粉丝列表响应
 type FollowListResponse struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Users         []*Profile             `protobuf:"bytes,1,rep,name=users,proto3" json:"users,omitempty"`
@@ -886,7 +985,7 @@ type FollowListResponse struct {
 
 func (x *FollowListResponse) Reset() {
 	*x = FollowListResponse{}
-	mi := &file_user_user_proto_msgTypes[11]
+	mi := &file_user_user_proto_msgTypes[13]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -898,7 +997,7 @@ func (x *FollowListResponse) String() string {
 func (*FollowListResponse) ProtoMessage() {}
 
 func (x *FollowListResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_user_user_proto_msgTypes[11]
+	mi := &file_user_user_proto_msgTypes[13]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -911,7 +1010,7 @@ func (x *FollowListResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use FollowListResponse.ProtoReflect.Descriptor instead.
 func (*FollowListResponse) Descriptor() ([]byte, []int) {
-	return file_user_user_proto_rawDescGZIP(), []int{11}
+	return file_user_user_proto_rawDescGZIP(), []int{13}
 }
 
 func (x *FollowListResponse) GetUsers() []*Profile {
@@ -928,7 +1027,6 @@ func (x *FollowListResponse) GetPagination() *common.Pagination {
 	return nil
 }
 
-// CheckFollowingRequest 检查是否关注请求
 type CheckFollowingRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	FollowerId    string                 `protobuf:"bytes,1,opt,name=follower_id,json=followerId,proto3" json:"follower_id,omitempty"`
@@ -939,7 +1037,7 @@ type CheckFollowingRequest struct {
 
 func (x *CheckFollowingRequest) Reset() {
 	*x = CheckFollowingRequest{}
-	mi := &file_user_user_proto_msgTypes[12]
+	mi := &file_user_user_proto_msgTypes[14]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -951,7 +1049,7 @@ func (x *CheckFollowingRequest) String() string {
 func (*CheckFollowingRequest) ProtoMessage() {}
 
 func (x *CheckFollowingRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_user_user_proto_msgTypes[12]
+	mi := &file_user_user_proto_msgTypes[14]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -964,7 +1062,7 @@ func (x *CheckFollowingRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use CheckFollowingRequest.ProtoReflect.Descriptor instead.
 func (*CheckFollowingRequest) Descriptor() ([]byte, []int) {
-	return file_user_user_proto_rawDescGZIP(), []int{12}
+	return file_user_user_proto_rawDescGZIP(), []int{14}
 }
 
 func (x *CheckFollowingRequest) GetFollowerId() string {
@@ -981,7 +1079,6 @@ func (x *CheckFollowingRequest) GetFollowingId() string {
 	return ""
 }
 
-// CheckFollowingResponse 检查是否关注响应
 type CheckFollowingResponse struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	IsFollowing   bool                   `protobuf:"varint,1,opt,name=is_following,json=isFollowing,proto3" json:"is_following,omitempty"`
@@ -991,7 +1088,7 @@ type CheckFollowingResponse struct {
 
 func (x *CheckFollowingResponse) Reset() {
 	*x = CheckFollowingResponse{}
-	mi := &file_user_user_proto_msgTypes[13]
+	mi := &file_user_user_proto_msgTypes[15]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1003,7 +1100,7 @@ func (x *CheckFollowingResponse) String() string {
 func (*CheckFollowingResponse) ProtoMessage() {}
 
 func (x *CheckFollowingResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_user_user_proto_msgTypes[13]
+	mi := &file_user_user_proto_msgTypes[15]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1016,7 +1113,7 @@ func (x *CheckFollowingResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use CheckFollowingResponse.ProtoReflect.Descriptor instead.
 func (*CheckFollowingResponse) Descriptor() ([]byte, []int) {
-	return file_user_user_proto_rawDescGZIP(), []int{13}
+	return file_user_user_proto_rawDescGZIP(), []int{15}
 }
 
 func (x *CheckFollowingResponse) GetIsFollowing() bool {
@@ -1026,18 +1123,17 @@ func (x *CheckFollowingResponse) GetIsFollowing() bool {
 	return false
 }
 
-// GetRelationshipRequest 获取两用户间关系
 type GetRelationshipRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	UserId        string                 `protobuf:"bytes,1,opt,name=user_id,json=userId,proto3" json:"user_id,omitempty"`       // 当前用户
-	TargetId      string                 `protobuf:"bytes,2,opt,name=target_id,json=targetId,proto3" json:"target_id,omitempty"` // 目标用户
+	UserId        string                 `protobuf:"bytes,1,opt,name=user_id,json=userId,proto3" json:"user_id,omitempty"`
+	TargetId      string                 `protobuf:"bytes,2,opt,name=target_id,json=targetId,proto3" json:"target_id,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
 
 func (x *GetRelationshipRequest) Reset() {
 	*x = GetRelationshipRequest{}
-	mi := &file_user_user_proto_msgTypes[14]
+	mi := &file_user_user_proto_msgTypes[16]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1049,7 +1145,7 @@ func (x *GetRelationshipRequest) String() string {
 func (*GetRelationshipRequest) ProtoMessage() {}
 
 func (x *GetRelationshipRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_user_user_proto_msgTypes[14]
+	mi := &file_user_user_proto_msgTypes[16]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1062,7 +1158,7 @@ func (x *GetRelationshipRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GetRelationshipRequest.ProtoReflect.Descriptor instead.
 func (*GetRelationshipRequest) Descriptor() ([]byte, []int) {
-	return file_user_user_proto_rawDescGZIP(), []int{14}
+	return file_user_user_proto_rawDescGZIP(), []int{16}
 }
 
 func (x *GetRelationshipRequest) GetUserId() string {
@@ -1079,7 +1175,6 @@ func (x *GetRelationshipRequest) GetTargetId() string {
 	return ""
 }
 
-// GetRelationshipResponse 关系响应
 type GetRelationshipResponse struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Relationship  *RelationshipStatus    `protobuf:"bytes,1,opt,name=relationship,proto3" json:"relationship,omitempty"`
@@ -1089,7 +1184,7 @@ type GetRelationshipResponse struct {
 
 func (x *GetRelationshipResponse) Reset() {
 	*x = GetRelationshipResponse{}
-	mi := &file_user_user_proto_msgTypes[15]
+	mi := &file_user_user_proto_msgTypes[17]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1101,7 +1196,7 @@ func (x *GetRelationshipResponse) String() string {
 func (*GetRelationshipResponse) ProtoMessage() {}
 
 func (x *GetRelationshipResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_user_user_proto_msgTypes[15]
+	mi := &file_user_user_proto_msgTypes[17]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1114,7 +1209,7 @@ func (x *GetRelationshipResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GetRelationshipResponse.ProtoReflect.Descriptor instead.
 func (*GetRelationshipResponse) Descriptor() ([]byte, []int) {
-	return file_user_user_proto_rawDescGZIP(), []int{15}
+	return file_user_user_proto_rawDescGZIP(), []int{17}
 }
 
 func (x *GetRelationshipResponse) GetRelationship() *RelationshipStatus {
@@ -1124,11 +1219,10 @@ func (x *GetRelationshipResponse) GetRelationship() *RelationshipStatus {
 	return nil
 }
 
-// GetMutualFollowersRequest 获取共同关注
 type GetMutualFollowersRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	UserId        string                 `protobuf:"bytes,1,opt,name=user_id,json=userId,proto3" json:"user_id,omitempty"`       // 当前用户
-	TargetId      string                 `protobuf:"bytes,2,opt,name=target_id,json=targetId,proto3" json:"target_id,omitempty"` // 目标用户
+	UserId        string                 `protobuf:"bytes,1,opt,name=user_id,json=userId,proto3" json:"user_id,omitempty"`
+	TargetId      string                 `protobuf:"bytes,2,opt,name=target_id,json=targetId,proto3" json:"target_id,omitempty"`
 	Pagination    *common.Pagination     `protobuf:"bytes,3,opt,name=pagination,proto3" json:"pagination,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
@@ -1136,7 +1230,7 @@ type GetMutualFollowersRequest struct {
 
 func (x *GetMutualFollowersRequest) Reset() {
 	*x = GetMutualFollowersRequest{}
-	mi := &file_user_user_proto_msgTypes[16]
+	mi := &file_user_user_proto_msgTypes[18]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1148,7 +1242,7 @@ func (x *GetMutualFollowersRequest) String() string {
 func (*GetMutualFollowersRequest) ProtoMessage() {}
 
 func (x *GetMutualFollowersRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_user_user_proto_msgTypes[16]
+	mi := &file_user_user_proto_msgTypes[18]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1161,7 +1255,7 @@ func (x *GetMutualFollowersRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GetMutualFollowersRequest.ProtoReflect.Descriptor instead.
 func (*GetMutualFollowersRequest) Descriptor() ([]byte, []int) {
-	return file_user_user_proto_rawDescGZIP(), []int{16}
+	return file_user_user_proto_rawDescGZIP(), []int{18}
 }
 
 func (x *GetMutualFollowersRequest) GetUserId() string {
@@ -1185,19 +1279,18 @@ func (x *GetMutualFollowersRequest) GetPagination() *common.Pagination {
 	return nil
 }
 
-// BlockRequest 屏蔽请求
 type BlockRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	BlockerId     string                 `protobuf:"bytes,1,opt,name=blocker_id,json=blockerId,proto3" json:"blocker_id,omitempty"`                      // 发起屏蔽的用户
-	BlockedId     string                 `protobuf:"bytes,2,opt,name=blocked_id,json=blockedId,proto3" json:"blocked_id,omitempty"`                      // 被屏蔽的用户
-	BlockType     BlockType              `protobuf:"varint,3,opt,name=block_type,json=blockType,proto3,enum=user.BlockType" json:"block_type,omitempty"` // 屏蔽类型
+	BlockerId     string                 `protobuf:"bytes,1,opt,name=blocker_id,json=blockerId,proto3" json:"blocker_id,omitempty"`
+	BlockedId     string                 `protobuf:"bytes,2,opt,name=blocked_id,json=blockedId,proto3" json:"blocked_id,omitempty"`
+	BlockType     BlockType              `protobuf:"varint,3,opt,name=block_type,json=blockType,proto3,enum=user.BlockType" json:"block_type,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
 
 func (x *BlockRequest) Reset() {
 	*x = BlockRequest{}
-	mi := &file_user_user_proto_msgTypes[17]
+	mi := &file_user_user_proto_msgTypes[19]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1209,7 +1302,7 @@ func (x *BlockRequest) String() string {
 func (*BlockRequest) ProtoMessage() {}
 
 func (x *BlockRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_user_user_proto_msgTypes[17]
+	mi := &file_user_user_proto_msgTypes[19]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1222,7 +1315,7 @@ func (x *BlockRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use BlockRequest.ProtoReflect.Descriptor instead.
 func (*BlockRequest) Descriptor() ([]byte, []int) {
-	return file_user_user_proto_rawDescGZIP(), []int{17}
+	return file_user_user_proto_rawDescGZIP(), []int{19}
 }
 
 func (x *BlockRequest) GetBlockerId() string {
@@ -1246,19 +1339,18 @@ func (x *BlockRequest) GetBlockType() BlockType {
 	return BlockType_BLOCK_TYPE_UNSPECIFIED
 }
 
-// UnblockRequest 取消屏蔽请求
 type UnblockRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	BlockerId     string                 `protobuf:"bytes,1,opt,name=blocker_id,json=blockerId,proto3" json:"blocker_id,omitempty"`
 	BlockedId     string                 `protobuf:"bytes,2,opt,name=blocked_id,json=blockedId,proto3" json:"blocked_id,omitempty"`
-	BlockType     BlockType              `protobuf:"varint,3,opt,name=block_type,json=blockType,proto3,enum=user.BlockType" json:"block_type,omitempty"` // 要取消的屏蔽类型，BLOCK 会同时取消两种
+	BlockType     BlockType              `protobuf:"varint,3,opt,name=block_type,json=blockType,proto3,enum=user.BlockType" json:"block_type,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
 
 func (x *UnblockRequest) Reset() {
 	*x = UnblockRequest{}
-	mi := &file_user_user_proto_msgTypes[18]
+	mi := &file_user_user_proto_msgTypes[20]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1270,7 +1362,7 @@ func (x *UnblockRequest) String() string {
 func (*UnblockRequest) ProtoMessage() {}
 
 func (x *UnblockRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_user_user_proto_msgTypes[18]
+	mi := &file_user_user_proto_msgTypes[20]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1283,7 +1375,7 @@ func (x *UnblockRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use UnblockRequest.ProtoReflect.Descriptor instead.
 func (*UnblockRequest) Descriptor() ([]byte, []int) {
-	return file_user_user_proto_rawDescGZIP(), []int{18}
+	return file_user_user_proto_rawDescGZIP(), []int{20}
 }
 
 func (x *UnblockRequest) GetBlockerId() string {
@@ -1307,11 +1399,10 @@ func (x *UnblockRequest) GetBlockType() BlockType {
 	return BlockType_BLOCK_TYPE_UNSPECIFIED
 }
 
-// GetBlockListRequest 获取屏蔽列表
 type GetBlockListRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	UserId        string                 `protobuf:"bytes,1,opt,name=user_id,json=userId,proto3" json:"user_id,omitempty"`
-	BlockType     BlockType              `protobuf:"varint,2,opt,name=block_type,json=blockType,proto3,enum=user.BlockType" json:"block_type,omitempty"` // 筛选类型，UNSPECIFIED 返回所有
+	BlockType     BlockType              `protobuf:"varint,2,opt,name=block_type,json=blockType,proto3,enum=user.BlockType" json:"block_type,omitempty"` // UNSPECIFIED 返回所有
 	Pagination    *common.Pagination     `protobuf:"bytes,3,opt,name=pagination,proto3" json:"pagination,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
@@ -1319,7 +1410,7 @@ type GetBlockListRequest struct {
 
 func (x *GetBlockListRequest) Reset() {
 	*x = GetBlockListRequest{}
-	mi := &file_user_user_proto_msgTypes[19]
+	mi := &file_user_user_proto_msgTypes[21]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1331,7 +1422,7 @@ func (x *GetBlockListRequest) String() string {
 func (*GetBlockListRequest) ProtoMessage() {}
 
 func (x *GetBlockListRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_user_user_proto_msgTypes[19]
+	mi := &file_user_user_proto_msgTypes[21]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1344,7 +1435,7 @@ func (x *GetBlockListRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GetBlockListRequest.ProtoReflect.Descriptor instead.
 func (*GetBlockListRequest) Descriptor() ([]byte, []int) {
-	return file_user_user_proto_rawDescGZIP(), []int{19}
+	return file_user_user_proto_rawDescGZIP(), []int{21}
 }
 
 func (x *GetBlockListRequest) GetUserId() string {
@@ -1368,7 +1459,6 @@ func (x *GetBlockListRequest) GetPagination() *common.Pagination {
 	return nil
 }
 
-// BlockListResponse 屏蔽列表响应
 type BlockListResponse struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Users         []*BlockedUser         `protobuf:"bytes,1,rep,name=users,proto3" json:"users,omitempty"`
@@ -1379,7 +1469,7 @@ type BlockListResponse struct {
 
 func (x *BlockListResponse) Reset() {
 	*x = BlockListResponse{}
-	mi := &file_user_user_proto_msgTypes[20]
+	mi := &file_user_user_proto_msgTypes[22]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1391,7 +1481,7 @@ func (x *BlockListResponse) String() string {
 func (*BlockListResponse) ProtoMessage() {}
 
 func (x *BlockListResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_user_user_proto_msgTypes[20]
+	mi := &file_user_user_proto_msgTypes[22]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1404,7 +1494,7 @@ func (x *BlockListResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use BlockListResponse.ProtoReflect.Descriptor instead.
 func (*BlockListResponse) Descriptor() ([]byte, []int) {
-	return file_user_user_proto_rawDescGZIP(), []int{20}
+	return file_user_user_proto_rawDescGZIP(), []int{22}
 }
 
 func (x *BlockListResponse) GetUsers() []*BlockedUser {
@@ -1421,7 +1511,6 @@ func (x *BlockListResponse) GetPagination() *common.Pagination {
 	return nil
 }
 
-// BlockedUser 被屏蔽的用户
 type BlockedUser struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Profile       *Profile               `protobuf:"bytes,1,opt,name=profile,proto3" json:"profile,omitempty"`
@@ -1433,7 +1522,7 @@ type BlockedUser struct {
 
 func (x *BlockedUser) Reset() {
 	*x = BlockedUser{}
-	mi := &file_user_user_proto_msgTypes[21]
+	mi := &file_user_user_proto_msgTypes[23]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1445,7 +1534,7 @@ func (x *BlockedUser) String() string {
 func (*BlockedUser) ProtoMessage() {}
 
 func (x *BlockedUser) ProtoReflect() protoreflect.Message {
-	mi := &file_user_user_proto_msgTypes[21]
+	mi := &file_user_user_proto_msgTypes[23]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1458,7 +1547,7 @@ func (x *BlockedUser) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use BlockedUser.ProtoReflect.Descriptor instead.
 func (*BlockedUser) Descriptor() ([]byte, []int) {
-	return file_user_user_proto_rawDescGZIP(), []int{21}
+	return file_user_user_proto_rawDescGZIP(), []int{23}
 }
 
 func (x *BlockedUser) GetProfile() *Profile {
@@ -1482,18 +1571,17 @@ func (x *BlockedUser) GetBlockedAt() *common.Timestamp {
 	return nil
 }
 
-// CheckBlockedRequest 检查屏蔽状态
 type CheckBlockedRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	UserId        string                 `protobuf:"bytes,1,opt,name=user_id,json=userId,proto3" json:"user_id,omitempty"`       // 当前用户
-	TargetId      string                 `protobuf:"bytes,2,opt,name=target_id,json=targetId,proto3" json:"target_id,omitempty"` // 目标用户
+	UserId        string                 `protobuf:"bytes,1,opt,name=user_id,json=userId,proto3" json:"user_id,omitempty"`
+	TargetId      string                 `protobuf:"bytes,2,opt,name=target_id,json=targetId,proto3" json:"target_id,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
 
 func (x *CheckBlockedRequest) Reset() {
 	*x = CheckBlockedRequest{}
-	mi := &file_user_user_proto_msgTypes[22]
+	mi := &file_user_user_proto_msgTypes[24]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1505,7 +1593,7 @@ func (x *CheckBlockedRequest) String() string {
 func (*CheckBlockedRequest) ProtoMessage() {}
 
 func (x *CheckBlockedRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_user_user_proto_msgTypes[22]
+	mi := &file_user_user_proto_msgTypes[24]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1518,7 +1606,7 @@ func (x *CheckBlockedRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use CheckBlockedRequest.ProtoReflect.Descriptor instead.
 func (*CheckBlockedRequest) Descriptor() ([]byte, []int) {
-	return file_user_user_proto_rawDescGZIP(), []int{22}
+	return file_user_user_proto_rawDescGZIP(), []int{24}
 }
 
 func (x *CheckBlockedRequest) GetUserId() string {
@@ -1535,22 +1623,21 @@ func (x *CheckBlockedRequest) GetTargetId() string {
 	return ""
 }
 
-// CheckBlockedResponse 屏蔽状态响应
 type CheckBlockedResponse struct {
 	state          protoimpl.MessageState `protogen:"open.v1"`
-	IsBlocking     bool                   `protobuf:"varint,1,opt,name=is_blocking,json=isBlocking,proto3" json:"is_blocking,omitempty"`                                   // 我是否屏蔽了他
-	IsBlockedBy    bool                   `protobuf:"varint,2,opt,name=is_blocked_by,json=isBlockedBy,proto3" json:"is_blocked_by,omitempty"`                              // 他是否屏蔽了我
-	MyBlockType    BlockType              `protobuf:"varint,3,opt,name=my_block_type,json=myBlockType,proto3,enum=user.BlockType" json:"my_block_type,omitempty"`          // 我对他的屏蔽类型
-	TheirBlockType BlockType              `protobuf:"varint,4,opt,name=their_block_type,json=theirBlockType,proto3,enum=user.BlockType" json:"their_block_type,omitempty"` // 他对我的屏蔽类型
-	CanViewProfile bool                   `protobuf:"varint,5,opt,name=can_view_profile,json=canViewProfile,proto3" json:"can_view_profile,omitempty"`                     // 我是否能看到他的资料
-	CanBeViewed    bool                   `protobuf:"varint,6,opt,name=can_be_viewed,json=canBeViewed,proto3" json:"can_be_viewed,omitempty"`                              // 他是否能看到我的资料
+	IsBlocking     bool                   `protobuf:"varint,1,opt,name=is_blocking,json=isBlocking,proto3" json:"is_blocking,omitempty"`
+	IsBlockedBy    bool                   `protobuf:"varint,2,opt,name=is_blocked_by,json=isBlockedBy,proto3" json:"is_blocked_by,omitempty"`
+	MyBlockType    BlockType              `protobuf:"varint,3,opt,name=my_block_type,json=myBlockType,proto3,enum=user.BlockType" json:"my_block_type,omitempty"`
+	TheirBlockType BlockType              `protobuf:"varint,4,opt,name=their_block_type,json=theirBlockType,proto3,enum=user.BlockType" json:"their_block_type,omitempty"`
+	CanViewProfile bool                   `protobuf:"varint,5,opt,name=can_view_profile,json=canViewProfile,proto3" json:"can_view_profile,omitempty"`
+	CanBeViewed    bool                   `protobuf:"varint,6,opt,name=can_be_viewed,json=canBeViewed,proto3" json:"can_be_viewed,omitempty"`
 	unknownFields  protoimpl.UnknownFields
 	sizeCache      protoimpl.SizeCache
 }
 
 func (x *CheckBlockedResponse) Reset() {
 	*x = CheckBlockedResponse{}
-	mi := &file_user_user_proto_msgTypes[23]
+	mi := &file_user_user_proto_msgTypes[25]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1562,7 +1649,7 @@ func (x *CheckBlockedResponse) String() string {
 func (*CheckBlockedResponse) ProtoMessage() {}
 
 func (x *CheckBlockedResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_user_user_proto_msgTypes[23]
+	mi := &file_user_user_proto_msgTypes[25]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1575,7 +1662,7 @@ func (x *CheckBlockedResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use CheckBlockedResponse.ProtoReflect.Descriptor instead.
 func (*CheckBlockedResponse) Descriptor() ([]byte, []int) {
-	return file_user_user_proto_rawDescGZIP(), []int{23}
+	return file_user_user_proto_rawDescGZIP(), []int{25}
 }
 
 func (x *CheckBlockedResponse) GetIsBlocking() bool {
@@ -1620,7 +1707,6 @@ func (x *CheckBlockedResponse) GetCanBeViewed() bool {
 	return false
 }
 
-// UserSettings 用户设置
 type UserSettings struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	UserId        string                 `protobuf:"bytes,1,opt,name=user_id,json=userId,proto3" json:"user_id,omitempty"`
@@ -1632,7 +1718,7 @@ type UserSettings struct {
 
 func (x *UserSettings) Reset() {
 	*x = UserSettings{}
-	mi := &file_user_user_proto_msgTypes[24]
+	mi := &file_user_user_proto_msgTypes[26]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1644,7 +1730,7 @@ func (x *UserSettings) String() string {
 func (*UserSettings) ProtoMessage() {}
 
 func (x *UserSettings) ProtoReflect() protoreflect.Message {
-	mi := &file_user_user_proto_msgTypes[24]
+	mi := &file_user_user_proto_msgTypes[26]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1657,7 +1743,7 @@ func (x *UserSettings) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use UserSettings.ProtoReflect.Descriptor instead.
 func (*UserSettings) Descriptor() ([]byte, []int) {
-	return file_user_user_proto_rawDescGZIP(), []int{24}
+	return file_user_user_proto_rawDescGZIP(), []int{26}
 }
 
 func (x *UserSettings) GetUserId() string {
@@ -1681,22 +1767,21 @@ func (x *UserSettings) GetNotification() *NotificationSettings {
 	return nil
 }
 
-// PrivacySettings 隐私设置
 type PrivacySettings struct {
 	state                  protoimpl.MessageState `protogen:"open.v1"`
-	IsPrivateAccount       bool                   `protobuf:"varint,1,opt,name=is_private_account,json=isPrivateAccount,proto3" json:"is_private_account,omitempty"`                     // 私密账户（需要审批关注）
-	AllowMessageFromAnyone bool                   `protobuf:"varint,2,opt,name=allow_message_from_anyone,json=allowMessageFromAnyone,proto3" json:"allow_message_from_anyone,omitempty"` // 允许任何人私信
-	ShowOnlineStatus       bool                   `protobuf:"varint,3,opt,name=show_online_status,json=showOnlineStatus,proto3" json:"show_online_status,omitempty"`                     // 显示在线状态
-	ShowLastSeen           bool                   `protobuf:"varint,4,opt,name=show_last_seen,json=showLastSeen,proto3" json:"show_last_seen,omitempty"`                                 // 显示最后上线时间
-	AllowTagging           bool                   `protobuf:"varint,5,opt,name=allow_tagging,json=allowTagging,proto3" json:"allow_tagging,omitempty"`                                   // 允许被 @ 提及
-	ShowActivityStatus     bool                   `protobuf:"varint,6,opt,name=show_activity_status,json=showActivityStatus,proto3" json:"show_activity_status,omitempty"`               // 显示活动状态
+	IsPrivateAccount       bool                   `protobuf:"varint,1,opt,name=is_private_account,json=isPrivateAccount,proto3" json:"is_private_account,omitempty"`
+	AllowMessageFromAnyone bool                   `protobuf:"varint,2,opt,name=allow_message_from_anyone,json=allowMessageFromAnyone,proto3" json:"allow_message_from_anyone,omitempty"`
+	ShowOnlineStatus       bool                   `protobuf:"varint,3,opt,name=show_online_status,json=showOnlineStatus,proto3" json:"show_online_status,omitempty"`
+	ShowLastSeen           bool                   `protobuf:"varint,4,opt,name=show_last_seen,json=showLastSeen,proto3" json:"show_last_seen,omitempty"`
+	AllowTagging           bool                   `protobuf:"varint,5,opt,name=allow_tagging,json=allowTagging,proto3" json:"allow_tagging,omitempty"`
+	ShowActivityStatus     bool                   `protobuf:"varint,6,opt,name=show_activity_status,json=showActivityStatus,proto3" json:"show_activity_status,omitempty"`
 	unknownFields          protoimpl.UnknownFields
 	sizeCache              protoimpl.SizeCache
 }
 
 func (x *PrivacySettings) Reset() {
 	*x = PrivacySettings{}
-	mi := &file_user_user_proto_msgTypes[25]
+	mi := &file_user_user_proto_msgTypes[27]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1708,7 +1793,7 @@ func (x *PrivacySettings) String() string {
 func (*PrivacySettings) ProtoMessage() {}
 
 func (x *PrivacySettings) ProtoReflect() protoreflect.Message {
-	mi := &file_user_user_proto_msgTypes[25]
+	mi := &file_user_user_proto_msgTypes[27]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1721,7 +1806,7 @@ func (x *PrivacySettings) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use PrivacySettings.ProtoReflect.Descriptor instead.
 func (*PrivacySettings) Descriptor() ([]byte, []int) {
-	return file_user_user_proto_rawDescGZIP(), []int{25}
+	return file_user_user_proto_rawDescGZIP(), []int{27}
 }
 
 func (x *PrivacySettings) GetIsPrivateAccount() bool {
@@ -1766,24 +1851,23 @@ func (x *PrivacySettings) GetShowActivityStatus() bool {
 	return false
 }
 
-// NotificationSettings 通知设置
 type NotificationSettings struct {
 	state             protoimpl.MessageState `protogen:"open.v1"`
-	PushEnabled       bool                   `protobuf:"varint,1,opt,name=push_enabled,json=pushEnabled,proto3" json:"push_enabled,omitempty"`                     // 推送通知总开关
-	EmailEnabled      bool                   `protobuf:"varint,2,opt,name=email_enabled,json=emailEnabled,proto3" json:"email_enabled,omitempty"`                  // 邮件通知总开关
-	NotifyNewFollower bool                   `protobuf:"varint,3,opt,name=notify_new_follower,json=notifyNewFollower,proto3" json:"notify_new_follower,omitempty"` // 新粉丝通知
-	NotifyLike        bool                   `protobuf:"varint,4,opt,name=notify_like,json=notifyLike,proto3" json:"notify_like,omitempty"`                        // 点赞通知
-	NotifyComment     bool                   `protobuf:"varint,5,opt,name=notify_comment,json=notifyComment,proto3" json:"notify_comment,omitempty"`               // 评论通知
-	NotifyMention     bool                   `protobuf:"varint,6,opt,name=notify_mention,json=notifyMention,proto3" json:"notify_mention,omitempty"`               // @ 提及通知
-	NotifyRepost      bool                   `protobuf:"varint,7,opt,name=notify_repost,json=notifyRepost,proto3" json:"notify_repost,omitempty"`                  // 转发通知
-	NotifyMessage     bool                   `protobuf:"varint,8,opt,name=notify_message,json=notifyMessage,proto3" json:"notify_message,omitempty"`               // 私信通知
+	PushEnabled       bool                   `protobuf:"varint,1,opt,name=push_enabled,json=pushEnabled,proto3" json:"push_enabled,omitempty"`
+	EmailEnabled      bool                   `protobuf:"varint,2,opt,name=email_enabled,json=emailEnabled,proto3" json:"email_enabled,omitempty"`
+	NotifyNewFollower bool                   `protobuf:"varint,3,opt,name=notify_new_follower,json=notifyNewFollower,proto3" json:"notify_new_follower,omitempty"`
+	NotifyLike        bool                   `protobuf:"varint,4,opt,name=notify_like,json=notifyLike,proto3" json:"notify_like,omitempty"`
+	NotifyComment     bool                   `protobuf:"varint,5,opt,name=notify_comment,json=notifyComment,proto3" json:"notify_comment,omitempty"`
+	NotifyMention     bool                   `protobuf:"varint,6,opt,name=notify_mention,json=notifyMention,proto3" json:"notify_mention,omitempty"`
+	NotifyRepost      bool                   `protobuf:"varint,7,opt,name=notify_repost,json=notifyRepost,proto3" json:"notify_repost,omitempty"`
+	NotifyMessage     bool                   `protobuf:"varint,8,opt,name=notify_message,json=notifyMessage,proto3" json:"notify_message,omitempty"`
 	unknownFields     protoimpl.UnknownFields
 	sizeCache         protoimpl.SizeCache
 }
 
 func (x *NotificationSettings) Reset() {
 	*x = NotificationSettings{}
-	mi := &file_user_user_proto_msgTypes[26]
+	mi := &file_user_user_proto_msgTypes[28]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1795,7 +1879,7 @@ func (x *NotificationSettings) String() string {
 func (*NotificationSettings) ProtoMessage() {}
 
 func (x *NotificationSettings) ProtoReflect() protoreflect.Message {
-	mi := &file_user_user_proto_msgTypes[26]
+	mi := &file_user_user_proto_msgTypes[28]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1808,7 +1892,7 @@ func (x *NotificationSettings) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use NotificationSettings.ProtoReflect.Descriptor instead.
 func (*NotificationSettings) Descriptor() ([]byte, []int) {
-	return file_user_user_proto_rawDescGZIP(), []int{26}
+	return file_user_user_proto_rawDescGZIP(), []int{28}
 }
 
 func (x *NotificationSettings) GetPushEnabled() bool {
@@ -1867,7 +1951,6 @@ func (x *NotificationSettings) GetNotifyMessage() bool {
 	return false
 }
 
-// GetUserSettingsRequest 获取用户设置
 type GetUserSettingsRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	UserId        string                 `protobuf:"bytes,1,opt,name=user_id,json=userId,proto3" json:"user_id,omitempty"`
@@ -1877,7 +1960,7 @@ type GetUserSettingsRequest struct {
 
 func (x *GetUserSettingsRequest) Reset() {
 	*x = GetUserSettingsRequest{}
-	mi := &file_user_user_proto_msgTypes[27]
+	mi := &file_user_user_proto_msgTypes[29]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1889,7 +1972,7 @@ func (x *GetUserSettingsRequest) String() string {
 func (*GetUserSettingsRequest) ProtoMessage() {}
 
 func (x *GetUserSettingsRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_user_user_proto_msgTypes[27]
+	mi := &file_user_user_proto_msgTypes[29]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1902,7 +1985,7 @@ func (x *GetUserSettingsRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GetUserSettingsRequest.ProtoReflect.Descriptor instead.
 func (*GetUserSettingsRequest) Descriptor() ([]byte, []int) {
-	return file_user_user_proto_rawDescGZIP(), []int{27}
+	return file_user_user_proto_rawDescGZIP(), []int{29}
 }
 
 func (x *GetUserSettingsRequest) GetUserId() string {
@@ -1912,7 +1995,6 @@ func (x *GetUserSettingsRequest) GetUserId() string {
 	return ""
 }
 
-// UpdateUserSettingsRequest 更新用户设置
 type UpdateUserSettingsRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	UserId        string                 `protobuf:"bytes,1,opt,name=user_id,json=userId,proto3" json:"user_id,omitempty"`
@@ -1924,7 +2006,7 @@ type UpdateUserSettingsRequest struct {
 
 func (x *UpdateUserSettingsRequest) Reset() {
 	*x = UpdateUserSettingsRequest{}
-	mi := &file_user_user_proto_msgTypes[28]
+	mi := &file_user_user_proto_msgTypes[30]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1936,7 +2018,7 @@ func (x *UpdateUserSettingsRequest) String() string {
 func (*UpdateUserSettingsRequest) ProtoMessage() {}
 
 func (x *UpdateUserSettingsRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_user_user_proto_msgTypes[28]
+	mi := &file_user_user_proto_msgTypes[30]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1949,7 +2031,7 @@ func (x *UpdateUserSettingsRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use UpdateUserSettingsRequest.ProtoReflect.Descriptor instead.
 func (*UpdateUserSettingsRequest) Descriptor() ([]byte, []int) {
-	return file_user_user_proto_rawDescGZIP(), []int{28}
+	return file_user_user_proto_rawDescGZIP(), []int{30}
 }
 
 func (x *UpdateUserSettingsRequest) GetUserId() string {
@@ -1969,120 +2051,6 @@ func (x *UpdateUserSettingsRequest) GetPrivacy() *PrivacySettings {
 func (x *UpdateUserSettingsRequest) GetNotification() *NotificationSettings {
 	if x != nil {
 		return x.Notification
-	}
-	return nil
-}
-
-// SearchUsersRequest 搜索用户请求
-type SearchUsersRequest struct {
-	state         protoimpl.MessageState `protogen:"open.v1"`
-	Query         string                 `protobuf:"bytes,1,opt,name=query,proto3" json:"query,omitempty"`                       // 搜索关键词（用户名或昵称）
-	ViewerId      string                 `protobuf:"bytes,2,opt,name=viewer_id,json=viewerId,proto3" json:"viewer_id,omitempty"` // 查看者 ID
-	Pagination    *common.Pagination     `protobuf:"bytes,3,opt,name=pagination,proto3" json:"pagination,omitempty"`
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
-}
-
-func (x *SearchUsersRequest) Reset() {
-	*x = SearchUsersRequest{}
-	mi := &file_user_user_proto_msgTypes[29]
-	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-	ms.StoreMessageInfo(mi)
-}
-
-func (x *SearchUsersRequest) String() string {
-	return protoimpl.X.MessageStringOf(x)
-}
-
-func (*SearchUsersRequest) ProtoMessage() {}
-
-func (x *SearchUsersRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_user_user_proto_msgTypes[29]
-	if x != nil {
-		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-		if ms.LoadMessageInfo() == nil {
-			ms.StoreMessageInfo(mi)
-		}
-		return ms
-	}
-	return mi.MessageOf(x)
-}
-
-// Deprecated: Use SearchUsersRequest.ProtoReflect.Descriptor instead.
-func (*SearchUsersRequest) Descriptor() ([]byte, []int) {
-	return file_user_user_proto_rawDescGZIP(), []int{29}
-}
-
-func (x *SearchUsersRequest) GetQuery() string {
-	if x != nil {
-		return x.Query
-	}
-	return ""
-}
-
-func (x *SearchUsersRequest) GetViewerId() string {
-	if x != nil {
-		return x.ViewerId
-	}
-	return ""
-}
-
-func (x *SearchUsersRequest) GetPagination() *common.Pagination {
-	if x != nil {
-		return x.Pagination
-	}
-	return nil
-}
-
-// SearchUsersResponse 搜索用户响应
-type SearchUsersResponse struct {
-	state         protoimpl.MessageState `protogen:"open.v1"`
-	Users         []*Profile             `protobuf:"bytes,1,rep,name=users,proto3" json:"users,omitempty"`
-	Pagination    *common.Pagination     `protobuf:"bytes,2,opt,name=pagination,proto3" json:"pagination,omitempty"`
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
-}
-
-func (x *SearchUsersResponse) Reset() {
-	*x = SearchUsersResponse{}
-	mi := &file_user_user_proto_msgTypes[30]
-	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-	ms.StoreMessageInfo(mi)
-}
-
-func (x *SearchUsersResponse) String() string {
-	return protoimpl.X.MessageStringOf(x)
-}
-
-func (*SearchUsersResponse) ProtoMessage() {}
-
-func (x *SearchUsersResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_user_user_proto_msgTypes[30]
-	if x != nil {
-		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-		if ms.LoadMessageInfo() == nil {
-			ms.StoreMessageInfo(mi)
-		}
-		return ms
-	}
-	return mi.MessageOf(x)
-}
-
-// Deprecated: Use SearchUsersResponse.ProtoReflect.Descriptor instead.
-func (*SearchUsersResponse) Descriptor() ([]byte, []int) {
-	return file_user_user_proto_rawDescGZIP(), []int{30}
-}
-
-func (x *SearchUsersResponse) GetUsers() []*Profile {
-	if x != nil {
-		return x.Users
-	}
-	return nil
-}
-
-func (x *SearchUsersResponse) GetPagination() *common.Pagination {
-	if x != nil {
-		return x.Pagination
 	}
 	return nil
 }
@@ -2158,7 +2126,18 @@ const file_user_user_proto_rawDesc = "" +
 	"\bprofiles\x18\x01 \x03(\v2,.user.BatchGetProfilesResponse.ProfilesEntryR\bprofiles\x1aJ\n" +
 	"\rProfilesEntry\x12\x10\n" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x12#\n" +
-	"\x05value\x18\x02 \x01(\v2\r.user.ProfileR\x05value:\x028\x01\"S\n" +
+	"\x05value\x18\x02 \x01(\v2\r.user.ProfileR\x05value:\x028\x01\"{\n" +
+	"\x12SearchUsersRequest\x12\x14\n" +
+	"\x05query\x18\x01 \x01(\tR\x05query\x12\x1b\n" +
+	"\tviewer_id\x18\x02 \x01(\tR\bviewerId\x122\n" +
+	"\n" +
+	"pagination\x18\x03 \x01(\v2\x12.common.PaginationR\n" +
+	"pagination\"n\n" +
+	"\x13SearchUsersResponse\x12#\n" +
+	"\x05users\x18\x01 \x03(\v2\r.user.ProfileR\x05users\x122\n" +
+	"\n" +
+	"pagination\x18\x02 \x01(\v2\x12.common.PaginationR\n" +
+	"pagination\"S\n" +
 	"\rFollowRequest\x12\x1f\n" +
 	"\vfollower_id\x18\x01 \x01(\tR\n" +
 	"followerId\x12!\n" +
@@ -2273,18 +2252,7 @@ const file_user_user_proto_rawDesc = "" +
 	"\fnotification\x18\x03 \x01(\v2\x1a.user.NotificationSettingsH\x01R\fnotification\x88\x01\x01B\n" +
 	"\n" +
 	"\b_privacyB\x0f\n" +
-	"\r_notification\"{\n" +
-	"\x12SearchUsersRequest\x12\x14\n" +
-	"\x05query\x18\x01 \x01(\tR\x05query\x12\x1b\n" +
-	"\tviewer_id\x18\x02 \x01(\tR\bviewerId\x122\n" +
-	"\n" +
-	"pagination\x18\x03 \x01(\v2\x12.common.PaginationR\n" +
-	"pagination\"n\n" +
-	"\x13SearchUsersResponse\x12#\n" +
-	"\x05users\x18\x01 \x03(\v2\r.user.ProfileR\x05users\x122\n" +
-	"\n" +
-	"pagination\x18\x02 \x01(\v2\x12.common.PaginationR\n" +
-	"pagination*p\n" +
+	"\r_notification*p\n" +
 	"\tBlockType\x12\x1a\n" +
 	"\x16BLOCK_TYPE_UNSPECIFIED\x10\x00\x12\x19\n" +
 	"\x15BLOCK_TYPE_HIDE_POSTS\x10\x01\x12\x16\n" +
@@ -2295,7 +2263,8 @@ const file_user_user_proto_rawDesc = "" +
 	"GetProfile\x12\x17.user.GetProfileRequest\x1a\r.user.Profile\x12H\n" +
 	"\x14GetProfileByUsername\x12!.user.GetProfileByUsernameRequest\x1a\r.user.Profile\x12:\n" +
 	"\rUpdateProfile\x12\x1a.user.UpdateProfileRequest\x1a\r.user.Profile\x12Q\n" +
-	"\x10BatchGetProfiles\x12\x1d.user.BatchGetProfilesRequest\x1a\x1e.user.BatchGetProfilesResponse\x12,\n" +
+	"\x10BatchGetProfiles\x12\x1d.user.BatchGetProfilesRequest\x1a\x1e.user.BatchGetProfilesResponse\x12B\n" +
+	"\vSearchUsers\x12\x18.user.SearchUsersRequest\x1a\x19.user.SearchUsersResponse\x12,\n" +
 	"\x06Follow\x12\x13.user.FollowRequest\x1a\r.common.Empty\x120\n" +
 	"\bUnfollow\x12\x15.user.UnfollowRequest\x1a\r.common.Empty\x12C\n" +
 	"\fGetFollowers\x12\x19.user.GetFollowersRequest\x1a\x18.user.FollowListResponse\x12C\n" +
@@ -2308,8 +2277,7 @@ const file_user_user_proto_rawDesc = "" +
 	"\fGetBlockList\x12\x19.user.GetBlockListRequest\x1a\x17.user.BlockListResponse\x12E\n" +
 	"\fCheckBlocked\x12\x19.user.CheckBlockedRequest\x1a\x1a.user.CheckBlockedResponse\x12C\n" +
 	"\x0fGetUserSettings\x12\x1c.user.GetUserSettingsRequest\x1a\x12.user.UserSettings\x12I\n" +
-	"\x12UpdateUserSettings\x12\x1f.user.UpdateUserSettingsRequest\x1a\x12.user.UserSettings\x12B\n" +
-	"\vSearchUsers\x12\x18.user.SearchUsersRequest\x1a\x19.user.SearchUsersResponseB0Z.github.com/funcdfs/lesser/user/gen_protos/userb\x06proto3"
+	"\x12UpdateUserSettings\x12\x1f.user.UpdateUserSettingsRequest\x1a\x12.user.UserSettingsB0Z.github.com/funcdfs/lesser/user/gen_protos/userb\x06proto3"
 
 var (
 	file_user_user_proto_rawDescOnce sync.Once
@@ -2334,30 +2302,30 @@ var file_user_user_proto_goTypes = []any{
 	(*UpdateProfileRequest)(nil),        // 5: user.UpdateProfileRequest
 	(*BatchGetProfilesRequest)(nil),     // 6: user.BatchGetProfilesRequest
 	(*BatchGetProfilesResponse)(nil),    // 7: user.BatchGetProfilesResponse
-	(*FollowRequest)(nil),               // 8: user.FollowRequest
-	(*UnfollowRequest)(nil),             // 9: user.UnfollowRequest
-	(*GetFollowersRequest)(nil),         // 10: user.GetFollowersRequest
-	(*GetFollowingRequest)(nil),         // 11: user.GetFollowingRequest
-	(*FollowListResponse)(nil),          // 12: user.FollowListResponse
-	(*CheckFollowingRequest)(nil),       // 13: user.CheckFollowingRequest
-	(*CheckFollowingResponse)(nil),      // 14: user.CheckFollowingResponse
-	(*GetRelationshipRequest)(nil),      // 15: user.GetRelationshipRequest
-	(*GetRelationshipResponse)(nil),     // 16: user.GetRelationshipResponse
-	(*GetMutualFollowersRequest)(nil),   // 17: user.GetMutualFollowersRequest
-	(*BlockRequest)(nil),                // 18: user.BlockRequest
-	(*UnblockRequest)(nil),              // 19: user.UnblockRequest
-	(*GetBlockListRequest)(nil),         // 20: user.GetBlockListRequest
-	(*BlockListResponse)(nil),           // 21: user.BlockListResponse
-	(*BlockedUser)(nil),                 // 22: user.BlockedUser
-	(*CheckBlockedRequest)(nil),         // 23: user.CheckBlockedRequest
-	(*CheckBlockedResponse)(nil),        // 24: user.CheckBlockedResponse
-	(*UserSettings)(nil),                // 25: user.UserSettings
-	(*PrivacySettings)(nil),             // 26: user.PrivacySettings
-	(*NotificationSettings)(nil),        // 27: user.NotificationSettings
-	(*GetUserSettingsRequest)(nil),      // 28: user.GetUserSettingsRequest
-	(*UpdateUserSettingsRequest)(nil),   // 29: user.UpdateUserSettingsRequest
-	(*SearchUsersRequest)(nil),          // 30: user.SearchUsersRequest
-	(*SearchUsersResponse)(nil),         // 31: user.SearchUsersResponse
+	(*SearchUsersRequest)(nil),          // 8: user.SearchUsersRequest
+	(*SearchUsersResponse)(nil),         // 9: user.SearchUsersResponse
+	(*FollowRequest)(nil),               // 10: user.FollowRequest
+	(*UnfollowRequest)(nil),             // 11: user.UnfollowRequest
+	(*GetFollowersRequest)(nil),         // 12: user.GetFollowersRequest
+	(*GetFollowingRequest)(nil),         // 13: user.GetFollowingRequest
+	(*FollowListResponse)(nil),          // 14: user.FollowListResponse
+	(*CheckFollowingRequest)(nil),       // 15: user.CheckFollowingRequest
+	(*CheckFollowingResponse)(nil),      // 16: user.CheckFollowingResponse
+	(*GetRelationshipRequest)(nil),      // 17: user.GetRelationshipRequest
+	(*GetRelationshipResponse)(nil),     // 18: user.GetRelationshipResponse
+	(*GetMutualFollowersRequest)(nil),   // 19: user.GetMutualFollowersRequest
+	(*BlockRequest)(nil),                // 20: user.BlockRequest
+	(*UnblockRequest)(nil),              // 21: user.UnblockRequest
+	(*GetBlockListRequest)(nil),         // 22: user.GetBlockListRequest
+	(*BlockListResponse)(nil),           // 23: user.BlockListResponse
+	(*BlockedUser)(nil),                 // 24: user.BlockedUser
+	(*CheckBlockedRequest)(nil),         // 25: user.CheckBlockedRequest
+	(*CheckBlockedResponse)(nil),        // 26: user.CheckBlockedResponse
+	(*UserSettings)(nil),                // 27: user.UserSettings
+	(*PrivacySettings)(nil),             // 28: user.PrivacySettings
+	(*NotificationSettings)(nil),        // 29: user.NotificationSettings
+	(*GetUserSettingsRequest)(nil),      // 30: user.GetUserSettingsRequest
+	(*UpdateUserSettingsRequest)(nil),   // 31: user.UpdateUserSettingsRequest
 	nil,                                 // 32: user.BatchGetProfilesResponse.ProfilesEntry
 	(*common.Timestamp)(nil),            // 33: common.Timestamp
 	(*common.Pagination)(nil),           // 34: common.Pagination
@@ -2368,67 +2336,67 @@ var file_user_user_proto_depIdxs = []int32{
 	33, // 1: user.Profile.updated_at:type_name -> common.Timestamp
 	2,  // 2: user.Profile.relationship:type_name -> user.RelationshipStatus
 	32, // 3: user.BatchGetProfilesResponse.profiles:type_name -> user.BatchGetProfilesResponse.ProfilesEntry
-	34, // 4: user.GetFollowersRequest.pagination:type_name -> common.Pagination
-	34, // 5: user.GetFollowingRequest.pagination:type_name -> common.Pagination
-	1,  // 6: user.FollowListResponse.users:type_name -> user.Profile
-	34, // 7: user.FollowListResponse.pagination:type_name -> common.Pagination
-	2,  // 8: user.GetRelationshipResponse.relationship:type_name -> user.RelationshipStatus
-	34, // 9: user.GetMutualFollowersRequest.pagination:type_name -> common.Pagination
-	0,  // 10: user.BlockRequest.block_type:type_name -> user.BlockType
-	0,  // 11: user.UnblockRequest.block_type:type_name -> user.BlockType
-	0,  // 12: user.GetBlockListRequest.block_type:type_name -> user.BlockType
-	34, // 13: user.GetBlockListRequest.pagination:type_name -> common.Pagination
-	22, // 14: user.BlockListResponse.users:type_name -> user.BlockedUser
-	34, // 15: user.BlockListResponse.pagination:type_name -> common.Pagination
-	1,  // 16: user.BlockedUser.profile:type_name -> user.Profile
-	0,  // 17: user.BlockedUser.block_type:type_name -> user.BlockType
-	33, // 18: user.BlockedUser.blocked_at:type_name -> common.Timestamp
-	0,  // 19: user.CheckBlockedResponse.my_block_type:type_name -> user.BlockType
-	0,  // 20: user.CheckBlockedResponse.their_block_type:type_name -> user.BlockType
-	26, // 21: user.UserSettings.privacy:type_name -> user.PrivacySettings
-	27, // 22: user.UserSettings.notification:type_name -> user.NotificationSettings
-	26, // 23: user.UpdateUserSettingsRequest.privacy:type_name -> user.PrivacySettings
-	27, // 24: user.UpdateUserSettingsRequest.notification:type_name -> user.NotificationSettings
-	34, // 25: user.SearchUsersRequest.pagination:type_name -> common.Pagination
-	1,  // 26: user.SearchUsersResponse.users:type_name -> user.Profile
-	34, // 27: user.SearchUsersResponse.pagination:type_name -> common.Pagination
+	34, // 4: user.SearchUsersRequest.pagination:type_name -> common.Pagination
+	1,  // 5: user.SearchUsersResponse.users:type_name -> user.Profile
+	34, // 6: user.SearchUsersResponse.pagination:type_name -> common.Pagination
+	34, // 7: user.GetFollowersRequest.pagination:type_name -> common.Pagination
+	34, // 8: user.GetFollowingRequest.pagination:type_name -> common.Pagination
+	1,  // 9: user.FollowListResponse.users:type_name -> user.Profile
+	34, // 10: user.FollowListResponse.pagination:type_name -> common.Pagination
+	2,  // 11: user.GetRelationshipResponse.relationship:type_name -> user.RelationshipStatus
+	34, // 12: user.GetMutualFollowersRequest.pagination:type_name -> common.Pagination
+	0,  // 13: user.BlockRequest.block_type:type_name -> user.BlockType
+	0,  // 14: user.UnblockRequest.block_type:type_name -> user.BlockType
+	0,  // 15: user.GetBlockListRequest.block_type:type_name -> user.BlockType
+	34, // 16: user.GetBlockListRequest.pagination:type_name -> common.Pagination
+	24, // 17: user.BlockListResponse.users:type_name -> user.BlockedUser
+	34, // 18: user.BlockListResponse.pagination:type_name -> common.Pagination
+	1,  // 19: user.BlockedUser.profile:type_name -> user.Profile
+	0,  // 20: user.BlockedUser.block_type:type_name -> user.BlockType
+	33, // 21: user.BlockedUser.blocked_at:type_name -> common.Timestamp
+	0,  // 22: user.CheckBlockedResponse.my_block_type:type_name -> user.BlockType
+	0,  // 23: user.CheckBlockedResponse.their_block_type:type_name -> user.BlockType
+	28, // 24: user.UserSettings.privacy:type_name -> user.PrivacySettings
+	29, // 25: user.UserSettings.notification:type_name -> user.NotificationSettings
+	28, // 26: user.UpdateUserSettingsRequest.privacy:type_name -> user.PrivacySettings
+	29, // 27: user.UpdateUserSettingsRequest.notification:type_name -> user.NotificationSettings
 	1,  // 28: user.BatchGetProfilesResponse.ProfilesEntry.value:type_name -> user.Profile
 	3,  // 29: user.UserService.GetProfile:input_type -> user.GetProfileRequest
 	4,  // 30: user.UserService.GetProfileByUsername:input_type -> user.GetProfileByUsernameRequest
 	5,  // 31: user.UserService.UpdateProfile:input_type -> user.UpdateProfileRequest
 	6,  // 32: user.UserService.BatchGetProfiles:input_type -> user.BatchGetProfilesRequest
-	8,  // 33: user.UserService.Follow:input_type -> user.FollowRequest
-	9,  // 34: user.UserService.Unfollow:input_type -> user.UnfollowRequest
-	10, // 35: user.UserService.GetFollowers:input_type -> user.GetFollowersRequest
-	11, // 36: user.UserService.GetFollowing:input_type -> user.GetFollowingRequest
-	13, // 37: user.UserService.CheckFollowing:input_type -> user.CheckFollowingRequest
-	15, // 38: user.UserService.GetRelationship:input_type -> user.GetRelationshipRequest
-	17, // 39: user.UserService.GetMutualFollowers:input_type -> user.GetMutualFollowersRequest
-	18, // 40: user.UserService.Block:input_type -> user.BlockRequest
-	19, // 41: user.UserService.Unblock:input_type -> user.UnblockRequest
-	20, // 42: user.UserService.GetBlockList:input_type -> user.GetBlockListRequest
-	23, // 43: user.UserService.CheckBlocked:input_type -> user.CheckBlockedRequest
-	28, // 44: user.UserService.GetUserSettings:input_type -> user.GetUserSettingsRequest
-	29, // 45: user.UserService.UpdateUserSettings:input_type -> user.UpdateUserSettingsRequest
-	30, // 46: user.UserService.SearchUsers:input_type -> user.SearchUsersRequest
+	8,  // 33: user.UserService.SearchUsers:input_type -> user.SearchUsersRequest
+	10, // 34: user.UserService.Follow:input_type -> user.FollowRequest
+	11, // 35: user.UserService.Unfollow:input_type -> user.UnfollowRequest
+	12, // 36: user.UserService.GetFollowers:input_type -> user.GetFollowersRequest
+	13, // 37: user.UserService.GetFollowing:input_type -> user.GetFollowingRequest
+	15, // 38: user.UserService.CheckFollowing:input_type -> user.CheckFollowingRequest
+	17, // 39: user.UserService.GetRelationship:input_type -> user.GetRelationshipRequest
+	19, // 40: user.UserService.GetMutualFollowers:input_type -> user.GetMutualFollowersRequest
+	20, // 41: user.UserService.Block:input_type -> user.BlockRequest
+	21, // 42: user.UserService.Unblock:input_type -> user.UnblockRequest
+	22, // 43: user.UserService.GetBlockList:input_type -> user.GetBlockListRequest
+	25, // 44: user.UserService.CheckBlocked:input_type -> user.CheckBlockedRequest
+	30, // 45: user.UserService.GetUserSettings:input_type -> user.GetUserSettingsRequest
+	31, // 46: user.UserService.UpdateUserSettings:input_type -> user.UpdateUserSettingsRequest
 	1,  // 47: user.UserService.GetProfile:output_type -> user.Profile
 	1,  // 48: user.UserService.GetProfileByUsername:output_type -> user.Profile
 	1,  // 49: user.UserService.UpdateProfile:output_type -> user.Profile
 	7,  // 50: user.UserService.BatchGetProfiles:output_type -> user.BatchGetProfilesResponse
-	35, // 51: user.UserService.Follow:output_type -> common.Empty
-	35, // 52: user.UserService.Unfollow:output_type -> common.Empty
-	12, // 53: user.UserService.GetFollowers:output_type -> user.FollowListResponse
-	12, // 54: user.UserService.GetFollowing:output_type -> user.FollowListResponse
-	14, // 55: user.UserService.CheckFollowing:output_type -> user.CheckFollowingResponse
-	16, // 56: user.UserService.GetRelationship:output_type -> user.GetRelationshipResponse
-	12, // 57: user.UserService.GetMutualFollowers:output_type -> user.FollowListResponse
-	35, // 58: user.UserService.Block:output_type -> common.Empty
-	35, // 59: user.UserService.Unblock:output_type -> common.Empty
-	21, // 60: user.UserService.GetBlockList:output_type -> user.BlockListResponse
-	24, // 61: user.UserService.CheckBlocked:output_type -> user.CheckBlockedResponse
-	25, // 62: user.UserService.GetUserSettings:output_type -> user.UserSettings
-	25, // 63: user.UserService.UpdateUserSettings:output_type -> user.UserSettings
-	31, // 64: user.UserService.SearchUsers:output_type -> user.SearchUsersResponse
+	9,  // 51: user.UserService.SearchUsers:output_type -> user.SearchUsersResponse
+	35, // 52: user.UserService.Follow:output_type -> common.Empty
+	35, // 53: user.UserService.Unfollow:output_type -> common.Empty
+	14, // 54: user.UserService.GetFollowers:output_type -> user.FollowListResponse
+	14, // 55: user.UserService.GetFollowing:output_type -> user.FollowListResponse
+	16, // 56: user.UserService.CheckFollowing:output_type -> user.CheckFollowingResponse
+	18, // 57: user.UserService.GetRelationship:output_type -> user.GetRelationshipResponse
+	14, // 58: user.UserService.GetMutualFollowers:output_type -> user.FollowListResponse
+	35, // 59: user.UserService.Block:output_type -> common.Empty
+	35, // 60: user.UserService.Unblock:output_type -> common.Empty
+	23, // 61: user.UserService.GetBlockList:output_type -> user.BlockListResponse
+	26, // 62: user.UserService.CheckBlocked:output_type -> user.CheckBlockedResponse
+	27, // 63: user.UserService.GetUserSettings:output_type -> user.UserSettings
+	27, // 64: user.UserService.UpdateUserSettings:output_type -> user.UserSettings
 	47, // [47:65] is the sub-list for method output_type
 	29, // [29:47] is the sub-list for method input_type
 	29, // [29:29] is the sub-list for extension type_name
@@ -2442,7 +2410,7 @@ func file_user_user_proto_init() {
 		return
 	}
 	file_user_user_proto_msgTypes[4].OneofWrappers = []any{}
-	file_user_user_proto_msgTypes[28].OneofWrappers = []any{}
+	file_user_user_proto_msgTypes[30].OneofWrappers = []any{}
 	type x struct{}
 	out := protoimpl.TypeBuilder{
 		File: protoimpl.DescBuilder{

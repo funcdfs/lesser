@@ -5,15 +5,30 @@ option go_package = "github.com/funcdfs/lesser/notification/gen_protos/notificat
 
 import "common/common.proto";
 
-// NotificationService 通知服务
+// ============================================================================
+// NotificationService 通知服务 (端口: 50059)
+// 处理用户通知的创建、查询、已读标记
+// ============================================================================
+
 service NotificationService {
+  // 获取通知列表
   rpc List(ListNotificationsRequest) returns (ListNotificationsResponse);
+  
+  // 标记单条通知已读
   rpc Read(ReadNotificationRequest) returns (common.Empty);
+  
+  // 标记所有通知已读
   rpc ReadAll(ReadAllNotificationsRequest) returns (common.Empty);
+  
+  // 获取未读数
   rpc GetUnreadCount(GetUnreadCountRequest) returns (UnreadCountResponse);
 }
 
-// NotificationType 通知类型
+// ============================================================================
+// 枚举定义
+// ============================================================================
+
+// NotificationType: 1=点赞, 2=评论, 3=回复, 4=收藏, 5=提及, 6=关注, 7=转发
 enum NotificationType {
   NOTIFICATION_TYPE_UNSPECIFIED = 0;
   LIKE = 1;
@@ -25,7 +40,10 @@ enum NotificationType {
   REPOST = 7;
 }
 
-// Notification 通知实体
+// ============================================================================
+// 实体定义
+// ============================================================================
+
 message Notification {
   string id = 1;
   string user_id = 2;
@@ -38,41 +56,40 @@ message Notification {
   common.Timestamp created_at = 9;
 }
 
-// ListNotificationsRequest 获取通知列表请求
+// ============================================================================
+// 请求/响应消息
+// ============================================================================
+
 message ListNotificationsRequest {
   string user_id = 1;
-  bool unread_only = 2;  // 是否只获取未读
+  bool unread_only = 2;
   common.Pagination pagination = 3;
 }
 
-// ListNotificationsResponse 通知列表响应
 message ListNotificationsResponse {
   repeated Notification notifications = 1;
   common.Pagination pagination = 2;
 }
 
-// ReadNotificationRequest 标记单条通知已读请求
 message ReadNotificationRequest {
   string notification_id = 1;
   string user_id = 2;
 }
 
-// ReadAllNotificationsRequest 标记所有通知已读请求
 message ReadAllNotificationsRequest {
   string user_id = 1;
 }
 
-// GetUnreadCountRequest 获取未读数请求
 message GetUnreadCountRequest {
   string user_id = 1;
 }
 
-// UnreadCountResponse 未读数响应
 message UnreadCountResponse {
   int32 count = 1;
 }
 
-// CreateNotificationRequest 创建通知请求（内部使用）
+// ---- 内部使用 ----
+
 message CreateNotificationRequest {
   string user_id = 1;
   NotificationType type = 2;

@@ -33,28 +33,19 @@ const (
 // ChatServiceClient is the client API for ChatService service.
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
-//
-// ChatService 聊天服务
-// 处理会话管理、消息收发、实时通信
 type ChatServiceClient interface {
-	// 获取用户的所有会话
+	// ---- 会话管理 ----
 	GetConversations(ctx context.Context, in *GetConversationsRequest, opts ...grpc.CallOption) (*ConversationsResponse, error)
-	// 根据 ID 获取单个会话
 	GetConversation(ctx context.Context, in *GetConversationRequest, opts ...grpc.CallOption) (*Conversation, error)
-	// 创建新会话
 	CreateConversation(ctx context.Context, in *CreateConversationRequest, opts ...grpc.CallOption) (*Conversation, error)
-	// 获取会话中的消息
+	// ---- 消息管理 ----
 	GetMessages(ctx context.Context, in *GetMessagesRequest, opts ...grpc.CallOption) (*MessagesResponse, error)
-	// 发送消息到会话
 	SendMessage(ctx context.Context, in *SendMessageRequest, opts ...grpc.CallOption) (*Message, error)
-	// 标记单条消息为已读
+	// ---- 已读状态 ----
 	MarkAsRead(ctx context.Context, in *MarkAsReadRequest, opts ...grpc.CallOption) (*ReadReceipt, error)
-	// 标记会话中所有消息为已读
 	MarkConversationAsRead(ctx context.Context, in *MarkConversationAsReadRequest, opts ...grpc.CallOption) (*BatchReadReceipt, error)
-	// 批量获取多个会话的未读数
 	GetUnreadCounts(ctx context.Context, in *GetUnreadCountsRequest, opts ...grpc.CallOption) (*GetUnreadCountsResponse, error)
-	// 双向流：实时事件（替代 WebSocket）
-	// 客户端通过此流订阅会话、发送消息、接收实时事件
+	// ---- 实时通信（双向流）----
 	StreamEvents(ctx context.Context, opts ...grpc.CallOption) (grpc.BidiStreamingClient[ClientEvent, ServerEvent], error)
 }
 
@@ -162,28 +153,19 @@ type ChatService_StreamEventsClient = grpc.BidiStreamingClient[ClientEvent, Serv
 // ChatServiceServer is the server API for ChatService service.
 // All implementations must embed UnimplementedChatServiceServer
 // for forward compatibility.
-//
-// ChatService 聊天服务
-// 处理会话管理、消息收发、实时通信
 type ChatServiceServer interface {
-	// 获取用户的所有会话
+	// ---- 会话管理 ----
 	GetConversations(context.Context, *GetConversationsRequest) (*ConversationsResponse, error)
-	// 根据 ID 获取单个会话
 	GetConversation(context.Context, *GetConversationRequest) (*Conversation, error)
-	// 创建新会话
 	CreateConversation(context.Context, *CreateConversationRequest) (*Conversation, error)
-	// 获取会话中的消息
+	// ---- 消息管理 ----
 	GetMessages(context.Context, *GetMessagesRequest) (*MessagesResponse, error)
-	// 发送消息到会话
 	SendMessage(context.Context, *SendMessageRequest) (*Message, error)
-	// 标记单条消息为已读
+	// ---- 已读状态 ----
 	MarkAsRead(context.Context, *MarkAsReadRequest) (*ReadReceipt, error)
-	// 标记会话中所有消息为已读
 	MarkConversationAsRead(context.Context, *MarkConversationAsReadRequest) (*BatchReadReceipt, error)
-	// 批量获取多个会话的未读数
 	GetUnreadCounts(context.Context, *GetUnreadCountsRequest) (*GetUnreadCountsResponse, error)
-	// 双向流：实时事件（替代 WebSocket）
-	// 客户端通过此流订阅会话、发送消息、接收实时事件
+	// ---- 实时通信（双向流）----
 	StreamEvents(grpc.BidiStreamingServer[ClientEvent, ServerEvent]) error
 	mustEmbedUnimplementedChatServiceServer()
 }

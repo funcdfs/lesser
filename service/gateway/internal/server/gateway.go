@@ -29,17 +29,24 @@ import (
 
 // Config Gateway 配置
 type Config struct {
-	// 服务地址
-	AuthServiceAddr         string
-	UserServiceAddr         string
-	ContentServiceAddr      string
-	InteractionServiceAddr  string
-	CommentServiceAddr      string
-	TimelineServiceAddr     string
-	ChatServiceAddr         string
-	ChannelServiceAddr      string
+	// 认证与用户
+	AuthServiceAddr      string
+	UserServiceAddr      string
+	SuperUserServiceAddr string
+
+	// 内容与交互
+	ContentServiceAddr     string
+	CommentServiceAddr     string
+	InteractionServiceAddr string
+	TimelineServiceAddr    string
+
+	// 搜索与通知
 	SearchServiceAddr       string
 	NotificationServiceAddr string
+
+	// 实时通信
+	ChatServiceAddr    string
+	ChannelServiceAddr string
 
 	// 限流配置
 	RateLimitRate  float64
@@ -79,16 +86,24 @@ func NewGatewayServer(cfg Config, logger *log.Logger) (*GatewayServer, error) {
 
 	// 创建路由器
 	r, err := router.NewRouter(router.ServiceConfig{
-		AuthAddr:         cfg.AuthServiceAddr,
-		UserAddr:         cfg.UserServiceAddr,
-		ContentAddr:      cfg.ContentServiceAddr,
-		InteractionAddr:  cfg.InteractionServiceAddr,
-		CommentAddr:      cfg.CommentServiceAddr,
-		TimelineAddr:     cfg.TimelineServiceAddr,
-		ChatAddr:         cfg.ChatServiceAddr,
-		ChannelAddr:      cfg.ChannelServiceAddr,
+		// 认证与用户
+		AuthAddr:      cfg.AuthServiceAddr,
+		UserAddr:      cfg.UserServiceAddr,
+		SuperUserAddr: cfg.SuperUserServiceAddr,
+
+		// 内容与交互
+		ContentAddr:     cfg.ContentServiceAddr,
+		CommentAddr:     cfg.CommentServiceAddr,
+		InteractionAddr: cfg.InteractionServiceAddr,
+		TimelineAddr:    cfg.TimelineServiceAddr,
+
+		// 搜索与通知
 		SearchAddr:       cfg.SearchServiceAddr,
 		NotificationAddr: cfg.NotificationServiceAddr,
+
+		// 实时通信
+		ChatAddr:    cfg.ChatServiceAddr,
+		ChannelAddr: cfg.ChannelServiceAddr,
 	}, logger)
 	if err != nil {
 		return nil, err

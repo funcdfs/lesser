@@ -22,13 +22,12 @@ const (
 	_ = protoimpl.EnforceVersion(protoimpl.MaxVersion - 20)
 )
 
-// Repost 转发实体
 type Repost struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Id            string                 `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
 	UserId        string                 `protobuf:"bytes,2,opt,name=user_id,json=userId,proto3" json:"user_id,omitempty"`
 	ContentId     string                 `protobuf:"bytes,3,opt,name=content_id,json=contentId,proto3" json:"content_id,omitempty"`
-	Quote         string                 `protobuf:"bytes,4,opt,name=quote,proto3" json:"quote,omitempty"` // 转发时的引用文字
+	Quote         string                 `protobuf:"bytes,4,opt,name=quote,proto3" json:"quote,omitempty"`
 	CreatedAt     *common.Timestamp      `protobuf:"bytes,5,opt,name=created_at,json=createdAt,proto3" json:"created_at,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
@@ -99,7 +98,6 @@ func (x *Repost) GetCreatedAt() *common.Timestamp {
 	return nil
 }
 
-// Bookmark 收藏实体
 type Bookmark struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Id            string                 `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
@@ -168,7 +166,6 @@ func (x *Bookmark) GetCreatedAt() *common.Timestamp {
 	return nil
 }
 
-// UserInteractionStatus 用户对内容的交互状态
 type UserInteractionStatus struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	ContentId     string                 `protobuf:"bytes,1,opt,name=content_id,json=contentId,proto3" json:"content_id,omitempty"`
@@ -237,7 +234,6 @@ func (x *UserInteractionStatus) GetIsReposted() bool {
 	return false
 }
 
-// LikeRequest 点赞请求
 type LikeRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	UserId        string                 `protobuf:"bytes,1,opt,name=user_id,json=userId,proto3" json:"user_id,omitempty"`
@@ -290,11 +286,10 @@ func (x *LikeRequest) GetContentId() string {
 	return ""
 }
 
-// LikeResponse 点赞响应
 type LikeResponse struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Success       bool                   `protobuf:"varint,1,opt,name=success,proto3" json:"success,omitempty"`
-	LikeCount     int32                  `protobuf:"varint,2,opt,name=like_count,json=likeCount,proto3" json:"like_count,omitempty"` // 更新后的点赞数
+	LikeCount     int32                  `protobuf:"varint,2,opt,name=like_count,json=likeCount,proto3" json:"like_count,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -343,7 +338,6 @@ func (x *LikeResponse) GetLikeCount() int32 {
 	return 0
 }
 
-// UnlikeRequest 取消点赞请求
 type UnlikeRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	UserId        string                 `protobuf:"bytes,1,opt,name=user_id,json=userId,proto3" json:"user_id,omitempty"`
@@ -396,7 +390,6 @@ func (x *UnlikeRequest) GetContentId() string {
 	return ""
 }
 
-// UnlikeResponse 取消点赞响应
 type UnlikeResponse struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Success       bool                   `protobuf:"varint,1,opt,name=success,proto3" json:"success,omitempty"`
@@ -449,7 +442,6 @@ func (x *UnlikeResponse) GetLikeCount() int32 {
 	return 0
 }
 
-// CheckLikedRequest 检查是否已点赞
 type CheckLikedRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	UserId        string                 `protobuf:"bytes,1,opt,name=user_id,json=userId,proto3" json:"user_id,omitempty"`
@@ -502,7 +494,6 @@ func (x *CheckLikedRequest) GetContentId() string {
 	return ""
 }
 
-// CheckLikedResponse 检查点赞响应
 type CheckLikedResponse struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	IsLiked       bool                   `protobuf:"varint,1,opt,name=is_liked,json=isLiked,proto3" json:"is_liked,omitempty"`
@@ -547,7 +538,6 @@ func (x *CheckLikedResponse) GetIsLiked() bool {
 	return false
 }
 
-// BookmarkRequest 收藏请求
 type BookmarkRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	UserId        string                 `protobuf:"bytes,1,opt,name=user_id,json=userId,proto3" json:"user_id,omitempty"`
@@ -600,7 +590,6 @@ func (x *BookmarkRequest) GetContentId() string {
 	return ""
 }
 
-// BookmarkResponse 收藏响应
 type BookmarkResponse struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Success       bool                   `protobuf:"varint,1,opt,name=success,proto3" json:"success,omitempty"`
@@ -653,7 +642,6 @@ func (x *BookmarkResponse) GetBookmarkCount() int32 {
 	return 0
 }
 
-// UnbookmarkRequest 取消收藏请求
 type UnbookmarkRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	UserId        string                 `protobuf:"bytes,1,opt,name=user_id,json=userId,proto3" json:"user_id,omitempty"`
@@ -706,7 +694,6 @@ func (x *UnbookmarkRequest) GetContentId() string {
 	return ""
 }
 
-// UnbookmarkResponse 取消收藏响应
 type UnbookmarkResponse struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Success       bool                   `protobuf:"varint,1,opt,name=success,proto3" json:"success,omitempty"`
@@ -759,7 +746,6 @@ func (x *UnbookmarkResponse) GetBookmarkCount() int32 {
 	return 0
 }
 
-// ListBookmarksRequest 获取收藏列表请求
 type ListBookmarksRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	UserId        string                 `protobuf:"bytes,1,opt,name=user_id,json=userId,proto3" json:"user_id,omitempty"`
@@ -812,7 +798,6 @@ func (x *ListBookmarksRequest) GetPagination() *common.Pagination {
 	return nil
 }
 
-// ListBookmarksResponse 收藏列表响应
 type ListBookmarksResponse struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Bookmarks     []*Bookmark            `protobuf:"bytes,1,rep,name=bookmarks,proto3" json:"bookmarks,omitempty"`
@@ -865,12 +850,11 @@ func (x *ListBookmarksResponse) GetPagination() *common.Pagination {
 	return nil
 }
 
-// CreateRepostRequest 创建转发请求
 type CreateRepostRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	UserId        string                 `protobuf:"bytes,1,opt,name=user_id,json=userId,proto3" json:"user_id,omitempty"`
 	ContentId     string                 `protobuf:"bytes,2,opt,name=content_id,json=contentId,proto3" json:"content_id,omitempty"`
-	Quote         string                 `protobuf:"bytes,3,opt,name=quote,proto3" json:"quote,omitempty"` // 可选引用文字
+	Quote         string                 `protobuf:"bytes,3,opt,name=quote,proto3" json:"quote,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -926,7 +910,6 @@ func (x *CreateRepostRequest) GetQuote() string {
 	return ""
 }
 
-// CreateRepostResponse 创建转发响应
 type CreateRepostResponse struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Repost        *Repost                `protobuf:"bytes,1,opt,name=repost,proto3" json:"repost,omitempty"`
@@ -979,7 +962,6 @@ func (x *CreateRepostResponse) GetRepostCount() int32 {
 	return 0
 }
 
-// DeleteRepostRequest 删除转发请求
 type DeleteRepostRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	UserId        string                 `protobuf:"bytes,1,opt,name=user_id,json=userId,proto3" json:"user_id,omitempty"`
@@ -1032,7 +1014,6 @@ func (x *DeleteRepostRequest) GetContentId() string {
 	return ""
 }
 
-// DeleteRepostResponse 删除转发响应
 type DeleteRepostResponse struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Success       bool                   `protobuf:"varint,1,opt,name=success,proto3" json:"success,omitempty"`
@@ -1085,7 +1066,6 @@ func (x *DeleteRepostResponse) GetRepostCount() int32 {
 	return 0
 }
 
-// BatchGetInteractionStatusRequest 批量获取交互状态请求
 type BatchGetInteractionStatusRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	UserId        string                 `protobuf:"bytes,1,opt,name=user_id,json=userId,proto3" json:"user_id,omitempty"`
@@ -1138,7 +1118,6 @@ func (x *BatchGetInteractionStatusRequest) GetContentIds() []string {
 	return nil
 }
 
-// BatchGetInteractionStatusResponse 批量获取交互状态响应
 type BatchGetInteractionStatusResponse struct {
 	state         protoimpl.MessageState   `protogen:"open.v1"`
 	Statuses      []*UserInteractionStatus `protobuf:"bytes,1,rep,name=statuses,proto3" json:"statuses,omitempty"`
