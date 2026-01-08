@@ -9,6 +9,7 @@ import '../models/channel_models.dart';
 import '../widgets/channel_message.dart';
 import '../widgets/date_separator.dart';
 import '../widgets/pinned_message_banner.dart';
+import 'channel_comment_page.dart';
 
 /// 频道详情页
 class ChannelDetailPage extends StatefulWidget {
@@ -68,6 +69,22 @@ class _ChannelDetailPageState extends State<ChannelDetailPage> {
   }
 
   final _moreButtonKey = GlobalKey();
+
+  /// 打开评论页面
+  void _openCommentPage(ChannelPostModel post) {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => ChannelCommentPage(
+          postId: post.id,
+          channelId: widget.channelId,
+          postPreview: post.content.length > 100
+              ? '${post.content.substring(0, 100)}...'
+              : post.content,
+        ),
+      ),
+    );
+  }
 
   void _showMoreMenu() {
     showPopupMenu(
@@ -283,7 +300,7 @@ class _ChannelDetailPageState extends State<ChannelDetailPage> {
           } else if (item is ChannelPostModel) {
             return ChannelMessageWidget(
               message: item,
-              onCommentTap: () {},
+              onCommentTap: () => _openCommentPage(item),
               onForward: () {},
               onReactionTap: (emoji) {},
             );
