@@ -54,7 +54,7 @@ final mockMessages = <String, List<ChannelMessageModel>>{
       content: '这是一条测试帖子，点击下方评论区查看评论。',
       createdAt: DateTime(2025, 1, 8, 10, 0),
       viewCount: 100,
-      commentCount: 6,
+      commentCount: 21, // 1 置顶 + 2 原始 + 18 生成
       reactionStats: const ReactionStats(
         counts: {'👍': 10, '❤️': 5},
         totalCount: 15,
@@ -68,30 +68,14 @@ final mockMessages = <String, List<ChannelMessageModel>>{
 };
 
 // ============================================================================
-// Mock 评论
+// Mock 评论（扩充到 30+ 条用于测试滚动按钮）
 // ============================================================================
 
 final mockComments = <String, List<ChannelCommentModel>>{
   'post_1': [
-    // 有子回复的评论
-    ChannelCommentModel(
-      id: 'c1',
-      messageId: 'post_1',
-      channelId: 'test',
-      author: const CommentAuthor(
-        id: 'u1',
-        username: 'user1',
-        displayName: '用户A',
-        avatarUrl: 'https://i.pravatar.cc/100?img=2',
-      ),
-      content: '这是第一条评论，有子回复',
-      replyCount: 2,
-      likeCount: 5,
-      createdAtMs: DateTime(2025, 1, 8, 10, 5).millisecondsSinceEpoch,
-    ),
     // 频道主置顶评论
     ChannelCommentModel(
-      id: 'c2',
+      id: 'c_pinned',
       messageId: 'post_1',
       channelId: 'test',
       author: const CommentAuthor(
@@ -107,9 +91,25 @@ final mockComments = <String, List<ChannelCommentModel>>{
       createdAtMs: DateTime(2025, 1, 8, 10, 10).millisecondsSinceEpoch,
       isPinned: true,
     ),
+    // 有子回复的评论
+    ChannelCommentModel(
+      id: 'c1',
+      messageId: 'post_1',
+      channelId: 'test',
+      author: const CommentAuthor(
+        id: 'u1',
+        username: 'user1',
+        displayName: '用户A',
+        avatarUrl: 'https://i.pravatar.cc/100?img=2',
+      ),
+      content: '这是第一条评论，有子回复',
+      replyCount: 8,
+      likeCount: 5,
+      createdAtMs: DateTime(2025, 1, 8, 10, 5).millisecondsSinceEpoch,
+    ),
     // 认证用户评论
     ChannelCommentModel(
-      id: 'c3',
+      id: 'c2',
       messageId: 'post_1',
       channelId: 'test',
       author: const CommentAuthor(
@@ -119,12 +119,59 @@ final mockComments = <String, List<ChannelCommentModel>>{
         avatarUrl: 'https://i.pravatar.cc/100?img=3',
         isVerified: true,
       ),
-      content: '认证用户的评论',
+      content: '认证用户的评论，内容很精彩！',
       likeCount: 3,
       createdAtMs: DateTime(2025, 1, 8, 10, 15).millisecondsSinceEpoch,
     ),
+    // 扩充评论 c3-c20
+    ...List.generate(18, (i) {
+      final idx = i + 3;
+      return ChannelCommentModel(
+        id: 'c$idx',
+        messageId: 'post_1',
+        channelId: 'test',
+        author: CommentAuthor(
+          id: 'u$idx',
+          username: 'user$idx',
+          displayName: '用户${String.fromCharCode(67 + i)}', // C, D, E...
+          avatarUrl: 'https://i.pravatar.cc/100?img=${4 + i}',
+        ),
+        content: _mockCommentContents[i % _mockCommentContents.length],
+        likeCount: (i * 3 + 1) % 15,
+        replyCount: i % 5 == 0 ? 2 : 0,
+        createdAtMs: DateTime(
+          2025,
+          1,
+          8,
+          10,
+          20 + i * 5,
+        ).millisecondsSinceEpoch,
+      );
+    }),
   ],
 };
+
+// 评论内容模板
+const _mockCommentContents = [
+  '学到了很多，感谢分享！',
+  '这个功能太实用了',
+  '期待更多更新！',
+  '已收藏，慢慢学习',
+  '写得真好，通俗易懂',
+  '有没有相关的教程推荐？',
+  '支持一下！',
+  '这个思路很新颖',
+  '请问有源码吗？',
+  '太棒了，已转发',
+  '学习了，感谢楼主',
+  '这个方案我之前也想过',
+  '干货满满！',
+  '请问适用于什么场景？',
+  '已关注，期待更多内容',
+  '这个设计很优雅',
+  '收藏了，以后慢慢看',
+  '终于找到解决方案了',
+];
 
 // ============================================================================
 // 子评论（增加更深嵌套层级）

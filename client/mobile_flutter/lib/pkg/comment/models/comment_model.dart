@@ -20,6 +20,7 @@ class CommentAuthor {
     this.avatarUrl,
     this.isVerified = false,
     this.roleLabel,
+    this.isDeletedUser = false,
   });
 
   final String id;
@@ -28,14 +29,18 @@ class CommentAuthor {
   final String? avatarUrl;
   final bool isVerified;
   final String? roleLabel;
+  final bool isDeletedUser; // 显式标记是否为已注销用户
 
+  /// 已注销用户的静态实例
   static const deleted = CommentAuthor(
-    id: '',
+    id: 'deleted',
     username: 'deleted',
     displayName: '已注销用户',
+    isDeletedUser: true,
   );
 
-  bool get isDeleted => id.isEmpty;
+  /// 判断是否为已注销用户
+  bool get isDeleted => isDeletedUser;
 }
 
 /// 回复目标
@@ -166,10 +171,13 @@ class CommentListState {
       !isLoading;
   bool get isThreadView => rootComment != null;
 
+  /// 用于 copyWith 中显式设置 null 的哨兵值
+  static const _sentinel = Object();
+
   CommentListState copyWith({
     List<CommentModel>? comments,
-    CommentModel? pinnedComment,
-    CommentModel? rootComment,
+    Object? pinnedComment = _sentinel,
+    Object? rootComment = _sentinel,
     int? totalCount,
     bool? hasMore,
     bool? isLoading,
@@ -179,8 +187,12 @@ class CommentListState {
   }) {
     return CommentListState(
       comments: comments ?? this.comments,
-      pinnedComment: pinnedComment ?? this.pinnedComment,
-      rootComment: rootComment ?? this.rootComment,
+      pinnedComment: pinnedComment == _sentinel
+          ? this.pinnedComment
+          : pinnedComment as CommentModel?,
+      rootComment: rootComment == _sentinel
+          ? this.rootComment
+          : rootComment as CommentModel?,
       totalCount: totalCount ?? this.totalCount,
       hasMore: hasMore ?? this.hasMore,
       isLoading: isLoading ?? this.isLoading,

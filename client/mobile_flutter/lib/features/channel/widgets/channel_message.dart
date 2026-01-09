@@ -46,6 +46,7 @@ class ChannelMessageBubble extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final colors = AppColors.of(context);
+    final isDark = Theme.of(context).brightness == Brightness.dark;
 
     return GestureDetector(
       onLongPressStart: onLongPress,
@@ -54,15 +55,30 @@ class ChannelMessageBubble extends StatelessWidget {
         scale: TapScales.large,
         haptic: false,
         child: Container(
-          padding: const EdgeInsets.fromLTRB(14, 12, 14, 10),
+          padding: const EdgeInsets.fromLTRB(14, 12, 14, 11),
           decoration: BoxDecoration(
             color: colors.surfaceElevated,
             borderRadius: BorderRadius.only(
-              topLeft: const Radius.circular(12),
-              topRight: const Radius.circular(12),
-              bottomLeft: Radius.circular(showBottomRadius ? 12 : 4),
-              bottomRight: Radius.circular(showBottomRadius ? 12 : 4),
+              topLeft: const Radius.circular(16),
+              topRight: const Radius.circular(16),
+              bottomLeft: Radius.circular(showBottomRadius ? 16 : 4),
+              bottomRight: Radius.circular(showBottomRadius ? 16 : 4),
             ),
+            // 精致边框
+            border: Border.all(
+              color: colors.divider.withValues(alpha: isDark ? 0.12 : 0.06),
+              width: 0.5,
+            ),
+            // 微妙阴影
+            boxShadow: [
+              BoxShadow(
+                color: colors.textPrimary.withValues(
+                  alpha: isDark ? 0.1 : 0.04,
+                ),
+                blurRadius: 8,
+                offset: const Offset(0, 2),
+              ),
+            ],
           ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -314,6 +330,8 @@ class _ChannelMessageWidgetState extends State<ChannelMessageWidget> {
   }
 
   Widget _buildCommentEntry(AppColorScheme colors) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
     return TapScale(
       onTap: widget.onCommentTap,
       scale: TapScales.card,
@@ -321,8 +339,12 @@ class _ChannelMessageWidgetState extends State<ChannelMessageWidget> {
         decoration: BoxDecoration(
           color: colors.surfaceElevated,
           borderRadius: const BorderRadius.only(
-            bottomLeft: Radius.circular(12),
-            bottomRight: Radius.circular(12),
+            bottomLeft: Radius.circular(16),
+            bottomRight: Radius.circular(16),
+          ),
+          border: Border.all(
+            color: colors.divider.withValues(alpha: isDark ? 0.1 : 0.05),
+            width: 0.5,
           ),
         ),
         child: Column(
@@ -331,14 +353,14 @@ class _ChannelMessageWidgetState extends State<ChannelMessageWidget> {
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 14),
               child: DottedDivider(
-                color: colors.divider,
-                strokeWidth: 1.5,
+                color: colors.divider.withValues(alpha: 0.5),
+                strokeWidth: 1.0,
                 dashWidth: 2.0,
                 dashSpace: 3.0,
               ),
             ),
             Padding(
-              padding: const EdgeInsets.fromLTRB(14, 8, 10, 10),
+              padding: const EdgeInsets.fromLTRB(14, 9, 10, 11),
               child: Row(
                 children: [
                   if (widget.message.commentAvatars.isNotEmpty) ...[
@@ -362,7 +384,7 @@ class _ChannelMessageWidgetState extends State<ChannelMessageWidget> {
                   Icon(
                     Icons.chevron_right_rounded,
                     size: 18,
-                    color: colors.textSecondary,
+                    color: colors.textTertiary,
                   ),
                 ],
               ),
@@ -384,6 +406,7 @@ class _ReactionChip extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final colors = AppColors.of(context);
+    final isSelected = reaction.isSelected;
 
     return TapScale(
       onTap: onTap,
@@ -391,7 +414,7 @@ class _ReactionChip extends StatelessWidget {
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
         decoration: BoxDecoration(
-          color: reaction.isSelected
+          color: isSelected
               ? colors.interactive.withValues(alpha: 0.15)
               : colors.surfaceBase.withValues(alpha: 0.6),
           borderRadius: BorderRadius.circular(14),
@@ -406,9 +429,7 @@ class _ReactionChip extends StatelessWidget {
               style: TextStyle(
                 fontSize: 13,
                 fontWeight: FontWeight.w500,
-                color: reaction.isSelected
-                    ? colors.interactive
-                    : colors.textSecondary,
+                color: isSelected ? colors.interactive : colors.textSecondary,
               ),
             ),
           ],

@@ -8,3 +8,4 @@ export 'comment_input_bar.dart';
 export 'comment_item.dart';
 export 'comment_list.dart';
 export 'message_header.dart';
+export 'scroll_buttons.dart';

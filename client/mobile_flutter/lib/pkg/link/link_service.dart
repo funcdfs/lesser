@@ -139,6 +139,11 @@ class LinkService {
     final channelId = channelSegment.id;
     final messageId = link.targetId;
 
+    // 检查 context 是否仍然有效
+    if (!context.mounted) {
+      return LinkNavigateResult.failed;
+    }
+
     final success = await _onNavigateToMessage?.call(
       context,
       channelId,
@@ -172,6 +177,11 @@ class LinkService {
     final rootCommentId = await _resolver!.resolveCommentRoot(commentId);
     if (rootCommentId == null) {
       return LinkNavigateResult.notFound;
+    }
+
+    // 检查 context 是否仍然有效
+    if (!context.mounted) {
+      return LinkNavigateResult.failed;
     }
 
     final success = await _onNavigateToComment?.call(

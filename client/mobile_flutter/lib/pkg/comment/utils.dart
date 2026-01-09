@@ -36,7 +36,16 @@ String formatTime(DateTime time) {
   if (diff.inHours < 24 && time.day == now.day) {
     return '${time.hour.toString().padLeft(2, '0')}:${time.minute.toString().padLeft(2, '0')}';
   }
-  if (diff.inDays == 1 || (diff.inHours < 48 && time.day == now.day - 1)) {
+  // 使用 subtract 避免月初边界问题
+  final yesterday = DateTime(
+    now.year,
+    now.month,
+    now.day,
+  ).subtract(const Duration(days: 1));
+  final timeDate = DateTime(time.year, time.month, time.day);
+  if (timeDate.year == yesterday.year &&
+      timeDate.month == yesterday.month &&
+      timeDate.day == yesterday.day) {
     return '昨天';
   }
   if (diff.inDays < 7) return '${diff.inDays}天前';

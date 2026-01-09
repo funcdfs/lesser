@@ -64,7 +64,9 @@ class CommentEntry extends StatelessWidget {
                   // 左侧：头像堆叠
                   if (avatarUrls.isNotEmpty) ...[
                     AvatarStack(
-                      avatarUrls: avatarUrls.take(maxAvatars).toList(),
+                      avatarUrls: avatarUrls.length <= maxAvatars
+                          ? avatarUrls
+                          : avatarUrls.sublist(0, maxAvatars),
                       size: avatarSize,
                     ),
                     const SizedBox(width: 10),

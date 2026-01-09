@@ -45,6 +45,9 @@ class _CommentPageState extends State<CommentPage> {
   final _inputController = TextEditingController();
   final _inputFocusNode = FocusNode();
 
+  // 滚动按钮控制器
+  late final ScrollButtonController _scrollButtonController;
+
   // 高亮状态
   String? _highlightedCommentId;
   bool _hasScrolledToTarget = false;
@@ -54,6 +57,13 @@ class _CommentPageState extends State<CommentPage> {
     super.initState();
     _handler = CommentHandler(widget.dataSource);
     _handler.addListener(_onStateChanged);
+
+    // 初始化滚动按钮控制器
+    _scrollButtonController = ScrollButtonController(
+      scrollController: _scrollController,
+      showThreshold: 200, // 评论页面使用较小的阈值
+    );
+
     _loadComments();
   }
 
@@ -61,6 +71,7 @@ class _CommentPageState extends State<CommentPage> {
   void dispose() {
     _handler.removeListener(_onStateChanged);
     _handler.dispose();
+    _scrollButtonController.dispose();
     _scrollController.dispose();
     _inputController.dispose();
     _inputFocusNode.dispose();
@@ -68,11 +79,15 @@ class _CommentPageState extends State<CommentPage> {
   }
 
   void _onStateChanged() {
-    if (mounted) {
-      setState(() {});
-      // 评论加载完成后，尝试滚动到目标评论
-      _tryScrollToTargetComment();
-    }
+    if (!mounted) return;
+
+    // 评论加载完成后，通知滚动按钮控制器更新
+    _scrollButtonController.onContentUpdated();
+    // 尝试滚动到目标评论
+    _tryScrollToTargetComment();
+
+    // 触发 UI 更新（状态已通过 _handler 管理）
+    setState(() {});
   }
 
   Future<void> _loadComments() async {
@@ -128,26 +143,23 @@ class _CommentPageState extends State<CommentPage> {
   }
 
   /// 滚动到指定索引并高亮
-  void _scrollToIndexAndHighlight(int index, String commentId) {
+  Future<void> _scrollToIndexAndHighlight(int index, String commentId) async {
     // 估算每个评论项的高度（约 80-120 像素）
     const estimatedItemHeight = 100.0;
     final targetOffset = index * estimatedItemHeight;
 
     // 滚动到目标位置
-    _scrollController
-        .animateTo(
-          targetOffset.clamp(0, _scrollController.position.maxScrollExtent),
-          duration: const Duration(milliseconds: 300),
-          curve: Curves.easeOut,
-        )
-        .then((_) {
-          // 滚动完成后设置高亮
-          if (mounted) {
-            setState(() {
-              _highlightedCommentId = commentId;
-            });
-          }
-        });
+    await _scrollController.animateTo(
+      targetOffset.clamp(0, _scrollController.position.maxScrollExtent),
+      duration: const Duration(milliseconds: 300),
+      curve: Curves.easeOutCubic,
+    );
+
+    // 滚动完成后设置高亮（使用 async/await 确保 mounted 检查有效）
+    if (!mounted) return;
+    setState(() {
+      _highlightedCommentId = commentId;
+    });
   }
 
   /// 高亮动画完成回调
@@ -211,16 +223,30 @@ class _CommentPageState extends State<CommentPage> {
 
   /// 显示 SnackBar 提示
   void _showSnackBar(String message) {
+    final colors = AppColors.of(context);
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
-        content: Text(message),
+        content: Text(message, style: TextStyle(color: colors.textPrimary)),
+        backgroundColor: colors.surfaceElevated,
         duration: const Duration(seconds: 2),
         behavior: SnackBarBehavior.floating,
       ),
     );
   }
 
+  Future<void> _onLikeTap(String commentId) async {
+    final result = await _handler.toggleLike(commentId);
+    if (result.isFailure && mounted) {
+      _showSnackBar('点赞失败: ${result.error}');
+    }
+  }
+
   void _onViewReplies(CommentModel comment) {
+    // 记录当前滚动位置，返回时恢复
+    final savedOffset = _scrollController.hasClients
+        ? _scrollController.offset
+        : 0.0;
+
     Navigator.push(
       context,
       MaterialPageRoute(
@@ -233,7 +259,14 @@ class _CommentPageState extends State<CommentPage> {
           channelId: widget.channelId,
         ),
       ),
-    );
+    ).then((_) {
+      // 从子线程返回时，恢复到进入前的位置
+      if (mounted && _scrollController.hasClients) {
+        _scrollController.jumpTo(
+          savedOffset.clamp(0.0, _scrollController.position.maxScrollExtent),
+        );
+      }
+    });
   }
 
   Future<void> _onSubmit() async {
@@ -250,21 +283,34 @@ class _CommentPageState extends State<CommentPage> {
     final state = _handler.listState;
     final inputState = _handler.inputState;
 
-    // 评论页面主体（不使用 Hero 动画，采用标准页面过渡）
+    // 评论列表
+    final commentList = CommentList(
+      state: state,
+      scrollController: _scrollController,
+      getDescendantCount: _handler.getDescendantCount,
+      highlightedCommentId: _highlightedCommentId,
+      messageHeader: widget.messageHeader,
+      headerBuilder: widget.headerBuilder,
+      onMenuAction: _onMenuAction,
+      onLikeTap: _onLikeTap,
+      onViewReplies: _onViewReplies,
+      onHighlightComplete: _onHighlightComplete,
+    );
+
+    // 评论页面主体
     final body = Column(
       children: [
         Expanded(
-          child: CommentList(
-            state: state,
-            scrollController: _scrollController,
-            getDescendantCount: _handler.getDescendantCount,
-            highlightedCommentId: _highlightedCommentId,
-            messageHeader: widget.messageHeader,
-            headerBuilder: widget.headerBuilder,
-            onMenuAction: _onMenuAction,
-            onLikeTap: _handler.toggleLike,
-            onViewReplies: _onViewReplies,
-            onHighlightComplete: _onHighlightComplete,
+          child: Stack(
+            children: [
+              commentList,
+              // 置顶/置底浮动按钮组
+              Positioned(
+                right: 12,
+                bottom: 12,
+                child: ScrollButtons(controller: _scrollButtonController),
+              ),
+            ],
           ),
         ),
         CommentInputBar(

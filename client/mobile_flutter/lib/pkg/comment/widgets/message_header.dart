@@ -6,6 +6,7 @@ import 'package:flutter/material.dart';
 import '../../ui/theme/theme.dart';
 import '../../ui/widgets/avatar_button.dart';
 import '../../ui/widgets/count_divider.dart';
+import '../utils.dart';
 
 // 导出公共组件供外部使用
 export '../../ui/widgets/count_divider.dart';
@@ -83,10 +84,10 @@ class MessageHeader extends StatelessWidget {
                       ),
                     ),
                     const Spacer(),
-                    // 时间
+                    // 时间 - 复用 utils 中的格式化函数
                     if (data.createdAt != null)
                       Text(
-                        _formatTime(data.createdAt!),
+                        formatTime(data.createdAt!),
                         style: TextStyle(
                           fontSize: 12,
                           color: colors.textTertiary,
@@ -117,7 +118,7 @@ class MessageHeader extends StatelessWidget {
                     ),
                     const SizedBox(width: 4),
                     Text(
-                      _formatCount(data.viewCount!),
+                      formatCount(data.viewCount!),
                       style: TextStyle(
                         fontSize: 12,
                         color: colors.textDisabled,
@@ -129,45 +130,9 @@ class MessageHeader extends StatelessWidget {
             ],
           ),
         ),
-        // 评论分隔符
-        _CommentsDivider(commentCount: commentCount),
+        // 评论分隔符 - 直接使用公共组件
+        CountDivider(count: commentCount, label: '条评论'),
       ],
     );
-  }
-
-  String _formatTime(DateTime time) {
-    final now = DateTime.now();
-    final diff = now.difference(time);
-
-    if (diff.inDays > 0) {
-      return '${time.month}月${time.day}日';
-    } else if (diff.inHours > 0) {
-      return '${diff.inHours}小时前';
-    } else if (diff.inMinutes > 0) {
-      return '${diff.inMinutes}分钟前';
-    } else {
-      return '刚刚';
-    }
-  }
-
-  String _formatCount(int count) {
-    if (count >= 10000) {
-      return '${(count / 10000).toStringAsFixed(1)}万';
-    } else if (count >= 1000) {
-      return '${(count / 1000).toStringAsFixed(1)}K';
-    }
-    return count.toString();
-  }
-}
-
-/// 评论分隔符 - 使用公共组件
-class _CommentsDivider extends StatelessWidget {
-  const _CommentsDivider({required this.commentCount});
-
-  final int commentCount;
-
-  @override
-  Widget build(BuildContext context) {
-    return CountDivider(count: commentCount, label: '条评论');
   }
 }

@@ -56,7 +56,10 @@ class _TapScaleState extends State<TapScale>
   }
 
   void _onTap() {
-    _ctrl.forward().then((_) => _ctrl.reverse());
+    _ctrl.forward().then((_) {
+      // 检查组件是否仍然挂载，避免 dispose 后调用
+      if (mounted) _ctrl.reverse();
+    });
     if (widget.haptic) {
       HapticFeedback.lightImpact();
     }

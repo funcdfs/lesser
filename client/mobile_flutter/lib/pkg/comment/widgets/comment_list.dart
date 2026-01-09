@@ -56,6 +56,9 @@ class CommentList extends StatelessWidget {
         controller: scrollController,
         padding: const EdgeInsets.symmetric(vertical: 6),
         itemCount: itemCount,
+        // 性能优化
+        addAutomaticKeepAlives: false,
+        addRepaintBoundaries: true,
         itemBuilder: (context, index) => _buildThreadItem(context, index),
       );
     }
@@ -93,6 +96,9 @@ class CommentList extends StatelessWidget {
       controller: scrollController,
       padding: const EdgeInsets.symmetric(vertical: 6),
       itemCount: itemCount,
+      // 性能优化
+      addAutomaticKeepAlives: false,
+      addRepaintBoundaries: true,
       itemBuilder: (context, index) =>
           _buildListItem(index, hasHeader, hasPinned),
     );
@@ -123,8 +129,12 @@ class CommentList extends StatelessWidget {
               descendantCount: getDescendantCount(comment.id),
               showViewReplies: false,
               isHighlighted: isHighlighted,
-              onMenuAction: (action) => onMenuAction?.call(comment, action),
-              onLikeTap: () => onLikeTap?.call(comment.id),
+              onMenuAction: onMenuAction == null
+                  ? null
+                  : (action) => onMenuAction!(comment, action),
+              onLikeTap: onLikeTap == null
+                  ? null
+                  : () => onLikeTap!(comment.id),
               onHighlightComplete: isHighlighted ? onHighlightComplete : null,
             ),
           ),
@@ -141,9 +151,13 @@ class CommentList extends StatelessWidget {
       comment: comment,
       descendantCount: getDescendantCount(comment.id),
       isHighlighted: isHighlighted,
-      onMenuAction: (action) => onMenuAction?.call(comment, action),
-      onLikeTap: () => onLikeTap?.call(comment.id),
-      onViewReplies: () => onViewReplies?.call(comment),
+      onMenuAction: onMenuAction == null
+          ? null
+          : (action) => onMenuAction!(comment, action),
+      onLikeTap: onLikeTap == null ? null : () => onLikeTap!(comment.id),
+      onViewReplies: onViewReplies == null
+          ? null
+          : () => onViewReplies!(comment),
       onHighlightComplete: isHighlighted ? onHighlightComplete : null,
     );
   }
@@ -175,9 +189,13 @@ class CommentList extends StatelessWidget {
         descendantCount: getDescendantCount(comment.id),
         isPinned: true,
         isHighlighted: isHighlighted,
-        onMenuAction: (action) => onMenuAction?.call(comment, action),
-        onLikeTap: () => onLikeTap?.call(comment.id),
-        onViewReplies: () => onViewReplies?.call(comment),
+        onMenuAction: onMenuAction == null
+            ? null
+            : (action) => onMenuAction!(comment, action),
+        onLikeTap: onLikeTap == null ? null : () => onLikeTap!(comment.id),
+        onViewReplies: onViewReplies == null
+            ? null
+            : () => onViewReplies!(comment),
         onHighlightComplete: isHighlighted ? onHighlightComplete : null,
       );
     }
@@ -190,9 +208,13 @@ class CommentList extends StatelessWidget {
       comment: comment,
       descendantCount: getDescendantCount(comment.id),
       isHighlighted: isHighlighted,
-      onMenuAction: (action) => onMenuAction?.call(comment, action),
-      onLikeTap: () => onLikeTap?.call(comment.id),
-      onViewReplies: () => onViewReplies?.call(comment),
+      onMenuAction: onMenuAction == null
+          ? null
+          : (action) => onMenuAction!(comment, action),
+      onLikeTap: onLikeTap == null ? null : () => onLikeTap!(comment.id),
+      onViewReplies: onViewReplies == null
+          ? null
+          : () => onViewReplies!(comment),
       onHighlightComplete: isHighlighted ? onHighlightComplete : null,
     );
   }

@@ -73,6 +73,8 @@ class CommentInputBar extends StatelessWidget {
                           border: InputBorder.none,
                           isDense: true,
                         ),
+                        textInputAction: TextInputAction.send,
+                        onSubmitted: (_) => onSubmit?.call(),
                         maxLines: 4,
                         minLines: 1,
                       ),

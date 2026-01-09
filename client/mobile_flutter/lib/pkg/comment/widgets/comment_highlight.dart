@@ -6,7 +6,7 @@ import 'package:flutter/material.dart';
 import '../../ui/theme/theme.dart';
 
 /// 高亮动画时长（较长，用于吸引注意力）
-const _kHighlightDuration = Duration(milliseconds: 1500);
+const _highlightDuration = Duration(milliseconds: 1500);
 
 /// 评论高亮动画组件
 ///
@@ -42,7 +42,7 @@ class _CommentHighlightState extends State<CommentHighlight>
   void initState() {
     super.initState();
     _controller = AnimationController(
-      duration: _kHighlightDuration,
+      duration: _highlightDuration,
       vsync: this,
     );
 
@@ -55,7 +55,7 @@ class _CommentHighlightState extends State<CommentHighlight>
         ).chain(CurveTween(curve: Curves.easeOut)),
         weight: 30,
       ),
-      TweenSequenceItem(tween: Tween<double>(begin: 1, end: 1), weight: 40),
+      TweenSequenceItem(tween: ConstantTween<double>(1), weight: 40),
       TweenSequenceItem(
         tween: Tween<double>(
           begin: 1,
@@ -74,10 +74,7 @@ class _CommentHighlightState extends State<CommentHighlight>
         ).chain(CurveTween(curve: Curves.easeOut)),
         weight: 30,
       ),
-      TweenSequenceItem(
-        tween: Tween<double>(begin: 0.15, end: 0.15),
-        weight: 40,
-      ),
+      TweenSequenceItem(tween: ConstantTween<double>(0.15), weight: 40),
       TweenSequenceItem(
         tween: Tween<double>(
           begin: 0.15,

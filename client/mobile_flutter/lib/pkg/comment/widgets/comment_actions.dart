@@ -42,7 +42,8 @@ enum ReplyButtonState {
   banned,
 }
 
-extension ReplyButtonStateX on ReplyButtonState {
+/// 回复按钮状态扩展
+extension ReplyButtonStateExtension on ReplyButtonState {
   bool get canExpand => this == ReplyButtonState.expandable;
   bool get isVisible => this != ReplyButtonState.hidden;
 }

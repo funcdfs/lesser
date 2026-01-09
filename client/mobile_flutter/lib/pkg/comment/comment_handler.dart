@@ -7,6 +7,18 @@ import 'package:flutter/foundation.dart';
 import 'models/comment_model.dart';
 import 'utils.dart';
 
+/// 评论操作结果
+class CommentResult<T> {
+  const CommentResult.success(this.data) : error = null;
+  const CommentResult.failure(this.error) : data = null;
+
+  final T? data;
+  final String? error;
+
+  bool get isSuccess => error == null;
+  bool get isFailure => error != null;
+}
+
 /// 评论数据源接口
 abstract class CommentDataSource {
   /// 加载评论列表
@@ -67,8 +79,13 @@ class CommentHandler extends ChangeNotifier {
   }
 
   /// 加载更多评论
-  Future<void> loadMoreComments(String targetId, String targetType) async {
-    if (_listState.isLoadingMore || !_listState.hasMore) return;
+  Future<CommentResult<void>> loadMoreComments(
+    String targetId,
+    String targetType,
+  ) async {
+    if (_listState.isLoadingMore || !_listState.hasMore) {
+      return const CommentResult.success(null);
+    }
 
     _listState = _listState.copyWith(isLoadingMore: true);
     notifyListeners();
@@ -85,11 +102,13 @@ class CommentHandler extends ChangeNotifier {
         cursor: moreState.cursor,
         isLoadingMore: false,
       );
+      notifyListeners();
+      return const CommentResult.success(null);
     } catch (e) {
       _listState = _listState.copyWith(isLoadingMore: false);
+      notifyListeners();
+      return CommentResult.failure(e.toString());
     }
-
-    notifyListeners();
   }
 
   /// 加载子评论线程
@@ -116,27 +135,34 @@ class CommentHandler extends ChangeNotifier {
   }
 
   /// 切换点赞（乐观更新）
-  Future<void> toggleLike(String commentId) async {
+  ///
+  /// 返回 [CommentResult] 表示操作结果，调用方可据此显示错误提示
+  Future<CommentResult<void>> toggleLike(String commentId) async {
     // 找到目标评论的索引，避免多次遍历
     final index = _listState.comments.indexWhere((c) => c.id == commentId);
-    if (index == -1) return;
+    if (index == -1) {
+      return const CommentResult.failure('评论不存在');
+    }
+
+    // 保存原始列表用于回滚
+    final originalComments = List<CommentModel>.from(_listState.comments);
+    final original = originalComments[index];
+    final updated = original.withLikeToggled();
 
     // 乐观更新
-    final original = _listState.comments[index];
-    final updated = original.withLikeToggled();
-    final comments = List<CommentModel>.from(_listState.comments);
-    comments[index] = updated;
-    _listState = _listState.copyWith(comments: comments);
+    final newComments = List<CommentModel>.from(originalComments);
+    newComments[index] = updated;
+    _listState = _listState.copyWith(comments: newComments);
     notifyListeners();
 
     try {
       await _dataSource.toggleLike(commentId);
+      return const CommentResult.success(null);
     } catch (e) {
-      // 回滚：直接用原始对象
-      comments[index] = original;
-      _listState = _listState.copyWith(comments: List.unmodifiable(comments));
+      // 回滚：使用原始列表
+      _listState = _listState.copyWith(comments: originalComments);
       notifyListeners();
-      rethrow;
+      return CommentResult.failure(e.toString());
     }
   }
 
@@ -195,26 +221,33 @@ class CommentHandler extends ChangeNotifier {
     notifyListeners();
   }
 
-  /// 删除评论
-  Future<void> deleteComment(String commentId) async {
+  /// 删除评论（乐观更新）
+  ///
+  /// 返回 [CommentResult] 表示操作结果，调用方可据此显示错误提示
+  Future<CommentResult<void>> deleteComment(String commentId) async {
     final index = _listState.comments.indexWhere((c) => c.id == commentId);
-    if (index == -1) return;
+    if (index == -1) {
+      return const CommentResult.failure('评论不存在');
+    }
 
-    // 保存原始状态用于回滚
-    final original = _listState.comments[index];
-    final comments = List<CommentModel>.from(_listState.comments);
-    comments[index] = original.copyWith(isDeleted: true, content: '该评论已删除');
-    _listState = _listState.copyWith(comments: comments);
+    // 保存原始列表用于回滚
+    final originalComments = List<CommentModel>.from(_listState.comments);
+    final original = originalComments[index];
+
+    // 乐观更新
+    final newComments = List<CommentModel>.from(originalComments);
+    newComments[index] = original.copyWith(isDeleted: true, content: '该评论已删除');
+    _listState = _listState.copyWith(comments: newComments);
     notifyListeners();
 
     try {
       await _dataSource.deleteComment(commentId);
+      return const CommentResult.success(null);
     } catch (e) {
-      // 回滚
-      comments[index] = original;
-      _listState = _listState.copyWith(comments: List.unmodifiable(comments));
+      // 回滚：使用原始列表
+      _listState = _listState.copyWith(comments: originalComments);
       notifyListeners();
-      rethrow;
+      return CommentResult.failure(e.toString());
     }
   }
 
