@@ -1,6 +1,7 @@
 // 分享按钮
 
 import 'package:flutter/material.dart';
+import '../theme/theme.dart';
 import '../effects/effects.dart';
 import 'icon_painter.dart';
 
@@ -16,13 +17,15 @@ class ShareButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colors = AppColors.of(context);
+
     return TapScale(
       onTap: onTap,
       child: SizedBox(
         width: size,
         height: size,
         child: CustomPaint(
-          painter: IconPainter(_iconShare, const Color(0xFF888888), 1.5),
+          painter: IconPainter(_iconShare, colors.textTertiary, 1.5),
         ),
       ),
     );

@@ -23,11 +23,9 @@ class PinnedMessageBanner extends StatelessWidget {
 
     return TapScale(
       onTap: onTap,
-      scale: 0.99,
+      scale: TapScales.large,
       haptic: false,
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 1000),
-        curve: Curves.easeOutCubic,
+      child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
         decoration: BoxDecoration(
           color: colors.surfaceElevated,
@@ -35,18 +33,18 @@ class PinnedMessageBanner extends StatelessWidget {
         ),
         child: Row(
           children: [
-            // 图钉图标
+            // 图钉图标 - 使用强调色
             Container(
               width: 28,
               height: 28,
               decoration: BoxDecoration(
-                color: colors.interactive.withValues(alpha: 0.1),
+                color: colors.accentSoft,
                 borderRadius: BorderRadius.circular(6),
               ),
               child: Icon(
                 Icons.push_pin_rounded,
                 size: 16,
-                color: colors.interactive,
+                color: colors.accent,
               ),
             ),
             const SizedBox(width: 12),
@@ -61,7 +59,7 @@ class PinnedMessageBanner extends StatelessWidget {
                     style: TextStyle(
                       fontSize: 12,
                       fontWeight: FontWeight.w600,
-                      color: colors.interactive,
+                      color: colors.accent,
                     ),
                   ),
                   const SizedBox(height: 2),

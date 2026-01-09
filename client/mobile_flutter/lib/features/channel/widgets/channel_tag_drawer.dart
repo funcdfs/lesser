@@ -98,10 +98,8 @@ class _ChannelTagDrawerState extends State<ChannelTagDrawer> {
       right: 0,
       bottom: 0,
       child: AnimatedContainer(
-        duration: _isDragging
-            ? Duration.zero
-            : const Duration(milliseconds: 300),
-        curve: Curves.easeOutCubic,
+        duration: _isDragging ? Duration.zero : DrawerAnim.duration,
+        curve: DrawerAnim.curve,
         height: currentHeight,
         decoration: BoxDecoration(
           color: colors.surfaceElevated,
@@ -181,17 +179,15 @@ class _TagChip extends StatelessWidget {
   Widget build(BuildContext context) {
     final colors = AppColors.of(context);
 
-    // 选中时：深色边框 + 浅灰背景 + 文字加粗
-    final bgColor = isSelected
-        ? colors.textPrimary.withValues(alpha: 0.10)
-        : colors.surfaceBase;
-    final borderColor = isSelected ? colors.textPrimary : colors.divider;
+    // 选中时：强调色边框 + 柔和强调色背景
+    final bgColor = isSelected ? colors.accentSoft : colors.surfaceBase;
+    final borderColor = isSelected ? colors.accent : colors.divider;
+    final textColor = isSelected ? colors.accent : colors.textPrimary;
 
     return TapScale(
       onTap: onTap,
-      scale: 0.95,
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 150),
+      scale: TapScales.medium,
+      child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
         decoration: BoxDecoration(
           color: bgColor,
@@ -210,7 +206,7 @@ class _TagChip extends StatelessWidget {
               style: TextStyle(
                 fontSize: 14,
                 fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
-                color: colors.textPrimary,
+                color: textColor,
               ),
             ),
             if (tag.channelCount > 0) ...[

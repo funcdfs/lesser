@@ -3,6 +3,7 @@
 import 'package:flutter/material.dart';
 import '../../../pkg/ui/effects/effects.dart';
 import '../../../pkg/ui/theme/theme.dart';
+import '../data_access/channel_mock_data_source.dart';
 import '../handler/channel_handler.dart';
 import '../models/channel_models.dart';
 import '../widgets/channel_item.dart';
@@ -18,7 +19,7 @@ class ChannelPage extends StatefulWidget {
 }
 
 class _ChannelPageState extends State<ChannelPage> {
-  final _handler = ChannelHandler();
+  late final ChannelHandler _handler;
   List<ChannelModel> _channels = [];
   bool _isLoading = true;
 
@@ -84,6 +85,8 @@ class _ChannelPageState extends State<ChannelPage> {
   @override
   void initState() {
     super.initState();
+    // 使用 Mock 数据源，后续可替换为 gRPC 数据源
+    _handler = ChannelHandler(ChannelMockDataSource());
     _loadChannels();
   }
 
@@ -157,6 +160,7 @@ class _ChannelPageState extends State<ChannelPage> {
               child: Center(
                 child: TapScale(
                   onTap: _onClearTags,
+                  scale: TapScales.small,
                   child: Container(
                     padding: const EdgeInsets.symmetric(
                       horizontal: 10,

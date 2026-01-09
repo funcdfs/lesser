@@ -2,32 +2,55 @@
 
 import 'package:flutter/foundation.dart';
 import '../models/channel_models.dart';
-import 'channel_mock_data.dart' show mockChannels, mockMessages;
+
+/// 频道数据源接口
+///
+/// 抽象数据获取逻辑，便于切换 Mock/gRPC 实现
+abstract class ChannelDataSource {
+  /// 获取频道列表
+  Future<List<ChannelModel>> getChannels();
+
+  /// 获取频道详情
+  Future<ChannelModel?> getChannelDetail(String id);
+
+  /// 获取频道消息
+  Future<List<ChannelMessageModel>> getMessages(String channelId);
+
+  /// 切换静音状态
+  Future<void> toggleMute(String channelId, bool muted);
+}
 
 /// 频道 Handler
-///
-/// 当前使用 mock 数据，之后可替换为 gRPC 数据源
 class ChannelHandler extends ChangeNotifier {
+  ChannelHandler(this._dataSource);
+
+  final ChannelDataSource _dataSource;
+
   List<ChannelModel> _channels = [];
   bool _isLoading = false;
+  String? _error;
 
   List<ChannelModel> get channels => _channels;
   bool get isLoading => _isLoading;
+  String? get error => _error;
 
   /// 获取频道列表（按最后消息时间降序排序）
   Future<List<ChannelModel>> getChannels() async {
     _isLoading = true;
+    _error = null;
     notifyListeners();
 
-    // 模拟网络延迟
-    await Future.delayed(const Duration(milliseconds: 300));
-
-    _channels = List.from(mockChannels)
-      ..sort((a, b) {
-        final aTime = a.lastMessageTime ?? DateTime(1970);
-        final bTime = b.lastMessageTime ?? DateTime(1970);
-        return bTime.compareTo(aTime);
-      });
+    try {
+      final list = await _dataSource.getChannels();
+      _channels = List.from(list)
+        ..sort((a, b) {
+          final aTime = a.lastMessageTime ?? DateTime(1970);
+          final bTime = b.lastMessageTime ?? DateTime(1970);
+          return bTime.compareTo(aTime);
+        });
+    } catch (e) {
+      _error = e.toString();
+    }
 
     _isLoading = false;
     notifyListeners();
@@ -35,33 +58,36 @@ class ChannelHandler extends ChangeNotifier {
   }
 
   /// 获取频道详情
-  ChannelModel? getChannelDetail(String id) {
-    try {
-      return mockChannels.firstWhere((c) => c.id == id);
-    } catch (_) {
-      return null;
-    }
+  Future<ChannelModel?> getChannelDetail(String id) async {
+    return _dataSource.getChannelDetail(id);
   }
 
   /// 获取频道消息（按时间升序，最新在底部）
-  Future<List<ChannelPostModel>> getMessages(String channelId) async {
-    await Future.delayed(const Duration(milliseconds: 200));
-
-    final messages = List<ChannelPostModel>.from(
-      mockMessages[channelId] ?? <ChannelPostModel>[],
-    );
-    messages.sort((a, b) => a.createdAt.compareTo(b.createdAt));
-    return messages;
+  Future<List<ChannelMessageModel>> getMessages(String channelId) async {
+    final messages = await _dataSource.getMessages(channelId);
+    return List.from(messages)
+      ..sort((a, b) => a.createdAt.compareTo(b.createdAt));
   }
 
-  /// 切换静音状态
-  void toggleMute(String channelId) {
+  /// 切换静音状态（乐观更新）
+  Future<void> toggleMute(String channelId) async {
     final index = _channels.indexWhere((c) => c.id == channelId);
-    if (index != -1) {
-      _channels[index] = _channels[index].copyWith(
-        isMuted: !_channels[index].isMuted,
-      );
+    if (index == -1) return;
+
+    final original = _channels[index];
+    final newMuted = !original.isMuted;
+
+    // 乐观更新
+    _channels[index] = original.copyWith(isMuted: newMuted);
+    notifyListeners();
+
+    try {
+      await _dataSource.toggleMute(channelId, newMuted);
+    } catch (e) {
+      // 回滚
+      _channels[index] = original;
       notifyListeners();
+      rethrow;
     }
   }
 

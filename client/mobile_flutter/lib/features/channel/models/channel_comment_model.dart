@@ -1,8 +1,11 @@
 // 频道评论数据模型
 //
-// 与 Post 共用 ReactionStats（来自 reaction_model.dart）
+// 复用 pkg/comment 中的通用类型
 
-import 'reaction_model.dart';
+import '../../../pkg/comment/comment.dart' show CommentIconState, ReplyTarget;
+
+// 导出通用类型供外部使用
+export '../../../pkg/comment/comment.dart' show CommentIconState, ReplyTarget;
 
 // ============================================================================
 // 媒体类型
@@ -98,25 +101,6 @@ class CommentAuthor {
 }
 
 // ============================================================================
-// 回复关系
-// ============================================================================
-
-/// 被回复评论的摘要（严格一层，不递归）
-class ReplyTarget {
-  const ReplyTarget({
-    required this.commentId,
-    required this.authorName,
-    required this.contentPreview,
-    this.isDeleted = false,
-  });
-
-  final String commentId;
-  final String authorName;
-  final String contentPreview;
-  final bool isDeleted;
-}
-
-// ============================================================================
 // 核心模型
 // ============================================================================
 
@@ -124,19 +108,23 @@ class ReplyTarget {
 class ChannelCommentModel {
   const ChannelCommentModel({
     required this.id,
-    required this.postId,
+    required this.messageId,
     required this.channelId,
     required this.author,
     required this.content,
     this.media = const [],
     this.replyTo,
     this.replyCount = 0,
-    this.reactionStats = ReactionStats.empty,
-    this.myReaction,
+    this.likeCount = 0,
+    this.isLiked = false,
     required this.createdAtMs,
     this.isDeleted = false,
     this.isPinned = false,
     this.isOwn = false,
+    // 评论交互状态
+    this.interactionState = CommentIconState.normal,
+    this.isViewed = false,
+    this.hasMyReply = false,
     // UI 临时状态
     this.isHighlighted = false,
     this.isExpanded = false,
@@ -144,19 +132,24 @@ class ChannelCommentModel {
   });
 
   final String id;
-  final String postId;
+  final String messageId; // 所属消息 ID
   final String channelId;
   final CommentAuthor author;
   final String content;
   final List<CommentMedia> media;
   final ReplyTarget? replyTo;
   final int replyCount;
-  final ReactionStats reactionStats;
-  final String? myReaction;
+  final int likeCount;
+  final bool isLiked;
   final int createdAtMs;
   final bool isDeleted;
   final bool isPinned;
   final bool isOwn;
+  // 评论交互状态
+  final CommentIconState interactionState;
+  final bool isViewed;
+  final bool hasMyReply;
+  // UI 临时状态
   final bool isHighlighted;
   final bool isExpanded;
   final bool isSubmitting;
@@ -166,48 +159,48 @@ class ChannelCommentModel {
   bool get hasReplies => replyCount > 0;
   bool get isReply => replyTo != null;
   bool get hasMedia => media.isNotEmpty;
-  bool get hasReacted => myReaction != null;
-  bool get hasReactions => reactionStats.hasReactions;
   DateTime get createdAt => DateTime.fromMillisecondsSinceEpoch(createdAtMs);
-
-  /// 获取用于 UI 展示的反应列表
-  List<ReactionSummary> get reactions =>
-      reactionStats.toSummaryList(myReaction);
 
   ChannelCommentModel copyWith({
     String? id,
-    String? postId,
+    String? messageId,
     String? channelId,
     CommentAuthor? author,
     String? content,
     List<CommentMedia>? media,
     ReplyTarget? replyTo,
     int? replyCount,
-    ReactionStats? reactionStats,
-    String? myReaction,
+    int? likeCount,
+    bool? isLiked,
     int? createdAtMs,
     bool? isDeleted,
     bool? isPinned,
     bool? isOwn,
+    CommentIconState? interactionState,
+    bool? isViewed,
+    bool? hasMyReply,
     bool? isHighlighted,
     bool? isExpanded,
     bool? isSubmitting,
   }) {
     return ChannelCommentModel(
       id: id ?? this.id,
-      postId: postId ?? this.postId,
+      messageId: messageId ?? this.messageId,
       channelId: channelId ?? this.channelId,
       author: author ?? this.author,
       content: content ?? this.content,
       media: media ?? this.media,
       replyTo: replyTo ?? this.replyTo,
       replyCount: replyCount ?? this.replyCount,
-      reactionStats: reactionStats ?? this.reactionStats,
-      myReaction: myReaction,
+      likeCount: likeCount ?? this.likeCount,
+      isLiked: isLiked ?? this.isLiked,
       createdAtMs: createdAtMs ?? this.createdAtMs,
       isDeleted: isDeleted ?? this.isDeleted,
       isPinned: isPinned ?? this.isPinned,
       isOwn: isOwn ?? this.isOwn,
+      interactionState: interactionState ?? this.interactionState,
+      isViewed: isViewed ?? this.isViewed,
+      hasMyReply: hasMyReply ?? this.hasMyReply,
       isHighlighted: isHighlighted ?? this.isHighlighted,
       isExpanded: isExpanded ?? this.isExpanded,
       isSubmitting: isSubmitting ?? this.isSubmitting,
@@ -216,28 +209,11 @@ class ChannelCommentModel {
 
   // ---- 乐观更新快捷方法 ----
 
-  ChannelCommentModel withReactionAdded(String emoji) => copyWith(
-    reactionStats: reactionStats.withAdded(emoji),
-    myReaction: emoji,
+  /// 切换点赞状态
+  ChannelCommentModel withLikeToggled() => copyWith(
+    likeCount: isLiked ? likeCount - 1 : likeCount + 1,
+    isLiked: !isLiked,
   );
-
-  ChannelCommentModel withReactionRemoved() {
-    if (myReaction == null) return this;
-    return copyWith(
-      reactionStats: reactionStats.withRemoved(myReaction!),
-      myReaction: null,
-    );
-  }
-
-  ChannelCommentModel withReactionToggled(String emoji) {
-    if (myReaction == emoji) {
-      return withReactionRemoved();
-    }
-    return copyWith(
-      reactionStats: reactionStats.withToggled(myReaction, emoji),
-      myReaction: emoji,
-    );
-  }
 
   ChannelCommentModel withReplyAdded() => copyWith(replyCount: replyCount + 1);
   ChannelCommentModel withHighlight(bool value) =>
@@ -255,13 +231,13 @@ class ChannelCommentModel {
 }
 
 // ============================================================================
-// 页面状态
+// 频道特有的上下文类型（非通用评论状态）
 // ============================================================================
 
-/// 频道消息上下文（评论列表页头部）
-class CommentPostContext {
-  const CommentPostContext({
-    required this.postId,
+/// 频道消息上下文（评论列表页头部展示用）
+class ChannelMessageContext {
+  const ChannelMessageContext({
+    required this.messageId,
     required this.channelId,
     required this.channelName,
     required this.channelAvatarUrl,
@@ -269,7 +245,7 @@ class CommentPostContext {
     required this.createdAtMs,
   });
 
-  final String postId;
+  final String messageId;
   final String channelId;
   final String channelName;
   final String channelAvatarUrl;
@@ -279,119 +255,13 @@ class CommentPostContext {
   DateTime get createdAt => DateTime.fromMillisecondsSinceEpoch(createdAtMs);
 }
 
-/// 面包屑导航项
-class CommentBreadcrumb {
-  const CommentBreadcrumb({
-    required this.commentId,
-    required this.authorName,
-    required this.contentPreview,
-  });
-
-  final String commentId;
-  final String authorName;
-  final String contentPreview;
-}
-
-/// 加载状态
-enum CommentLoadState {
-  idle,
-  loading,
-  loadingMore,
-  error;
-
-  bool get isLoading => this == loading;
-  bool get isLoadingMore => this == loadingMore;
-  bool get hasError => this == error;
-}
-
-/// 评论列表页状态
-class CommentListState {
-  const CommentListState({
-    this.comments = const [],
-    this.pinnedComment,
-    this.rootComment,
-    this.nextCursor,
-    this.hasMore = false,
-    this.totalCount = 0,
-    this.loadState = CommentLoadState.idle,
-    this.errorMessage,
-    this.postContext,
-    this.breadcrumbs = const [],
-  });
-
-  final List<ChannelCommentModel> comments;
-  final ChannelCommentModel? pinnedComment;
-  final ChannelCommentModel? rootComment;
-  final String? nextCursor;
-  final bool hasMore;
-  final int totalCount;
-  final CommentLoadState loadState;
-  final String? errorMessage;
-  final CommentPostContext? postContext;
-  final List<CommentBreadcrumb> breadcrumbs;
-
-  bool get isTopLevel => rootComment == null;
-  bool get isEmpty => comments.isEmpty && !loadState.isLoading;
-
-  CommentListState copyWith({
-    List<ChannelCommentModel>? comments,
-    ChannelCommentModel? pinnedComment,
-    ChannelCommentModel? rootComment,
-    String? nextCursor,
-    bool? hasMore,
-    int? totalCount,
-    CommentLoadState? loadState,
-    String? errorMessage,
-    CommentPostContext? postContext,
-    List<CommentBreadcrumb>? breadcrumbs,
-  }) {
-    return CommentListState(
-      comments: comments ?? this.comments,
-      pinnedComment: pinnedComment ?? this.pinnedComment,
-      rootComment: rootComment ?? this.rootComment,
-      nextCursor: nextCursor ?? this.nextCursor,
-      hasMore: hasMore ?? this.hasMore,
-      totalCount: totalCount ?? this.totalCount,
-      loadState: loadState ?? this.loadState,
-      errorMessage: errorMessage,
-      postContext: postContext ?? this.postContext,
-      breadcrumbs: breadcrumbs ?? this.breadcrumbs,
-    );
-  }
-
-  CommentListState updateComment(
-    String id,
-    ChannelCommentModel Function(ChannelCommentModel) updater,
-  ) {
-    final index = comments.indexWhere((c) => c.id == id);
-    if (index == -1) return this;
-    final newComments = List<ChannelCommentModel>.from(comments);
-    newComments[index] = updater(newComments[index]);
-    return copyWith(comments: newComments);
-  }
-
-  CommentListState prependComment(ChannelCommentModel comment) {
-    return copyWith(
-      comments: [comment, ...comments],
-      totalCount: totalCount + 1,
-    );
-  }
-
-  CommentListState softDeleteComment(String id) {
-    return updateComment(
-      id,
-      (c) => c.copyWith(isDeleted: true, content: '该评论已删除'),
-    );
-  }
-}
-
 // ============================================================================
 // 输入状态
 // ============================================================================
 
-/// 评论输入状态
-class CommentInputState {
-  const CommentInputState({
+/// 评论输入状态（频道特有，包含媒体附件）
+class ChannelCommentInputState {
+  const ChannelCommentInputState({
     this.text = '',
     this.attachments = const [],
     this.replyTo,
@@ -409,14 +279,14 @@ class CommentInputState {
   bool get hasAttachments => attachments.isNotEmpty;
   bool get isReplying => replyTo != null;
 
-  CommentInputState copyWith({
+  ChannelCommentInputState copyWith({
     String? text,
     List<CommentMedia>? attachments,
     ReplyTarget? replyTo,
     bool? isSubmitting,
     String? error,
   }) {
-    return CommentInputState(
+    return ChannelCommentInputState(
       text: text ?? this.text,
       attachments: attachments ?? this.attachments,
       replyTo: replyTo ?? this.replyTo,
@@ -425,7 +295,7 @@ class CommentInputState {
     );
   }
 
-  CommentInputState clear() => const CommentInputState();
-  CommentInputState withReplyTo(ReplyTarget? target) =>
+  ChannelCommentInputState clear() => const ChannelCommentInputState();
+  ChannelCommentInputState withReplyTo(ReplyTarget? target) =>
       copyWith(replyTo: target);
 }

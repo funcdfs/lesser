@@ -2,6 +2,7 @@
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import '../animation/animation.dart';
 
 /// 点击时产生柔和缩放效果的包装组件
 ///
@@ -17,15 +18,15 @@ class TapScale extends StatefulWidget {
     super.key,
     required this.child,
     this.onTap,
-    this.scale = 0.88,
-    this.duration = const Duration(milliseconds: 80),
+    this.scale = TapScales.small,
+    this.duration = AnimDurations.fast,
     this.haptic = true,
   });
 
   final Widget child;
   final VoidCallback? onTap;
 
-  /// 按下时的缩放比例，默认 0.88（缩小 12%）
+  /// 按下时的缩放比例，默认 0.9
   final double scale;
 
   /// 动画时长，默认 80ms
@@ -70,7 +71,7 @@ class _TapScaleState extends State<TapScale>
       child: AnimatedBuilder(
         animation: _ctrl,
         builder: (context, child) {
-          final t = Curves.easeOut.transform(_ctrl.value);
+          final t = AnimCurves.standard.transform(_ctrl.value);
           final scale = 1.0 - (1.0 - widget.scale) * t;
           return Transform.scale(scale: scale, child: child);
         },

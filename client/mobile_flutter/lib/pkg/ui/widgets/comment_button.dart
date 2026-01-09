@@ -1,6 +1,7 @@
 // 评论按钮
 
 import 'package:flutter/material.dart';
+import '../theme/theme.dart';
 import '../effects/effects.dart';
 import 'icon_painter.dart';
 import 'animated_count.dart';
@@ -24,7 +25,9 @@ class CommentButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final color = isActive ? const Color(0xFF2196F3) : const Color(0xFF888888);
+    final colors = AppColors.of(context);
+    // 激活时使用强调色，未激活时使用辅助色
+    final color = isActive ? colors.accent : colors.textTertiary;
     final strokeWidth = isActive ? 2.0 : 1.5;
 
     return TapScale(

@@ -21,7 +21,7 @@ class ChannelItem extends StatelessWidget {
 
     return TapScale(
       onTap: onTap,
-      scale: 0.98,
+      scale: TapScales.card,
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
         decoration: BoxDecoration(
@@ -33,16 +33,27 @@ class ChannelItem extends StatelessWidget {
             // 头像（Hero 动画）
             Hero(
               tag: 'channel_avatar_${channel.id}',
+              // 使用 placeholderBuilder 避免动画结束时的闪动
+              placeholderBuilder: (context, heroSize, child) {
+                return SizedBox(
+                  width: heroSize.width,
+                  height: heroSize.height,
+                  child: child,
+                );
+              },
               flightShuttleBuilder: (context, anim, direction, fromCtx, toCtx) {
-                // 飞行时包裹 Material 避免黄色下划线
-                return Material(
-                  color: Colors.transparent,
-                  child: AvatarButton(
-                    imageUrl: channel.avatarUrl,
-                    size: 40,
-                    placeholder: channel.name.isNotEmpty
-                        ? channel.name[0]
-                        : '#',
+                // 使用目标 widget 作为飞行 shuttle，配合 FadeTransition 平滑过渡
+                return FadeTransition(
+                  opacity: anim,
+                  child: Material(
+                    color: Colors.transparent,
+                    child: AvatarButton(
+                      imageUrl: channel.avatarUrl,
+                      size: 40,
+                      placeholder: channel.name.isNotEmpty
+                          ? channel.name[0]
+                          : '#',
+                    ),
                   ),
                 );
               },
@@ -86,16 +97,28 @@ class ChannelItem extends StatelessWidget {
         Flexible(
           child: Hero(
             tag: 'channel_name_${channel.id}',
+            // 使用 placeholderBuilder 避免动画结束时的闪动
+            placeholderBuilder: (context, heroSize, child) {
+              return SizedBox(
+                width: heroSize.width,
+                height: heroSize.height,
+                child: child,
+              );
+            },
             flightShuttleBuilder: (context, anim, direction, fromCtx, toCtx) {
-              return Material(
-                color: Colors.transparent,
-                child: Text(
-                  channel.name,
-                  softWrap: false,
-                  style: TextStyle(
-                    fontSize: 15,
-                    fontWeight: FontWeight.w600,
-                    color: colors.textPrimary,
+              // 使用目标 widget 作为飞行 shuttle，配合 FadeTransition 平滑过渡
+              return FadeTransition(
+                opacity: anim,
+                child: Material(
+                  color: Colors.transparent,
+                  child: Text(
+                    channel.name,
+                    softWrap: false,
+                    style: TextStyle(
+                      fontSize: 15,
+                      fontWeight: FontWeight.w600,
+                      color: colors.textPrimary,
+                    ),
                   ),
                 ),
               );
@@ -182,7 +205,7 @@ class ChannelItem extends StatelessWidget {
         const SizedBox(height: 6),
         // 第二行：未读数徽章
         if (channel.unreadCount > 0)
-          _UnreadBadge(count: channel.unreadCount, isMuted: channel.isMuted)
+          UnreadBadge(count: channel.unreadCount, isMuted: channel.isMuted)
         else
           const SizedBox(height: 18), // 占位保持对齐
       ],
@@ -205,37 +228,5 @@ class ChannelItem extends StatelessWidget {
     } else {
       return '${time.month}/${time.day}';
     }
-  }
-}
-
-/// 未读数徽章
-class _UnreadBadge extends StatelessWidget {
-  const _UnreadBadge({required this.count, this.isMuted = false});
-
-  final int count;
-  final bool isMuted;
-
-  @override
-  Widget build(BuildContext context) {
-    final colors = AppColors.of(context);
-    final text = count > 99 ? '99+' : count.toString();
-
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-      constraints: const BoxConstraints(minWidth: 18),
-      decoration: BoxDecoration(
-        color: isMuted ? colors.textTertiary : colors.interactive,
-        borderRadius: BorderRadius.circular(9),
-      ),
-      child: Text(
-        text,
-        textAlign: TextAlign.center,
-        style: TextStyle(
-          fontSize: 11,
-          fontWeight: FontWeight.w600,
-          color: isMuted ? colors.surfaceBase : colors.surfaceElevated,
-        ),
-      ),
-    );
   }
 }

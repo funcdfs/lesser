@@ -1,10 +1,10 @@
-// 频道帖子/消息数据模型
+// 频道消息数据模型
 
 import 'reaction_model.dart';
 
-/// 频道帖子/消息
-class ChannelPostModel {
-  const ChannelPostModel({
+/// 频道消息
+class ChannelMessageModel {
+  const ChannelMessageModel({
     required this.id,
     required this.channelId,
     required this.authorId,
@@ -65,7 +65,7 @@ class ChannelPostModel {
     return viewCount.toString();
   }
 
-  ChannelPostModel copyWith({
+  ChannelMessageModel copyWith({
     String? id,
     String? channelId,
     String? authorId,
@@ -84,7 +84,7 @@ class ChannelPostModel {
     String? linkTitle,
     List<String>? commentAvatars,
   }) {
-    return ChannelPostModel(
+    return ChannelMessageModel(
       id: id ?? this.id,
       channelId: channelId ?? this.channelId,
       authorId: authorId ?? this.authorId,
@@ -108,13 +108,13 @@ class ChannelPostModel {
   // ---- 乐观更新快捷方法 ----
 
   /// 添加反应
-  ChannelPostModel withReactionAdded(String emoji) => copyWith(
+  ChannelMessageModel withReactionAdded(String emoji) => copyWith(
     reactionStats: reactionStats.withAdded(emoji),
     myReaction: emoji,
   );
 
   /// 移除反应
-  ChannelPostModel withReactionRemoved() {
+  ChannelMessageModel withReactionRemoved() {
     if (myReaction == null) return this;
     return copyWith(
       reactionStats: reactionStats.withRemoved(myReaction!),
@@ -123,7 +123,7 @@ class ChannelPostModel {
   }
 
   /// 切换反应
-  ChannelPostModel withReactionToggled(String emoji) {
+  ChannelMessageModel withReactionToggled(String emoji) {
     if (myReaction == emoji) {
       return withReactionRemoved();
     }
@@ -134,6 +134,6 @@ class ChannelPostModel {
   }
 
   /// 评论数 +1
-  ChannelPostModel withCommentAdded() =>
+  ChannelMessageModel withCommentAdded() =>
       copyWith(commentCount: commentCount + 1);
 }

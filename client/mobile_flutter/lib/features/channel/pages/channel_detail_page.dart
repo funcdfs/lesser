@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import '../../../pkg/ui/effects/effects.dart';
 import '../../../pkg/ui/theme/theme.dart';
 import '../../../pkg/ui/widgets/widgets.dart';
+import '../data_access/channel_mock_data_source.dart';
 import '../handler/channel_handler.dart';
 import '../models/channel_models.dart';
 import '../widgets/channel_message.dart';
@@ -17,27 +18,36 @@ class ChannelDetailPage extends StatefulWidget {
     super.key,
     required this.channelId,
     this.initialChannel,
+    this.highlightMessageId,
   });
 
   final String channelId;
   final ChannelModel? initialChannel;
+  final String? highlightMessageId; // 需要高亮的消息 ID（深层链接导航）
 
   @override
   State<ChannelDetailPage> createState() => _ChannelDetailPageState();
 }
 
 class _ChannelDetailPageState extends State<ChannelDetailPage> {
-  final _handler = ChannelHandler();
+  late final ChannelHandler _handler;
   ChannelModel? _channel;
-  List<ChannelPostModel> _messages = [];
+  List<ChannelMessageModel> _messages = [];
   bool _isLoading = true;
   bool _showPinnedBanner = true;
   bool _isMuted = false;
   bool _showMessages = false;
 
+  // 高亮状态
+  String? _highlightedMessageId;
+  bool _hasScrolledToTarget = false;
+  final _scrollController = ScrollController();
+
   @override
   void initState() {
     super.initState();
+    // 使用 Mock 数据源
+    _handler = ChannelHandler(ChannelMockDataSource());
     if (widget.initialChannel != null) {
       _channel = widget.initialChannel;
       _isMuted = widget.initialChannel!.isMuted;
@@ -46,8 +56,15 @@ class _ChannelDetailPageState extends State<ChannelDetailPage> {
     _loadData();
   }
 
+  @override
+  void dispose() {
+    _scrollController.dispose();
+    super.dispose();
+  }
+
   Future<void> _loadData() async {
-    final channel = _channel ?? _handler.getChannelDetail(widget.channelId);
+    final channel =
+        _channel ?? await _handler.getChannelDetail(widget.channelId);
     final messages = await _handler.getMessages(widget.channelId);
 
     if (mounted) {
@@ -58,8 +75,71 @@ class _ChannelDetailPageState extends State<ChannelDetailPage> {
         _isLoading = false;
       });
 
-      Future.delayed(const Duration(milliseconds: 250), () {
-        if (mounted) setState(() => _showMessages = true);
+      Future.delayed(AnimDurations.medium, () {
+        if (mounted) {
+          setState(() => _showMessages = true);
+          // 消息显示后，尝试滚动到目标消息
+          _tryScrollToTargetMessage();
+        }
+      });
+    }
+  }
+
+  /// 尝试滚动到目标消息并高亮
+  void _tryScrollToTargetMessage() {
+    if (_hasScrolledToTarget) return;
+    if (widget.highlightMessageId == null) return;
+
+    final targetId = widget.highlightMessageId!;
+    final items = _buildListItems();
+
+    // 查找目标消息的索引
+    int? targetIndex;
+    for (var i = 0; i < items.length; i++) {
+      final item = items[i];
+      if (item is ChannelMessageModel && item.id == targetId) {
+        targetIndex = i;
+        break;
+      }
+    }
+
+    if (targetIndex != null) {
+      _hasScrolledToTarget = true;
+      // 延迟执行滚动，确保列表已渲染
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        _scrollToIndexAndHighlight(targetIndex!, targetId);
+      });
+    }
+  }
+
+  /// 滚动到指定索引并高亮
+  void _scrollToIndexAndHighlight(int index, String messageId) {
+    // 估算每个消息项的高度（约 120-180 像素）
+    const estimatedItemHeight = 150.0;
+    final targetOffset = index * estimatedItemHeight;
+
+    // 滚动到目标位置
+    _scrollController
+        .animateTo(
+          targetOffset.clamp(0, _scrollController.position.maxScrollExtent),
+          duration: const Duration(milliseconds: 300),
+          curve: Curves.easeOut,
+        )
+        .then((_) {
+          // 滚动完成后设置高亮
+          if (mounted) {
+            setState(() {
+              _highlightedMessageId = messageId;
+            });
+          }
+        });
+  }
+
+  /// 高亮动画完成回调
+  void _onHighlightComplete() {
+    if (mounted) {
+      setState(() {
+        _highlightedMessageId = null;
       });
     }
   }
@@ -71,16 +151,14 @@ class _ChannelDetailPageState extends State<ChannelDetailPage> {
   final _moreButtonKey = GlobalKey();
 
   /// 打开评论页面
-  void _openCommentPage(ChannelPostModel post) {
+  void _openCommentPage(ChannelMessageModel message) {
     Navigator.push(
       context,
       MaterialPageRoute(
         builder: (context) => ChannelCommentPage(
-          postId: post.id,
+          messageId: message.id,
           channelId: widget.channelId,
-          postPreview: post.content.length > 100
-              ? '${post.content.substring(0, 100)}...'
-              : post.content,
+          message: message, // 传递完整消息，用于显示消息头部
         ),
       ),
     );
@@ -128,13 +206,13 @@ class _ChannelDetailPageState extends State<ChannelDetailPage> {
           : Stack(
               children: [
                 Positioned.fill(child: _buildMessageList(colors)),
-                if (_showPinnedBanner && _channel?.pinnedPost != null)
+                if (_showPinnedBanner && _channel?.pinnedMessage != null)
                   Positioned(
                     top: MediaQuery.paddingOf(context).top + kToolbarHeight,
                     left: 0,
                     right: 0,
                     child: PinnedMessageBanner(
-                      message: _channel!.pinnedPost!.content,
+                      message: _channel!.pinnedMessage!.content,
                       onClose: _onClosePinnedBanner,
                     ),
                   ),
@@ -163,16 +241,28 @@ class _ChannelDetailPageState extends State<ChannelDetailPage> {
               children: [
                 Hero(
                   tag: 'channel_avatar_${widget.channelId}',
+                  // 使用 placeholderBuilder 避免动画结束时的闪动
+                  placeholderBuilder: (context, heroSize, child) {
+                    return SizedBox(
+                      width: heroSize.width,
+                      height: heroSize.height,
+                      child: child,
+                    );
+                  },
                   flightShuttleBuilder:
                       (context, anim, direction, fromCtx, toCtx) {
-                        return Material(
-                          color: Colors.transparent,
-                          child: AvatarButton(
-                            imageUrl: _channel!.avatarUrl,
-                            size: 40,
-                            placeholder: _channel!.name.isNotEmpty
-                                ? _channel!.name[0]
-                                : '#',
+                        // 使用目标 widget 作为飞行 shuttle，配合 FadeTransition 平滑过渡
+                        return FadeTransition(
+                          opacity: anim,
+                          child: Material(
+                            color: Colors.transparent,
+                            child: AvatarButton(
+                              imageUrl: _channel!.avatarUrl,
+                              size: 40,
+                              placeholder: _channel!.name.isNotEmpty
+                                  ? _channel!.name[0]
+                                  : '#',
+                            ),
                           ),
                         );
                       },
@@ -192,17 +282,29 @@ class _ChannelDetailPageState extends State<ChannelDetailPage> {
                     children: [
                       Hero(
                         tag: 'channel_name_${widget.channelId}',
+                        // 使用 placeholderBuilder 避免动画结束时的闪动
+                        placeholderBuilder: (context, heroSize, child) {
+                          return SizedBox(
+                            width: heroSize.width,
+                            height: heroSize.height,
+                            child: child,
+                          );
+                        },
                         flightShuttleBuilder:
                             (context, anim, direction, fromCtx, toCtx) {
-                              return Material(
-                                color: Colors.transparent,
-                                child: Text(
-                                  _channel!.name,
-                                  softWrap: false,
-                                  style: TextStyle(
-                                    fontSize: 15,
-                                    fontWeight: FontWeight.w600,
-                                    color: colors.textPrimary,
+                              // 使用目标 widget 作为飞行 shuttle，配合 FadeTransition 平滑过渡
+                              return FadeTransition(
+                                opacity: anim,
+                                child: Material(
+                                  color: Colors.transparent,
+                                  child: Text(
+                                    _channel!.name,
+                                    softWrap: false,
+                                    style: TextStyle(
+                                      fontSize: 15,
+                                      fontWeight: FontWeight.w600,
+                                      color: colors.textPrimary,
+                                    ),
                                   ),
                                 ),
                               );
@@ -278,30 +380,41 @@ class _ChannelDetailPageState extends State<ChannelDetailPage> {
     }
 
     final items = _buildListItems();
+    final messageDates = _getMessageDates();
     final topPadding =
         MediaQuery.paddingOf(context).top +
         kToolbarHeight +
-        (_showPinnedBanner && _channel?.pinnedPost != null ? 60 : 8);
+        (_showPinnedBanner && _channel?.pinnedMessage != null ? 60 : 8);
 
     return TweenAnimationBuilder<double>(
-      tween: Tween(begin: 0.0, end: 1.0),
-      duration: const Duration(milliseconds: 200),
-      curve: Curves.easeOut,
+      tween: Tween(begin: FadeInAnim.startOpacity, end: FadeInAnim.endOpacity),
+      duration: FadeInAnim.duration,
+      curve: FadeInAnim.curve,
       builder: (context, opacity, child) {
         return Opacity(opacity: opacity, child: child);
       },
       child: ListView.builder(
+        controller: _scrollController,
         padding: EdgeInsets.only(top: topPadding, bottom: 8),
         itemCount: items.length,
         itemBuilder: (context, index) {
           final item = items[index];
           if (item is DateTime) {
-            return DateSeparator(date: item);
-          } else if (item is ChannelPostModel) {
+            return DateSeparator(
+              date: item,
+              messageDates: messageDates,
+              onDateSelected: _scrollToDate,
+            );
+          } else if (item is ChannelMessageModel) {
+            final isHighlighted = _highlightedMessageId == item.id;
             return ChannelMessageWidget(
               message: item,
+              isHighlighted: isHighlighted,
+              onHighlightComplete: isHighlighted ? _onHighlightComplete : null,
               onCommentTap: () => _openCommentPage(item),
-              onForward: () {},
+              onMenuAction: (action) {
+                _handleMessageMenuAction(action, item);
+              },
               onReactionTap: (emoji) {},
             );
           }
@@ -309,6 +422,60 @@ class _ChannelDetailPageState extends State<ChannelDetailPage> {
         },
       ),
     );
+  }
+
+  /// 处理消息菜单操作
+  void _handleMessageMenuAction(
+    ChannelMessageMenuAction action,
+    ChannelMessageModel message,
+  ) {
+    switch (action) {
+      case ChannelMessageMenuAction.save:
+        _showSnackBar('消息已保存');
+        break;
+      case ChannelMessageMenuAction.forward:
+        // TODO: 实现转发
+        break;
+      case ChannelMessageMenuAction.detail:
+        // TODO: 实现详情
+        break;
+    }
+  }
+
+  /// 显示 SnackBar 提示
+  void _showSnackBar(String message) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(message),
+        duration: const Duration(seconds: 2),
+        behavior: SnackBarBehavior.floating,
+      ),
+    );
+  }
+
+  /// 获取所有消息的日期集合
+  Set<DateTime> _getMessageDates() {
+    return _messages.map((m) {
+      return DateTime(m.createdAt.year, m.createdAt.month, m.createdAt.day);
+    }).toSet();
+  }
+
+  /// 滚动到指定日期的消息
+  void _scrollToDate(DateTime date) {
+    // 找到该日期的第一条消息
+    final targetIndex = _messages.indexWhere((m) {
+      final msgDate = DateTime(
+        m.createdAt.year,
+        m.createdAt.month,
+        m.createdAt.day,
+      );
+      return msgDate == date;
+    });
+
+    if (targetIndex != -1) {
+      // 重新加载消息列表，确保滚动到正确位置
+      setState(() {});
+    }
   }
 
   /// 构建列表项

@@ -1,6 +1,6 @@
 // 频道数据模型
 
-import 'channel_post_model.dart';
+import 'channel_message_model.dart';
 
 /// 频道
 class ChannelModel {
@@ -13,14 +13,14 @@ class ChannelModel {
     required this.ownerId,
     this.adminIds = const [],
     required this.subscriberCount,
-    this.postCount = 0,
+    this.messageCount = 0,
     this.createdAt,
     this.updatedAt,
     this.isSubscribed = false,
     this.isAdmin = false,
     this.isOwner = false,
     this.isPublic = true,
-    this.pinnedPost,
+    this.pinnedMessage,
     // UI 扩展字段
     this.lastMessage,
     this.lastMessageTime,
@@ -37,14 +37,14 @@ class ChannelModel {
   final String ownerId;
   final List<String> adminIds;
   final int subscriberCount;
-  final int postCount;
+  final int messageCount;
   final DateTime? createdAt;
   final DateTime? updatedAt;
   final bool isSubscribed;
   final bool isAdmin;
   final bool isOwner;
   final bool isPublic;
-  final ChannelPostModel? pinnedPost;
+  final ChannelMessageModel? pinnedMessage;
   final String? lastMessage;
   final DateTime? lastMessageTime;
   final int unreadCount;
@@ -60,14 +60,14 @@ class ChannelModel {
     String? ownerId,
     List<String>? adminIds,
     int? subscriberCount,
-    int? postCount,
+    int? messageCount,
     DateTime? createdAt,
     DateTime? updatedAt,
     bool? isSubscribed,
     bool? isAdmin,
     bool? isOwner,
     bool? isPublic,
-    ChannelPostModel? pinnedPost,
+    ChannelMessageModel? pinnedMessage,
     String? lastMessage,
     DateTime? lastMessageTime,
     int? unreadCount,
@@ -83,14 +83,14 @@ class ChannelModel {
       ownerId: ownerId ?? this.ownerId,
       adminIds: adminIds ?? this.adminIds,
       subscriberCount: subscriberCount ?? this.subscriberCount,
-      postCount: postCount ?? this.postCount,
+      messageCount: messageCount ?? this.messageCount,
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
       isSubscribed: isSubscribed ?? this.isSubscribed,
       isAdmin: isAdmin ?? this.isAdmin,
       isOwner: isOwner ?? this.isOwner,
       isPublic: isPublic ?? this.isPublic,
-      pinnedPost: pinnedPost ?? this.pinnedPost,
+      pinnedMessage: pinnedMessage ?? this.pinnedMessage,
       lastMessage: lastMessage ?? this.lastMessage,
       lastMessageTime: lastMessageTime ?? this.lastMessageTime,
       unreadCount: unreadCount ?? this.unreadCount,

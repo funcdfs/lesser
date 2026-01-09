@@ -2,6 +2,6 @@
 
 export 'channel_comment_model.dart';
 export 'channel_model.dart';
-export 'channel_post_model.dart';
+export 'channel_message_model.dart';
 export 'channel_tag.dart';
 export 'reaction_model.dart';

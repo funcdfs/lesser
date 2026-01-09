@@ -1,228 +1,125 @@
-// 频道消息组件 - Instagram Channel 风格
+// 频道消息组件 - Telegram Channel 风格
+//
+// 设计特点：
+// - 深色气泡，无边框
+// - 反应标签在气泡内底部左侧（带圆角背景）
+// - 浏览量和时间在气泡内底部右侧
+// - 评论入口在气泡外下方（头像堆叠 + 数量 + 箭头）
 
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import '../../../pkg/ui/theme/theme.dart';
 import '../../../pkg/ui/effects/effects.dart';
+import '../../../pkg/ui/widgets/avatar_stack.dart';
+import '../../../pkg/ui/widgets/dotted_divider.dart';
+import '../../../pkg/ui/widgets/context_menu.dart';
 import '../models/channel_models.dart';
 
-/// 频道消息组件（Instagram Channel 风格）
-class ChannelMessageWidget extends StatefulWidget {
-  const ChannelMessageWidget({
+/// 频道消息菜单操作类型
+enum ChannelMessageMenuAction {
+  save, // 保存
+  forward, // 转发
+  detail, // 详情
+}
+
+/// 频道消息气泡组件（Part1）
+///
+/// 只包含消息内容 + reactions + 浏览量时间，不包含评论入口。
+/// 可独立复用于评论页头部等场景。
+class ChannelMessageBubble extends StatelessWidget {
+  const ChannelMessageBubble({
     super.key,
     required this.message,
     this.onTap,
     this.onLinkTap,
     this.onReactionTap,
-    this.onCommentTap,
-    this.onSave,
-    this.onForward,
-    this.onDetail,
-    this.isAdmin = false,
+    this.onLongPress,
+    this.showBottomRadius = true, // 是否显示底部圆角（独立使用时为 true）
   });
 
-  final ChannelPostModel message;
+  final ChannelMessageModel message;
   final VoidCallback? onTap;
   final ValueChanged<String>? onLinkTap;
   final ValueChanged<String>? onReactionTap;
-  final VoidCallback? onCommentTap;
-  final VoidCallback? onSave;
-  final VoidCallback? onForward;
-  final VoidCallback? onDetail;
-  final bool isAdmin;
-
-  @override
-  State<ChannelMessageWidget> createState() => _ChannelMessageWidgetState();
-}
-
-class _ChannelMessageWidgetState extends State<ChannelMessageWidget> {
-  final GlobalKey _bubbleKey = GlobalKey();
-  double? _bubbleWidth;
-
-  @override
-  void initState() {
-    super.initState();
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      _measureBubbleWidth();
-    });
-  }
-
-  void _measureBubbleWidth() {
-    final renderBox =
-        _bubbleKey.currentContext?.findRenderObject() as RenderBox?;
-    if (renderBox != null && mounted) {
-      setState(() {
-        _bubbleWidth = renderBox.size.width;
-      });
-    }
-  }
-
-  /// 显示长按浮动菜单（在按压位置附近）
-  void _showContextMenu(LongPressStartDetails details) {
-    HapticFeedback.mediumImpact();
-
-    final overlay = Overlay.of(context);
-    final screenSize = MediaQuery.of(context).size;
-    final padding = MediaQuery.of(context).padding;
-
-    // 菜单尺寸
-    const menuWidth = 200.0;
-    const menuHeight = 200.0;
-
-    // 以按下位置为左上角，但确保不超出屏幕
-    final tapPosition = details.globalPosition;
-
-    // 水平位置：以点击位置为左边，但不超出右边界
-    double left = tapPosition.dx;
-    if (left + menuWidth > screenSize.width - 12) {
-      left = screenSize.width - menuWidth - 12;
-    }
-    if (left < 12) left = 12;
-
-    // 垂直位置：以点击位置为顶部，但不超出底部边界
-    double top = tapPosition.dy;
-    if (top + menuHeight > screenSize.height - padding.bottom - 12) {
-      // 空间不够，显示在点击位置上方
-      top = tapPosition.dy - menuHeight;
-    }
-    if (top < padding.top + 12) {
-      top = padding.top + 12;
-    }
-
-    late OverlayEntry overlayEntry;
-
-    overlayEntry = OverlayEntry(
-      builder: (context) => _FloatingContextMenu(
-        left: left,
-        top: top,
-        onDismiss: () => overlayEntry.remove(),
-        onSave: () {
-          overlayEntry.remove();
-          widget.onSave?.call();
-        },
-        onForward: () {
-          overlayEntry.remove();
-          widget.onForward?.call();
-        },
-        onDetail: () {
-          overlayEntry.remove();
-          widget.onDetail?.call();
-        },
-        onReaction: (emoji) {
-          overlayEntry.remove();
-          widget.onReactionTap?.call(emoji);
-        },
-      ),
-    );
-
-    overlay.insert(overlayEntry);
-  }
+  final void Function(LongPressStartDetails)? onLongPress;
+  final bool showBottomRadius;
 
   @override
   Widget build(BuildContext context) {
     final colors = AppColors.of(context);
-    final maxWidth = MediaQuery.of(context).size.width * 0.85;
-    const minWidth = 200.0;
 
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // 1. 消息气泡本体
-          GestureDetector(
-            onLongPressStart: _showContextMenu,
-            child: TapScale(
-              onTap: widget.onTap,
-              scale: 0.99,
-              haptic: false,
-              child: ConstrainedBox(
-                constraints: BoxConstraints(
-                  maxWidth: maxWidth,
-                  minWidth: minWidth,
-                ),
-                child: IntrinsicWidth(
-                  child: Container(
-                    key: _bubbleKey,
-                    padding: const EdgeInsets.all(12),
-                    decoration: BoxDecoration(
-                      color: colors.surfaceElevated,
-                      borderRadius: BorderRadius.circular(12),
-                      boxShadow: [
-                        BoxShadow(
-                          color: colors.textPrimary.withValues(alpha: 0.06),
-                          blurRadius: 12,
-                          offset: const Offset(0, 2),
-                        ),
-                        BoxShadow(
-                          color: colors.textPrimary.withValues(alpha: 0.04),
-                          blurRadius: 4,
-                          offset: const Offset(0, 1),
-                        ),
-                      ],
-                    ),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        _buildContent(colors),
-                        if (widget.message.linkUrl != null) ...[
-                          const SizedBox(height: 8),
-                          _buildLink(colors),
-                        ],
-                        const SizedBox(height: 8),
-                        _buildMeta(colors),
-                      ],
-                    ),
-                  ),
-                ),
-              ),
+    return GestureDetector(
+      onLongPressStart: onLongPress,
+      child: TapScale(
+        onTap: onTap,
+        scale: TapScales.large,
+        haptic: false,
+        child: Container(
+          padding: const EdgeInsets.fromLTRB(14, 12, 14, 10),
+          decoration: BoxDecoration(
+            color: colors.surfaceElevated,
+            borderRadius: BorderRadius.only(
+              topLeft: const Radius.circular(12),
+              topRight: const Radius.circular(12),
+              bottomLeft: Radius.circular(showBottomRadius ? 12 : 4),
+              bottomRight: Radius.circular(showBottomRadius ? 12 : 4),
             ),
           ),
-
-          // 2. 评论区入口
-          if (widget.message.commentCount > 0) ...[
-            const SizedBox(height: 6),
-            _buildCommentBar(colors),
-          ],
-
-          // 3. 表情反应区
-          if (widget.message.reactions.isNotEmpty) ...[
-            const SizedBox(height: 8),
-            _buildReactions(colors),
-          ],
-        ],
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              // 内容
+              _buildContent(colors),
+              // 链接预览
+              if (message.linkUrl != null) ...[
+                const SizedBox(height: 10),
+                _buildLink(colors),
+              ],
+              const SizedBox(height: 12),
+              // 底部：反应 + 浏览量时间
+              _buildFooter(colors),
+            ],
+          ),
+        ),
       ),
     );
   }
 
   Widget _buildContent(AppColorScheme colors) {
     return Text(
-      widget.message.content,
-      style: TextStyle(fontSize: 15, height: 1.5, color: colors.textPrimary),
+      message.content,
+      style: TextStyle(
+        fontSize: 14,
+        height: 1.4,
+        color: colors.textPrimary,
+        letterSpacing: 0.1,
+      ),
     );
   }
 
   Widget _buildLink(AppColorScheme colors) {
     return TapScale(
-      onTap: () => widget.onLinkTap?.call(widget.message.linkUrl!),
-      scale: 0.98,
+      onTap: () => onLinkTap?.call(message.linkUrl!),
+      scale: TapScales.card,
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
         decoration: BoxDecoration(
-          color: colors.surfaceBase,
+          color: colors.accentSoft,
           borderRadius: BorderRadius.circular(8),
-          border: Border.all(color: colors.divider, width: 0.5),
         ),
         child: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(Icons.link_rounded, size: 16, color: colors.interactive),
-            const SizedBox(width: 8),
+            Icon(Icons.link_rounded, size: 15, color: colors.accent),
+            const SizedBox(width: 6),
             Flexible(
               child: Text(
-                widget.message.linkTitle ?? widget.message.linkUrl!,
-                style: TextStyle(fontSize: 13, color: colors.interactive),
+                message.linkTitle ?? message.linkUrl!,
+                style: TextStyle(
+                  fontSize: 13,
+                  color: colors.accent,
+                  fontWeight: FontWeight.w500,
+                ),
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
               ),
@@ -233,98 +130,67 @@ class _ChannelMessageWidgetState extends State<ChannelMessageWidget> {
     );
   }
 
-  Widget _buildMeta(AppColorScheme colors) {
+  Widget _buildFooter(AppColorScheme colors) {
+    final hasReactions = message.reactions.isNotEmpty;
+
     return Row(
-      mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: CrossAxisAlignment.center,
       children: [
-        Icon(Icons.visibility_rounded, size: 14, color: colors.textTertiary),
-        const SizedBox(width: 4),
-        Text(
-          _formatCount(widget.message.viewCount),
-          style: TextStyle(fontSize: 12, color: colors.textTertiary),
-        ),
-        const SizedBox(width: 12),
-        Text(
-          _formatTime(widget.message.createdAt),
-          style: TextStyle(fontSize: 12, color: colors.textTertiary),
-        ),
+        if (hasReactions) Expanded(child: _buildReactions(colors)),
+        if (!hasReactions) const Spacer(),
+        _buildViewsAndTime(colors),
       ],
     );
   }
 
-  Widget _buildCommentBar(AppColorScheme colors) {
-    final commentBar = TapScale(
-      onTap: widget.onCommentTap,
-      scale: 0.98,
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-        decoration: BoxDecoration(
-          color: colors.surfaceElevated,
-          borderRadius: BorderRadius.circular(12),
-          boxShadow: [
-            BoxShadow(
-              color: colors.textPrimary.withValues(alpha: 0.04),
-              blurRadius: 8,
-              offset: const Offset(0, 1),
-            ),
-          ],
-        ),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            if (widget.message.commentAvatars.isNotEmpty)
-              _AvatarStack(avatars: widget.message.commentAvatars),
-            if (widget.message.commentAvatars.isNotEmpty)
-              const SizedBox(width: 8),
-            Text(
-              '${widget.message.commentCount} 条评论',
-              style: TextStyle(
-                fontSize: 13,
-                fontWeight: FontWeight.w500,
-                color: colors.interactive,
-              ),
-            ),
-            const Spacer(),
-            Icon(
-              Icons.chevron_right_rounded,
-              size: 20,
-              color: colors.interactive,
-            ),
-          ],
-        ),
-      ),
-    );
-
-    if (_bubbleWidth != null) {
-      return SizedBox(width: _bubbleWidth, child: commentBar);
-    }
-    return commentBar;
-  }
-
   Widget _buildReactions(AppColorScheme colors) {
-    final reactions = widget.message.reactions.take(5).toList();
-    final remaining = widget.message.reactions.length > 5
-        ? widget.message.reactions.length - 5
-        : 0;
+    final reactions = message.reactions.take(4).toList();
 
     return Wrap(
       spacing: 6,
-      runSpacing: 6,
+      runSpacing: 4,
+      children: reactions.map((r) {
+        return _ReactionChip(
+          reaction: r,
+          onTap: () => onReactionTap?.call(r.emoji),
+        );
+      }).toList(),
+    );
+  }
+
+  Widget _buildViewsAndTime(AppColorScheme colors) {
+    final isEdited =
+        message.isEdited ||
+        (message.updatedAt != null && message.updatedAt != message.createdAt);
+
+    return Row(
+      mainAxisSize: MainAxisSize.min,
       children: [
-        ...reactions.map(
-          (r) => _ReactionChip(
-            reaction: r,
-            onTap: () => widget.onReactionTap?.call(r.emoji),
-          ),
+        Icon(Icons.visibility_rounded, size: 13, color: colors.textDisabled),
+        const SizedBox(width: 3),
+        Text(
+          _formatCount(message.viewCount),
+          style: TextStyle(fontSize: 11, color: colors.textDisabled),
         ),
-        if (remaining > 0) _MoreReactionsChip(count: remaining),
+        if (isEdited) ...[
+          const SizedBox(width: 4),
+          Text(
+            'edited',
+            style: TextStyle(fontSize: 11, color: colors.textDisabled),
+          ),
+        ],
+        const SizedBox(width: 4),
+        Text(
+          _formatTime(message.createdAt),
+          style: TextStyle(fontSize: 11, color: colors.textDisabled),
+        ),
       ],
     );
   }
 
   String _formatCount(int count) {
-    if (count >= 10000) {
-      return '${(count / 10000).toStringAsFixed(1)}万';
+    if (count >= 1000) {
+      return '${(count / 1000).toStringAsFixed(count >= 10000 ? 0 : 1)}K';
     }
     return count.toString();
   }
@@ -334,223 +200,176 @@ class _ChannelMessageWidgetState extends State<ChannelMessageWidget> {
   }
 }
 
-/// 浮动上下文菜单（在长按位置附近显示）
-class _FloatingContextMenu extends StatelessWidget {
-  const _FloatingContextMenu({
-    required this.left,
-    required this.top,
-    required this.onDismiss,
-    this.onSave,
-    this.onForward,
-    this.onDetail,
-    this.onReaction,
+/// 频道消息组件（完整版：Part1 + Part2）
+class ChannelMessageWidget extends StatefulWidget {
+  const ChannelMessageWidget({
+    super.key,
+    required this.message,
+    this.onTap,
+    this.onLinkTap,
+    this.onReactionTap,
+    this.onCommentTap,
+    this.onMenuAction,
+    this.isAdmin = false,
+    this.isHighlighted = false,
+    this.onHighlightComplete,
   });
 
-  final double left;
-  final double top;
-  final VoidCallback onDismiss;
-  final VoidCallback? onSave;
-  final VoidCallback? onForward;
-  final VoidCallback? onDetail;
-  final ValueChanged<String>? onReaction;
+  final ChannelMessageModel message;
+  final VoidCallback? onTap;
+  final ValueChanged<String>? onLinkTap;
+  final ValueChanged<String>? onReactionTap;
+  final VoidCallback? onCommentTap;
+  final void Function(ChannelMessageMenuAction action)? onMenuAction;
+  final bool isAdmin;
+  final bool isHighlighted;
+  final VoidCallback? onHighlightComplete;
 
+  @override
+  State<ChannelMessageWidget> createState() => _ChannelMessageWidgetState();
+}
+
+class _ChannelMessageWidgetState extends State<ChannelMessageWidget> {
   static const _quickEmojis = ['👍', '❤️', '🔥', '👏', '😢', '😡'];
+
+  void _showContextMenu(LongPressStartDetails details) {
+    final items = [
+      const ContextMenuItem(
+        icon: Icons.bookmark_outline_rounded,
+        label: '保存',
+        value: 'save',
+      ),
+      const ContextMenuItem(
+        icon: Icons.shortcut_rounded,
+        label: '转发',
+        value: 'forward',
+      ),
+      const ContextMenuItem(
+        icon: Icons.info_outline_rounded,
+        label: '详情',
+        value: 'detail',
+      ),
+    ];
+
+    showContextMenu(
+      context: context,
+      position: details.globalPosition,
+      items: items,
+      quickEmojis: _quickEmojis,
+      onSelected: (value) {
+        final action = ChannelMessageMenuAction.values.firstWhere(
+          (e) => e.name == value,
+          orElse: () => ChannelMessageMenuAction.detail,
+        );
+        widget.onMenuAction?.call(action);
+      },
+      onEmojiSelected: widget.onReactionTap,
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
     final colors = AppColors.of(context);
+    final maxWidth = MediaQuery.of(context).size.width * 0.87;
+    final hasCommentEntry = widget.message.commentCount > 0;
 
-    return Stack(
-      children: [
-        // 背景遮罩（点击关闭）
-        Positioned.fill(
-          child: GestureDetector(
-            onTap: onDismiss,
-            child: Container(color: colors.surfaceOverlay),
-          ),
-        ),
-
-        // 浮动菜单
-        Positioned(
-          left: left,
-          top: top,
-          child: TweenAnimationBuilder<double>(
-            tween: Tween(begin: 0.8, end: 1.0),
-            duration: const Duration(milliseconds: 150),
-            curve: Curves.easeOutCubic,
-            builder: (context, scale, child) {
-              return Transform.scale(
-                scale: scale,
-                child: Opacity(opacity: scale, child: child),
-              );
-            },
-            child: Material(
-              color: Colors.transparent,
-              child: Container(
-                width: 200,
-                decoration: BoxDecoration(
-                  color: colors.surfaceElevated,
-                  borderRadius: BorderRadius.circular(14),
-                  boxShadow: [
-                    BoxShadow(
-                      color: colors.textPrimary.withValues(alpha: 0.15),
-                      blurRadius: 20,
-                      offset: const Offset(0, 8),
-                    ),
-                  ],
+    Widget content = Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+      child: Align(
+        alignment: Alignment.centerLeft,
+        child: ConstrainedBox(
+          constraints: BoxConstraints(maxWidth: maxWidth),
+          child: IntrinsicWidth(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                // Part1: 消息气泡
+                ChannelMessageBubble(
+                  message: widget.message,
+                  onTap: widget.onTap,
+                  onLinkTap: widget.onLinkTap,
+                  onReactionTap: widget.onReactionTap,
+                  onLongPress: _showContextMenu,
+                  showBottomRadius: !hasCommentEntry,
                 ),
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    // 表情栏
-                    Padding(
-                      padding: const EdgeInsets.all(12),
-                      child: Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceAround,
-                        children: _quickEmojis
-                            .map(
-                              (emoji) => _FloatingEmojiButton(
-                                emoji: emoji,
-                                onTap: () => onReaction?.call(emoji),
-                              ),
-                            )
-                            .toList(),
-                      ),
-                    ),
-
-                    Divider(height: 1, color: colors.divider),
-
-                    // 操作按钮
-                    _FloatingMenuItem(
-                      icon: Icons.bookmark_border_rounded,
-                      label: '保存',
-                      onTap: onSave,
-                    ),
-                    _FloatingMenuItem(
-                      icon: Icons.reply_rounded,
-                      label: '转发',
-                      onTap: onForward,
-                    ),
-                    _FloatingMenuItem(
-                      icon: Icons.info_outline_rounded,
-                      label: '详情',
-                      onTap: onDetail,
-                      isLast: true,
-                    ),
-                  ],
-                ),
-              ),
+                // Part2: 评论入口
+                if (hasCommentEntry) _buildCommentEntry(colors),
+              ],
             ),
           ),
         ),
-      ],
+      ),
     );
+
+    if (widget.isHighlighted) {
+      content = HighlightEffect(
+        isHighlighted: true,
+        onHighlightComplete: widget.onHighlightComplete,
+        child: content,
+      );
+    }
+
+    return content;
   }
-}
 
-/// 浮动菜单表情按钮
-class _FloatingEmojiButton extends StatelessWidget {
-  const _FloatingEmojiButton({required this.emoji, this.onTap});
-
-  final String emoji;
-  final VoidCallback? onTap;
-
-  @override
-  Widget build(BuildContext context) {
+  Widget _buildCommentEntry(AppColorScheme colors) {
     return TapScale(
-      onTap: onTap,
-      scale: 0.8,
-      child: Text(emoji, style: const TextStyle(fontSize: 22)),
-    );
-  }
-}
-
-/// 浮动菜单项
-class _FloatingMenuItem extends StatelessWidget {
-  const _FloatingMenuItem({
-    required this.icon,
-    required this.label,
-    this.onTap,
-    this.isLast = false,
-  });
-
-  final IconData icon;
-  final String label;
-  final VoidCallback? onTap;
-  final bool isLast;
-
-  @override
-  Widget build(BuildContext context) {
-    final colors = AppColors.of(context);
-
-    return TapScale(
-      onTap: onTap,
-      scale: 0.98,
+      onTap: widget.onCommentTap,
+      scale: TapScales.card,
       child: Container(
-        width: double.infinity,
-        padding: EdgeInsets.fromLTRB(16, 12, 16, isLast ? 14 : 12),
-        child: Row(
+        decoration: BoxDecoration(
+          color: colors.surfaceElevated,
+          borderRadius: const BorderRadius.only(
+            bottomLeft: Radius.circular(12),
+            bottomRight: Radius.circular(12),
+          ),
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(icon, size: 20, color: colors.textSecondary),
-            const SizedBox(width: 12),
-            Text(
-              label,
-              style: TextStyle(fontSize: 15, color: colors.textPrimary),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 14),
+              child: DottedDivider(
+                color: colors.divider,
+                strokeWidth: 1.5,
+                dashWidth: 2.0,
+                dashSpace: 3.0,
+              ),
+            ),
+            Padding(
+              padding: const EdgeInsets.fromLTRB(14, 8, 10, 10),
+              child: Row(
+                children: [
+                  if (widget.message.commentAvatars.isNotEmpty) ...[
+                    AvatarStack(
+                      avatarUrls: widget.message.commentAvatars
+                          .take(3)
+                          .toList(),
+                      size: 22,
+                    ),
+                    const SizedBox(width: 8),
+                  ],
+                  Text(
+                    '${widget.message.commentCount} 条评论',
+                    style: TextStyle(
+                      fontSize: 13,
+                      fontWeight: FontWeight.w500,
+                      color: colors.textSecondary,
+                    ),
+                  ),
+                  const Spacer(),
+                  Icon(
+                    Icons.chevron_right_rounded,
+                    size: 18,
+                    color: colors.textSecondary,
+                  ),
+                ],
+              ),
             ),
           ],
         ),
       ),
-    );
-  }
-}
-
-/// 头像堆叠组件
-class _AvatarStack extends StatelessWidget {
-  const _AvatarStack({required this.avatars});
-
-  final List<String> avatars;
-
-  @override
-  Widget build(BuildContext context) {
-    final colors = AppColors.of(context);
-    final displayAvatars = avatars.take(5).toList();
-    const size = 24.0;
-    const overlap = 8.0;
-
-    return SizedBox(
-      width: size + (displayAvatars.length - 1) * (size - overlap),
-      height: size,
-      child: Stack(
-        children: List.generate(displayAvatars.length, (index) {
-          return Positioned(
-            left: index * (size - overlap),
-            child: Container(
-              width: size,
-              height: size,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                border: Border.all(color: colors.surfaceElevated, width: 2),
-              ),
-              child: ClipOval(
-                child: displayAvatars[index].isNotEmpty
-                    ? Image.network(
-                        displayAvatars[index],
-                        fit: BoxFit.cover,
-                        errorBuilder: (_, _, _) => _buildPlaceholder(colors),
-                      )
-                    : _buildPlaceholder(colors),
-              ),
-            ),
-          );
-        }),
-      ),
-    );
-  }
-
-  Widget _buildPlaceholder(AppColorScheme colors) {
-    return Container(
-      color: colors.surfaceBase,
-      child: Icon(Icons.person_rounded, size: 14, color: colors.textTertiary),
     );
   }
 }
@@ -568,21 +387,14 @@ class _ReactionChip extends StatelessWidget {
 
     return TapScale(
       onTap: onTap,
-      scale: 0.92,
+      scale: TapScales.small,
       child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
         decoration: BoxDecoration(
           color: reaction.isSelected
               ? colors.interactive.withValues(alpha: 0.15)
-              : colors.surfaceElevated,
-          borderRadius: BorderRadius.circular(16),
-          boxShadow: [
-            BoxShadow(
-              color: colors.textPrimary.withValues(alpha: 0.04),
-              blurRadius: 4,
-              offset: const Offset(0, 1),
-            ),
-          ],
+              : colors.surfaceBase.withValues(alpha: 0.6),
+          borderRadius: BorderRadius.circular(14),
         ),
         child: Row(
           mainAxisSize: MainAxisSize.min,
@@ -592,47 +404,14 @@ class _ReactionChip extends StatelessWidget {
             Text(
               reaction.formattedCount,
               style: TextStyle(
-                fontSize: 12,
+                fontSize: 13,
                 fontWeight: FontWeight.w500,
-                color: colors.textSecondary,
+                color: reaction.isSelected
+                    ? colors.interactive
+                    : colors.textSecondary,
               ),
             ),
           ],
-        ),
-      ),
-    );
-  }
-}
-
-/// 更多反应数量标签
-class _MoreReactionsChip extends StatelessWidget {
-  const _MoreReactionsChip({required this.count});
-
-  final int count;
-
-  @override
-  Widget build(BuildContext context) {
-    final colors = AppColors.of(context);
-
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-      decoration: BoxDecoration(
-        color: colors.surfaceElevated,
-        borderRadius: BorderRadius.circular(16),
-        boxShadow: [
-          BoxShadow(
-            color: colors.textPrimary.withValues(alpha: 0.04),
-            blurRadius: 4,
-            offset: const Offset(0, 1),
-          ),
-        ],
-      ),
-      child: Text(
-        '+$count',
-        style: TextStyle(
-          fontSize: 12,
-          fontWeight: FontWeight.w500,
-          color: colors.textTertiary,
         ),
       ),
     );

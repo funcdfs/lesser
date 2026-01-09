@@ -1,6 +1,7 @@
 // 更多操作按钮
 
 import 'package:flutter/material.dart';
+import '../theme/theme.dart';
 import '../effects/effects.dart';
 import 'icon_painter.dart';
 
@@ -16,18 +17,15 @@ class MoreButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colors = AppColors.of(context);
+
     return TapScale(
       onTap: onTap,
       child: SizedBox(
         width: size,
         height: size,
         child: CustomPaint(
-          painter: IconPainter(
-            _iconMore,
-            const Color(0xFF888888),
-            1.5,
-            fill: true,
-          ),
+          painter: IconPainter(_iconMore, colors.textTertiary, 1.5, fill: true),
         ),
       ),
     );
