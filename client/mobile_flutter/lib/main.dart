@@ -1,6 +1,7 @@
 // Lesser 社交平台客户端入口
 
 import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart';
 import 'features/channel/pages/channel_comment_page.dart';
 import 'features/channel/pages/channel_detail_page.dart';
 import 'features/home/pages/home_page.dart';
@@ -11,14 +12,88 @@ void main() {
   runApp(const _App());
 }
 
+// ============================================================================
+// 全局状态
+// ============================================================================
+
 /// 全局导航键
 final navigatorKey = GlobalKey<NavigatorState>();
 
-/// 全局主题通知器
+/// HomePage Key，保持状态稳定
+final homePageKey = GlobalKey();
+
+/// 主题通知器
 final themeNotifier = ThemeNotifier();
 
-/// 公共主题配置，避免重复代码
-ThemeData _applyCommonThemeConfig(ThemeData base) {
+/// Circular Reveal 动画控制器
+final circularRevealController = CircularRevealController();
+
+/// 截图边界 Key
+final screenshotKey = GlobalKey();
+
+// ============================================================================
+// 主题切换
+// ============================================================================
+
+/// 触发主题切换（带 Circular Reveal 动画）
+void toggleThemeWithReveal(BuildContext context, Offset origin) {
+  if (circularRevealController.isAnimating) return;
+
+  // 获取截图边界
+  final boundary =
+      screenshotKey.currentContext?.findRenderObject()
+          as RenderRepaintBoundary?;
+  if (boundary == null) {
+    themeNotifier.toggle();
+    return;
+  }
+
+  // 同步生成模糊截图
+  final blurredImage = createBlurredScreenshot(boundary);
+  if (blurredImage == null) {
+    themeNotifier.toggle();
+    return;
+  }
+
+  // 启动动画
+  circularRevealController.startAnimation(
+    origin: origin,
+    targetIsDark: !themeNotifier.isDark,
+    blurredImage: blurredImage,
+  );
+
+  // 切换主题
+  themeNotifier.toggle();
+
+  // 执行动画帧
+  final duration = CircularRevealAnim.duration;
+  final startTime = DateTime.now();
+
+  void tick() {
+    final elapsed = DateTime.now().difference(startTime);
+    final t = (elapsed.inMilliseconds / duration.inMilliseconds).clamp(
+      0.0,
+      1.0,
+    );
+    final curved = CircularRevealAnim.curve.transform(t);
+    circularRevealController.updateProgress(curved);
+
+    if (t < 1.0) {
+      WidgetsBinding.instance.addPostFrameCallback((_) => tick());
+    } else {
+      circularRevealController.endAnimation();
+    }
+  }
+
+  WidgetsBinding.instance.addPostFrameCallback((_) => tick());
+}
+
+// ============================================================================
+// 应用入口
+// ============================================================================
+
+/// 公共主题配置
+ThemeData _applyCommonConfig(ThemeData base) {
   return base.copyWith(
     splashFactory: NoSplash.splashFactory,
     highlightColor: Colors.transparent,
@@ -46,25 +121,20 @@ class _AppState extends State<_App> {
     _initLinkService();
   }
 
-  /// 初始化深层链接服务
   void _initLinkService() {
-    final dataSource = LinkMockDataSource();
-
     LinkService.instance.init(
-      dataSource: dataSource,
+      dataSource: LinkMockDataSource(),
       onNavigateToChannel: _navigateToChannel,
       onNavigateToMessage: _navigateToMessage,
       onNavigateToComment: _navigateToComment,
     );
   }
 
-  /// 导航到频道
   Future<bool> _navigateToChannel(
     BuildContext context,
     String channelId,
   ) async {
-    final navigator = Navigator.of(context);
-    navigator.push(
+    Navigator.of(context).push(
       MaterialPageRoute(
         builder: (_) => ChannelDetailPage(channelId: channelId),
       ),
@@ -72,15 +142,13 @@ class _AppState extends State<_App> {
     return true;
   }
 
-  /// 导航到消息
   Future<bool> _navigateToMessage(
     BuildContext context,
     String channelId,
     String messageId, {
     bool highlightMessage = false,
   }) async {
-    final navigator = Navigator.of(context);
-    navigator.push(
+    Navigator.of(context).push(
       MaterialPageRoute(
         builder: (_) => ChannelDetailPage(
           channelId: channelId,
@@ -91,7 +159,6 @@ class _AppState extends State<_App> {
     return true;
   }
 
-  /// 导航到评论
   Future<bool> _navigateToComment(
     BuildContext context,
     String channelId,
@@ -99,10 +166,7 @@ class _AppState extends State<_App> {
     String rootCommentId,
     String targetCommentId,
   ) async {
-    final navigator = Navigator.of(context);
-
-    // 导航到评论页面，传递根评论 ID 和目标评论 ID
-    navigator.push(
+    Navigator.of(context).push(
       MaterialPageRoute(
         builder: (_) => ChannelCommentPage(
           messageId: messageId,
@@ -120,16 +184,27 @@ class _AppState extends State<_App> {
     return ListenableBuilder(
       listenable: themeNotifier,
       builder: (context, _) {
-        return MaterialApp(
-          navigatorKey: navigatorKey,
-          title: 'Lesser',
-          debugShowCheckedModeBanner: false,
-          themeMode: themeNotifier.isDark ? ThemeMode.dark : ThemeMode.light,
-          themeAnimationDuration: const Duration(milliseconds: 1000),
-          themeAnimationCurve: Curves.easeOutCubic,
-          theme: _applyCommonThemeConfig(buildLightTheme()),
-          darkTheme: _applyCommonThemeConfig(buildDarkTheme()),
-          home: const HomePage(),
+        final theme = themeNotifier.isDark
+            ? _applyCommonConfig(buildDarkTheme())
+            : _applyCommonConfig(buildLightTheme());
+
+        return RepaintBoundary(
+          key: screenshotKey,
+          child: ListenableBuilder(
+            listenable: circularRevealController,
+            builder: (context, _) {
+              return CircularRevealOverlay(
+                controller: circularRevealController,
+                child: MaterialApp(
+                  navigatorKey: navigatorKey,
+                  title: 'Lesser',
+                  debugShowCheckedModeBanner: false,
+                  theme: theme,
+                  home: HomePage(key: homePageKey),
+                ),
+              );
+            },
+          ),
         );
       },
     );

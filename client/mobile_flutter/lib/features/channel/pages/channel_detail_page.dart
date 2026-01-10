@@ -43,6 +43,10 @@ class _ChannelDetailPageState extends State<ChannelDetailPage> {
   bool _hasScrolledToTarget = false;
   final _scrollController = ScrollController();
 
+  // 缓存列表项，避免 build 中重复计算
+  List<dynamic> _cachedListItems = [];
+  Set<DateTime> _cachedMessageDates = {};
+
   @override
   void initState() {
     super.initState();
@@ -59,6 +63,7 @@ class _ChannelDetailPageState extends State<ChannelDetailPage> {
   @override
   void dispose() {
     _scrollController.dispose();
+    _handler.dispose();
     super.dispose();
   }
 
@@ -67,22 +72,31 @@ class _ChannelDetailPageState extends State<ChannelDetailPage> {
         _channel ?? await _handler.getChannelDetail(widget.channelId);
     final messages = await _handler.getMessages(widget.channelId);
 
-    if (mounted) {
-      setState(() {
-        _channel = channel;
-        _messages = messages;
-        _isMuted = channel?.isMuted ?? false;
-        _isLoading = false;
-      });
+    if (!mounted) return;
 
-      Future.delayed(AnimDurations.medium, () {
-        if (mounted) {
-          setState(() => _showMessages = true);
-          // 消息显示后，尝试滚动到目标消息
-          _tryScrollToTargetMessage();
-        }
-      });
-    }
+    setState(() {
+      _channel = channel;
+      _messages = messages;
+      _isMuted = channel?.isMuted ?? false;
+      _isLoading = false;
+      // 更新缓存
+      _updateCachedListItems();
+    });
+
+    Future.delayed(AnimDurations.medium, () {
+      if (!mounted) return;
+      setState(() => _showMessages = true);
+      // 消息显示后，尝试滚动到目标消息
+      _tryScrollToTargetMessage();
+    });
+  }
+
+  /// 更新缓存的列表项和日期集合
+  void _updateCachedListItems() {
+    _cachedListItems = _buildListItemsInternal();
+    _cachedMessageDates = _messages.map((m) {
+      return DateTime(m.createdAt.year, m.createdAt.month, m.createdAt.day);
+    }).toSet();
   }
 
   /// 尝试滚动到目标消息并高亮
@@ -91,7 +105,7 @@ class _ChannelDetailPageState extends State<ChannelDetailPage> {
     if (widget.highlightMessageId == null) return;
 
     final targetId = widget.highlightMessageId!;
-    final items = _buildListItems();
+    final items = _cachedListItems;
 
     // 查找目标消息的索引
     int? targetIndex;
@@ -107,6 +121,7 @@ class _ChannelDetailPageState extends State<ChannelDetailPage> {
       _hasScrolledToTarget = true;
       // 延迟执行滚动，确保列表已渲染
       WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (!mounted) return;
         _scrollToIndexAndHighlight(targetIndex!, targetId);
       });
     }
@@ -379,8 +394,8 @@ class _ChannelDetailPageState extends State<ChannelDetailPage> {
       );
     }
 
-    final items = _buildListItems();
-    final messageDates = _getMessageDates();
+    final items = _cachedListItems;
+    final messageDates = _cachedMessageDates;
     final topPadding =
         MediaQuery.paddingOf(context).top +
         kToolbarHeight +
@@ -453,13 +468,6 @@ class _ChannelDetailPageState extends State<ChannelDetailPage> {
     );
   }
 
-  /// 获取所有消息的日期集合
-  Set<DateTime> _getMessageDates() {
-    return _messages.map((m) {
-      return DateTime(m.createdAt.year, m.createdAt.month, m.createdAt.day);
-    }).toSet();
-  }
-
   /// 滚动到指定日期的消息
   void _scrollToDate(DateTime date) {
     // 找到该日期的第一条消息
@@ -473,13 +481,14 @@ class _ChannelDetailPageState extends State<ChannelDetailPage> {
     });
 
     if (targetIndex != -1) {
-      // 重新加载消息列表，确保滚动到正确位置
+      // 更新缓存并触发重建
+      _updateCachedListItems();
       setState(() {});
     }
   }
 
-  /// 构建列表项
-  List<dynamic> _buildListItems() {
+  /// 构建列表项（内部方法，结果会被缓存）
+  List<dynamic> _buildListItemsInternal() {
     final items = <dynamic>[];
     DateTime? lastDate;
 

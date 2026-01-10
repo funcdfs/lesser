@@ -81,3 +81,24 @@ abstract class DrawerAnim {
   /// 动画曲线
   static const curve = AnimCurves.standard;
 }
+
+/// Circular Reveal 主题切换动画参数
+abstract class CircularRevealAnim {
+  /// 动画时长 - 主题切换需要较长时间以保证视觉流畅
+  static const duration = Duration(milliseconds: 400);
+
+  /// 动画曲线 - 使用缓出曲线，开始快结束慢
+  static const curve = Curves.easeOut;
+
+  /// 模糊强度
+  static const blurSigma = 8.0;
+
+  /// 透明度衰减系数（>1 使后半段加速消失）
+  static const opacityDecay = 1.2;
+
+  /// 缩放增量（轻微放大效果）
+  static const scaleIncrement = 0.05;
+
+  /// 羽化边缘宽度比例
+  static const featherRatio = 0.15;
+}

@@ -1,14 +1,12 @@
-// 频道评论数据模型
-//
-// 复用 pkg/comment 中的通用类型
+// 频道评论模型
 
-import '../../../pkg/comment/comment.dart' show CommentIconState, ReplyTarget;
+import '../../../pkg/comment/comment.dart' as pkg_comment;
 
-// 导出通用类型供外部使用
+// 重新导出公共类型
 export '../../../pkg/comment/comment.dart' show CommentIconState, ReplyTarget;
 
 // ============================================================================
-// 媒体类型
+// 媒体
 // ============================================================================
 
 /// 评论媒体类型
@@ -53,10 +51,10 @@ class CommentMedia {
 }
 
 // ============================================================================
-// 作者信息
+// 作者
 // ============================================================================
 
-/// 评论作者（包含频道角色）
+/// 评论作者
 class CommentAuthor {
   const CommentAuthor({
     required this.id,
@@ -101,7 +99,7 @@ class CommentAuthor {
 }
 
 // ============================================================================
-// 核心模型
+// 评论
 // ============================================================================
 
 /// 频道评论
@@ -122,7 +120,7 @@ class ChannelCommentModel {
     this.isPinned = false,
     this.isOwn = false,
     // 评论交互状态
-    this.interactionState = CommentIconState.normal,
+    this.interactionState = pkg_comment.CommentIconState.normal,
     this.isViewed = false,
     this.hasMyReply = false,
     // UI 临时状态
@@ -137,7 +135,7 @@ class ChannelCommentModel {
   final CommentAuthor author;
   final String content;
   final List<CommentMedia> media;
-  final ReplyTarget? replyTo;
+  final pkg_comment.ReplyTarget? replyTo;
   final int replyCount;
   final int likeCount;
   final bool isLiked;
@@ -146,7 +144,7 @@ class ChannelCommentModel {
   final bool isPinned;
   final bool isOwn;
   // 评论交互状态
-  final CommentIconState interactionState;
+  final pkg_comment.CommentIconState interactionState;
   final bool isViewed;
   final bool hasMyReply;
   // UI 临时状态
@@ -168,7 +166,7 @@ class ChannelCommentModel {
     CommentAuthor? author,
     String? content,
     List<CommentMedia>? media,
-    ReplyTarget? replyTo,
+    pkg_comment.ReplyTarget? replyTo,
     int? replyCount,
     int? likeCount,
     bool? isLiked,
@@ -176,7 +174,7 @@ class ChannelCommentModel {
     bool? isDeleted,
     bool? isPinned,
     bool? isOwn,
-    CommentIconState? interactionState,
+    pkg_comment.CommentIconState? interactionState,
     bool? isViewed,
     bool? hasMyReply,
     bool? isHighlighted,
@@ -231,10 +229,10 @@ class ChannelCommentModel {
 }
 
 // ============================================================================
-// 频道特有的上下文类型（非通用评论状态）
+// 上下文
 // ============================================================================
 
-/// 频道消息上下文（评论列表页头部展示用）
+/// 频道消息上下文（评论页头部展示用）
 class ChannelMessageContext {
   const ChannelMessageContext({
     required this.messageId,
@@ -256,10 +254,10 @@ class ChannelMessageContext {
 }
 
 // ============================================================================
-// 输入状态
+// 输入
 // ============================================================================
 
-/// 评论输入状态（频道特有，包含媒体附件）
+/// 评论输入状态
 class ChannelCommentInputState {
   const ChannelCommentInputState({
     this.text = '',
@@ -271,7 +269,7 @@ class ChannelCommentInputState {
 
   final String text;
   final List<CommentMedia> attachments;
-  final ReplyTarget? replyTo;
+  final pkg_comment.ReplyTarget? replyTo;
   final bool isSubmitting;
   final String? error;
 
@@ -282,7 +280,7 @@ class ChannelCommentInputState {
   ChannelCommentInputState copyWith({
     String? text,
     List<CommentMedia>? attachments,
-    ReplyTarget? replyTo,
+    pkg_comment.ReplyTarget? replyTo,
     bool? isSubmitting,
     String? error,
   }) {
@@ -296,6 +294,49 @@ class ChannelCommentInputState {
   }
 
   ChannelCommentInputState clear() => const ChannelCommentInputState();
-  ChannelCommentInputState withReplyTo(ReplyTarget? target) =>
+  ChannelCommentInputState withReplyTo(pkg_comment.ReplyTarget? target) =>
       copyWith(replyTo: target);
+}
+
+// ============================================================================
+// 模型转换扩展
+// ============================================================================
+
+/// 频道评论模型转换扩展
+///
+/// 提供统一的转换方法，避免在多处重复实现
+extension ChannelCommentModelExt on ChannelCommentModel {
+  /// 转换为公共评论模型
+  pkg_comment.CommentModel toCommentModel() {
+    return pkg_comment.CommentModel(
+      id: id,
+      targetId: messageId,
+      targetType: 'channel_message',
+      author: pkg_comment.CommentAuthor(
+        id: author.id,
+        username: author.username,
+        displayName: author.displayName,
+        avatarUrl: author.avatarUrl,
+        isVerified: author.isVerified,
+        roleLabel: author.roleLabel,
+      ),
+      content: content,
+      replyTo: replyTo != null
+          ? pkg_comment.ReplyTarget(
+              commentId: replyTo!.commentId,
+              authorName: replyTo!.authorName,
+              contentPreview: replyTo!.contentPreview,
+              isDeleted: replyTo!.isDeleted,
+            )
+          : null,
+      replyCount: replyCount,
+      likeCount: likeCount,
+      isLiked: isLiked,
+      createdAtMs: createdAtMs,
+      isDeleted: isDeleted,
+      isPinned: isPinned,
+      isOwn: isOwn,
+      interactionState: interactionState,
+    );
+  }
 }

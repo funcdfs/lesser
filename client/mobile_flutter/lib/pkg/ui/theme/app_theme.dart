@@ -2,6 +2,7 @@
 // 语义化颜色层级，支持黑白主题切换
 
 import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
 
 /// 主题模式通知器
 class ThemeNotifier extends ChangeNotifier {
@@ -40,6 +41,27 @@ class AppAccent {
 
   /// 柔和变体（用于 hover 状态）
   static const Color lavenderSoft = Color(0xFFB8AAD4);
+}
+
+/// 用户名颜色池 - 用于区分不同用户的显示颜色
+class NameColors {
+  NameColors._();
+
+  static const List<Color> _palette = [
+    Color(0xFFD4726A), // 珊瑚红
+    Color(0xFF6B9E78), // 森林绿
+    Color(0xFF5B8EC9), // 天空蓝
+    Color(0xFFD4A056), // 琥珀黄
+    Color(0xFF9B7BB8), // 薰衣草紫
+    Color(0xFF4AAFB8), // 青绿色
+    Color(0xFFCB7A9E), // 玫瑰粉
+    Color(0xFF8BAD6E), // 橄榄绿
+  ];
+
+  /// 根据 ID 获取用户名颜色
+  static Color fromId(String id) {
+    return _palette[id.hashCode.abs() % _palette.length];
+  }
 }
 
 /// 语义化颜色
@@ -219,6 +241,14 @@ class _DarkColors implements AppColorScheme {
 /// 构建 Flutter ThemeData
 ThemeData buildLightTheme() {
   const colors = AppColors.light;
+
+  // 使用 Noto Sans SC 作为主字体（覆盖中日韩 + 英语）
+  final textTheme = GoogleFonts.notoSansScTextTheme().copyWith(
+    bodyLarge: TextStyle(color: colors.textPrimary),
+    bodyMedium: TextStyle(color: colors.textSecondary),
+    bodySmall: TextStyle(color: colors.textTertiary),
+  );
+
   return ThemeData(
     brightness: Brightness.light,
     scaffoldBackgroundColor: colors.surfaceBase,
@@ -235,16 +265,22 @@ ThemeData buildLightTheme() {
       elevation: 0,
       surfaceTintColor: Colors.transparent,
     ),
-    textTheme: TextTheme(
-      bodyLarge: TextStyle(color: colors.textPrimary),
-      bodyMedium: TextStyle(color: colors.textSecondary),
-      bodySmall: TextStyle(color: colors.textTertiary),
-    ),
+    textTheme: textTheme,
+    fontFamily: GoogleFonts.notoSansSc().fontFamily,
   );
 }
 
 ThemeData buildDarkTheme() {
   const colors = AppColors.dark;
+
+  // 使用 Noto Sans SC 作为主字体（覆盖中日韩 + 英语）
+  final textTheme = GoogleFonts.notoSansScTextTheme(ThemeData.dark().textTheme)
+      .copyWith(
+        bodyLarge: TextStyle(color: colors.textPrimary),
+        bodyMedium: TextStyle(color: colors.textSecondary),
+        bodySmall: TextStyle(color: colors.textTertiary),
+      );
+
   return ThemeData(
     brightness: Brightness.dark,
     scaffoldBackgroundColor: colors.surfaceBase,
@@ -261,10 +297,7 @@ ThemeData buildDarkTheme() {
       elevation: 0,
       surfaceTintColor: Colors.transparent,
     ),
-    textTheme: TextTheme(
-      bodyLarge: TextStyle(color: colors.textPrimary),
-      bodyMedium: TextStyle(color: colors.textSecondary),
-      bodySmall: TextStyle(color: colors.textTertiary),
-    ),
+    textTheme: textTheme,
+    fontFamily: GoogleFonts.notoSansSc().fontFamily,
   );
 }

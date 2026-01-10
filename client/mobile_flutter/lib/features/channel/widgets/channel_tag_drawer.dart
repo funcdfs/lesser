@@ -1,11 +1,13 @@
-// 频道标签抽屉组件（支持拖拽展开/收起）
+// 频道标签抽屉组件
 
 import 'package:flutter/material.dart';
 import '../../../pkg/ui/theme/theme.dart';
 import '../../../pkg/ui/effects/effects.dart';
 import '../models/channel_tag.dart';
 
-/// 频道标签抽屉（底部可拖拽展开）
+/// 频道标签抽屉
+///
+/// 底部可拖拽展开/收起的标签选择器。
 class ChannelTagDrawer extends StatefulWidget {
   const ChannelTagDrawer({
     super.key,

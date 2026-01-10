@@ -69,21 +69,15 @@ class CommentActions extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final showLike = likeCount > 0 || isLiked;
-    // 回复按钮：可见状态时显示（不再要求 replyCount > 0）
+    // 回复按钮：可见状态时显示
     final showReply = replyState.isVisible;
-
-    if (!showLike && !showReply) {
-      return const SizedBox.shrink();
-    }
 
     return Row(
       mainAxisSize: MainAxisSize.min,
       children: [
-        // 点赞按钮
-        if (showLike)
-          _LikeButton(count: likeCount, isLiked: isLiked, onTap: onLikeTap),
-        if (showLike && showReply) const SizedBox(width: _buttonSpacing),
+        // 点赞按钮（始终显示，帮助用户互动）
+        _LikeButton(count: likeCount, isLiked: isLiked, onTap: onLikeTap),
+        if (showReply) const SizedBox(width: _buttonSpacing),
         // 回复按钮
         if (showReply)
           _ReplyButton(count: replyCount, state: replyState, onTap: onReplyTap),
@@ -104,8 +98,9 @@ class _LikeButton extends StatelessWidget {
   Widget build(BuildContext context) {
     final colors = AppColors.of(context);
     final color = isLiked ? colors.like : colors.textDisabled;
+    // 有点赞数或已点赞时显示数字
+    final showCount = count > 0 || isLiked;
 
-    // 直接使用 TapScale 提供视觉反馈和触感，移除隐形框
     return TapScale(
       onTap: onTap,
       scale: TapScales.small,
@@ -118,16 +113,18 @@ class _LikeButton extends StatelessWidget {
               size: const Size(_iconSize, _iconSize),
               painter: IconPainter(_heartPath, color, 1.2, fill: isLiked),
             ),
-            // 始终显示数量，与回复按钮保持一致
-            const SizedBox(width: 3),
-            Text(
-              formatCount(count),
-              style: TextStyle(
-                fontSize: 12,
-                fontWeight: isLiked ? FontWeight.w600 : FontWeight.w400,
-                color: color,
+            // 有点赞数或已点赞时显示数字，否则只显示图标
+            if (showCount) ...[
+              const SizedBox(width: 3),
+              Text(
+                formatCount(count),
+                style: TextStyle(
+                  fontSize: 12,
+                  fontWeight: isLiked ? FontWeight.w600 : FontWeight.w400,
+                  color: color,
+                ),
               ),
-            ),
+            ],
           ],
         ),
       ),

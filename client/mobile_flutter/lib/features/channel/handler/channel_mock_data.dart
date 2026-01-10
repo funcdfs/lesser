@@ -1,18 +1,80 @@
-// 频道 Mock 数据（精简版）
-//
-// 用于开发阶段，之后可替换为 gRPC 数据源
+// 频道 Mock 数据
 
 import '../models/channel_comment_model.dart';
 import '../models/channel_message_model.dart';
 import '../models/channel_model.dart';
+import '../models/channel_tag.dart';
 import '../models/reaction_model.dart';
 
 // ============================================================================
-// Mock 当前用户
+// 标签
+// ============================================================================
+
+/// 频道标签列表（参考 note.com 分类）
+const mockChannelTags = <ChannelTag>[
+  // 娱乐
+  ChannelTag(id: '1', name: 'エンタメ', icon: '🎬'),
+  ChannelTag(id: '2', name: 'ゲーム', icon: '🎮'),
+  ChannelTag(id: '3', name: 'マンガ', icon: '📚'),
+  ChannelTag(id: '4', name: '音楽', icon: '🎵'),
+  ChannelTag(id: '5', name: 'アニメ', icon: '🎌'),
+  ChannelTag(id: '6', name: '映画', icon: '🎥'),
+  // 创作
+  ChannelTag(id: '7', name: 'コラム', icon: '✍️'),
+  ChannelTag(id: '8', name: '小説', icon: '📝'),
+  ChannelTag(id: '9', name: 'エッセイ', icon: '📄'),
+  ChannelTag(id: '10', name: 'ポエム', icon: '🌸'),
+  // 技术
+  ChannelTag(id: '11', name: 'テクノロジー', icon: '💻'),
+  ChannelTag(id: '12', name: 'プログラミング', icon: '⌨️'),
+  ChannelTag(id: '13', name: 'AI', icon: '🤖'),
+  ChannelTag(id: '14', name: 'Web3', icon: '🔗'),
+  // 商业
+  ChannelTag(id: '15', name: 'ビジネス', icon: '💼'),
+  ChannelTag(id: '16', name: 'マーケティング', icon: '📊'),
+  ChannelTag(id: '17', name: '起業', icon: '🚀'),
+  ChannelTag(id: '18', name: '投資', icon: '📈'),
+  // 生活
+  ChannelTag(id: '19', name: 'ライフスタイル', icon: '🌿'),
+  ChannelTag(id: '20', name: 'フード', icon: '🍜'),
+  ChannelTag(id: '21', name: '料理', icon: '🍳'),
+  ChannelTag(id: '22', name: 'カフェ', icon: '☕'),
+  ChannelTag(id: '23', name: 'トラベル', icon: '✈️'),
+  ChannelTag(id: '24', name: '海外生活', icon: '🌍'),
+  // 运动健康
+  ChannelTag(id: '25', name: 'スポーツ', icon: '⚽'),
+  ChannelTag(id: '26', name: 'フィットネス', icon: '💪'),
+  ChannelTag(id: '27', name: 'ランニング', icon: '🏃'),
+  ChannelTag(id: '28', name: 'ヨガ', icon: '🧘'),
+  // 时尚美容
+  ChannelTag(id: '29', name: 'ファッション', icon: '👗'),
+  ChannelTag(id: '30', name: 'コスメ', icon: '💄'),
+  ChannelTag(id: '31', name: 'ネイル', icon: '💅'),
+  // 艺术设计
+  ChannelTag(id: '32', name: 'アート', icon: '🎨'),
+  ChannelTag(id: '33', name: '写真', icon: '📷'),
+  ChannelTag(id: '34', name: 'デザイン', icon: '✨'),
+  ChannelTag(id: '35', name: 'イラスト', icon: '🖼️'),
+  // 学习
+  ChannelTag(id: '36', name: '教育', icon: '📖'),
+  ChannelTag(id: '37', name: '語学', icon: '🗣️'),
+  ChannelTag(id: '38', name: '資格', icon: '📜'),
+  // 其他
+  ChannelTag(id: '39', name: 'ペット', icon: '🐱'),
+  ChannelTag(id: '40', name: 'DIY', icon: '🔧'),
+  ChannelTag(id: '41', name: '子育て', icon: '👶'),
+  ChannelTag(id: '42', name: '恋愛', icon: '💕'),
+  ChannelTag(id: '43', name: '占い', icon: '🔮'),
+  ChannelTag(id: '44', name: 'メンタル', icon: '🧠'),
+];
+
+// ============================================================================
+// 当前用户
 // ============================================================================
 
 const mockCurrentUserId = 'current_user';
 
+/// 当前用户信息
 const mockCurrentUser = CommentAuthor(
   id: mockCurrentUserId,
   username: 'me',
@@ -21,9 +83,10 @@ const mockCurrentUser = CommentAuthor(
 );
 
 // ============================================================================
-// Mock 频道
+// 频道
 // ============================================================================
 
+/// 频道列表
 final mockChannels = <ChannelModel>[
   ChannelModel(
     id: 'test',
@@ -41,9 +104,10 @@ final mockChannels = <ChannelModel>[
 ];
 
 // ============================================================================
-// Mock 帖子
+// 消息
 // ============================================================================
 
+/// 频道消息（按 channelId 分组）
 final mockMessages = <String, List<ChannelMessageModel>>{
   'test': [
     ChannelMessageModel(
@@ -54,12 +118,12 @@ final mockMessages = <String, List<ChannelMessageModel>>{
       content: '这是一条测试帖子，点击下方评论区查看评论。',
       createdAt: DateTime(2025, 1, 8, 10, 0),
       viewCount: 100,
-      commentCount: 21, // 1 置顶 + 2 原始 + 18 生成
+      commentCount: 21,
       reactionStats: const ReactionStats(
         counts: {'👍': 10, '❤️': 5},
         totalCount: 15,
       ),
-      commentAvatars: [
+      commentAvatars: const [
         'https://i.pravatar.cc/100?img=2',
         'https://i.pravatar.cc/100?img=3',
       ],
@@ -68,9 +132,10 @@ final mockMessages = <String, List<ChannelMessageModel>>{
 };
 
 // ============================================================================
-// Mock 评论（扩充到 30+ 条用于测试滚动按钮）
+// 评论
 // ============================================================================
 
+/// 根评论（按 messageId 分组）
 final mockComments = <String, List<ChannelCommentModel>>{
   'post_1': [
     // 频道主置顶评论
@@ -151,7 +216,7 @@ final mockComments = <String, List<ChannelCommentModel>>{
   ],
 };
 
-// 评论内容模板
+/// 评论内容模板
 const _mockCommentContents = [
   '学到了很多，感谢分享！',
   '这个功能太实用了',
@@ -174,9 +239,10 @@ const _mockCommentContents = [
 ];
 
 // ============================================================================
-// 子评论（增加更深嵌套层级）
+// 子评论
 // ============================================================================
 
+/// 子评论（按 parentCommentId 分组，支持多层嵌套）
 final mockReplies = <String, List<ChannelCommentModel>>{
   'c1': [
     ChannelCommentModel(

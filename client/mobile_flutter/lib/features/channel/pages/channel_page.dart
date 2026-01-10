@@ -5,6 +5,7 @@ import '../../../pkg/ui/effects/effects.dart';
 import '../../../pkg/ui/theme/theme.dart';
 import '../data_access/channel_mock_data_source.dart';
 import '../handler/channel_handler.dart';
+import '../handler/channel_mock_data.dart';
 import '../models/channel_models.dart';
 import '../widgets/channel_item.dart';
 import '../widgets/channel_tag_drawer.dart';
@@ -22,64 +23,9 @@ class _ChannelPageState extends State<ChannelPage> {
   late final ChannelHandler _handler;
   List<ChannelModel> _channels = [];
   bool _isLoading = true;
+  String? _error;
 
-  // 标签相关（参考 note.com 分类）
-  final List<ChannelTag> _tags = const [
-    // 娱乐
-    ChannelTag(id: '1', name: 'エンタメ', icon: '🎬'),
-    ChannelTag(id: '2', name: 'ゲーム', icon: '🎮'),
-    ChannelTag(id: '3', name: 'マンガ', icon: '📚'),
-    ChannelTag(id: '4', name: '音楽', icon: '🎵'),
-    ChannelTag(id: '5', name: 'アニメ', icon: '🎌'),
-    ChannelTag(id: '6', name: '映画', icon: '🎥'),
-    // 创作
-    ChannelTag(id: '7', name: 'コラム', icon: '✍️'),
-    ChannelTag(id: '8', name: '小説', icon: '📝'),
-    ChannelTag(id: '9', name: 'エッセイ', icon: '📄'),
-    ChannelTag(id: '10', name: 'ポエム', icon: '🌸'),
-    // 技术
-    ChannelTag(id: '11', name: 'テクノロジー', icon: '💻'),
-    ChannelTag(id: '12', name: 'プログラミング', icon: '⌨️'),
-    ChannelTag(id: '13', name: 'AI', icon: '🤖'),
-    ChannelTag(id: '14', name: 'Web3', icon: '🔗'),
-    // 商业
-    ChannelTag(id: '15', name: 'ビジネス', icon: '💼'),
-    ChannelTag(id: '16', name: 'マーケティング', icon: '📊'),
-    ChannelTag(id: '17', name: '起業', icon: '🚀'),
-    ChannelTag(id: '18', name: '投資', icon: '📈'),
-    // 生活
-    ChannelTag(id: '19', name: 'ライフスタイル', icon: '🌿'),
-    ChannelTag(id: '20', name: 'フード', icon: '🍜'),
-    ChannelTag(id: '21', name: '料理', icon: '🍳'),
-    ChannelTag(id: '22', name: 'カフェ', icon: '☕'),
-    ChannelTag(id: '23', name: 'トラベル', icon: '✈️'),
-    ChannelTag(id: '24', name: '海外生活', icon: '🌍'),
-    // 运动健康
-    ChannelTag(id: '25', name: 'スポーツ', icon: '⚽'),
-    ChannelTag(id: '26', name: 'フィットネス', icon: '💪'),
-    ChannelTag(id: '27', name: 'ランニング', icon: '🏃'),
-    ChannelTag(id: '28', name: 'ヨガ', icon: '🧘'),
-    // 时尚美容
-    ChannelTag(id: '29', name: 'ファッション', icon: '👗'),
-    ChannelTag(id: '30', name: 'コスメ', icon: '💄'),
-    ChannelTag(id: '31', name: 'ネイル', icon: '💅'),
-    // 艺术设计
-    ChannelTag(id: '32', name: 'アート', icon: '🎨'),
-    ChannelTag(id: '33', name: '写真', icon: '📷'),
-    ChannelTag(id: '34', name: 'デザイン', icon: '✨'),
-    ChannelTag(id: '35', name: 'イラスト', icon: '🖼️'),
-    // 学习
-    ChannelTag(id: '36', name: '教育', icon: '📖'),
-    ChannelTag(id: '37', name: '語学', icon: '🗣️'),
-    ChannelTag(id: '38', name: '資格', icon: '📜'),
-    // 其他
-    ChannelTag(id: '39', name: 'ペット', icon: '🐱'),
-    ChannelTag(id: '40', name: 'DIY', icon: '🔧'),
-    ChannelTag(id: '41', name: '子育て', icon: '👶'),
-    ChannelTag(id: '42', name: '恋愛', icon: '💕'),
-    ChannelTag(id: '43', name: '占い', icon: '🔮'),
-    ChannelTag(id: '44', name: 'メンタル', icon: '🧠'),
-  ];
+  // 标签数据从 mock_data 获取，便于后续替换为后端数据
   final Set<String> _selectedTags = {};
 
   @override
@@ -91,13 +37,29 @@ class _ChannelPageState extends State<ChannelPage> {
   }
 
   Future<void> _loadChannels() async {
-    final channels = await _handler.getChannels();
-    if (mounted) {
-      setState(() {
-        _channels = channels;
-        _isLoading = false;
-      });
+    try {
+      final channels = await _handler.getChannels();
+      if (mounted) {
+        setState(() {
+          _channels = channels;
+          _isLoading = false;
+          _error = null;
+        });
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+          _error = e.toString();
+        });
+      }
     }
+  }
+
+  @override
+  void dispose() {
+    _handler.dispose();
+    super.dispose();
   }
 
   Future<void> _onRefresh() async {
@@ -211,13 +173,15 @@ class _ChannelPageState extends State<ChannelPage> {
         Positioned.fill(
           child: _isLoading
               ? _buildLoading(colors)
+              : _error != null
+              ? _buildError(colors)
               : _channels.isEmpty
               ? _buildEmpty(colors)
               : _buildList(colors),
         ),
-        // 使用统一的 ChannelTagDrawer 组件
+        // 使用统一的 ChannelTagDrawer 组件，标签数据从 mock_data 获取
         ChannelTagDrawer(
-          tags: _tags,
+          tags: mockChannelTags,
           selectedTags: _selectedTags,
           onTagTap: _onTagTap,
         ),
@@ -249,6 +213,43 @@ class _ChannelPageState extends State<ChannelPage> {
           Text(
             '订阅感兴趣的频道，获取最新资讯',
             style: TextStyle(fontSize: 14, color: colors.textDisabled),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildError(AppColorScheme colors) {
+    return Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Icon(
+            Icons.error_outline_rounded,
+            size: 64,
+            color: colors.textDisabled,
+          ),
+          const SizedBox(height: 16),
+          Text(
+            '加载失败',
+            style: TextStyle(fontSize: 16, color: colors.textTertiary),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            _error ?? '未知错误',
+            style: TextStyle(fontSize: 14, color: colors.textDisabled),
+            textAlign: TextAlign.center,
+          ),
+          const SizedBox(height: 16),
+          TextButton(
+            onPressed: () {
+              setState(() {
+                _isLoading = true;
+                _error = null;
+              });
+              _loadChannels();
+            },
+            child: const Text('重试'),
           ),
         ],
       ),

@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import '../../../pkg/ui/effects/effects.dart';
 import '../../../pkg/ui/theme/theme.dart';
 import '../../../pkg/ui/widgets/widgets.dart';
+import '../../../pkg/utils/format_utils.dart';
 import '../models/channel_models.dart';
 
 /// 频道列表项 - 紧凑布局
@@ -197,7 +198,7 @@ class ChannelItem extends StatelessWidget {
             // 时间
             if (channel.lastMessageTime != null)
               Text(
-                _formatTime(channel.lastMessageTime!),
+                formatTimeChatList(channel.lastMessageTime!),
                 style: TextStyle(fontSize: 12, color: colors.textTertiary),
               ),
           ],
@@ -210,23 +211,5 @@ class ChannelItem extends StatelessWidget {
           const SizedBox(height: 18), // 占位保持对齐
       ],
     );
-  }
-
-  /// 格式化时间
-  String _formatTime(DateTime time) {
-    final now = DateTime.now();
-    final diff = now.difference(time);
-
-    if (diff.inDays == 0) {
-      // 今天：显示时间
-      return '${time.hour.toString().padLeft(2, '0')}:${time.minute.toString().padLeft(2, '0')}';
-    } else if (diff.inDays == 1) {
-      return '昨天';
-    } else if (diff.inDays < 7) {
-      const weekdays = ['周一', '周二', '周三', '周四', '周五', '周六', '周日'];
-      return weekdays[time.weekday - 1];
-    } else {
-      return '${time.month}/${time.day}';
-    }
   }
 }

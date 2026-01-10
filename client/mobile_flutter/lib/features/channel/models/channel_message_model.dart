@@ -2,6 +2,9 @@
 
 import 'reaction_model.dart';
 
+/// 用于 copyWith 方法中区分 null 和未传参的哨兵值
+const _sentinel = Object();
+
 /// 频道消息
 class ChannelMessageModel {
   const ChannelMessageModel({
@@ -65,6 +68,10 @@ class ChannelMessageModel {
     return viewCount.toString();
   }
 
+  /// 复制并修改字段
+  ///
+  /// 对于可选字段（如 myReaction），传入 null 会清除该字段，
+  /// 不传参则保留原值。
   ChannelMessageModel copyWith({
     String? id,
     String? channelId,
@@ -73,15 +80,15 @@ class ChannelMessageModel {
     List<String>? mediaUrls,
     int? viewCount,
     DateTime? createdAt,
-    DateTime? updatedAt,
+    Object? updatedAt = _sentinel,
     bool? isPinned,
     bool? isEdited,
-    String? authorName,
+    Object? authorName = _sentinel,
     ReactionStats? reactionStats,
-    String? myReaction,
+    Object? myReaction = _sentinel,
     int? commentCount,
-    String? linkUrl,
-    String? linkTitle,
+    Object? linkUrl = _sentinel,
+    Object? linkTitle = _sentinel,
     List<String>? commentAvatars,
   }) {
     return ChannelMessageModel(
@@ -92,15 +99,21 @@ class ChannelMessageModel {
       mediaUrls: mediaUrls ?? this.mediaUrls,
       viewCount: viewCount ?? this.viewCount,
       createdAt: createdAt ?? this.createdAt,
-      updatedAt: updatedAt ?? this.updatedAt,
+      updatedAt: updatedAt == _sentinel
+          ? this.updatedAt
+          : updatedAt as DateTime?,
       isPinned: isPinned ?? this.isPinned,
       isEdited: isEdited ?? this.isEdited,
-      authorName: authorName ?? this.authorName,
+      authorName: authorName == _sentinel
+          ? this.authorName
+          : authorName as String?,
       reactionStats: reactionStats ?? this.reactionStats,
-      myReaction: myReaction,
+      myReaction: myReaction == _sentinel
+          ? this.myReaction
+          : myReaction as String?,
       commentCount: commentCount ?? this.commentCount,
-      linkUrl: linkUrl ?? this.linkUrl,
-      linkTitle: linkTitle ?? this.linkTitle,
+      linkUrl: linkUrl == _sentinel ? this.linkUrl : linkUrl as String?,
+      linkTitle: linkTitle == _sentinel ? this.linkTitle : linkTitle as String?,
       commentAvatars: commentAvatars ?? this.commentAvatars,
     );
   }
@@ -116,9 +129,24 @@ class ChannelMessageModel {
   /// 移除反应
   ChannelMessageModel withReactionRemoved() {
     if (myReaction == null) return this;
-    return copyWith(
+    return ChannelMessageModel(
+      id: id,
+      channelId: channelId,
+      authorId: authorId,
+      content: content,
+      mediaUrls: mediaUrls,
+      viewCount: viewCount,
+      createdAt: createdAt,
+      updatedAt: updatedAt,
+      isPinned: isPinned,
+      isEdited: isEdited,
+      authorName: authorName,
       reactionStats: reactionStats.withRemoved(myReaction!),
       myReaction: null,
+      commentCount: commentCount,
+      linkUrl: linkUrl,
+      linkTitle: linkTitle,
+      commentAvatars: commentAvatars,
     );
   }
 

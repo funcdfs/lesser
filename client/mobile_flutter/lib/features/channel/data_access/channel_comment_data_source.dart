@@ -1,16 +1,16 @@
 // 频道评论数据源
-//
-// 实现 CommentDataSource 接口，为频道提供评论数据
 
 import '../../../pkg/comment/comment.dart';
 import '../handler/channel_mock_data.dart';
 import '../models/channel_comment_model.dart' as channel;
 
 /// 频道评论数据源
+///
+/// 实现 [CommentDataSource] 接口，为频道提供评论数据。
 class ChannelCommentDataSource implements CommentDataSource {
   ChannelCommentDataSource({
     required this.channelId,
-    this.currentUserId = mockCurrentUserId,
+    required this.currentUserId,
   });
 
   final String channelId;
@@ -30,7 +30,7 @@ class ChannelCommentDataSource implements CommentDataSource {
       for (final comment in entry.value) {
         if (comment.id == commentId) {
           // 找到了，这是根评论
-          return _toCommentModel(comment);
+          return comment.toCommentModel();
         }
       }
     }
@@ -54,7 +54,7 @@ class ChannelCommentDataSource implements CommentDataSource {
     for (final entry in mockComments.entries) {
       for (final comment in entry.value) {
         if (comment.id == parentId) {
-          return _toCommentModel(comment);
+          return comment.toCommentModel();
         }
       }
     }
@@ -98,7 +98,7 @@ class ChannelCommentDataSource implements CommentDataSource {
 
     // 转换并标记
     final comments = allComments.map((c) {
-      final model = _toCommentModel(c);
+      final model = c.toCommentModel();
       return model.copyWith(isOwn: c.author.id == currentUserId);
     }).toList();
 
@@ -130,7 +130,7 @@ class ChannelCommentDataSource implements CommentDataSource {
 
     // 转换并标记
     final comments = allDescendants.map((c) {
-      final model = _toCommentModel(c);
+      final model = c.toCommentModel();
       return model.copyWith(isOwn: c.author.id == currentUserId);
     }).toList();
 
@@ -197,50 +197,6 @@ class ChannelCommentDataSource implements CommentDataSource {
   }
 
   // ---- 私有方法 ----
-
-  /// 转换为通用评论模型
-  CommentModel _toCommentModel(channel.ChannelCommentModel c) {
-    return CommentModel(
-      id: c.id,
-      targetId: c.messageId,
-      targetType: 'channel_message',
-      author: CommentAuthor(
-        id: c.author.id,
-        username: c.author.username,
-        displayName: c.author.displayName,
-        avatarUrl: c.author.avatarUrl,
-        isVerified: c.author.isVerified,
-        roleLabel: c.author.roleLabel,
-      ),
-      content: c.content,
-      replyTo: c.replyTo != null
-          ? ReplyTarget(
-              commentId: c.replyTo!.commentId,
-              authorName: c.replyTo!.authorName,
-              contentPreview: c.replyTo!.contentPreview,
-              isDeleted: c.replyTo!.isDeleted,
-            )
-          : null,
-      replyCount: c.replyCount,
-      likeCount: c.likeCount,
-      isLiked: c.isLiked,
-      createdAtMs: c.createdAtMs,
-      isDeleted: c.isDeleted,
-      isPinned: c.isPinned,
-      isOwn: c.isOwn,
-      interactionState: _toCommentIconState(c.interactionState),
-    );
-  }
-
-  /// 转换图标状态
-  CommentIconState _toCommentIconState(channel.CommentIconState state) {
-    switch (state) {
-      case channel.CommentIconState.banned:
-        return CommentIconState.banned;
-      default:
-        return CommentIconState.normal;
-    }
-  }
 
   /// 递归收集所有子孙评论
   void _collectDescendants(

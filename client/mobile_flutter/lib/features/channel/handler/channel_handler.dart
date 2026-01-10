@@ -95,4 +95,10 @@ class ChannelHandler extends ChangeNotifier {
   Future<void> refresh() async {
     await getChannels();
   }
+
+  @override
+  void dispose() {
+    // 预留资源清理位置（如 StreamSubscription、Timer 等）
+    super.dispose();
+  }
 }

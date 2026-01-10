@@ -2,6 +2,7 @@
 
 import 'package:flutter/material.dart';
 import '../theme/theme.dart';
+import '../../utils/format_utils.dart';
 
 /// 订阅量徽章
 ///
@@ -50,7 +51,7 @@ class SubscriberBadge extends StatelessWidget {
             SizedBox(width: config.spacing),
           ],
           Text(
-            _formatCount(count),
+            formatSubscriberCount(count),
             style: TextStyle(
               fontSize: config.fontSize,
               fontWeight: FontWeight.w500,
@@ -96,23 +97,6 @@ class SubscriberBadge extends StatelessWidget {
           strokeWidth: 1.6,
         );
     }
-  }
-
-  String _formatCount(int count) {
-    if (count >= 100000000) {
-      // 1 亿以上
-      return '${(count / 100000000).toStringAsFixed(1)} 亿';
-    } else if (count >= 10000) {
-      // 1 万以上
-      final wan = count / 10000;
-      if (wan >= 100) {
-        return '${wan.toStringAsFixed(0)} 万';
-      }
-      return '${wan.toStringAsFixed(1)} 万';
-    } else if (count >= 1000) {
-      return '${(count / 1000).toStringAsFixed(1)}k';
-    }
-    return count.toString();
   }
 }
 

@@ -2,6 +2,7 @@
 // 当数字变化时，旧数字向上滑出并淡出，新数字从下方滑入并淡入
 
 import 'package:flutter/material.dart';
+import '../../utils/format_utils.dart';
 
 class AnimatedCount extends StatefulWidget {
   const AnimatedCount({
@@ -77,14 +78,6 @@ class _AnimatedCountState extends State<AnimatedCount>
     }
   }
 
-  String _formatCount(int count) {
-    // 处理负数：显示负号 + 格式化绝对值
-    if (count < 0) return '-${_formatCount(-count)}';
-    if (count >= 10000) return '${(count / 10000).toStringAsFixed(1)}w';
-    if (count >= 1000) return '${(count / 1000).toStringAsFixed(1)}k';
-    return count.toString();
-  }
-
   @override
   Widget build(BuildContext context) {
     final style = widget.style ?? const TextStyle(fontSize: 13);
@@ -95,7 +88,7 @@ class _AnimatedCountState extends State<AnimatedCount>
       builder: (context, _) {
         // 动画未开始或已完成，只显示当前数字
         if (!_ctrl.isAnimating && _ctrl.status != AnimationStatus.forward) {
-          return Text(_formatCount(widget.count), style: style);
+          return Text(formatCountChinese(widget.count), style: style);
         }
 
         // 根据增减方向调整滑动方向
@@ -112,7 +105,7 @@ class _AnimatedCountState extends State<AnimatedCount>
                   offset: Offset(0, outOffset * height),
                   child: Opacity(
                     opacity: _fadeOut.value,
-                    child: Text(_formatCount(_oldCount), style: style),
+                    child: Text(formatCountChinese(_oldCount), style: style),
                   ),
                 ),
                 // 新数字滑入
@@ -120,7 +113,7 @@ class _AnimatedCountState extends State<AnimatedCount>
                   offset: Offset(0, inOffset * height),
                   child: Opacity(
                     opacity: _fadeIn.value,
-                    child: Text(_formatCount(_newCount), style: style),
+                    child: Text(formatCountChinese(_newCount), style: style),
                   ),
                 ),
               ],

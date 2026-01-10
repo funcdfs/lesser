@@ -138,7 +138,17 @@ class CommentHandler extends ChangeNotifier {
   ///
   /// 返回 [CommentResult] 表示操作结果，调用方可据此显示错误提示
   Future<CommentResult<void>> toggleLike(String commentId) async {
-    // 找到目标评论的索引，避免多次遍历
+    // 检查是否是置顶评论
+    if (_listState.pinnedComment?.id == commentId) {
+      return _togglePinnedCommentLike(commentId);
+    }
+
+    // 检查是否是根评论（线程视图）
+    if (_listState.rootComment?.id == commentId) {
+      return _toggleRootCommentLike(commentId);
+    }
+
+    // 在普通评论列表中查找
     final index = _listState.comments.indexWhere((c) => c.id == commentId);
     if (index == -1) {
       return const CommentResult.failure('评论不存在');
@@ -161,6 +171,46 @@ class CommentHandler extends ChangeNotifier {
     } catch (e) {
       // 回滚：使用原始列表
       _listState = _listState.copyWith(comments: originalComments);
+      notifyListeners();
+      return CommentResult.failure(e.toString());
+    }
+  }
+
+  /// 切换置顶评论点赞
+  Future<CommentResult<void>> _togglePinnedCommentLike(String commentId) async {
+    final original = _listState.pinnedComment!;
+    final updated = original.withLikeToggled();
+
+    // 乐观更新
+    _listState = _listState.copyWith(pinnedComment: updated);
+    notifyListeners();
+
+    try {
+      await _dataSource.toggleLike(commentId);
+      return const CommentResult.success(null);
+    } catch (e) {
+      // 回滚
+      _listState = _listState.copyWith(pinnedComment: original);
+      notifyListeners();
+      return CommentResult.failure(e.toString());
+    }
+  }
+
+  /// 切换根评论点赞（线程视图）
+  Future<CommentResult<void>> _toggleRootCommentLike(String commentId) async {
+    final original = _listState.rootComment!;
+    final updated = original.withLikeToggled();
+
+    // 乐观更新
+    _listState = _listState.copyWith(rootComment: updated);
+    notifyListeners();
+
+    try {
+      await _dataSource.toggleLike(commentId);
+      return const CommentResult.success(null);
+    } catch (e) {
+      // 回滚
+      _listState = _listState.copyWith(rootComment: original);
       notifyListeners();
       return CommentResult.failure(e.toString());
     }

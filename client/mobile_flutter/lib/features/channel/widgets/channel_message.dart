@@ -1,10 +1,10 @@
-// 频道消息组件 - Telegram Channel 风格
+// 频道消息组件
 //
-// 设计特点：
+// Telegram Channel 风格：
 // - 深色气泡，无边框
-// - 反应标签在气泡内底部左侧（带圆角背景）
+// - 反应标签在气泡内底部左侧
 // - 浏览量和时间在气泡内底部右侧
-// - 评论入口在气泡外下方（头像堆叠 + 数量 + 箭头）
+// - 评论入口在气泡外下方
 
 import 'package:flutter/material.dart';
 import '../../../pkg/ui/theme/theme.dart';
@@ -12,7 +12,40 @@ import '../../../pkg/ui/effects/effects.dart';
 import '../../../pkg/ui/widgets/avatar_stack.dart';
 import '../../../pkg/ui/widgets/dotted_divider.dart';
 import '../../../pkg/ui/widgets/context_menu.dart';
+import '../../../pkg/utils/format_utils.dart';
 import '../models/channel_models.dart';
+
+// ============================================================================
+// 布局常量
+// ============================================================================
+
+/// 气泡布局常量
+class _BubbleLayout {
+  _BubbleLayout._();
+
+  // 内边距
+  static const EdgeInsets padding = EdgeInsets.fromLTRB(14, 12, 14, 10);
+
+  // 圆角
+  static const double borderRadius = 16.0;
+  static const double connectedRadius = 4.0; // 连接评论入口时的小圆角
+  static const double linkBorderRadius = 10.0;
+  static const double reactionBorderRadius = 14.0;
+
+  // 字体
+  static const double contentFontSize = 15.0;
+  static const double contentLineHeight = 1.45;
+  static const double footerFontSize = 11.0;
+}
+
+/// 评论入口布局常量
+class _CommentEntryLayout {
+  _CommentEntryLayout._();
+
+  static const EdgeInsets padding = EdgeInsets.fromLTRB(14, 9, 10, 11);
+  static const EdgeInsets dividerPadding = EdgeInsets.symmetric(horizontal: 14);
+  static const double avatarSize = 22.0;
+}
 
 /// 频道消息菜单操作类型
 enum ChannelMessageMenuAction {
@@ -55,14 +88,22 @@ class ChannelMessageBubble extends StatelessWidget {
         scale: TapScales.large,
         haptic: false,
         child: Container(
-          padding: const EdgeInsets.fromLTRB(14, 12, 14, 11),
+          padding: _BubbleLayout.padding,
           decoration: BoxDecoration(
             color: colors.surfaceElevated,
             borderRadius: BorderRadius.only(
-              topLeft: const Radius.circular(16),
-              topRight: const Radius.circular(16),
-              bottomLeft: Radius.circular(showBottomRadius ? 16 : 4),
-              bottomRight: Radius.circular(showBottomRadius ? 16 : 4),
+              topLeft: const Radius.circular(_BubbleLayout.borderRadius),
+              topRight: const Radius.circular(_BubbleLayout.borderRadius),
+              bottomLeft: Radius.circular(
+                showBottomRadius
+                    ? _BubbleLayout.borderRadius
+                    : _BubbleLayout.connectedRadius,
+              ),
+              bottomRight: Radius.circular(
+                showBottomRadius
+                    ? _BubbleLayout.borderRadius
+                    : _BubbleLayout.connectedRadius,
+              ),
             ),
             // 精致边框
             border: Border.all(
@@ -105,8 +146,8 @@ class ChannelMessageBubble extends StatelessWidget {
     return Text(
       message.content,
       style: TextStyle(
-        fontSize: 14,
-        height: 1.4,
+        fontSize: _BubbleLayout.contentFontSize,
+        height: _BubbleLayout.contentLineHeight,
         color: colors.textPrimary,
         letterSpacing: 0.1,
       ),
@@ -121,7 +162,7 @@ class ChannelMessageBubble extends StatelessWidget {
         padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
         decoration: BoxDecoration(
           color: colors.accentSoft,
-          borderRadius: BorderRadius.circular(8),
+          borderRadius: BorderRadius.circular(_BubbleLayout.linkBorderRadius),
         ),
         child: Row(
           mainAxisSize: MainAxisSize.min,
@@ -185,34 +226,32 @@ class ChannelMessageBubble extends StatelessWidget {
         Icon(Icons.visibility_rounded, size: 13, color: colors.textDisabled),
         const SizedBox(width: 3),
         Text(
-          _formatCount(message.viewCount),
-          style: TextStyle(fontSize: 11, color: colors.textDisabled),
+          formatCountEnglish(message.viewCount),
+          style: TextStyle(
+            fontSize: _BubbleLayout.footerFontSize,
+            color: colors.textDisabled,
+          ),
         ),
         if (isEdited) ...[
           const SizedBox(width: 4),
           Text(
             'edited',
-            style: TextStyle(fontSize: 11, color: colors.textDisabled),
+            style: TextStyle(
+              fontSize: _BubbleLayout.footerFontSize,
+              color: colors.textDisabled,
+            ),
           ),
         ],
         const SizedBox(width: 4),
         Text(
-          _formatTime(message.createdAt),
-          style: TextStyle(fontSize: 11, color: colors.textDisabled),
+          formatTimeHHmm(message.createdAt),
+          style: TextStyle(
+            fontSize: _BubbleLayout.footerFontSize,
+            color: colors.textDisabled,
+          ),
         ),
       ],
     );
-  }
-
-  String _formatCount(int count) {
-    if (count >= 1000) {
-      return '${(count / 1000).toStringAsFixed(count >= 10000 ? 0 : 1)}K';
-    }
-    return count.toString();
-  }
-
-  String _formatTime(DateTime time) {
-    return '${time.hour.toString().padLeft(2, '0')}:${time.minute.toString().padLeft(2, '0')}';
   }
 }
 
@@ -339,8 +378,8 @@ class _ChannelMessageWidgetState extends State<ChannelMessageWidget> {
         decoration: BoxDecoration(
           color: colors.surfaceElevated,
           borderRadius: const BorderRadius.only(
-            bottomLeft: Radius.circular(16),
-            bottomRight: Radius.circular(16),
+            bottomLeft: Radius.circular(_BubbleLayout.borderRadius),
+            bottomRight: Radius.circular(_BubbleLayout.borderRadius),
           ),
           border: Border.all(
             color: colors.divider.withValues(alpha: isDark ? 0.1 : 0.05),
@@ -351,7 +390,7 @@ class _ChannelMessageWidgetState extends State<ChannelMessageWidget> {
           mainAxisSize: MainAxisSize.min,
           children: [
             Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 14),
+              padding: _CommentEntryLayout.dividerPadding,
               child: DottedDivider(
                 color: colors.divider.withValues(alpha: 0.5),
                 strokeWidth: 1.0,
@@ -360,7 +399,7 @@ class _ChannelMessageWidgetState extends State<ChannelMessageWidget> {
               ),
             ),
             Padding(
-              padding: const EdgeInsets.fromLTRB(14, 9, 10, 11),
+              padding: _CommentEntryLayout.padding,
               child: Row(
                 children: [
                   if (widget.message.commentAvatars.isNotEmpty) ...[
@@ -368,7 +407,7 @@ class _ChannelMessageWidgetState extends State<ChannelMessageWidget> {
                       avatarUrls: widget.message.commentAvatars
                           .take(3)
                           .toList(),
-                      size: 22,
+                      size: _CommentEntryLayout.avatarSize,
                     ),
                     const SizedBox(width: 8),
                   ],
@@ -417,7 +456,9 @@ class _ReactionChip extends StatelessWidget {
           color: isSelected
               ? colors.interactive.withValues(alpha: 0.15)
               : colors.surfaceBase.withValues(alpha: 0.6),
-          borderRadius: BorderRadius.circular(14),
+          borderRadius: BorderRadius.circular(
+            _BubbleLayout.reactionBorderRadius,
+          ),
         ),
         child: Row(
           mainAxisSize: MainAxisSize.min,
