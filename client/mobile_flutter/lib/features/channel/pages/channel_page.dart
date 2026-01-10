@@ -4,10 +4,10 @@
 //
 // ## 设计目的
 // 作为底部导航栏 Tab 2 的入口页面，展示用户订阅的频道列表。
-// 支持标签筛选、下拉刷新和频道详情导航。
+// 支持标签筛选、下拉刷新、频道搜索、创建频道和频道详情导航。
 //
 // ## 页面结构
-// - AppBar: 标题 + 筛选标签清除按钮
+// - AppBar: 清除筛选（左侧） + 标题（居中） + 搜索/创建频道（右侧）
 // - Body: 频道列表（支持下拉刷新）
 // - Overlay: 底部标签抽屉（可拖拽展开）
 //
@@ -42,6 +42,8 @@ import 'channel_detail_page.dart';
 /// ## 功能特性
 /// - 频道列表展示（支持下拉刷新）
 /// - 标签筛选（底部抽屉）
+/// - 频道搜索（AppBar 右侧）
+/// - 创建频道（AppBar 右侧）
 /// - 加载/空/错误状态处理
 /// - 频道详情页导航
 class ChannelPage extends StatefulWidget {
@@ -58,11 +60,15 @@ class _ChannelPageState extends State<ChannelPage> {
   // 标签数据从 mock_data 获取，便于后续替换为后端数据
   final Set<String> _selectedTags = {};
 
+  // 标记 Handler 是否已初始化，防止 initState 异常时 dispose 崩溃
+  bool _isHandlerInitialized = false;
+
   @override
   void initState() {
     super.initState();
     // 使用 Mock 数据源，后续可替换为 gRPC 数据源
     _handler = ChannelHandler(ChannelMockDataSource());
+    _isHandlerInitialized = true;
     _handler.addListener(_onHandlerChanged);
     _handler.getChannels();
   }
@@ -76,15 +82,31 @@ class _ChannelPageState extends State<ChannelPage> {
 
   @override
   void dispose() {
-    // 重要：先移除监听器，防止 dispose 后仍收到回调
-    // 虽然 _onHandlerChanged 中有 mounted 检查，但这是双重保险
-    _handler.removeListener(_onHandlerChanged);
-    _handler.dispose();
+    // 重要：先检查是否已初始化，防止 initState 异常时崩溃
+    if (_isHandlerInitialized) {
+      // 先移除监听器，防止 dispose 后仍收到回调
+      // 虽然 _onHandlerChanged 中有 mounted 检查，但这是双重保险
+      _handler.removeListener(_onHandlerChanged);
+      _handler.dispose();
+    }
     super.dispose();
   }
 
   Future<void> _onRefresh() async {
-    await _handler.refresh();
+    try {
+      await _handler.refresh();
+    } catch (e) {
+      // 刷新失败时显示提示，但不阻塞 UI
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('刷新失败，请稍后重试'),
+            duration: Duration(seconds: 2),
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+      }
+    }
   }
 
   void _onChannelTap(ChannelModel channel) {
@@ -114,6 +136,30 @@ class _ChannelPageState extends State<ChannelPage> {
     _handler.getChannels();
   }
 
+  /// 搜索频道
+  void _onSearchTap() {
+    // TODO: 跳转到频道搜索页
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text('搜索功能开发中'),
+        duration: Duration(seconds: 1),
+        behavior: SnackBarBehavior.floating,
+      ),
+    );
+  }
+
+  /// 创建频道
+  void _onCreateChannelTap() {
+    // TODO: 跳转到创建频道页
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text('创建频道功能开发中'),
+        duration: Duration(seconds: 1),
+        behavior: SnackBarBehavior.floating,
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final colors = AppColors.of(context);
@@ -124,7 +170,62 @@ class _ChannelPageState extends State<ChannelPage> {
         backgroundColor: colors.surfaceBase,
         surfaceTintColor: Colors.transparent,
         elevation: 0,
+        scrolledUnderElevation: 0,
         centerTitle: true,
+        // AppBar 底部分割线
+        bottom: PreferredSize(
+          preferredSize: const Size.fromHeight(0.5),
+          child: Container(height: 0.5, color: colors.divider),
+        ),
+        // 左侧：清除筛选按钮（仅在有选中标签时显示，使用与选中 tag 一致的样式）
+        leading: _selectedTags.isNotEmpty
+            ? Center(
+                child: Padding(
+                  padding: const EdgeInsets.only(left: 16),
+                  child: TapScale(
+                    onTap: _onClearTags,
+                    scale: TapScales.small,
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 10,
+                        vertical: 5,
+                      ),
+                      decoration: BoxDecoration(
+                        color: colors.accentSoft,
+                        borderRadius: BorderRadius.circular(14),
+                        border: Border.all(color: colors.accent, width: 1.5),
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(
+                            Icons.filter_list_rounded,
+                            size: 14,
+                            color: colors.accent,
+                          ),
+                          const SizedBox(width: 4),
+                          Text(
+                            '${_selectedTags.length}',
+                            style: TextStyle(
+                              fontSize: 13,
+                              fontWeight: FontWeight.w600,
+                              color: colors.accent,
+                            ),
+                          ),
+                          const SizedBox(width: 4),
+                          Icon(
+                            Icons.close_rounded,
+                            size: 14,
+                            color: colors.accent,
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
+              )
+            : null,
+        leadingWidth: _selectedTags.isNotEmpty ? 100 : null,
         title: Text(
           '频道',
           style: TextStyle(
@@ -133,52 +234,39 @@ class _ChannelPageState extends State<ChannelPage> {
             color: colors.textPrimary,
           ),
         ),
+        // 右侧：搜索 + 创建频道
         actions: [
-          if (_selectedTags.isNotEmpty)
-            Padding(
-              padding: const EdgeInsets.only(right: 16),
-              child: Center(
-                child: TapScale(
-                  onTap: _onClearTags,
-                  scale: TapScales.small,
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 10,
-                      vertical: 5,
-                    ),
-                    decoration: BoxDecoration(
-                      color: colors.textPrimary.withValues(alpha: 0.08),
-                      borderRadius: BorderRadius.circular(14),
-                    ),
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Icon(
-                          Icons.filter_list_rounded,
-                          size: 14,
-                          color: colors.textSecondary,
-                        ),
-                        const SizedBox(width: 4),
-                        Text(
-                          '${_selectedTags.length}',
-                          style: TextStyle(
-                            fontSize: 13,
-                            fontWeight: FontWeight.w500,
-                            color: colors.textPrimary,
-                          ),
-                        ),
-                        const SizedBox(width: 4),
-                        Icon(
-                          Icons.close_rounded,
-                          size: 14,
-                          color: colors.textTertiary,
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
+          // 搜索按钮
+          TapScale(
+            onTap: _onSearchTap,
+            scale: TapScales.small,
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 8),
+              child: Icon(
+                Icons.search_rounded,
+                size: 24,
+                color: colors.textPrimary,
               ),
             ),
+          ),
+          // 创建频道按钮
+          TapScale(
+            onTap: _onCreateChannelTap,
+            scale: TapScales.small,
+            child: Padding(
+              padding: const EdgeInsets.only(
+                right: 16,
+                left: 6,
+                top: 8,
+                bottom: 8,
+              ),
+              child: Icon(
+                Icons.add_rounded,
+                size: 26,
+                color: colors.textPrimary,
+              ),
+            ),
+          ),
         ],
       ),
       body: Stack(

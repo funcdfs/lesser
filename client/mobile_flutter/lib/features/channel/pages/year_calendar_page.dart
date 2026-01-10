@@ -106,18 +106,34 @@ class _YearCalendarPageState extends State<YearCalendarPage> {
   @override
   void dispose() {
     _scrollController.dispose();
+    _monthKeys.clear(); // 清理 GlobalKey 缓存，防止内存泄漏
     super.dispose();
   }
 
   void _scrollToDate(DateTime date) {
     // 使用懒加载方式获取 key
     final key = _getMonthKey(date.year, date.month);
-    if (key.currentContext != null) {
+    final keyContext = key.currentContext;
+
+    if (keyContext != null) {
       Scrollable.ensureVisible(
-        key.currentContext!,
+        keyContext,
         alignment: 0.3,
         duration: AnimDurations.slow,
       );
+    } else {
+      // 降级处理：当 context 不可用时（如首次渲染），延迟重试
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (!mounted) return;
+        final retryContext = key.currentContext;
+        if (retryContext != null) {
+          Scrollable.ensureVisible(
+            retryContext,
+            alignment: 0.3,
+            duration: AnimDurations.slow,
+          );
+        }
+      });
     }
   }
 

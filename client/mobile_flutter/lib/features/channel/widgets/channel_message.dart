@@ -156,60 +156,102 @@ class ChannelMessageBubble extends StatelessWidget {
         onTap: onTap,
         scale: TapScales.large,
         haptic: false,
-        child: Container(
-          padding: BubbleLayout.padding,
-          decoration: BoxDecoration(
-            color: colors.surfaceElevated,
-            borderRadius: BorderRadius.only(
-              topLeft: const Radius.circular(BubbleLayout.borderRadius),
-              topRight: const Radius.circular(BubbleLayout.borderRadius),
-              bottomLeft: Radius.circular(
-                showBottomRadius
-                    ? BubbleLayout.borderRadius
-                    : BubbleLayout.connectedRadius,
-              ),
-              bottomRight: Radius.circular(
-                showBottomRadius
-                    ? BubbleLayout.borderRadius
-                    : BubbleLayout.connectedRadius,
-              ),
-            ),
-            border: Border.all(
-              color: colors.divider.withValues(alpha: isDark ? 0.12 : 0.06),
-              width: 0.5,
-            ),
-            boxShadow: [
-              BoxShadow(
-                color: colors.textPrimary.withValues(
-                  alpha: isDark ? 0.1 : 0.04,
-                ),
-                blurRadius: 8,
-                offset: const Offset(0, 2),
-              ),
-            ],
-          ),
+        child: _BubbleContainer(
+          colors: colors,
+          isDark: isDark,
+          showBottomRadius: showBottomRadius,
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             mainAxisSize: MainAxisSize.min,
             children: [
-              _buildContent(colors),
+              _MessageContent(content: message.content, colors: colors),
               if (message.linkUrl != null) ...[
                 const SizedBox(height: 10),
-                _buildLink(colors),
+                _LinkPreview(
+                  linkUrl: message.linkUrl!,
+                  linkTitle: message.linkTitle,
+                  colors: colors,
+                  onTap: onLinkTap,
+                ),
               ],
               const SizedBox(height: 12),
-              _buildFooter(colors),
+              _MessageFooter(
+                message: message,
+                colors: colors,
+                onReactionTap: onReactionTap,
+              ),
             ],
           ),
         ),
       ),
     );
   }
+}
 
-  /// 构建消息文本内容
-  Widget _buildContent(AppColorScheme colors) {
+/// 气泡容器组件
+///
+/// 封装气泡的装饰样式，包括背景色、圆角、边框和阴影。
+class _BubbleContainer extends StatelessWidget {
+  const _BubbleContainer({
+    required this.colors,
+    required this.isDark,
+    required this.showBottomRadius,
+    required this.child,
+  });
+
+  final AppColorScheme colors;
+  final bool isDark;
+  final bool showBottomRadius;
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: BubbleLayout.padding,
+      decoration: BoxDecoration(
+        color: colors.surfaceElevated,
+        borderRadius: BorderRadius.only(
+          topLeft: const Radius.circular(BubbleLayout.borderRadius),
+          topRight: const Radius.circular(BubbleLayout.borderRadius),
+          bottomLeft: Radius.circular(
+            showBottomRadius
+                ? BubbleLayout.borderRadius
+                : BubbleLayout.connectedRadius,
+          ),
+          bottomRight: Radius.circular(
+            showBottomRadius
+                ? BubbleLayout.borderRadius
+                : BubbleLayout.connectedRadius,
+          ),
+        ),
+        border: Border.all(
+          color: colors.divider.withValues(alpha: isDark ? 0.12 : 0.06),
+          width: 0.5,
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: colors.textPrimary.withValues(alpha: isDark ? 0.1 : 0.04),
+            blurRadius: 8,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: child,
+    );
+  }
+}
+
+/// 消息文本内容
+class _MessageContent extends StatelessWidget {
+  const _MessageContent({required this.content, required this.colors});
+
+  final String content;
+  final AppColorScheme colors;
+
+  @override
+  Widget build(BuildContext context) {
     return Text(
-      message.content,
+      content,
       style: TextStyle(
         fontSize: BubbleLayout.contentFontSize,
         height: BubbleLayout.contentLineHeight,
@@ -218,11 +260,26 @@ class ChannelMessageBubble extends StatelessWidget {
       ),
     );
   }
+}
 
-  /// 构建链接预览卡片
-  Widget _buildLink(AppColorScheme colors) {
+/// 链接预览卡片
+class _LinkPreview extends StatelessWidget {
+  const _LinkPreview({
+    required this.linkUrl,
+    this.linkTitle,
+    required this.colors,
+    this.onTap,
+  });
+
+  final String linkUrl;
+  final String? linkTitle;
+  final AppColorScheme colors;
+  final ValueChanged<String>? onTap;
+
+  @override
+  Widget build(BuildContext context) {
     return TapScale(
-      onTap: () => onLinkTap?.call(message.linkUrl!),
+      onTap: () => onTap?.call(linkUrl),
       scale: TapScales.card,
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
@@ -237,7 +294,7 @@ class ChannelMessageBubble extends StatelessWidget {
             const SizedBox(width: 6),
             Flexible(
               child: Text(
-                message.linkTitle ?? message.linkUrl!,
+                linkTitle ?? linkUrl,
                 style: TextStyle(
                   fontSize: 13,
                   color: colors.accent,
@@ -252,40 +309,75 @@ class ChannelMessageBubble extends StatelessWidget {
       ),
     );
   }
+}
 
-  /// 构建底部区域（反应 + 浏览量/时间）
-  Widget _buildFooter(AppColorScheme colors) {
-    final hasReactions = message.reactions.isNotEmpty;
+/// 消息底部区域（反应 + 浏览量/时间）
+class _MessageFooter extends StatelessWidget {
+  const _MessageFooter({
+    required this.message,
+    required this.colors,
+    this.onReactionTap,
+  });
+
+  final ChannelMessageModel message;
+  final AppColorScheme colors;
+  final ValueChanged<String>? onReactionTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final hasReactions = message.hasReactions;
 
     return Row(
       crossAxisAlignment: CrossAxisAlignment.center,
       children: [
-        if (hasReactions) Expanded(child: _buildReactions(colors)),
-        if (!hasReactions) const Spacer(),
-        _buildViewsAndTime(colors),
+        if (hasReactions)
+          Expanded(
+            child: _ReactionList(
+              reactions: message.displayReactions,
+              onReactionTap: onReactionTap,
+            ),
+          )
+        else
+          const Spacer(),
+        _ViewsAndTime(message: message, colors: colors),
       ],
     );
   }
+}
 
-  /// 构建反应标签列表
-  Widget _buildReactions(AppColorScheme colors) {
-    // 使用 model 层预计算的 displayReactions，避免每次 build 创建新列表
-    final reactions = message.displayReactions;
+/// 反应列表组件
+///
+/// 从 _MessageFooter 中拆分出来，避免在 build 方法中创建闭包。
+class _ReactionList extends StatelessWidget {
+  const _ReactionList({required this.reactions, this.onReactionTap});
 
+  final List<ReactionSummary> reactions;
+  final ValueChanged<String>? onReactionTap;
+
+  @override
+  Widget build(BuildContext context) {
     return Wrap(
       spacing: 6,
       runSpacing: 4,
-      children: reactions.map((r) {
-        return _ReactionChip(
-          reaction: r,
-          onTap: () => onReactionTap?.call(r.emoji),
-        );
-      }).toList(),
+      children: [
+        for (final r in reactions)
+          _ReactionChip(reaction: r, onEmojiTap: onReactionTap),
+      ],
     );
   }
+}
 
-  /// 构建浏览量和时间
-  Widget _buildViewsAndTime(AppColorScheme colors) {
+/// 浏览量和时间组件
+///
+/// 从 _MessageFooter 中拆分出来，提高可读性和可维护性。
+class _ViewsAndTime extends StatelessWidget {
+  const _ViewsAndTime({required this.message, required this.colors});
+
+  final ChannelMessageModel message;
+  final AppColorScheme colors;
+
+  @override
+  Widget build(BuildContext context) {
     final isEdited =
         message.isEdited ||
         (message.updatedAt != null && message.updatedAt != message.createdAt);
@@ -382,49 +474,53 @@ class ChannelMessage extends StatefulWidget {
 }
 
 class _ChannelMessageState extends State<ChannelMessage> {
+  /// 菜单项列表（静态常量，避免每次调用重复创建）
+  static const _menuItems = [
+    ContextMenuItem(
+      icon: Icons.bookmark_outline_rounded,
+      label: '保存',
+      value: 'save',
+    ),
+    ContextMenuItem(icon: Icons.reply_rounded, label: '转发', value: 'forward'),
+    ContextMenuItem(
+      icon: Icons.info_outline_rounded,
+      label: '详情',
+      value: 'detail',
+    ),
+  ];
+
+  /// 菜单操作映射表（静态常量，避免每次查找时遍历）
+  static const _menuActionMap = {
+    'save': ChannelMessageMenuAction.save,
+    'forward': ChannelMessageMenuAction.forward,
+    'detail': ChannelMessageMenuAction.detail,
+  };
+
   /// 显示上下文菜单
   void _showContextMenu(LongPressStartDetails details) {
-    final items = [
-      const ContextMenuItem(
-        icon: Icons.bookmark_outline_rounded,
-        label: '保存',
-        value: 'save',
-      ),
-      const ContextMenuItem(
-        icon: Icons.reply_rounded,
-        label: '转发',
-        value: 'forward',
-      ),
-      const ContextMenuItem(
-        icon: Icons.info_outline_rounded,
-        label: '详情',
-        value: 'detail',
-      ),
-    ];
-
     showContextMenu(
       context: context,
       position: details.globalPosition,
-      items: items,
+      items: _menuItems,
       quickEmojis: _quickEmojis,
-      onSelected: (value) {
-        final action = ChannelMessageMenuAction.values.firstWhere(
-          (e) => e.name == value,
-          orElse: () => ChannelMessageMenuAction.detail,
-        );
-        widget.onMenuAction?.call(action);
-      },
+      onSelected: _handleMenuSelection,
       onEmojiSelected: widget.onReactionTap,
     );
+  }
+
+  /// 处理菜单选择
+  void _handleMenuSelection(String value) {
+    final action = _menuActionMap[value] ?? ChannelMessageMenuAction.detail;
+    widget.onMenuAction?.call(action);
   }
 
   @override
   Widget build(BuildContext context) {
     final colors = AppColors.of(context);
     final maxWidth =
-        MediaQuery.of(context).size.width *
+        MediaQuery.sizeOf(context).width *
         ChannelLayoutConstants.messageMaxWidthRatio;
-    final hasCommentEntry = widget.message.commentCount > 0;
+    final hasCommentEntry = widget.message.hasComments;
 
     Widget content = Padding(
       padding: ChannelLayoutConstants.messagePadding,
@@ -447,7 +543,12 @@ class _ChannelMessageState extends State<ChannelMessage> {
                   showBottomRadius: !hasCommentEntry,
                 ),
                 // Part2: 评论入口（有评论时显示）
-                if (hasCommentEntry) _buildCommentEntry(colors),
+                if (hasCommentEntry)
+                  _CommentEntry(
+                    message: widget.message,
+                    colors: colors,
+                    onTap: widget.onCommentTap,
+                  ),
               ],
             ),
           ),
@@ -466,13 +567,29 @@ class _ChannelMessageState extends State<ChannelMessage> {
 
     return content;
   }
+}
 
-  /// 构建评论入口
-  Widget _buildCommentEntry(AppColorScheme colors) {
+/// 评论入口组件
+///
+/// 从 _ChannelMessageState 中拆分出来，提高可读性和可维护性。
+/// 显示评论者头像堆叠、评论数和箭头图标。
+class _CommentEntry extends StatelessWidget {
+  const _CommentEntry({
+    required this.message,
+    required this.colors,
+    this.onTap,
+  });
+
+  final ChannelMessageModel message;
+  final AppColorScheme colors;
+  final VoidCallback? onTap;
+
+  @override
+  Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
     return TapScale(
-      onTap: widget.onCommentTap,
+      onTap: onTap,
       scale: TapScales.card,
       child: Container(
         decoration: BoxDecoration(
@@ -505,18 +622,16 @@ class _ChannelMessageState extends State<ChannelMessage> {
               child: Row(
                 children: [
                   // 评论者头像堆叠
-                  if (widget.message.commentAvatars.isNotEmpty) ...[
+                  if (message.commentAvatars.isNotEmpty) ...[
                     AvatarStack(
-                      avatarUrls: widget.message.commentAvatars
-                          .take(3)
-                          .toList(),
+                      avatarUrls: message.commentAvatars.take(3).toList(),
                       size: CommentEntryLayout.avatarSize,
                     ),
                     const SizedBox(width: 8),
                   ],
                   // 评论数
                   Text(
-                    '${widget.message.commentCount} 条评论',
+                    '${message.commentCount} 条评论',
                     style: TextStyle(
                       fontSize: 13,
                       fontWeight: FontWeight.w500,
@@ -547,11 +662,18 @@ class _ChannelMessageState extends State<ChannelMessage> {
 /// 反应标签
 ///
 /// 显示单个 emoji 反应及其数量，支持选中状态高亮。
+/// 内部处理点击回调，避免父组件为每个 chip 创建闭包。
 class _ReactionChip extends StatelessWidget {
-  const _ReactionChip({required this.reaction, this.onTap});
+  const _ReactionChip({required this.reaction, this.onEmojiTap});
 
   final ReactionSummary reaction;
-  final VoidCallback? onTap;
+
+  /// emoji 点击回调，传入 emoji 字符串
+  final ValueChanged<String>? onEmojiTap;
+
+  void _handleTap() {
+    onEmojiTap?.call(reaction.emoji);
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -559,7 +681,7 @@ class _ReactionChip extends StatelessWidget {
     final isSelected = reaction.isSelected;
 
     return TapScale(
-      onTap: onTap,
+      onTap: onEmojiTap != null ? _handleTap : null,
       scale: TapScales.small,
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),

@@ -12,8 +12,8 @@
 // 2. **数据与状态分离**：`ChannelCommentModel` 存储业务数据，
 //    `CommentUIState` 管理临时 UI 状态
 //
-// 3. **哨兵值模式**：`ChannelCommentInputState.copyWith` 使用哨兵值，
-//    支持传入 null 清除 `replyTo` 字段
+// 3. **哨兵值模式**：`copyWith` 方法使用公共 `sentinel` 哨兵值，
+//    支持传入 null 清除可选字段
 //
 // ## 类结构
 //
@@ -26,6 +26,7 @@
 // - `ChannelCommentInputState` - 评论输入状态
 
 import '../../../pkg/comment/comment.dart' as pkg_comment;
+import '../../../pkg/utils/copy_with_utils.dart';
 
 // 重新导出公共类型，方便外部使用
 export '../../../pkg/comment/comment.dart' show CommentIconState, ReplyTarget;
@@ -270,6 +271,11 @@ class ChannelCommentModel {
   // ---------------------------------------------------------------------------
 
   /// 复制并修改指定字段
+  ///
+  /// 对于可选字段（如 `replyTo`），使用哨兵值模式：
+  /// - 不传参：保留原值
+  /// - 传入 `null`：清除该字段
+  /// - 传入具体值：更新为新值
   ChannelCommentModel copyWith({
     String? id,
     String? messageId,
@@ -277,7 +283,7 @@ class ChannelCommentModel {
     CommentAuthor? author,
     String? content,
     List<CommentMedia>? media,
-    pkg_comment.ReplyTarget? replyTo,
+    Object? replyTo = sentinel,
     int? replyCount,
     int? likeCount,
     bool? isLiked,
@@ -296,7 +302,9 @@ class ChannelCommentModel {
       author: author ?? this.author,
       content: content ?? this.content,
       media: media ?? this.media,
-      replyTo: replyTo ?? this.replyTo,
+      replyTo: replyTo == sentinel
+          ? this.replyTo
+          : castOrNull<pkg_comment.ReplyTarget>(replyTo),
       replyCount: replyCount ?? this.replyCount,
       likeCount: likeCount ?? this.likeCount,
       isLiked: isLiked ?? this.isLiked,
@@ -445,9 +453,6 @@ class ChannelMessageContext {
 // 评论输入状态
 // =============================================================================
 
-/// 用于 copyWith 方法中区分 null 和未传参的哨兵值
-const _notProvided = Object();
-
 /// 评论输入状态
 ///
 /// 管理评论输入框的状态，包括文本、附件、回复目标等。
@@ -486,21 +491,26 @@ class ChannelCommentInputState {
   bool get isReplying => replyTo != null;
 
   /// 复制并修改指定字段
+  ///
+  /// 对于可选字段（如 `replyTo`、`error`），使用哨兵值模式：
+  /// - 不传参：保留原值
+  /// - 传入 `null`：清除该字段
+  /// - 传入具体值：更新为新值
   ChannelCommentInputState copyWith({
     String? text,
     List<CommentMedia>? attachments,
-    Object? replyTo = _notProvided,
+    Object? replyTo = sentinel,
     bool? isSubmitting,
-    String? error,
+    Object? error = sentinel,
   }) {
     return ChannelCommentInputState(
       text: text ?? this.text,
       attachments: attachments ?? this.attachments,
-      replyTo: replyTo == _notProvided
+      replyTo: replyTo == sentinel
           ? this.replyTo
-          : (replyTo as pkg_comment.ReplyTarget?),
+          : castOrNull<pkg_comment.ReplyTarget>(replyTo),
       isSubmitting: isSubmitting ?? this.isSubmitting,
-      error: error,
+      error: error == sentinel ? this.error : castOrNull<String>(error),
     );
   }
 

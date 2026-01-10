@@ -22,6 +22,8 @@
 // selectedTagIds.remove(tag.id);  // 取消选中
 // ```
 
+import '../../../pkg/utils/copy_with_utils.dart';
+
 /// 频道标签
 ///
 /// 表示频道的分类标签，用于筛选和组织频道列表。
@@ -57,16 +59,21 @@ class ChannelTag {
   final int channelCount;
 
   /// 复制并修改指定字段
+  ///
+  /// 对于可选字段（如 `icon`），使用哨兵值模式：
+  /// - 不传参：保留原值
+  /// - 传入 `null`：清除该字段
+  /// - 传入具体值：更新为新值
   ChannelTag copyWith({
     String? id,
     String? name,
-    String? icon,
+    Object? icon = sentinel,
     int? channelCount,
   }) {
     return ChannelTag(
       id: id ?? this.id,
       name: name ?? this.name,
-      icon: icon ?? this.icon,
+      icon: icon == sentinel ? this.icon : castOrNull<String>(icon),
       channelCount: channelCount ?? this.channelCount,
     );
   }

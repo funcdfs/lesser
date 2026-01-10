@@ -35,6 +35,8 @@
 // final uiState = handler.getUIState(channelId);
 // ```
 
+import 'dart:async';
+
 import 'package:flutter/foundation.dart';
 import '../data_access/channel_data_source.dart';
 import '../models/channel_models.dart';
@@ -73,6 +75,9 @@ class ChannelHandler extends ChangeNotifier {
   /// 是否已销毁（用于防止异步回调中的状态更新）
   bool _isDisposed = false;
 
+  /// 当前正在进行的加载请求（用于防抖和共享结果）
+  Completer<List<ChannelModel>>? _loadingCompleter;
+
   // ===========================================================================
   // 公开 getter
   // ===========================================================================
@@ -96,22 +101,36 @@ class ChannelHandler extends ChangeNotifier {
   /// 获取频道列表
   ///
   /// 从数据源获取频道列表，按最后消息时间降序排序。
-  /// 内置防抖机制：如果已在加载中，直接返回当前数据。
+  /// 内置防抖机制：如果已在加载中，返回同一个 Future，让多个调用者共享结果。
   ///
   /// 返回排序后的频道列表。
   Future<List<ChannelModel>> getChannels() async {
-    // 防抖：避免重复请求
-    if (_isLoading) return _channels;
+    // 防抖：如果已在加载中，返回同一个 Future
+    if (_loadingCompleter != null) {
+      return _loadingCompleter!.future;
+    }
 
+    _loadingCompleter = Completer<List<ChannelModel>>();
     _isLoading = true;
     _error = null;
     _safeNotifyListeners();
 
     try {
-      final list = await _dataSource.getChannels();
+      // 并行获取频道列表和 UI 状态
+      final results = await Future.wait([
+        _dataSource.getChannels(),
+        _dataSource.getUIStates(),
+      ]);
 
       // 异步完成后检查是否已销毁
-      if (_isDisposed) return _channels;
+      if (_isDisposed) {
+        _loadingCompleter?.complete(_channels);
+        _loadingCompleter = null;
+        return _channels;
+      }
+
+      final list = results[0] as List<ChannelModel>;
+      final uiStates = results[1] as Map<String, ChannelUIState>;
 
       // 按最后消息时间降序排序
       _channels = List.from(list)
@@ -121,19 +140,25 @@ class ChannelHandler extends ChangeNotifier {
           return bTime.compareTo(aTime);
         });
 
-      // 初始化 UI 状态
+      // 初始化 UI 状态（优先使用数据源返回的状态）
       for (final channel in _channels) {
-        _uiStates.putIfAbsent(
-          channel.id,
-          () => ChannelUIState(channelId: channel.id),
-        );
+        _uiStates[channel.id] =
+            uiStates[channel.id] ?? ChannelUIState(channelId: channel.id);
       }
+
+      _loadingCompleter?.complete(_channels);
     } catch (e) {
-      if (_isDisposed) return _channels;
+      if (_isDisposed) {
+        _loadingCompleter?.complete(_channels);
+        _loadingCompleter = null;
+        return _channels;
+      }
       _error = e.toString();
+      _loadingCompleter?.completeError(e);
     }
 
     _isLoading = false;
+    _loadingCompleter = null;
     _safeNotifyListeners();
     return _channels;
   }
@@ -227,6 +252,25 @@ class ChannelHandler extends ChangeNotifier {
 
     _uiStates[channelId] = currentState.copyWith(unreadCount: count);
     _safeNotifyListeners();
+  }
+
+  /// 移除频道的 UI 状态
+  ///
+  /// 当频道被删除或取消订阅时调用，清理对应的 UI 状态。
+  void removeUIState(String channelId) {
+    if (_uiStates.remove(channelId) != null) {
+      _safeNotifyListeners();
+    }
+  }
+
+  /// 清理所有 UI 状态
+  ///
+  /// 用于用户登出或重置状态时。
+  void clearAllUIStates() {
+    if (_uiStates.isNotEmpty) {
+      _uiStates.clear();
+      _safeNotifyListeners();
+    }
   }
 
   // ===========================================================================

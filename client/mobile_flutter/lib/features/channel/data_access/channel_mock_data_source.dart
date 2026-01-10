@@ -32,6 +32,13 @@ class ChannelMockDataSource implements ChannelDataSource {
   }
 
   @override
+  Future<Map<String, ChannelUIState>> getUIStates() async {
+    // 模拟网络延迟
+    await Future.delayed(const Duration(milliseconds: 50));
+    return Map.from(mockChannelUIStates);
+  }
+
+  @override
   Future<ChannelModel?> getChannelDetail(String id) async {
     await Future.delayed(const Duration(milliseconds: 50));
     for (final channel in mockChannels) {

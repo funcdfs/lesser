@@ -26,6 +26,12 @@ abstract class ChannelDataSource {
   /// 返回当前用户订阅的所有频道。
   Future<List<ChannelModel>> getChannels();
 
+  /// 获取频道 UI 状态
+  ///
+  /// 返回所有频道的 UI 状态（未读数、静音、置顶等）。
+  /// 用于初始化频道列表的 UI 状态。
+  Future<Map<String, ChannelUIState>> getUIStates();
+
   /// 获取频道详情
   ///
   /// 根据频道 ID 获取完整的频道信息，包括置顶消息等。

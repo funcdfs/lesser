@@ -1,0 +1,716 @@
+syntax = "proto3";
+package channel;
+
+option go_package = "github.com/funcdfs/lesser/channel/gen_protos/channel";
+
+import "common/common.proto";
+import "channel/entities.proto";   // 核心实体
+import "channel/stream.proto";     // 双向流事件
+
+// ============================================================================
+// ChannelService 广播频道服务 (端口: 50062)
+// ============================================================================
+//
+// 类似 Telegram Channel 的单向广播频道，支持：
+// - 频道管理（创建、更新、删除、设置）
+// - 订阅管理（订阅、取消订阅、静音、置顶）
+// - 管理员管理（添加、移除、权限设置）
+// - 邀请链接管理（创建、撤销、统计）
+// - 消息发布（仅管理员可发布，支持定时发送）
+// - 投票功能（创建、投票、关闭）
+// - 反应和评论
+// - 频道发现（分类、搜索、推荐）
+// - 数据统计（管理员可见）
+// - gRPC 双向流实时更新（两层推送架构）
+//
+// Proto 文件结构：
+// - service.proto   服务定义和请求/响应消息
+// - entities.proto  核心实体（Channel、Message、Comment、Poll 等）
+// - stream.proto    双向流事件定义
+//
+// ============================================================================
+
+service ChannelService {
+  // ========== 频道管理 ==========
+  rpc CreateChannel(CreateChannelRequest) returns (Channel);
+  rpc GetChannel(GetChannelRequest) returns (Channel);
+  rpc GetChannelByName(GetChannelByNameRequest) returns (Channel);
+  rpc UpdateChannel(UpdateChannelRequest) returns (Channel);
+  rpc UpdateChannelSettings(UpdateChannelSettingsRequest) returns (Channel);
+  rpc DeleteChannel(DeleteChannelRequest) returns (common.Empty);
+  rpc TransferOwnership(TransferOwnershipRequest) returns (common.Empty);
+
+  // ========== 频道列表 ==========
+  rpc GetSubscribedChannels(GetSubscribedChannelsRequest) returns (ChannelsResponse);
+  rpc GetOwnedChannels(GetOwnedChannelsRequest) returns (ChannelsResponse);
+  rpc GetManagedChannels(GetManagedChannelsRequest) returns (ChannelsResponse);
+
+  // ========== 频道发现 ==========
+  rpc SearchChannels(SearchChannelsRequest) returns (ChannelsResponse);
+  rpc GetCategories(GetCategoriesRequest) returns (CategoriesResponse);
+  rpc GetChannelsByCategory(GetChannelsByCategoryRequest) returns (ChannelsResponse);
+  rpc GetRecommendedChannels(GetRecommendedChannelsRequest) returns (RecommendedChannelsResponse);
+  rpc GetTrendingChannels(GetTrendingChannelsRequest) returns (ChannelsResponse);
+  rpc GetNearbyChannels(GetNearbyChannelsRequest) returns (ChannelsResponse);
+
+  // ========== 订阅管理 ==========
+  rpc Subscribe(SubscribeRequest) returns (SubscribeResponse);
+  rpc Unsubscribe(UnsubscribeRequest) returns (common.Empty);
+  rpc GetSubscribers(GetSubscribersRequest) returns (SubscribersResponse);
+  rpc CheckSubscription(CheckSubscriptionRequest) returns (CheckSubscriptionResponse);
+  rpc MuteChannel(MuteChannelRequest) returns (common.Empty);
+  rpc UnmuteChannel(UnmuteChannelRequest) returns (common.Empty);
+  rpc PinChannel(PinChannelRequest) returns (common.Empty);
+  rpc UnpinChannel(UnpinChannelRequest) returns (common.Empty);
+  rpc BanSubscriber(BanSubscriberRequest) returns (common.Empty);
+  rpc UnbanSubscriber(UnbanSubscriberRequest) returns (common.Empty);
+  rpc GetBannedSubscribers(GetBannedSubscribersRequest) returns (SubscribersResponse);
+
+  // ========== 加入请求（私有频道） ==========
+  rpc GetJoinRequests(GetJoinRequestsRequest) returns (JoinRequestsResponse);
+  rpc ApproveJoinRequest(ApproveJoinRequestRequest) returns (common.Empty);
+  rpc RejectJoinRequest(RejectJoinRequestRequest) returns (common.Empty);
+  rpc ApproveAllJoinRequests(ApproveAllJoinRequestsRequest) returns (ApproveAllJoinRequestsResponse);
+
+  // ========== 管理员管理 ==========
+  rpc AddAdmin(AddAdminRequest) returns (common.Empty);
+  rpc RemoveAdmin(RemoveAdminRequest) returns (common.Empty);
+  rpc UpdateAdminPermissions(UpdateAdminPermissionsRequest) returns (common.Empty);
+  rpc UpdateAdminTitle(UpdateAdminTitleRequest) returns (common.Empty);
+  rpc GetAdmins(GetAdminsRequest) returns (AdminsResponse);
+
+  // ========== 邀请链接管理 ==========
+  rpc CreateInviteLink(CreateInviteLinkRequest) returns (ChannelInvite);
+  rpc GetInviteLinks(GetInviteLinksRequest) returns (InviteLinksResponse);
+  rpc GetInviteLink(GetInviteLinkRequest) returns (ChannelInvite);
+  rpc EditInviteLink(EditInviteLinkRequest) returns (ChannelInvite);
+  rpc RevokeInviteLink(RevokeInviteLinkRequest) returns (common.Empty);
+  rpc JoinByInviteLink(JoinByInviteLinkRequest) returns (JoinByInviteLinkResponse);
+
+  // ========== 消息管理 ==========
+  rpc PublishMessage(PublishMessageRequest) returns (ChannelMessage);
+  rpc GetMessages(GetMessagesRequest) returns (MessagesResponse);
+  rpc GetMessage(GetMessageRequest) returns (ChannelMessage);
+  rpc EditMessage(EditMessageRequest) returns (ChannelMessage);
+  rpc DeleteMessage(DeleteMessageRequest) returns (common.Empty);
+  rpc DeleteMessages(DeleteMessagesRequest) returns (DeleteMessagesResponse);
+  rpc PinMessage(PinMessageRequest) returns (common.Empty);
+  rpc UnpinMessage(UnpinMessageRequest) returns (common.Empty);
+  rpc GetPinnedMessages(GetPinnedMessagesRequest) returns (MessagesResponse);
+  rpc ForwardMessage(ForwardMessageRequest) returns (ChannelMessage);
+  rpc SearchMessages(SearchMessagesRequest) returns (MessagesResponse);
+
+  // ========== 定时消息 ==========
+  rpc ScheduleMessage(ScheduleMessageRequest) returns (ScheduledMessage);
+  rpc GetScheduledMessages(GetScheduledMessagesRequest) returns (ScheduledMessagesResponse);
+  rpc EditScheduledMessage(EditScheduledMessageRequest) returns (ScheduledMessage);
+  rpc CancelScheduledMessage(CancelScheduledMessageRequest) returns (common.Empty);
+  rpc SendScheduledMessageNow(SendScheduledMessageNowRequest) returns (ChannelMessage);
+
+  // ========== 投票管理 ==========
+  rpc CreatePoll(CreatePollRequest) returns (ChannelMessage);
+  rpc VotePoll(VotePollRequest) returns (Poll);
+  rpc RetractVote(RetractVoteRequest) returns (Poll);
+  rpc ClosePoll(ClosePollRequest) returns (Poll);
+  rpc GetPollVoters(GetPollVotersRequest) returns (PollVotersResponse);
+
+  // ========== 反应管理 ==========
+  rpc AddReaction(AddReactionRequest) returns (common.Empty);
+  rpc RemoveReaction(RemoveReactionRequest) returns (common.Empty);
+  rpc GetReactions(GetReactionsRequest) returns (ReactionsResponse);
+
+  // ========== 评论管理 ==========
+  rpc CreateComment(CreateCommentRequest) returns (ChannelComment);
+  rpc GetComments(GetCommentsRequest) returns (CommentsResponse);
+  rpc DeleteComment(DeleteCommentRequest) returns (common.Empty);
+  rpc PinComment(PinCommentRequest) returns (common.Empty);
+  rpc UnpinComment(UnpinCommentRequest) returns (common.Empty);
+  rpc LikeComment(LikeCommentRequest) returns (common.Empty);
+  rpc UnlikeComment(UnlikeCommentRequest) returns (common.Empty);
+
+  // ========== 数据统计 ==========
+  rpc GetChannelStats(GetChannelStatsRequest) returns (ChannelStats);
+  rpc GetMessageStats(GetMessageStatsRequest) returns (MessageStats);
+
+  // ========== 实时更新（双向流） ==========
+  rpc StreamUpdates(stream ChannelClientEvent) returns (stream ChannelServerEvent);
+}
+
+// ============================================================================
+// 频道管理 - 请求/响应
+// ============================================================================
+
+message CreateChannelRequest {
+  string name = 1;                            // 频道标识符（唯一，用于 URL）
+  string display_name = 2;                    // 频道显示名称
+  string description = 3;
+  string avatar_url = 4;
+  string banner_url = 5;                      // 横幅图
+  ChannelType type = 6;                       // 频道类型
+  bool is_public = 7;                         // 是否公开（兼容旧字段）
+  string category_id = 8;                     // 所属分类
+  repeated string tags = 9;                   // 标签
+}
+
+message GetChannelRequest {
+  string channel_id = 1;
+}
+
+message GetChannelByNameRequest {
+  string name = 1;                            // 频道标识符
+}
+
+message UpdateChannelRequest {
+  string channel_id = 1;
+  string name = 2;
+  string display_name = 3;
+  string description = 4;
+  string avatar_url = 5;
+  string banner_url = 6;
+  ChannelType type = 7;
+  bool is_public = 8;
+  string category_id = 9;
+  repeated string tags = 10;
+}
+
+message UpdateChannelSettingsRequest {
+  string channel_id = 1;
+  ChannelSettings settings = 2;
+}
+
+message DeleteChannelRequest {
+  string channel_id = 1;
+}
+
+message TransferOwnershipRequest {
+  string channel_id = 1;
+  string new_owner_id = 2;
+}
+
+message GetSubscribedChannelsRequest {
+  string user_id = 1;                         // 可选，默认当前用户
+  bool pinned_only = 2;                       // 仅返回置顶频道
+  common.Pagination pagination = 3;
+}
+
+message GetOwnedChannelsRequest {
+  string user_id = 1;                         // 可选，默认当前用户
+  common.Pagination pagination = 2;
+}
+
+message GetManagedChannelsRequest {
+  string user_id = 1;                         // 可选，默认当前用户
+  common.Pagination pagination = 2;
+}
+
+message SearchChannelsRequest {
+  string query = 1;
+  string category_id = 2;                     // 可选：按分类筛选
+  repeated string tags = 3;                   // 可选：按标签筛选
+  common.Pagination pagination = 4;
+}
+
+message ChannelsResponse {
+  repeated Channel channels = 1;
+  common.Pagination pagination = 2;
+}
+
+// ============================================================================
+// 频道发现 - 请求/响应
+// ============================================================================
+
+message GetCategoriesRequest {}
+
+message CategoriesResponse {
+  repeated ChannelCategory categories = 1;
+}
+
+message GetChannelsByCategoryRequest {
+  string category_id = 1;
+  string sort_by = 2;                         // subscribers, recent, trending
+  common.Pagination pagination = 3;
+}
+
+message GetRecommendedChannelsRequest {
+  int32 limit = 1;                            // 推荐数量
+}
+
+message RecommendedChannelsResponse {
+  repeated RecommendedChannel channels = 1;
+}
+
+message GetTrendingChannelsRequest {
+  string time_range = 1;                      // day, week, month
+  common.Pagination pagination = 2;
+}
+
+message GetNearbyChannelsRequest {
+  double latitude = 1;
+  double longitude = 2;
+  int32 radius_km = 3;                        // 搜索半径（公里）
+  common.Pagination pagination = 4;
+}
+
+// ============================================================================
+// 订阅管理 - 请求/响应
+// ============================================================================
+
+message SubscribeRequest {
+  string channel_id = 1;
+  string invite_link_code = 2;                // 可选：通过邀请链接订阅
+  string message = 3;                         // 可选：申请留言（私有频道）
+}
+
+message SubscribeResponse {
+  bool success = 1;
+  bool pending_approval = 2;                  // 是否需要等待审批
+  Channel channel = 3;                        // 订阅成功时返回频道信息
+}
+
+message UnsubscribeRequest {
+  string channel_id = 1;
+}
+
+message GetSubscribersRequest {
+  string channel_id = 1;
+  string query = 2;                           // 可选：搜索订阅者
+  SubscriberStatus status = 3;                // 可选：按状态筛选
+  common.Pagination pagination = 4;
+}
+
+message SubscribersResponse {
+  repeated Subscriber subscribers = 1;
+  common.Pagination pagination = 2;
+}
+
+message CheckSubscriptionRequest {
+  string channel_id = 1;
+}
+
+message CheckSubscriptionResponse {
+  bool is_subscribed = 1;
+  bool is_muted = 2;
+  bool is_pinned = 3;
+  bool is_banned = 4;
+  bool pending_approval = 5;
+}
+
+message MuteChannelRequest {
+  string channel_id = 1;
+  int64 mute_until = 2;                       // Unix 时间戳，0 表示永久静音
+}
+
+message UnmuteChannelRequest {
+  string channel_id = 1;
+}
+
+message PinChannelRequest {
+  string channel_id = 1;
+}
+
+message UnpinChannelRequest {
+  string channel_id = 1;
+}
+
+message BanSubscriberRequest {
+  string channel_id = 1;
+  string user_id = 2;
+  string reason = 3;                          // 可选：封禁原因
+}
+
+message UnbanSubscriberRequest {
+  string channel_id = 1;
+  string user_id = 2;
+}
+
+message GetBannedSubscribersRequest {
+  string channel_id = 1;
+  common.Pagination pagination = 2;
+}
+
+// ============================================================================
+// 加入请求 - 请求/响应
+// ============================================================================
+
+message GetJoinRequestsRequest {
+  string channel_id = 1;
+  JoinRequestStatus status = 2;               // 可选：按状态筛选
+  common.Pagination pagination = 3;
+}
+
+message JoinRequestsResponse {
+  repeated JoinRequest requests = 1;
+  common.Pagination pagination = 2;
+}
+
+message ApproveJoinRequestRequest {
+  string channel_id = 1;
+  string request_id = 2;
+}
+
+message RejectJoinRequestRequest {
+  string channel_id = 1;
+  string request_id = 2;
+}
+
+message ApproveAllJoinRequestsRequest {
+  string channel_id = 1;
+}
+
+message ApproveAllJoinRequestsResponse {
+  int32 approved_count = 1;
+}
+
+// ============================================================================
+// 管理员管理 - 请求/响应
+// ============================================================================
+
+message AddAdminRequest {
+  string channel_id = 1;
+  string user_id = 2;
+  AdminPermissions permissions = 3;           // 可选：自定义权限
+  string custom_title = 4;                    // 可选：自定义头衔
+}
+
+message RemoveAdminRequest {
+  string channel_id = 1;
+  string user_id = 2;
+}
+
+message UpdateAdminPermissionsRequest {
+  string channel_id = 1;
+  string user_id = 2;
+  AdminPermissions permissions = 3;
+}
+
+message UpdateAdminTitleRequest {
+  string channel_id = 1;
+  string user_id = 2;
+  string custom_title = 3;
+}
+
+message GetAdminsRequest {
+  string channel_id = 1;
+}
+
+message AdminsResponse {
+  repeated Admin admins = 1;
+}
+
+// ============================================================================
+// 邀请链接 - 请求/响应
+// ============================================================================
+
+message CreateInviteLinkRequest {
+  string channel_id = 1;
+  string name = 2;                            // 可选：链接名称
+  int32 usage_limit = 3;                      // 可选：使用次数限制
+  common.Timestamp expires_at = 4;            // 可选：过期时间
+  bool requires_approval = 5;                 // 是否需要审批
+}
+
+message GetInviteLinksRequest {
+  string channel_id = 1;
+  bool include_revoked = 2;                   // 是否包含已撤销的链接
+  common.Pagination pagination = 3;
+}
+
+message InviteLinksResponse {
+  repeated ChannelInvite invites = 1;
+  common.Pagination pagination = 2;
+}
+
+message GetInviteLinkRequest {
+  string invite_code = 1;
+}
+
+message EditInviteLinkRequest {
+  string channel_id = 1;
+  string invite_id = 2;
+  string name = 3;
+  int32 usage_limit = 4;
+  common.Timestamp expires_at = 5;
+  bool requires_approval = 6;
+}
+
+message RevokeInviteLinkRequest {
+  string channel_id = 1;
+  string invite_id = 2;
+}
+
+message JoinByInviteLinkRequest {
+  string invite_code = 1;
+  string message = 2;                         // 可选：申请留言
+}
+
+message JoinByInviteLinkResponse {
+  bool success = 1;
+  bool pending_approval = 2;
+  Channel channel = 3;
+}
+
+
+// ============================================================================
+// 消息管理 - 请求/响应
+// ============================================================================
+
+message PublishMessageRequest {
+  string channel_id = 1;
+  string content = 2;                         // 消息内容（支持 Markdown）
+  MessageType type = 3;                       // 消息类型
+  repeated MessageMedia media = 4;            // 媒体附件
+  repeated MessageDocument documents = 5;     // 文档附件
+  LinkPreview link_preview = 6;               // 链接预览
+  bool is_silent = 7;                         // 是否静默发送
+  string reply_to_message_id = 8;             // 可选：回复的消息 ID
+  bool disable_link_preview = 9;              // 禁用自动链接预览
+}
+
+message GetMessagesRequest {
+  string channel_id = 1;
+  string before_message_id = 2;               // 可选：获取此消息之前的消息
+  string after_message_id = 3;                // 可选：获取此消息之后的消息
+  common.Pagination pagination = 4;
+}
+
+message GetMessageRequest {
+  string message_id = 1;
+}
+
+message EditMessageRequest {
+  string message_id = 1;
+  string content = 2;
+  repeated MessageMedia media = 3;
+  repeated MessageDocument documents = 4;
+  LinkPreview link_preview = 5;
+  bool disable_link_preview = 6;
+}
+
+message DeleteMessageRequest {
+  string message_id = 1;
+}
+
+message DeleteMessagesRequest {
+  string channel_id = 1;
+  repeated string message_ids = 2;
+}
+
+message DeleteMessagesResponse {
+  int32 deleted_count = 1;
+}
+
+message PinMessageRequest {
+  string message_id = 1;
+  bool notify_subscribers = 2;                // 是否通知订阅者
+}
+
+message UnpinMessageRequest {
+  string message_id = 1;
+}
+
+message GetPinnedMessagesRequest {
+  string channel_id = 1;
+}
+
+message ForwardMessageRequest {
+  string from_channel_id = 1;
+  string message_id = 2;
+  string to_channel_id = 3;
+  bool is_silent = 4;
+  bool hide_author = 5;                       // 隐藏原作者
+}
+
+message SearchMessagesRequest {
+  string channel_id = 1;
+  string query = 2;
+  string from_user_id = 3;                    // 可选：按作者筛选
+  common.Timestamp from_date = 4;             // 可选：开始日期
+  common.Timestamp to_date = 5;               // 可选：结束日期
+  MessageType type = 6;                       // 可选：按类型筛选
+  common.Pagination pagination = 7;
+}
+
+message MessagesResponse {
+  repeated ChannelMessage messages = 1;
+  common.Pagination pagination = 2;
+}
+
+// ============================================================================
+// 定时消息 - 请求/响应
+// ============================================================================
+
+message ScheduleMessageRequest {
+  string channel_id = 1;
+  string content = 2;
+  MessageType type = 3;
+  repeated MessageMedia media = 4;
+  repeated MessageDocument documents = 5;
+  LinkPreview link_preview = 6;
+  Poll poll = 7;                              // 可选：定时投票
+  common.Timestamp scheduled_at = 8;          // 计划发送时间
+  bool is_silent = 9;
+}
+
+message GetScheduledMessagesRequest {
+  string channel_id = 1;
+  common.Pagination pagination = 2;
+}
+
+message ScheduledMessagesResponse {
+  repeated ScheduledMessage messages = 1;
+  common.Pagination pagination = 2;
+}
+
+message EditScheduledMessageRequest {
+  string scheduled_message_id = 1;
+  string content = 2;
+  MessageType type = 3;
+  repeated MessageMedia media = 4;
+  repeated MessageDocument documents = 5;
+  LinkPreview link_preview = 6;
+  Poll poll = 7;
+  common.Timestamp scheduled_at = 8;
+  bool is_silent = 9;
+}
+
+message CancelScheduledMessageRequest {
+  string scheduled_message_id = 1;
+}
+
+message SendScheduledMessageNowRequest {
+  string scheduled_message_id = 1;
+}
+
+// ============================================================================
+// 投票管理 - 请求/响应
+// ============================================================================
+
+message CreatePollRequest {
+  string channel_id = 1;
+  string question = 2;
+  repeated string options = 3;                // 选项文本列表
+  PollType type = 4;
+  bool is_anonymous = 5;
+  bool allows_multiple_answers = 6;
+  int32 correct_option_index = 7;             // 问答投票的正确答案
+  string explanation = 8;                     // 答案解释
+  common.Timestamp close_date = 9;            // 可选：自动关闭时间
+  bool is_silent = 10;
+}
+
+message VotePollRequest {
+  string message_id = 1;
+  repeated int32 option_indexes = 2;          // 投票的选项索引
+}
+
+message RetractVoteRequest {
+  string message_id = 1;
+}
+
+message ClosePollRequest {
+  string message_id = 1;
+}
+
+message GetPollVotersRequest {
+  string message_id = 1;
+  int32 option_index = 2;                     // 可选：筛选特定选项的投票者
+  common.Pagination pagination = 3;
+}
+
+message PollVotersResponse {
+  repeated PollVoter voters = 1;
+  common.Pagination pagination = 2;
+}
+
+// ============================================================================
+// 反应管理 - 请求/响应
+// ============================================================================
+
+message AddReactionRequest {
+  string message_id = 1;
+  string emoji = 2;
+}
+
+message RemoveReactionRequest {
+  string message_id = 1;
+}
+
+message GetReactionsRequest {
+  string message_id = 1;
+  string emoji = 2;                           // 可选：筛选特定 emoji
+  common.Pagination pagination = 3;
+}
+
+message ReactionsResponse {
+  repeated ReactionUser users = 1;
+  common.Pagination pagination = 2;
+}
+
+// ============================================================================
+// 评论管理 - 请求/响应
+// ============================================================================
+
+message CreateCommentRequest {
+  string message_id = 1;
+  string channel_id = 2;
+  string content = 3;
+  repeated CommentMedia media = 4;
+  string reply_to_comment_id = 5;             // 可选：回复的评论 ID
+}
+
+message GetCommentsRequest {
+  string message_id = 1;
+  string parent_comment_id = 2;               // 可选：获取某评论的回复
+  string sort_by = 3;                         // recent, popular, oldest
+  common.Pagination pagination = 4;
+}
+
+message CommentsResponse {
+  repeated ChannelComment comments = 1;
+  common.Pagination pagination = 2;
+}
+
+message DeleteCommentRequest {
+  string comment_id = 1;
+}
+
+message PinCommentRequest {
+  string comment_id = 1;
+}
+
+message UnpinCommentRequest {
+  string comment_id = 1;
+}
+
+message LikeCommentRequest {
+  string comment_id = 1;
+}
+
+message UnlikeCommentRequest {
+  string comment_id = 1;
+}
+
+// ============================================================================
+// 数据统计 - 请求/响应
+// ============================================================================
+
+message GetChannelStatsRequest {
+  string channel_id = 1;
+}
+
+message GetMessageStatsRequest {
+  string message_id = 1;
+}
+
+// 消息统计
+message MessageStats {
+  string message_id = 1;
+  int64 view_count = 2;
+  int64 forward_count = 3;
+  int64 share_count = 4;
+  int64 reaction_count = 5;
+  int64 comment_count = 6;
+  repeated ReactionCount reaction_breakdown = 7;  // 各反应类型统计
+  repeated HourlyStats hourly_views = 8;          // 24 小时浏览分布
+  common.Timestamp updated_at = 9;
+}

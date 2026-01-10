@@ -18,17 +18,32 @@ import 'channel_constants.dart';
 // 消息列表缓存控制器
 // =============================================================================
 
+/// 列表项类型（日期分隔符或消息）
+sealed class ListItem {}
+
+/// 日期分隔符项
+class DateItem extends ListItem {
+  DateItem(this.date);
+  final DateTime date;
+}
+
+/// 消息项
+class MessageItem extends ListItem {
+  MessageItem(this.message);
+  final ChannelMessageModel message;
+}
+
 /// 消息列表缓存控制器
 ///
 /// 管理消息列表的缓存和日期分组逻辑，避免在 build 中重复计算。
 class MessageListController {
   MessageListController();
 
-  List<dynamic> _cachedListItems = [];
+  List<ListItem> _cachedListItems = [];
   Set<DateTime> _cachedMessageDates = {};
 
-  /// 获取缓存的列表项（DateTime | ChannelMessageModel）
-  List<dynamic> get listItems => _cachedListItems;
+  /// 获取缓存的列表项
+  List<ListItem> get listItems => _cachedListItems;
 
   /// 获取缓存的消息日期集合
   Set<DateTime> get messageDates => _cachedMessageDates;
@@ -45,7 +60,7 @@ class MessageListController {
   int? findMessageIndex(String messageId) {
     for (var i = 0; i < _cachedListItems.length; i++) {
       final item = _cachedListItems[i];
-      if (item is ChannelMessageModel && item.id == messageId) {
+      if (item is MessageItem && item.message.id == messageId) {
         return i;
       }
     }
@@ -53,8 +68,8 @@ class MessageListController {
   }
 
   /// 构建列表项（消息 + 日期分隔符）
-  List<dynamic> _buildListItems(List<ChannelMessageModel> messages) {
-    final items = <dynamic>[];
+  List<ListItem> _buildListItems(List<ChannelMessageModel> messages) {
+    final items = <ListItem>[];
     DateTime? lastDate;
 
     for (final message in messages) {
@@ -65,11 +80,11 @@ class MessageListController {
       );
 
       if (lastDate == null || lastDate != messageDate) {
-        items.add(messageDate);
+        items.add(DateItem(messageDate));
         lastDate = messageDate;
       }
 
-      items.add(message);
+      items.add(MessageItem(message));
     }
 
     return items;
@@ -135,10 +150,12 @@ class HighlightController {
   }
 
   /// 滚动到目标消息并高亮
+  ///
+  /// [targetMessageId] 目标消息 ID
+  /// [listController] 消息列表控制器，用于查找消息索引
   void scrollToMessageAndHighlight({
     required String? targetMessageId,
     required MessageListController listController,
-    required BuildContext context,
   }) {
     if (_hasScrolledToTarget || _isDisposed) return;
     if (targetMessageId == null) return;
@@ -186,15 +203,22 @@ class HighlightController {
 
     if (keyContext != null) {
       Scrollable.ensureVisible(
-        keyContext,
-        alignment: ChannelLayoutConstants.scrollAlignment,
-        duration: ChannelLayoutConstants.scrollDuration,
-        curve: Curves.easeOut,
-      ).then((_) {
-        if (_isDisposed) return;
-        _highlightedMessageId = messageId;
-        onHighlightChanged?.call(messageId);
-      });
+            keyContext,
+            alignment: ChannelLayoutConstants.scrollAlignment,
+            duration: ChannelLayoutConstants.scrollDuration,
+            curve: Curves.easeOut,
+          )
+          .then((_) {
+            if (_isDisposed) return;
+            _highlightedMessageId = messageId;
+            onHighlightChanged?.call(messageId);
+          })
+          .catchError((error) {
+            // 滚动动画被中断时忽略错误，仍然设置高亮
+            if (_isDisposed) return;
+            _highlightedMessageId = messageId;
+            onHighlightChanged?.call(messageId);
+          });
     } else {
       if (!scrollController.hasClients) {
         _highlightedMessageId = messageId;
@@ -212,6 +236,12 @@ class HighlightController {
             curve: Curves.easeOut,
           )
           .then((_) {
+            if (_isDisposed) return;
+            _highlightedMessageId = messageId;
+            onHighlightChanged?.call(messageId);
+          })
+          .catchError((error) {
+            // 滚动动画被中断时忽略错误，仍然设置高亮
             if (_isDisposed) return;
             _highlightedMessageId = messageId;
             onHighlightChanged?.call(messageId);

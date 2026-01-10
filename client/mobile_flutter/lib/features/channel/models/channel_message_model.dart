@@ -6,7 +6,7 @@
 //
 // ## 设计特点
 //
-// 1. **哨兵值模式**：`copyWith` 方法使用 `_notProvided` 哨兵值区分
+// 1. **哨兵值模式**：`copyWith` 方法使用公共 `sentinel` 哨兵值区分
 //    "传入 null 清除字段" 和 "未传参保留原值" 两种情况
 //
 // 2. **乐观更新**：提供 `withReactionAdded`、`withReactionRemoved` 等快捷方法，
@@ -34,17 +34,9 @@
 // final cleared = message.copyWith(myReaction: null);
 // ```
 
+import '../../../pkg/utils/copy_with_utils.dart';
 import '../../../pkg/utils/format_utils.dart';
 import 'reaction_model.dart';
-
-/// 用于 copyWith 方法中区分 null 和未传参的哨兵值
-///
-/// 这种模式解决了 Dart 中 `copyWith` 方法的常见问题：
-/// - 传入 `null` 应该清除字段
-/// - 不传参应该保留原值
-///
-/// 使用 `Object()` 作为哨兵值，因为它是唯一的实例，不会与任何有效值冲突。
-const _notProvided = Object();
 
 // =============================================================================
 // 频道消息模型
@@ -213,15 +205,15 @@ class ChannelMessageModel {
     List<String>? mediaUrls,
     int? viewCount,
     DateTime? createdAt,
-    Object? updatedAt = _notProvided,
+    Object? updatedAt = sentinel,
     bool? isPinned,
     bool? isEdited,
-    Object? authorName = _notProvided,
+    Object? authorName = sentinel,
     ReactionStats? reactionStats,
-    Object? myReaction = _notProvided,
+    Object? myReaction = sentinel,
     int? commentCount,
-    Object? linkUrl = _notProvided,
-    Object? linkTitle = _notProvided,
+    Object? linkUrl = sentinel,
+    Object? linkTitle = sentinel,
     List<String>? commentAvatars,
   }) {
     return ChannelMessageModel(
@@ -232,37 +224,25 @@ class ChannelMessageModel {
       mediaUrls: mediaUrls ?? this.mediaUrls,
       viewCount: viewCount ?? this.viewCount,
       createdAt: createdAt ?? this.createdAt,
-      updatedAt: updatedAt == _notProvided
+      updatedAt: updatedAt == sentinel
           ? this.updatedAt
-          : _castOrNull<DateTime>(updatedAt),
+          : castOrNull<DateTime>(updatedAt),
       isPinned: isPinned ?? this.isPinned,
       isEdited: isEdited ?? this.isEdited,
-      authorName: authorName == _notProvided
+      authorName: authorName == sentinel
           ? this.authorName
-          : _castOrNull<String>(authorName),
+          : castOrNull<String>(authorName),
       reactionStats: reactionStats ?? this.reactionStats,
-      myReaction: myReaction == _notProvided
+      myReaction: myReaction == sentinel
           ? this.myReaction
-          : _castOrNull<String>(myReaction),
+          : castOrNull<String>(myReaction),
       commentCount: commentCount ?? this.commentCount,
-      linkUrl: linkUrl == _notProvided
-          ? this.linkUrl
-          : _castOrNull<String>(linkUrl),
-      linkTitle: linkTitle == _notProvided
+      linkUrl: linkUrl == sentinel ? this.linkUrl : castOrNull<String>(linkUrl),
+      linkTitle: linkTitle == sentinel
           ? this.linkTitle
-          : _castOrNull<String>(linkTitle),
+          : castOrNull<String>(linkTitle),
       commentAvatars: commentAvatars ?? this.commentAvatars,
     );
-  }
-
-  /// 安全类型转换辅助方法
-  ///
-  /// 将 `Object?` 转换为目标类型 `T?`，类型不匹配时返回 null 并触发断言。
-  static T? _castOrNull<T>(Object? value) {
-    if (value == null) return null;
-    if (value is T) return value as T;
-    assert(false, 'copyWith: 期望类型 $T，实际类型 ${value.runtimeType}');
-    return null;
   }
 
   // ---------------------------------------------------------------------------
@@ -285,24 +265,9 @@ class ChannelMessageModel {
     final currentReaction = myReaction;
     if (currentReaction == null) return this;
 
-    return ChannelMessageModel(
-      id: id,
-      channelId: channelId,
-      authorId: authorId,
-      content: content,
-      mediaUrls: mediaUrls,
-      viewCount: viewCount,
-      createdAt: createdAt,
-      updatedAt: updatedAt,
-      isPinned: isPinned,
-      isEdited: isEdited,
-      authorName: authorName,
+    return copyWith(
       reactionStats: reactionStats.withRemoved(currentReaction),
       myReaction: null,
-      commentCount: commentCount,
-      linkUrl: linkUrl,
-      linkTitle: linkTitle,
-      commentAvatars: commentAvatars,
     );
   }
 

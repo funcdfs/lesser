@@ -2,6 +2,156 @@
 
 频道模块实现类似 Telegram Channel 的广播频道功能，支持频道消息、评论系统和深层链接导航。
 
+## 实时推送架构
+
+### 两层推送设计
+
+频道模块采用两层推送架构，优化网络流量和用户体验：
+
+```
+┌─────────────────────────────────────────────────────────────────────────────┐
+│                           两层推送架构                                        │
+├─────────────────────────────────────────────────────────────────────────────┤
+│                                                                             │
+│  ┌─────────────────────────────────────────────────────────────────────┐   │
+│  │                    全局连接（列表页）                                  │   │
+│  │                                                                       │   │
+│  │  • 建立时机：用户打开频道列表页                                         │   │
+│  │  • 推送范围：所有订阅频道                                              │   │
+│  │  • 推送内容：轻量级通知                                                │   │
+│  │    - 频道 ID、名称、头像                                               │   │
+│  │    - 预览文本（截断）                                                  │   │
+│  │    - 消息时间                                                         │   │
+│  │    - 未读数                                                           │   │
+│  │    - 是否有媒体                                                        │   │
+│  │    - 作者名称                                                         │   │
+│  │                                                                       │   │
+│  └─────────────────────────────────────────────────────────────────────┘   │
+│                                    │                                        │
+│                                    │ 用户进入详情页                          │
+│                                    ▼                                        │
+│  ┌─────────────────────────────────────────────────────────────────────┐   │
+│  │                    频道连接（详情页）                                  │   │
+│  │                                                                       │   │
+│  │  • 建立时机：用户进入频道详情页（发送 FocusChannel）                     │   │
+│  │  • 推送范围：仅当前打开的频道                                          │   │
+│  │  • 推送内容：完整更新                                                  │   │
+│  │    - 完整消息内容（文本、媒体、链接）                                    │   │
+│  │    - 反应变化（emoji 计数、我的反应）                                   │   │
+│  │    - 评论变化（新评论、删除、点赞）                                     │   │
+│  │    - 消息编辑、删除、置顶                                              │   │
+│  │                                                                       │   │
+│  └─────────────────────────────────────────────────────────────────────┘   │
+│                                                                             │
+└─────────────────────────────────────────────────────────────────────────────┘
+```
+
+### 事件流程
+
+```mermaid
+sequenceDiagram
+    participant App as Flutter App
+    participant Stream as gRPC Stream
+    participant Server as Channel Service
+
+    Note over App,Server: 1. 全局连接（列表页）
+
+    App->>Stream: ClientConnectEvent
+    Stream->>Server: 建立连接
+    Server-->>Stream: ServerConnectedEvent (订阅频道摘要列表)
+    Stream-->>App: 初始化列表
+
+    loop 全局通知
+        Server-->>Stream: ServerChannelNotifyEvent
+        Stream-->>App: 更新列表项（预览、时间、未读数）
+    end
+
+    Note over App,Server: 2. 频道连接（进入详情页）
+
+    App->>Stream: ClientFocusChannelEvent(channel_id)
+    Server-->>Stream: ServerFocusedEvent
+    Stream-->>App: 确认聚焦
+
+    loop 详情页更新
+        Server-->>Stream: ServerNewMessageEvent (完整消息)
+        Stream-->>App: 添加消息到列表
+        Server-->>Stream: ServerReactionUpdatedEvent
+        Stream-->>App: 更新反应计数
+        Server-->>Stream: ServerNewCommentEvent
+        Stream-->>App: 更新评论计数
+    end
+
+    Note over App,Server: 3. 离开详情页
+
+    App->>Stream: ClientUnfocusChannelEvent(channel_id)
+    Server-->>Stream: ServerUnfocusedEvent
+    Stream-->>App: 确认取消聚焦（继续接收全局通知）
+```
+
+### 客户端事件
+
+| 事件 | 说明 | 使用场景 |
+|------|------|---------|
+| `ClientConnectEvent` | 建立全局连接 | 打开频道列表页 |
+| `ClientDisconnectEvent` | 断开全局连接 | 关闭频道模块 |
+| `ClientFocusChannelEvent` | 聚焦频道 | 进入频道详情页 |
+| `ClientUnfocusChannelEvent` | 取消聚焦 | 离开频道详情页 |
+| `ClientPingEvent` | 心跳 | 保持连接活跃 |
+| `ClientMarkReadEvent` | 标记已读 | 用户阅读消息 |
+| `ClientAckEvent` | 确认收到 | 可靠投递确认 |
+
+### 服务端事件
+
+| 事件 | 推送层级 | 说明 |
+|------|---------|------|
+| `ServerConnectedEvent` | 连接 | 全局连接成功，返回订阅频道摘要 |
+| `ServerFocusedEvent` | 连接 | 频道聚焦成功 |
+| `ServerUnfocusedEvent` | 连接 | 频道取消聚焦成功 |
+| `ServerChannelNotifyEvent` | 全局 | 频道新消息通知（轻量） |
+| `ServerNewMessageEvent` | 详情 | 新消息（完整内容） |
+| `ServerMessageEditedEvent` | 详情 | 消息编辑 |
+| `ServerMessageDeletedEvent` | 详情 | 消息删除 |
+| `ServerReactionUpdatedEvent` | 详情 | 反应变化 |
+| `ServerNewCommentEvent` | 详情 | 新评论 |
+| `ServerCommentDeletedEvent` | 详情 | 评论删除 |
+| `ServerCommentLikedEvent` | 详情 | 评论点赞变化 |
+| `ServerChannelUpdatedEvent` | 全局 | 频道信息更新 |
+| `ServerChannelDeletedEvent` | 全局 | 频道删除 |
+
+### 数据结构
+
+#### ChannelSummary（频道摘要，列表页使用）
+
+```dart
+class ChannelSummary {
+  final String channelId;
+  final String channelName;
+  final String displayName;
+  final String? avatarUrl;
+  final String? lastMessagePreview;   // 最后消息预览
+  final DateTime? lastMessageTime;    // 最后消息时间
+  final int unreadCount;              // 未读数
+  final bool isMuted;                 // 是否静音
+  final bool isPinned;                // 是否置顶
+}
+```
+
+#### ServerChannelNotifyEvent（频道通知，轻量级）
+
+```dart
+class ChannelNotify {
+  final String channelId;
+  final String channelName;
+  final String? channelAvatarUrl;
+  final String messageId;
+  final String previewText;           // 预览文本（截断）
+  final DateTime messageTime;
+  final int unreadCount;
+  final bool hasMedia;
+  final String authorName;
+}
+```
+
 ## 模块结构
 
 ```

@@ -47,14 +47,14 @@ class DateSeparator extends StatelessWidget {
   const DateSeparator({
     super.key,
     required this.date,
-    this.messageDates,
+    this.messageDates = const {},
     this.onDateSelected,
   });
 
   final DateTime date;
 
-  /// 有消息的日期列表（用于年历高亮）
-  final Set<DateTime>? messageDates;
+  /// 有消息的日期列表（用于年历高亮），默认为空集合
+  final Set<DateTime> messageDates;
 
   /// 日期选择回调
   final ValueChanged<DateTime>? onDateSelected;
@@ -101,7 +101,7 @@ class DateSeparator extends StatelessWidget {
         pageBuilder: (context, animation, secondaryAnimation) =>
             YearCalendarPage(
               initialDate: date,
-              messageDates: messageDates ?? {},
+              messageDates: messageDates,
               onDateSelected: (selectedDate) {
                 Navigator.of(context).pop();
                 onDateSelected?.call(selectedDate);

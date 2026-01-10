@@ -39,6 +39,7 @@ import '../widgets/detail_app_bar.dart';
 import '../widgets/message_list_controller.dart';
 import '../widgets/message_list_view.dart';
 import '../widgets/pinned_message_banner.dart';
+import '../../../pkg/utils/copy_with_utils.dart';
 import 'channel_comment_page.dart';
 
 /// 频道详情页状态
@@ -64,6 +65,12 @@ class _DetailPageState {
   final bool showMessages;
   final String? highlightedMessageId;
 
+  /// 复制并修改指定字段
+  ///
+  /// 对于 highlightedMessageId 使用哨兵值模式：
+  /// - 不传参：保留原值
+  /// - 传入 null：清除该字段
+  /// - 传入具体值：更新为新值
   _DetailPageState copyWith({
     ChannelModel? channel,
     List<ChannelMessageModel>? messages,
@@ -71,8 +78,7 @@ class _DetailPageState {
     bool? showPinnedBanner,
     bool? isMuted,
     bool? showMessages,
-    String? highlightedMessageId,
-    bool clearHighlight = false,
+    Object? highlightedMessageId = sentinel,
   }) {
     return _DetailPageState(
       channel: channel ?? this.channel,
@@ -81,9 +87,9 @@ class _DetailPageState {
       showPinnedBanner: showPinnedBanner ?? this.showPinnedBanner,
       isMuted: isMuted ?? this.isMuted,
       showMessages: showMessages ?? this.showMessages,
-      highlightedMessageId: clearHighlight
-          ? null
-          : (highlightedMessageId ?? this.highlightedMessageId),
+      highlightedMessageId: highlightedMessageId == sentinel
+          ? this.highlightedMessageId
+          : castOrNull<String>(highlightedMessageId),
     );
   }
 }
@@ -118,6 +124,7 @@ class _ChannelDetailPageState extends State<ChannelDetailPage> {
   final _moreButtonKey = GlobalKey();
 
   late _DetailPageState _state;
+  bool _isDisposed = false;
 
   @override
   void initState() {
@@ -127,12 +134,9 @@ class _ChannelDetailPageState extends State<ChannelDetailPage> {
     _highlightController = HighlightController(
       scrollController: _scrollController,
       onHighlightChanged: (id) {
-        if (mounted) {
+        if (!_isDisposed && mounted) {
           setState(() {
-            _state = _state.copyWith(
-              highlightedMessageId: id,
-              clearHighlight: id == null,
-            );
+            _state = _state.copyWith(highlightedMessageId: id);
           });
         }
       },
@@ -150,6 +154,7 @@ class _ChannelDetailPageState extends State<ChannelDetailPage> {
 
   @override
   void dispose() {
+    _isDisposed = true;
     _scrollController.dispose();
     _listController.dispose();
     _highlightController.dispose(); // 清理高亮控制器
@@ -166,17 +171,19 @@ class _ChannelDetailPageState extends State<ChannelDetailPage> {
   /// 4. 延迟显示消息（配合淡入动画）
   /// 5. 滚动到目标消息并高亮（如果有 highlightMessageId）
   Future<void> _loadData() async {
+    if (_isDisposed) return;
+
     try {
       final channel =
           _state.channel ?? await _handler.getChannelDetail(widget.channelId);
 
-      // 异步操作后检查 mounted
-      if (!mounted) return;
+      // 异步操作后检查是否已销毁
+      if (_isDisposed) return;
 
       final messages = await _handler.getMessages(widget.channelId);
 
-      // 再次检查 mounted，防止竞态条件
-      if (!mounted) return;
+      // 再次检查，防止竞态条件
+      if (_isDisposed) return;
 
       // 合并状态更新
       setState(() {
@@ -191,20 +198,19 @@ class _ChannelDetailPageState extends State<ChannelDetailPage> {
       // 更新缓存
       _listController.updateCache(messages);
 
-      // 延迟显示消息，使用闭包捕获当前 context
+      // 延迟显示消息
       Future.delayed(AnimDurations.medium, () {
-        // Future.delayed 回调中必须检查 mounted
-        if (!mounted) return;
+        // Future.delayed 回调中必须检查是否已销毁
+        if (_isDisposed) return;
         setState(() => _state = _state.copyWith(showMessages: true));
         // 消息显示后，尝试滚动到目标消息
         _highlightController.scrollToMessageAndHighlight(
           targetMessageId: widget.highlightMessageId,
           listController: _listController,
-          context: context,
         );
       });
     } catch (e) {
-      if (!mounted) return;
+      if (_isDisposed) return;
       setState(() {
         _state = _state.copyWith(isLoading: false);
       });
@@ -297,24 +303,37 @@ class _ChannelDetailPageState extends State<ChannelDetailPage> {
       return msgDate == date;
     });
 
-    if (targetIndex != -1) {
-      // 使用 HighlightController 滚动到目标位置
-      final itemKey = _highlightController.getKeyForIndex(targetIndex);
-      final keyContext = itemKey.currentContext;
-      if (keyContext != null) {
-        Scrollable.ensureVisible(
-          keyContext,
-          alignment: ChannelLayoutConstants.scrollAlignment,
-          duration: ChannelLayoutConstants.scrollDuration,
-          curve: Curves.easeOut,
-        );
-      }
+    if (targetIndex == -1) return;
+
+    // 使用 HighlightController 滚动到目标位置
+    final itemKey = _highlightController.getKeyForIndex(targetIndex);
+    final keyContext = itemKey.currentContext;
+
+    if (keyContext != null) {
+      Scrollable.ensureVisible(
+        keyContext,
+        alignment: ChannelLayoutConstants.scrollAlignment,
+        duration: ChannelLayoutConstants.scrollDuration,
+        curve: Curves.easeOut,
+      );
+    } else {
+      // 降级处理：当 context 不可用时，使用估算位置滚动
+      if (!_scrollController.hasClients) return;
+      final targetOffset =
+          targetIndex * ChannelLayoutConstants.estimatedItemHeight;
+      final maxExtent = _scrollController.position.maxScrollExtent;
+      _scrollController.animateTo(
+        targetOffset.clamp(0.0, maxExtent),
+        duration: ChannelLayoutConstants.scrollDuration,
+        curve: Curves.easeOut,
+      );
     }
   }
 
   @override
   Widget build(BuildContext context) {
     final colors = AppColors.of(context);
+    final hasPinnedMessage = _state.channel?.pinnedMessage != null;
 
     return Scaffold(
       backgroundColor: colors.surfaceBase,
@@ -330,9 +349,10 @@ class _ChannelDetailPageState extends State<ChannelDetailPage> {
           ? const _LoadingView()
           : Stack(
               children: [
-                Positioned.fill(child: _buildMessageList(colors)),
-                if (_state.showPinnedBanner &&
-                    _state.channel?.pinnedMessage != null)
+                Positioned.fill(
+                  child: _buildMessageList(colors, hasPinnedMessage),
+                ),
+                if (_state.showPinnedBanner && hasPinnedMessage)
                   Positioned(
                     top: MediaQuery.paddingOf(context).top + kToolbarHeight,
                     left: 0,
@@ -347,7 +367,7 @@ class _ChannelDetailPageState extends State<ChannelDetailPage> {
     );
   }
 
-  Widget _buildMessageList(AppColorScheme colors) {
+  Widget _buildMessageList(AppColorScheme colors, bool hasPinnedMessage) {
     if (!_state.showMessages) {
       return const SizedBox.shrink();
     }
@@ -355,7 +375,7 @@ class _ChannelDetailPageState extends State<ChannelDetailPage> {
     final topPadding =
         MediaQuery.paddingOf(context).top +
         kToolbarHeight +
-        (_state.showPinnedBanner && _state.channel?.pinnedMessage != null
+        (_state.showPinnedBanner && hasPinnedMessage
             ? ChannelLayoutConstants.pinnedBannerHeight
             : ChannelLayoutConstants.defaultTopPadding);
 

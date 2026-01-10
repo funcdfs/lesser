@@ -1,0 +1,410 @@
+syntax = "proto3";
+package channel;
+
+option go_package = "github.com/funcdfs/lesser/channel/gen_protos/channel";
+
+import "common/common.proto";
+import "channel/entities.proto";
+
+// ============================================================================
+// 双向流事件定义 - 两层推送架构
+// ============================================================================
+//
+// 设计原则：
+// 1. 全局连接（列表页）：轻量级推送，推送所有订阅频道的新消息通知
+// 2. 频道连接（详情页）：完整推送，只推当前打开频道的完整消息内容
+//
+// 使用场景：
+// - 用户打开频道列表页时，建立全局连接，接收所有订阅频道的轻量通知
+// - 用户进入某个频道详情页时，发送 FocusChannel 事件，接收该频道的完整更新
+// - 用户离开频道详情页时，发送 UnfocusChannel 事件，停止接收完整更新
+//
+// 事件流程：
+//
+//   客户端                                    服务端
+//      │                                        │
+//      │──── ClientConnectEvent ───────────────>│  建立全局连接
+//      │<─── ServerConnectedEvent ─────────────│  返回订阅频道摘要列表
+//      │                                        │
+//      │     [全局通知循环]                       │
+//      │<─── ServerChannelNotifyEvent ─────────│  频道 A 有新消息（轻量）
+//      │<─── ServerChannelNotifyEvent ─────────│  频道 B 有新消息（轻量）
+//      │                                        │
+//      │──── ClientFocusChannelEvent(A) ───────>│  进入频道 A 详情页
+//      │<─── ServerFocusedEvent ───────────────│  确认聚焦
+//      │                                        │
+//      │     [详情页更新循环]                     │
+//      │<─── ServerNewMessageEvent ────────────│  频道 A 新消息（完整）
+//      │<─── ServerReactionUpdatedEvent ───────│  频道 A 反应变化
+//      │<─── ServerNewCommentEvent ────────────│  频道 A 新评论
+//      │<─── ServerPollUpdatedEvent ───────────│  频道 A 投票更新
+//      │                                        │
+//      │──── ClientUnfocusChannelEvent(A) ─────>│  离开频道 A 详情页
+//      │<─── ServerUnfocusedEvent ─────────────│  确认取消聚焦
+//      │                                        │
+//      │     [继续接收全局通知]                   │
+//      │<─── ServerChannelNotifyEvent ─────────│  频道 A 有新消息（轻量）
+//      │                                        │
+//
+// ============================================================================
+
+// ============================================================================
+// 客户端事件
+// ============================================================================
+
+message ChannelClientEvent {
+  oneof event {
+    // ---- 全局连接管理 ----
+    ClientConnectEvent connect = 1;           // 建立全局连接（列表页）
+    ClientDisconnectEvent disconnect = 2;     // 断开全局连接
+
+    // ---- 频道焦点管理 ----
+    ClientFocusChannelEvent focus = 3;        // 聚焦频道（进入详情页）
+    ClientUnfocusChannelEvent unfocus = 4;    // 取消聚焦（离开详情页）
+
+    // ---- 通用事件 ----
+    ClientPingEvent ping = 5;                 // 心跳
+    ClientMarkReadEvent mark_read = 6;        // 标记已读
+    ClientAckEvent ack = 7;                   // 确认收到事件
+
+    // ---- 实时输入状态 ----
+    ClientTypingEvent typing = 8;             // 正在输入（评论区）
+
+    // ---- 投票事件 ----
+    ClientVoteEvent vote = 9;                 // 投票
+  }
+}
+
+// 建立全局连接（列表页使用）
+// 连接后自动接收所有订阅频道的轻量通知
+message ClientConnectEvent {
+  bool include_muted = 1;                     // 是否包含已静音频道的通知
+}
+
+// 断开全局连接
+message ClientDisconnectEvent {}
+
+// 聚焦频道（进入详情页时发送）
+// 聚焦后接收该频道的完整消息内容、反应变化、评论变化
+message ClientFocusChannelEvent {
+  string channel_id = 1;
+  string last_read_message_id = 2;            // 可选：上次已读消息 ID，用于同步未读
+}
+
+// 取消聚焦（离开详情页时发送）
+// 取消后停止接收该频道的完整更新，但仍接收轻量通知
+message ClientUnfocusChannelEvent {
+  string channel_id = 1;
+}
+
+// 心跳
+message ClientPingEvent {}
+
+// 标记已读
+message ClientMarkReadEvent {
+  string channel_id = 1;
+  string message_id = 2;                      // 已读到的最新消息 ID
+}
+
+// 确认收到事件（用于可靠投递）
+message ClientAckEvent {
+  string event_id = 1;
+}
+
+// 正在输入（评论区）
+message ClientTypingEvent {
+  string channel_id = 1;
+  string message_id = 2;                      // 正在评论的消息 ID
+}
+
+// 投票事件（实时投票）
+message ClientVoteEvent {
+  string message_id = 1;
+  repeated int32 option_indexes = 2;
+}
+
+// ============================================================================
+// 服务端事件
+// ============================================================================
+
+message ChannelServerEvent {
+  oneof event {
+    // ---- 连接状态 ----
+    ServerConnectedEvent connected = 1;       // 全局连接成功
+    ServerFocusedEvent focused = 2;           // 频道聚焦成功
+    ServerUnfocusedEvent unfocused = 3;       // 频道取消聚焦成功
+
+    // ---- 全局通知（列表页，轻量级） ----
+    ServerChannelNotifyEvent channel_notify = 4;  // 频道有新消息通知
+
+    // ---- 频道详情更新（详情页，完整内容） ----
+    ServerNewMessageEvent new_message = 5;            // 新消息（完整内容）
+    ServerMessageEditedEvent message_edited = 6;      // 消息编辑
+    ServerMessageDeletedEvent message_deleted = 7;    // 消息删除
+    ServerMessagePinnedEvent message_pinned = 8;      // 消息置顶
+    ServerMessageUnpinnedEvent message_unpinned = 9;  // 消息取消置顶
+    ServerReactionUpdatedEvent reaction_updated = 10; // 反应变化
+    ServerNewCommentEvent new_comment = 11;           // 新评论
+    ServerCommentDeletedEvent comment_deleted = 12;   // 评论删除
+    ServerCommentLikedEvent comment_liked = 13;       // 评论点赞变化
+    ServerCommentPinnedEvent comment_pinned = 14;     // 评论置顶
+
+    // ---- 投票更新 ----
+    ServerPollUpdatedEvent poll_updated = 15;         // 投票结果更新
+    ServerPollClosedEvent poll_closed = 16;           // 投票关闭
+
+    // ---- 频道元信息更新 ----
+    ServerChannelUpdatedEvent channel_updated = 17;   // 频道信息更新
+    ServerChannelDeletedEvent channel_deleted = 18;   // 频道删除
+    ServerChannelSettingsUpdatedEvent settings_updated = 19; // 频道设置更新
+
+    // ---- 订阅状态变化 ----
+    ServerSubscriberJoinedEvent subscriber_joined = 20;   // 新订阅者加入
+    ServerSubscriberLeftEvent subscriber_left = 21;       // 订阅者离开
+    ServerSubscriberBannedEvent subscriber_banned = 22;   // 订阅者被封禁
+
+    // ---- 管理员变化 ----
+    ServerAdminAddedEvent admin_added = 23;           // 新增管理员
+    ServerAdminRemovedEvent admin_removed = 24;       // 移除管理员
+
+    // ---- 输入状态 ----
+    ServerTypingEvent typing = 25;                    // 有人正在输入
+
+    // ---- 通用事件 ----
+    ServerPongEvent pong = 26;                // 心跳响应
+    ServerErrorEvent error = 27;              // 错误
+  }
+}
+
+// ============================================================================
+// 连接状态事件
+// ============================================================================
+
+// 全局连接成功
+message ServerConnectedEvent {
+  repeated ChannelSummary subscribed_channels = 1;  // 已订阅频道摘要列表
+  int32 total_unread_count = 2;               // 总未读数
+}
+
+// 频道聚焦成功
+message ServerFocusedEvent {
+  string channel_id = 1;
+  ChannelMessage last_message = 2;            // 最新消息（可选，用于同步）
+  repeated ChannelMessage unread_messages = 3; // 未读消息列表
+  int32 unread_count = 4;                     // 未读数
+}
+
+// 频道取消聚焦成功
+message ServerUnfocusedEvent {
+  string channel_id = 1;
+}
+
+// ============================================================================
+// 全局通知事件（列表页，轻量级）
+// ============================================================================
+
+// 频道有新消息通知（推送给所有订阅者）
+// 用于更新列表页的预览文本、时间、未读数
+message ServerChannelNotifyEvent {
+  string channel_id = 1;                      // 频道 ID
+  string channel_name = 2;                    // 频道名称（冗余，避免查询）
+  string channel_avatar_url = 3;              // 频道头像（冗余）
+  string message_id = 4;                      // 消息 ID
+  string preview_text = 5;                    // 预览文本（截断后的内容）
+  common.Timestamp message_time = 6;          // 消息时间
+  int32 unread_count = 7;                     // 未读消息数
+  bool has_media = 8;                         // 是否包含媒体
+  string author_name = 9;                     // 作者名称
+  MessageType message_type = 10;              // 消息类型
+  bool is_pinned = 11;                        // 是否是置顶消息
+}
+
+// 频道摘要（用于连接时返回已订阅频道列表）
+message ChannelSummary {
+  string channel_id = 1;
+  string channel_name = 2;
+  string display_name = 3;
+  string avatar_url = 4;
+  string last_message_preview = 5;            // 最后消息预览
+  common.Timestamp last_message_time = 6;     // 最后消息时间
+  int32 unread_count = 7;                     // 未读数
+  bool is_muted = 8;                          // 是否静音
+  bool is_pinned = 9;                         // 是否置顶
+  ChannelVerificationStatus verification = 10; // 验证状态
+  MessageType last_message_type = 11;         // 最后消息类型
+}
+
+// ============================================================================
+// 频道详情更新事件（详情页，完整内容）
+// ============================================================================
+
+// 新消息（完整内容，只推送给聚焦该频道的用户）
+message ServerNewMessageEvent {
+  ChannelMessage message = 1;
+}
+
+// 消息编辑
+message ServerMessageEditedEvent {
+  ChannelMessage message = 1;
+}
+
+// 消息删除
+message ServerMessageDeletedEvent {
+  string message_id = 1;
+  string channel_id = 2;
+}
+
+// 消息置顶
+message ServerMessagePinnedEvent {
+  ChannelMessage message = 1;
+}
+
+// 消息取消置顶
+message ServerMessageUnpinnedEvent {
+  string message_id = 1;
+  string channel_id = 2;
+}
+
+// 反应变化
+message ServerReactionUpdatedEvent {
+  string message_id = 1;
+  string channel_id = 2;
+  repeated ReactionCount reaction_counts = 3;
+  string my_reaction = 4;                     // 当前用户的反应（可能变化）
+}
+
+// 新评论
+message ServerNewCommentEvent {
+  ChannelComment comment = 1;
+  int64 new_comment_count = 2;                // 更新后的评论总数
+}
+
+// 评论删除
+message ServerCommentDeletedEvent {
+  string comment_id = 1;
+  string message_id = 2;
+  string channel_id = 3;
+  int64 new_comment_count = 4;                // 更新后的评论总数
+}
+
+// 评论点赞变化
+message ServerCommentLikedEvent {
+  string comment_id = 1;
+  string message_id = 2;
+  string channel_id = 3;
+  int64 like_count = 4;                       // 更新后的点赞数
+  bool is_liked = 5;                          // 当前用户是否已点赞
+}
+
+// 评论置顶
+message ServerCommentPinnedEvent {
+  ChannelComment comment = 1;
+  bool is_pinned = 2;
+}
+
+// ============================================================================
+// 投票更新事件
+// ============================================================================
+
+// 投票结果更新（实时更新投票数据）
+message ServerPollUpdatedEvent {
+  string message_id = 1;
+  string channel_id = 2;
+  Poll poll = 3;
+}
+
+// 投票关闭
+message ServerPollClosedEvent {
+  string message_id = 1;
+  string channel_id = 2;
+  Poll poll = 3;                              // 最终结果
+}
+
+// ============================================================================
+// 频道元信息更新事件
+// ============================================================================
+
+// 频道信息更新
+message ServerChannelUpdatedEvent {
+  Channel channel = 1;
+}
+
+// 频道删除
+message ServerChannelDeletedEvent {
+  string channel_id = 1;
+}
+
+// 频道设置更新
+message ServerChannelSettingsUpdatedEvent {
+  string channel_id = 1;
+  ChannelSettings settings = 2;
+}
+
+// ============================================================================
+// 订阅状态变化事件
+// ============================================================================
+
+// 新订阅者加入（管理员可见）
+message ServerSubscriberJoinedEvent {
+  string channel_id = 1;
+  Subscriber subscriber = 2;
+  int64 new_subscriber_count = 3;
+}
+
+// 订阅者离开（管理员可见）
+message ServerSubscriberLeftEvent {
+  string channel_id = 1;
+  string user_id = 2;
+  int64 new_subscriber_count = 3;
+}
+
+// 订阅者被封禁
+message ServerSubscriberBannedEvent {
+  string channel_id = 1;
+  string user_id = 2;
+  string banned_by = 3;
+  string reason = 4;
+}
+
+// ============================================================================
+// 管理员变化事件
+// ============================================================================
+
+// 新增管理员
+message ServerAdminAddedEvent {
+  string channel_id = 1;
+  Admin admin = 2;
+}
+
+// 移除管理员
+message ServerAdminRemovedEvent {
+  string channel_id = 1;
+  string user_id = 2;
+}
+
+// ============================================================================
+// 输入状态事件
+// ============================================================================
+
+// 有人正在输入（评论区）
+message ServerTypingEvent {
+  string channel_id = 1;
+  string message_id = 2;
+  string user_id = 3;
+  string username = 4;
+  string avatar_url = 5;
+}
+
+// ============================================================================
+// 通用事件
+// ============================================================================
+
+// 心跳响应
+message ServerPongEvent {}
+
+// 错误事件
+message ServerErrorEvent {
+  string code = 1;                            // 错误码
+  string message = 2;                         // 错误信息
+  string action = 3;                          // 触发错误的操作
+}

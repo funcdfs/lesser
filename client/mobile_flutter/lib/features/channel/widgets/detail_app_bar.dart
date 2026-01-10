@@ -128,7 +128,7 @@ class _ChannelTitle extends StatelessWidget {
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
               Text(
-                channel.name,
+                channel.displayName,
                 style: TextStyle(
                   fontSize: 15,
                   fontWeight: FontWeight.w600,

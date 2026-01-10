@@ -1,0 +1,605 @@
+syntax = "proto3";
+package channel;
+
+option go_package = "github.com/funcdfs/lesser/channel/gen_protos/channel";
+
+import "common/common.proto";
+
+// ============================================================================
+// 核心实体定义
+// ============================================================================
+//
+// 本文件定义 Channel 服务的核心数据实体：
+// - Channel          频道
+// - Subscriber       订阅者
+// - Admin            管理员
+// - ChannelMessage   频道消息
+// - ChannelComment   频道评论
+// - ChannelInvite    邀请链接
+// - ChannelCategory  频道分类
+// - ChannelStats     频道统计
+// - ScheduledMessage 定时消息
+// - Poll             投票
+// - 相关枚举和辅助类型
+//
+// ============================================================================
+
+// ============================================================================
+// Channel 频道
+// ============================================================================
+
+// 频道类型
+enum ChannelType {
+  CHANNEL_TYPE_UNSPECIFIED = 0;
+  CHANNEL_TYPE_PUBLIC = 1;                    // 公开频道（可搜索、可通过链接加入）
+  CHANNEL_TYPE_PRIVATE = 2;                   // 私有频道（仅通过邀请链接加入）
+}
+
+// 频道验证状态
+enum ChannelVerificationStatus {
+  CHANNEL_VERIFICATION_UNSPECIFIED = 0;
+  CHANNEL_VERIFICATION_NONE = 1;              // 未验证
+  CHANNEL_VERIFICATION_VERIFIED = 2;          // 官方认证
+  CHANNEL_VERIFICATION_CREATOR = 3;           // 创作者认证
+}
+
+// 频道
+message Channel {
+  // ---- 基础信息 ----
+  string id = 1;                              // 频道 ID
+  string name = 2;                            // 频道标识符（用于 URL，如 tech_daily）
+  string display_name = 3;                    // 频道显示名称（如 "科技日报"）
+  string description = 4;                     // 频道描述
+  string avatar_url = 5;                      // 频道头像
+  string banner_url = 6;                      // 频道横幅图（详情页顶部）
+  string link = 7;                            // 分享链接（如 https://lesser.app/c/tech_daily）
+
+  // ---- 类型与权限 ----
+  string owner_id = 8;                        // 所有者 ID
+  repeated string admin_ids = 9;              // 管理员 ID 列表
+  ChannelType type = 10;                      // 频道类型
+  bool is_public = 11;                        // 是否公开（兼容旧字段）
+  ChannelVerificationStatus verification = 12; // 验证状态
+
+  // ---- 分类与标签 ----
+  string category_id = 13;                    // 所属分类 ID
+  repeated string tags = 14;                  // 频道标签（用于搜索和推荐）
+
+  // ---- 统计信息 ----
+  int64 subscriber_count = 15;                // 订阅者数量
+  int64 message_count = 16;                   // 消息总数
+  int64 daily_view_count = 17;                // 日浏览量
+  int64 weekly_growth = 18;                   // 周增长订阅数
+
+  // ---- 时间信息 ----
+  common.Timestamp created_at = 19;           // 创建时间
+  common.Timestamp updated_at = 20;           // 更新时间
+
+  // ---- 当前用户状态 ----
+  bool is_subscribed = 21;                    // 是否已订阅
+  bool is_admin = 22;                         // 是否是管理员
+  bool is_owner = 23;                         // 是否是所有者
+  bool is_muted = 24;                         // 是否已静音
+  bool is_pinned = 25;                        // 是否已置顶
+
+  // ---- 列表预览 ----
+  ChannelMessage pinned_message = 26;         // 置顶消息
+  string last_message_preview = 27;           // 最后消息预览
+  common.Timestamp last_message_time = 28;    // 最后消息时间
+  int32 unread_count = 29;                    // 未读消息数
+
+  // ---- 频道设置 ----
+  ChannelSettings settings = 30;              // 频道设置
+  
+  // ---- 关联频道 ----
+  string discussion_group_id = 31;            // 关联的讨论群组 ID（用于评论区）
+  repeated string linked_channel_ids = 32;    // 关联频道列表（交叉推广）
+}
+
+// 频道设置
+message ChannelSettings {
+  bool comments_enabled = 1;                  // 是否允许评论
+  bool reactions_enabled = 2;                 // 是否允许反应
+  bool join_requests_enabled = 3;             // 是否需要审批加入（私有频道）
+  bool show_subscriber_count = 4;             // 是否显示订阅者数量
+  bool allow_forwarding = 5;                  // 是否允许转发消息
+  bool sign_messages = 6;                     // 消息是否显示作者签名
+  int32 slow_mode_seconds = 7;                // 慢速模式间隔（0 表示关闭）
+  repeated string allowed_reaction_emojis = 8; // 允许的反应 emoji 列表（空表示全部允许）
+}
+
+// 订阅者
+message Subscriber {
+  string user_id = 1;
+  string username = 2;
+  string display_name = 3;
+  string avatar_url = 4;
+  bool is_verified = 5;                       // 是否认证用户
+  common.Timestamp subscribed_at = 6;
+  SubscriberStatus status = 7;                // 订阅状态
+}
+
+// 订阅者状态
+enum SubscriberStatus {
+  SUBSCRIBER_STATUS_UNSPECIFIED = 0;
+  SUBSCRIBER_STATUS_ACTIVE = 1;               // 正常订阅
+  SUBSCRIBER_STATUS_PENDING = 2;              // 待审批（私有频道）
+  SUBSCRIBER_STATUS_BANNED = 3;               // 已封禁
+  SUBSCRIBER_STATUS_LEFT = 4;                 // 已退出
+}
+
+// 管理员
+message Admin {
+  string user_id = 1;
+  string username = 2;
+  string display_name = 3;
+  string avatar_url = 4;
+  bool is_owner = 5;
+  AdminPermissions permissions = 6;           // 管理员权限
+  common.Timestamp added_at = 7;
+  string added_by = 8;                        // 添加者 ID
+  string custom_title = 9;                    // 自定义头衔（如 "主编"）
+}
+
+// 管理员权限
+message AdminPermissions {
+  bool can_post_messages = 1;                 // 发布消息
+  bool can_edit_messages = 2;                 // 编辑消息
+  bool can_delete_messages = 3;               // 删除消息
+  bool can_pin_messages = 4;                  // 置顶消息
+  bool can_manage_subscribers = 5;            // 管理订阅者（封禁/解封）
+  bool can_manage_admins = 6;                 // 管理管理员
+  bool can_edit_channel_info = 7;             // 编辑频道信息
+  bool can_manage_invites = 8;                // 管理邀请链接
+  bool can_manage_polls = 9;                  // 管理投票
+  bool can_manage_scheduled = 10;             // 管理定时消息
+}
+
+// 频道分类
+message ChannelCategory {
+  string id = 1;
+  string name = 2;                            // 分类名称（如 "科技"、"娱乐"）
+  string icon = 3;                            // 分类图标
+  int32 sort_order = 4;                       // 排序顺序
+  int64 channel_count = 5;                    // 该分类下的频道数量
+}
+
+// 邀请链接
+message ChannelInvite {
+  string id = 1;
+  string channel_id = 2;
+  string invite_code = 3;                     // 邀请码（如 abc123）
+  string invite_link = 4;                     // 完整链接（如 https://lesser.app/+abc123）
+  string creator_id = 5;                      // 创建者 ID
+  string name = 6;                            // 链接名称（便于管理）
+  int32 usage_limit = 7;                      // 使用次数限制（0 表示无限制）
+  int32 usage_count = 8;                      // 已使用次数
+  common.Timestamp expires_at = 9;            // 过期时间（空表示永不过期）
+  common.Timestamp created_at = 10;
+  bool is_revoked = 11;                       // 是否已撤销
+  bool requires_approval = 12;                // 是否需要审批
+}
+
+// 加入请求（私有频道）
+message JoinRequest {
+  string id = 1;
+  string channel_id = 2;
+  string user_id = 3;
+  string username = 4;
+  string display_name = 5;
+  string avatar_url = 6;
+  string invite_link_id = 7;                  // 通过哪个邀请链接申请
+  string message = 8;                         // 申请留言
+  JoinRequestStatus status = 9;
+  common.Timestamp created_at = 10;
+  common.Timestamp processed_at = 11;
+  string processed_by = 12;                   // 处理人 ID
+}
+
+// 加入请求状态
+enum JoinRequestStatus {
+  JOIN_REQUEST_STATUS_UNSPECIFIED = 0;
+  JOIN_REQUEST_STATUS_PENDING = 1;            // 待处理
+  JOIN_REQUEST_STATUS_APPROVED = 2;           // 已批准
+  JOIN_REQUEST_STATUS_REJECTED = 3;           // 已拒绝
+}
+
+// ============================================================================
+// ChannelMessage 频道消息
+// ============================================================================
+
+// 消息类型
+enum MessageType {
+  MESSAGE_TYPE_UNSPECIFIED = 0;
+  MESSAGE_TYPE_TEXT = 1;                      // 纯文本
+  MESSAGE_TYPE_MEDIA = 2;                     // 媒体（图片/视频）
+  MESSAGE_TYPE_POLL = 3;                      // 投票
+  MESSAGE_TYPE_LINK = 4;                      // 链接预览
+  MESSAGE_TYPE_FORWARD = 5;                   // 转发消息
+  MESSAGE_TYPE_ALBUM = 6;                     // 图片/视频相册
+  MESSAGE_TYPE_DOCUMENT = 7;                  // 文档/文件
+  MESSAGE_TYPE_VOICE = 8;                     // 语音消息
+  MESSAGE_TYPE_LIVE = 9;                      // 直播通知
+}
+
+// 频道消息
+message ChannelMessage {
+  // ---- 核心字段 ----
+  string id = 1;                              // 消息 ID
+  string channel_id = 2;                      // 所属频道 ID
+  string author_id = 3;                       // 作者 ID
+  string author_name = 4;                     // 作者名称
+  string author_title = 5;                    // 作者头衔（管理员自定义头衔）
+  string content = 6;                         // 消息内容（支持 Markdown）
+  MessageType type = 7;                       // 消息类型
+
+  // ---- 媒体字段 ----
+  repeated MessageMedia media = 8;            // 媒体附件（支持多个）
+  repeated MessageDocument documents = 9;     // 文档附件
+
+  // ---- 链接预览 ----
+  LinkPreview link_preview = 10;              // 链接预览
+
+  // ---- 投票 ----
+  Poll poll = 11;                             // 投票（如果是投票消息）
+
+  // ---- 转发信息 ----
+  ForwardInfo forward_info = 12;              // 转发来源信息
+
+  // ---- 状态字段 ----
+  bool is_pinned = 13;                        // 是否置顶
+  bool is_edited = 14;                        // 是否已编辑
+  bool is_silent = 15;                        // 是否静默发送（不通知订阅者）
+  bool is_scheduled = 16;                     // 是否是定时消息
+
+  // ---- 统计字段 ----
+  int64 view_count = 17;                      // 浏览次数
+  int64 forward_count = 18;                   // 转发次数
+  int64 share_count = 19;                     // 分享次数
+
+  // ---- 时间字段 ----
+  common.Timestamp created_at = 20;           // 创建时间
+  common.Timestamp updated_at = 21;           // 更新时间
+  common.Timestamp scheduled_at = 22;         // 定时发送时间
+
+  // ---- 反应字段 ----
+  repeated ReactionCount reaction_counts = 23; // 反应统计
+  string my_reaction = 24;                    // 当前用户的反应
+
+  // ---- 评论字段 ----
+  int64 comment_count = 25;                   // 评论数量
+  repeated string comment_avatars = 26;       // 最近评论者头像（最多 3 个）
+
+  // ---- 签名 ----
+  string signature = 27;                      // 作者签名（如果频道开启签名）
+
+  // ---- 回复引用 ----
+  string reply_to_message_id = 28;            // 回复的消息 ID
+  MessagePreview reply_preview = 29;          // 回复消息预览
+}
+
+// 消息媒体
+message MessageMedia {
+  string id = 1;
+  MediaType type = 2;
+  string url = 3;
+  string thumbnail_url = 4;
+  int32 width = 5;
+  int32 height = 6;
+  int64 duration_ms = 7;                      // 视频/音频时长（毫秒）
+  int64 file_size = 8;                        // 文件大小（字节）
+  string blurhash = 9;                        // 模糊占位符
+  string alt_text = 10;                       // 无障碍描述
+  string mime_type = 11;                      // MIME 类型
+}
+
+// 媒体类型
+enum MediaType {
+  MEDIA_TYPE_UNSPECIFIED = 0;
+  MEDIA_TYPE_IMAGE = 1;
+  MEDIA_TYPE_VIDEO = 2;
+  MEDIA_TYPE_GIF = 3;
+  MEDIA_TYPE_AUDIO = 4;
+}
+
+// 消息文档
+message MessageDocument {
+  string id = 1;
+  string file_name = 2;
+  string url = 3;
+  int64 file_size = 4;
+  string mime_type = 5;
+  string thumbnail_url = 6;                   // 文档预览图（如 PDF 首页）
+}
+
+// 链接预览
+message LinkPreview {
+  string url = 1;
+  string title = 2;
+  string description = 3;
+  string image_url = 4;
+  string site_name = 5;
+  string favicon_url = 6;
+}
+
+// 转发信息
+message ForwardInfo {
+  string from_channel_id = 1;                 // 来源频道 ID
+  string from_channel_name = 2;               // 来源频道名称
+  string from_message_id = 3;                 // 原消息 ID
+  string from_author_name = 4;                // 原作者名称
+  common.Timestamp original_date = 5;         // 原消息时间
+}
+
+// 消息预览（用于回复引用）
+message MessagePreview {
+  string message_id = 1;
+  string author_name = 2;
+  string content_preview = 3;                 // 内容预览（截断）
+  bool has_media = 4;
+  bool is_deleted = 5;
+}
+
+// 反应计数
+message ReactionCount {
+  string emoji = 1;
+  int64 count = 2;
+}
+
+// 反应用户（用于反应列表）
+message ReactionUser {
+  string user_id = 1;
+  string username = 2;
+  string avatar_url = 3;
+  string emoji = 4;
+  common.Timestamp reacted_at = 5;
+}
+
+// ============================================================================
+// Poll 投票
+// ============================================================================
+
+// 投票类型
+enum PollType {
+  POLL_TYPE_UNSPECIFIED = 0;
+  POLL_TYPE_REGULAR = 1;                      // 普通投票
+  POLL_TYPE_QUIZ = 2;                         // 问答投票（有正确答案）
+}
+
+// 投票
+message Poll {
+  string id = 1;
+  string question = 2;                        // 问题
+  repeated PollOption options = 3;            // 选项
+  PollType type = 4;                          // 投票类型
+  bool is_anonymous = 5;                      // 是否匿名投票
+  bool allows_multiple_answers = 6;           // 是否允许多选
+  int32 correct_option_index = 7;             // 正确答案索引（问答投票）
+  string explanation = 8;                     // 答案解释（问答投票）
+  int64 total_voter_count = 9;                // 总投票人数
+  bool is_closed = 10;                        // 是否已关闭
+  common.Timestamp close_date = 11;           // 自动关闭时间
+  repeated int32 my_votes = 12;               // 当前用户的投票选项索引
+}
+
+// 投票选项
+message PollOption {
+  string text = 1;                            // 选项文本
+  int64 voter_count = 2;                      // 投票人数
+  int32 percentage = 3;                       // 百分比（0-100）
+}
+
+// 投票者（用于查看投票详情）
+message PollVoter {
+  string user_id = 1;
+  string username = 2;
+  string avatar_url = 3;
+  repeated int32 option_indexes = 4;          // 投票的选项索引
+  common.Timestamp voted_at = 5;
+}
+
+// ============================================================================
+// 定时消息
+// ============================================================================
+
+// 定时消息
+message ScheduledMessage {
+  string id = 1;
+  string channel_id = 2;
+  string author_id = 3;
+  string content = 4;
+  MessageType type = 5;
+  repeated MessageMedia media = 6;
+  repeated MessageDocument documents = 7;
+  LinkPreview link_preview = 8;
+  Poll poll = 9;
+  common.Timestamp scheduled_at = 10;         // 计划发送时间
+  common.Timestamp created_at = 11;
+  ScheduledMessageStatus status = 12;
+  bool is_silent = 13;                        // 是否静默发送
+}
+
+// 定时消息状态
+enum ScheduledMessageStatus {
+  SCHEDULED_MESSAGE_STATUS_UNSPECIFIED = 0;
+  SCHEDULED_MESSAGE_STATUS_PENDING = 1;       // 待发送
+  SCHEDULED_MESSAGE_STATUS_SENT = 2;          // 已发送
+  SCHEDULED_MESSAGE_STATUS_FAILED = 3;        // 发送失败
+  SCHEDULED_MESSAGE_STATUS_CANCELLED = 4;     // 已取消
+}
+
+// ============================================================================
+// ChannelComment 频道评论
+// ============================================================================
+
+// 频道评论
+message ChannelComment {
+  // ---- 核心字段 ----
+  string id = 1;                              // 评论 ID
+  string message_id = 2;                      // 所属消息 ID
+  string channel_id = 3;                      // 所属频道 ID
+  CommentAuthor author = 4;                   // 评论作者
+  string content = 5;                         // 评论内容
+
+  // ---- 媒体字段 ----
+  repeated CommentMedia media = 6;            // 媒体附件
+
+  // ---- 回复字段 ----
+  ReplyTarget reply_to = 7;                   // 回复目标
+  int64 reply_count = 8;                      // 回复数量
+
+  // ---- 互动字段 ----
+  int64 like_count = 9;                       // 点赞数量
+  bool is_liked = 10;                         // 当前用户是否已点赞
+
+  // ---- 状态字段 ----
+  bool is_deleted = 11;                       // 是否已删除
+  bool is_pinned = 12;                        // 是否置顶
+  bool is_own = 13;                           // 是否是当前用户发布的
+  CommentInteractionState interaction_state = 14; // 交互状态
+
+  // ---- 时间字段 ----
+  common.Timestamp created_at = 15;           // 创建时间
+}
+
+// 评论作者
+message CommentAuthor {
+  string id = 1;
+  string username = 2;
+  string display_name = 3;
+  string avatar_url = 4;
+  bool is_verified = 5;
+  bool is_channel_owner = 6;
+  bool is_channel_admin = 7;
+}
+
+// 评论媒体附件
+message CommentMedia {
+  string url = 1;
+  CommentMediaType type = 2;
+  int32 width = 3;
+  int32 height = 4;
+  string thumbnail_url = 5;
+  int64 duration_ms = 6;                      // 视频时长（毫秒）
+  string blurhash = 7;                        // 模糊占位符
+}
+
+// 回复目标
+message ReplyTarget {
+  string comment_id = 1;
+  string author_name = 2;
+  string content_preview = 3;
+  bool is_deleted = 4;
+}
+
+// ============================================================================
+// 频道统计
+// ============================================================================
+
+// 频道统计（管理员可见）
+message ChannelStats {
+  string channel_id = 1;
+  
+  // ---- 订阅者统计 ----
+  int64 total_subscribers = 2;                // 总订阅者
+  int64 subscribers_today = 3;                // 今日新增
+  int64 subscribers_week = 4;                 // 本周新增
+  int64 subscribers_month = 5;                // 本月新增
+  int64 unsubscribers_today = 6;              // 今日取消订阅
+  int64 unsubscribers_week = 7;               // 本周取消订阅
+  
+  // ---- 浏览统计 ----
+  int64 views_today = 8;                      // 今日浏览
+  int64 views_week = 9;                       // 本周浏览
+  int64 views_month = 10;                     // 本月浏览
+  double avg_views_per_message = 11;          // 平均每条消息浏览量
+  
+  // ---- 互动统计 ----
+  int64 reactions_today = 12;                 // 今日反应数
+  int64 comments_today = 13;                  // 今日评论数
+  int64 shares_today = 14;                    // 今日分享数
+  double engagement_rate = 15;                // 互动率（互动数/浏览数）
+  
+  // ---- 消息统计 ----
+  int64 messages_today = 16;                  // 今日发布消息数
+  int64 messages_week = 17;                   // 本周发布消息数
+  int64 messages_total = 18;                  // 总消息数
+  
+  // ---- 时间分布 ----
+  repeated HourlyStats hourly_views = 19;     // 24 小时浏览分布
+  repeated DailyStats daily_stats = 20;       // 30 天统计
+  
+  // ---- 来源分析 ----
+  repeated SourceStats subscriber_sources = 21; // 订阅来源分析
+  
+  // ---- 更新时间 ----
+  common.Timestamp updated_at = 22;
+}
+
+// 小时统计
+message HourlyStats {
+  int32 hour = 1;                             // 0-23
+  int64 views = 2;
+  int64 subscribers = 3;
+}
+
+// 日统计
+message DailyStats {
+  string date = 1;                            // YYYY-MM-DD
+  int64 views = 2;
+  int64 subscribers = 3;
+  int64 unsubscribers = 4;
+  int64 reactions = 5;
+  int64 comments = 6;
+  int64 shares = 7;
+}
+
+// 来源统计
+message SourceStats {
+  string source = 1;                          // 来源类型（search, invite_link, forward, etc.）
+  int64 count = 2;
+  double percentage = 3;
+}
+
+// ============================================================================
+// 枚举类型
+// ============================================================================
+
+// 评论媒体类型
+enum CommentMediaType {
+  COMMENT_MEDIA_TYPE_UNSPECIFIED = 0;
+  COMMENT_MEDIA_TYPE_IMAGE = 1;
+  COMMENT_MEDIA_TYPE_VIDEO = 2;
+  COMMENT_MEDIA_TYPE_GIF = 3;
+}
+
+// 评论交互状态
+enum CommentInteractionState {
+  COMMENT_INTERACTION_STATE_UNSPECIFIED = 0;
+  COMMENT_INTERACTION_STATE_NORMAL = 1;       // 普通状态
+  COMMENT_INTERACTION_STATE_VIEWED = 2;       // 已查看
+  COMMENT_INTERACTION_STATE_HAS_MY_REPLY = 3; // 有我的回复
+}
+
+// ============================================================================
+// 频道推荐
+// ============================================================================
+
+// 推荐频道（用于发现页）
+message RecommendedChannel {
+  Channel channel = 1;
+  string reason = 2;                          // 推荐理由（如 "你关注的人也订阅了"）
+  RecommendationType recommendation_type = 3;
+  int32 mutual_subscribers = 4;               // 共同订阅者数量
+}
+
+// 推荐类型
+enum RecommendationType {
+  RECOMMENDATION_TYPE_UNSPECIFIED = 0;
+  RECOMMENDATION_TYPE_POPULAR = 1;            // 热门
+  RECOMMENDATION_TYPE_TRENDING = 2;           // 趋势上升
+  RECOMMENDATION_TYPE_SIMILAR = 3;            // 相似频道
+  RECOMMENDATION_TYPE_FRIENDS = 4;            // 好友订阅
+  RECOMMENDATION_TYPE_CATEGORY = 5;           // 分类推荐
+  RECOMMENDATION_TYPE_NEW = 6;                // 新频道
+}

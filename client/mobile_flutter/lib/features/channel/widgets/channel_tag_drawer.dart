@@ -85,8 +85,7 @@ class _ChannelTagDrawerState extends State<ChannelTagDrawer> {
   Size? _lastScreenSize;
 
   /// 更新缓存的高度值（仅在屏幕尺寸变化或拖拽/展开状态变化时调用）
-  void _updateCachedHeights(BuildContext context) {
-    final mediaQuery = MediaQuery.of(context);
+  void _updateCachedHeights(MediaQueryData mediaQuery) {
     final screenSize = mediaQuery.size;
     final bottomPadding = mediaQuery.padding.bottom;
 
@@ -156,10 +155,11 @@ class _ChannelTagDrawerState extends State<ChannelTagDrawer> {
   @override
   Widget build(BuildContext context) {
     final colors = AppColors.of(context);
-    final bottomPadding = MediaQuery.of(context).padding.bottom;
+    final mediaQuery = MediaQuery.of(context);
+    final bottomPadding = mediaQuery.padding.bottom;
 
     // 更新缓存的高度值
-    _updateCachedHeights(context);
+    _updateCachedHeights(mediaQuery);
     final currentHeight = _cachedCurrentHeight;
 
     return Positioned(
@@ -172,7 +172,7 @@ class _ChannelTagDrawerState extends State<ChannelTagDrawer> {
         height: currentHeight,
         decoration: BoxDecoration(
           color: colors.surfaceElevated,
-          borderRadius: BorderRadius.vertical(
+          borderRadius: const BorderRadius.vertical(
             top: Radius.circular(TagDrawerLayout.drawerBorderRadius),
           ),
           boxShadow: [
@@ -195,7 +195,7 @@ class _ChannelTagDrawerState extends State<ChannelTagDrawer> {
               behavior: HitTestBehavior.opaque,
               child: Container(
                 width: double.infinity,
-                padding: EdgeInsets.symmetric(
+                padding: const EdgeInsets.symmetric(
                   vertical: TagDrawerLayout.headerVerticalPadding,
                 ),
                 child: Center(child: _buildDragHandle(colors)),
@@ -213,14 +213,14 @@ class _ChannelTagDrawerState extends State<ChannelTagDrawer> {
                 child: Wrap(
                   spacing: TagChipLayout.chipSpacing,
                   runSpacing: TagChipLayout.chipRunSpacing,
-                  children: widget.tags.map((tag) {
-                    final isSelected = widget.selectedTags.contains(tag.id);
-                    return _TagChip(
-                      tag: tag,
-                      isSelected: isSelected,
-                      onTap: () => widget.onTagTap(tag),
-                    );
-                  }).toList(),
+                  children: [
+                    for (final tag in widget.tags)
+                      _TagChip(
+                        tag: tag,
+                        isSelected: widget.selectedTags.contains(tag.id),
+                        onTap: () => widget.onTagTap(tag),
+                      ),
+                  ],
                 ),
               ),
             ),
@@ -274,7 +274,7 @@ class _TagChip extends StatelessWidget {
       onTap: onTap,
       scale: TapScales.medium,
       child: Container(
-        padding: EdgeInsets.symmetric(
+        padding: const EdgeInsets.symmetric(
           horizontal: TagChipLayout.horizontalPadding,
           vertical: TagChipLayout.verticalPadding,
         ),
@@ -289,9 +289,9 @@ class _TagChip extends StatelessWidget {
             if (tag.icon != null) ...[
               Text(
                 tag.icon!,
-                style: TextStyle(fontSize: TagChipLayout.iconFontSize),
+                style: const TextStyle(fontSize: TagChipLayout.iconFontSize),
               ),
-              SizedBox(width: TagChipLayout.iconSpacing),
+              const SizedBox(width: TagChipLayout.iconSpacing),
             ],
             Text(
               tag.name,
@@ -302,7 +302,7 @@ class _TagChip extends StatelessWidget {
               ),
             ),
             if (tag.channelCount > 0) ...[
-              SizedBox(width: TagChipLayout.countSpacing),
+              const SizedBox(width: TagChipLayout.countSpacing),
               Text(
                 '${tag.channelCount}',
                 style: TextStyle(

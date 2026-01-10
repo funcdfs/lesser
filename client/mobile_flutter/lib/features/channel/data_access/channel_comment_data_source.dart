@@ -226,7 +226,22 @@ class ChannelCommentDataSource implements CommentDataSource {
   /// 递归查找根评论
   ///
   /// 从指定的父评论 ID 开始，向上追溯直到找到根评论。
-  CommentModel? _findRootComment(String parentId) {
+  /// 使用深度限制和已访问集合防止循环引用导致栈溢出。
+  CommentModel? _findRootComment(
+    String parentId, {
+    int depth = 0,
+    Set<String>? visited,
+  }) {
+    // 深度限制检查
+    if (depth >= _maxRecursionDepth) return null;
+
+    // 初始化或复用已访问集合
+    final visitedSet = visited ?? <String>{};
+
+    // 循环引用检查
+    if (visitedSet.contains(parentId)) return null;
+    visitedSet.add(parentId);
+
     // 检查是否是根评论
     for (final entry in mockComments.entries) {
       for (final comment in entry.value) {
@@ -240,7 +255,11 @@ class ChannelCommentDataSource implements CommentDataSource {
     for (final entry in mockReplies.entries) {
       for (final comment in entry.value) {
         if (comment.id == parentId) {
-          return _findRootComment(entry.key);
+          return _findRootComment(
+            entry.key,
+            depth: depth + 1,
+            visited: visitedSet,
+          );
         }
       }
     }

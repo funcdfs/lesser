@@ -109,22 +109,23 @@ class MessageListView extends StatelessWidget {
           // 为每个列表项分配 GlobalKey，用于精确滚动定位
           final itemKey = highlightController.getKeyForIndex(index);
 
-          if (item is DateTime) {
+          if (item is DateItem) {
             return DateSeparator(
               key: itemKey,
-              date: item,
+              date: item.date,
               messageDates: messageDates,
               onDateSelected: onDateSelected,
             );
-          } else if (item is ChannelMessageModel) {
-            final isHighlighted = highlightedMessageId == item.id;
+          } else if (item is MessageItem) {
+            final message = item.message;
+            final isHighlighted = highlightedMessageId == message.id;
             return ChannelMessage(
               key: itemKey,
-              message: item,
+              message: message,
               isHighlighted: isHighlighted,
               onHighlightComplete: isHighlighted ? onHighlightComplete : null,
-              onCommentTap: () => onCommentTap(item),
-              onMenuAction: (action) => onMenuAction(action, item),
+              onCommentTap: () => onCommentTap(message),
+              onMenuAction: (action) => onMenuAction(action, message),
               onReactionTap: onReactionTap,
             );
           }

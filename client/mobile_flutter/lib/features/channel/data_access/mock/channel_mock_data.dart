@@ -132,15 +132,17 @@ const mockCurrentUser = CommentAuthor(
 final mockChannels = <ChannelModel>[
   ChannelModel(
     id: 'test',
-    name: '测试频道',
+    name: 'test_channel',
+    displayName: '测试频道',
     description: '用于测试评论功能',
     ownerId: 'owner',
     subscriberCount: 1234,
     messageCount: 1,
-    lastMessage: '这是一条测试消息',
+    lastMessagePreview: '这是一条测试消息',
     lastMessageTime: DateTime(2025, 1, 8, 10, 0),
     avatarUrl: 'https://i.pravatar.cc/100?img=1',
     isSubscribed: true,
+    link: 'https://lesser.app/c/test_channel',
   ),
 ];
 

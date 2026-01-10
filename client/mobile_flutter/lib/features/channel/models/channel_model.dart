@@ -13,6 +13,8 @@
 //
 // 3. **便捷 getter**：提供格式化和计算属性，避免 UI 层重复逻辑
 //
+// 4. **Proto 对齐**：字段命名和结构与 protos/channel/channel.proto 保持一致
+//
 // ## 类结构
 //
 // - `ChannelModel` - 频道核心数据（来自服务端）
@@ -20,6 +22,7 @@
 // - `SubscriberModel` - 订阅者信息
 // - `AdminModel` - 管理员信息
 
+import '../../../pkg/utils/copy_with_utils.dart';
 import '../../../pkg/utils/format_utils.dart';
 import 'channel_message_model.dart';
 
@@ -38,14 +41,15 @@ import 'channel_message_model.dart';
 /// - **权限信息**：ownerId, adminIds, isSubscribed, isAdmin, isOwner, isPublic
 /// - **统计信息**：subscriberCount, messageCount
 /// - **时间信息**：createdAt, updatedAt, lastMessageTime
-/// - **内容预览**：pinnedMessage, lastMessage
+/// - **内容预览**：pinnedMessage, lastMessagePreview
 class ChannelModel {
   const ChannelModel({
     required this.id,
     required this.name,
+    required this.displayName,
     this.description,
     this.avatarUrl,
-    this.username,
+    this.link,
     required this.ownerId,
     this.adminIds = const [],
     required this.subscriberCount,
@@ -57,7 +61,7 @@ class ChannelModel {
     this.isOwner = false,
     this.isPublic = true,
     this.pinnedMessage,
-    this.lastMessage,
+    this.lastMessagePreview,
     this.lastMessageTime,
   });
 
@@ -68,8 +72,11 @@ class ChannelModel {
   /// 频道唯一标识
   final String id;
 
-  /// 频道显示名称
+  /// 频道唯一标识符（如 tech_daily，用于 URL）
   final String name;
+
+  /// 频道显示名称（如 "科技日报"）
+  final String displayName;
 
   /// 频道描述（可选）
   final String? description;
@@ -77,8 +84,8 @@ class ChannelModel {
   /// 频道头像 URL（可选）
   final String? avatarUrl;
 
-  /// 频道用户名（用于分享链接，如 @channel_name）
-  final String? username;
+  /// 分享链接（如 https://lesser.app/c/tech_daily）
+  final String? link;
 
   // ---------------------------------------------------------------------------
   // 权限信息
@@ -133,7 +140,7 @@ class ChannelModel {
   final ChannelMessageModel? pinnedMessage;
 
   /// 最后消息预览文本（用于列表显示）
-  final String? lastMessage;
+  final String? lastMessagePreview;
 
   // ---------------------------------------------------------------------------
   // 便捷 getter
@@ -145,13 +152,18 @@ class ChannelModel {
   /// 头像占位符文字
   ///
   /// 当没有头像时显示频道名首字符，如果频道名为空则显示 '#'
-  String get avatarPlaceholder => name.isNotEmpty ? name[0] : '#';
+  String get avatarPlaceholder => displayName.isNotEmpty ? displayName[0] : '#';
 
   /// 是否有最后消息
-  bool get hasLastMessage => lastMessage != null && lastMessage!.isNotEmpty;
+  bool get hasLastMessage =>
+      lastMessagePreview != null && lastMessagePreview!.isNotEmpty;
 
   /// 是否有置顶消息
   bool get hasPinnedMessage => pinnedMessage != null;
+
+  /// 兼容旧代码的 lastMessage getter
+  @Deprecated('使用 lastMessagePreview 代替')
+  String? get lastMessage => lastMessagePreview;
 
   // ---------------------------------------------------------------------------
   // copyWith & 相等性
@@ -161,42 +173,58 @@ class ChannelModel {
   ChannelModel copyWith({
     String? id,
     String? name,
-    String? description,
-    String? avatarUrl,
-    String? username,
+    String? displayName,
+    Object? description = sentinel,
+    Object? avatarUrl = sentinel,
+    Object? link = sentinel,
     String? ownerId,
     List<String>? adminIds,
     int? subscriberCount,
     int? messageCount,
-    DateTime? createdAt,
-    DateTime? updatedAt,
+    Object? createdAt = sentinel,
+    Object? updatedAt = sentinel,
     bool? isSubscribed,
     bool? isAdmin,
     bool? isOwner,
     bool? isPublic,
-    ChannelMessageModel? pinnedMessage,
-    String? lastMessage,
-    DateTime? lastMessageTime,
+    Object? pinnedMessage = sentinel,
+    Object? lastMessagePreview = sentinel,
+    Object? lastMessageTime = sentinel,
   }) {
     return ChannelModel(
       id: id ?? this.id,
       name: name ?? this.name,
-      description: description ?? this.description,
-      avatarUrl: avatarUrl ?? this.avatarUrl,
-      username: username ?? this.username,
+      displayName: displayName ?? this.displayName,
+      description: description == sentinel
+          ? this.description
+          : castOrNull<String>(description),
+      avatarUrl: avatarUrl == sentinel
+          ? this.avatarUrl
+          : castOrNull<String>(avatarUrl),
+      link: link == sentinel ? this.link : castOrNull<String>(link),
       ownerId: ownerId ?? this.ownerId,
       adminIds: adminIds ?? this.adminIds,
       subscriberCount: subscriberCount ?? this.subscriberCount,
       messageCount: messageCount ?? this.messageCount,
-      createdAt: createdAt ?? this.createdAt,
-      updatedAt: updatedAt ?? this.updatedAt,
+      createdAt: createdAt == sentinel
+          ? this.createdAt
+          : castOrNull<DateTime>(createdAt),
+      updatedAt: updatedAt == sentinel
+          ? this.updatedAt
+          : castOrNull<DateTime>(updatedAt),
       isSubscribed: isSubscribed ?? this.isSubscribed,
       isAdmin: isAdmin ?? this.isAdmin,
       isOwner: isOwner ?? this.isOwner,
       isPublic: isPublic ?? this.isPublic,
-      pinnedMessage: pinnedMessage ?? this.pinnedMessage,
-      lastMessage: lastMessage ?? this.lastMessage,
-      lastMessageTime: lastMessageTime ?? this.lastMessageTime,
+      pinnedMessage: pinnedMessage == sentinel
+          ? this.pinnedMessage
+          : castOrNull<ChannelMessageModel>(pinnedMessage),
+      lastMessagePreview: lastMessagePreview == sentinel
+          ? this.lastMessagePreview
+          : castOrNull<String>(lastMessagePreview),
+      lastMessageTime: lastMessageTime == sentinel
+          ? this.lastMessageTime
+          : castOrNull<DateTime>(lastMessageTime),
     );
   }
 
@@ -210,7 +238,7 @@ class ChannelModel {
 
   @override
   String toString() =>
-      'ChannelModel(id: $id, name: $name, subscribers: $subscriberCount)';
+      'ChannelModel(id: $id, name: $name, displayName: $displayName, subscribers: $subscriberCount)';
 }
 
 // =============================================================================
@@ -220,18 +248,6 @@ class ChannelModel {
 /// 频道 UI 状态
 ///
 /// 管理频道列表项的客户端 UI 状态，与核心数据 [ChannelModel] 分离。
-/// 这种设计允许 UI 状态独立更新，而不影响业务数据。
-///
-/// ## 使用场景
-///
-/// - 未读消息计数
-/// - 静音状态（不显示通知）
-/// - 置顶状态（列表顶部显示）
-///
-/// ## 状态管理
-///
-/// UI 状态由 [ChannelHandler] 管理，存储在 `Map<String, ChannelUIState>` 中，
-/// 通过 `channelId` 关联到对应的频道。
 class ChannelUIState {
   const ChannelUIState({
     required this.channelId,
@@ -239,6 +255,10 @@ class ChannelUIState {
     this.isMuted = false,
     this.isPinned = false,
   });
+
+  /// 创建空状态（所有值为默认值）
+  factory ChannelUIState.empty(String channelId) =>
+      ChannelUIState(channelId: channelId);
 
   /// 关联的频道 ID
   final String channelId;
@@ -252,16 +272,8 @@ class ChannelUIState {
   /// 是否置顶（置顶频道在列表顶部显示）
   final bool isPinned;
 
-  // ---------------------------------------------------------------------------
-  // 便捷 getter
-  // ---------------------------------------------------------------------------
-
   /// 是否有未读消息
   bool get hasUnread => unreadCount > 0;
-
-  // ---------------------------------------------------------------------------
-  // copyWith & 相等性
-  // ---------------------------------------------------------------------------
 
   /// 复制并修改指定字段
   ChannelUIState copyWith({int? unreadCount, bool? isMuted, bool? isPinned}) {
@@ -273,7 +285,6 @@ class ChannelUIState {
     );
   }
 
-  /// 比较所有字段，确保状态变化能触发 UI 重建
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
@@ -296,8 +307,6 @@ class ChannelUIState {
 // =============================================================================
 
 /// 频道订阅者信息
-///
-/// 用于显示订阅者列表或订阅者详情。
 class SubscriberModel {
   const SubscriberModel({
     required this.userId,
@@ -306,17 +315,37 @@ class SubscriberModel {
     required this.subscribedAt,
   });
 
-  /// 用户 ID
   final String userId;
-
-  /// 用户名
   final String username;
-
-  /// 头像 URL
   final String? avatarUrl;
-
-  /// 订阅时间
   final DateTime subscribedAt;
+
+  SubscriberModel copyWith({
+    String? userId,
+    String? username,
+    Object? avatarUrl = sentinel,
+    DateTime? subscribedAt,
+  }) {
+    return SubscriberModel(
+      userId: userId ?? this.userId,
+      username: username ?? this.username,
+      avatarUrl: avatarUrl == sentinel
+          ? this.avatarUrl
+          : castOrNull<String>(avatarUrl),
+      subscribedAt: subscribedAt ?? this.subscribedAt,
+    );
+  }
+
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is SubscriberModel && userId == other.userId);
+
+  @override
+  int get hashCode => userId.hashCode;
+
+  @override
+  String toString() => 'SubscriberModel(userId: $userId, username: $username)';
 }
 
 // =============================================================================
@@ -324,8 +353,6 @@ class SubscriberModel {
 // =============================================================================
 
 /// 频道管理员信息
-///
-/// 用于显示管理员列表或管理员详情。
 class AdminModel {
   const AdminModel({
     required this.userId,
@@ -335,18 +362,38 @@ class AdminModel {
     required this.addedAt,
   });
 
-  /// 用户 ID
   final String userId;
-
-  /// 用户名
   final String username;
-
-  /// 头像 URL
   final String? avatarUrl;
-
-  /// 是否是频道所有者
   final bool isOwner;
-
-  /// 被添加为管理员的时间
   final DateTime addedAt;
+
+  AdminModel copyWith({
+    String? userId,
+    String? username,
+    Object? avatarUrl = sentinel,
+    bool? isOwner,
+    DateTime? addedAt,
+  }) {
+    return AdminModel(
+      userId: userId ?? this.userId,
+      username: username ?? this.username,
+      avatarUrl: avatarUrl == sentinel
+          ? this.avatarUrl
+          : castOrNull<String>(avatarUrl),
+      isOwner: isOwner ?? this.isOwner,
+      addedAt: addedAt ?? this.addedAt,
+    );
+  }
+
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) || (other is AdminModel && userId == other.userId);
+
+  @override
+  int get hashCode => userId.hashCode;
+
+  @override
+  String toString() =>
+      'AdminModel(userId: $userId, username: $username, isOwner: $isOwner)';
 }

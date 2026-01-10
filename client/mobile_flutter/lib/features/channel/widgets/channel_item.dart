@@ -75,7 +75,11 @@ class ChannelItem extends StatelessWidget {
               child: _Content(channel: channel, colors: colors),
             ),
             const SizedBox(width: ChannelItemLayout.trailingSpacing),
-            _Trailing(channel: channel, uiState: uiState, colors: colors),
+            _Trailing(
+              channel: channel,
+              uiState: uiState ?? ChannelUIState.empty(channel.id),
+              colors: colors,
+            ),
           ],
         ),
       ),
@@ -132,7 +136,7 @@ class _Content extends StatelessWidget {
           children: [
             Flexible(
               child: Text(
-                channel.name,
+                channel.displayName,
                 style: TextStyle(
                   fontSize: 15,
                   fontWeight: FontWeight.w600,
@@ -163,10 +167,11 @@ class _LastMessage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final hasMessage = channel.hasLastMessage;
+    final lastMessage = channel.lastMessagePreview;
+    final hasMessage = lastMessage != null && lastMessage.isNotEmpty;
 
     return Text(
-      hasMessage ? channel.lastMessage! : '暂无消息',
+      hasMessage ? lastMessage : '暂无消息',
       style: TextStyle(
         fontSize: 14,
         color: hasMessage ? colors.textSecondary : colors.textDisabled,
@@ -181,17 +186,21 @@ class _LastMessage extends StatelessWidget {
 ///
 /// 显示时间、状态图标（置顶、静音）和未读徽章。
 class _Trailing extends StatelessWidget {
-  const _Trailing({required this.channel, this.uiState, required this.colors});
+  const _Trailing({
+    required this.channel,
+    required this.uiState,
+    required this.colors,
+  });
 
   final ChannelModel channel;
-  final ChannelUIState? uiState;
+  final ChannelUIState uiState;
   final AppColorScheme colors;
 
   @override
   Widget build(BuildContext context) {
-    final isPinned = uiState?.isPinned ?? false;
-    final isMuted = uiState?.isMuted ?? false;
-    final unreadCount = uiState?.unreadCount ?? 0;
+    final isPinned = uiState.isPinned;
+    final isMuted = uiState.isMuted;
+    final unreadCount = uiState.unreadCount;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.end,
@@ -226,12 +235,12 @@ class _Trailing extends StatelessWidget {
               ),
           ],
         ),
-        const SizedBox(height: 6),
-        // 第二行：未读徽章或占位
+        // 第二行：未读徽章（有未读时显示，无未读时不占位）
         if (unreadCount > 0)
-          UnreadBadge(count: unreadCount, isMuted: isMuted)
-        else
-          const SizedBox(height: ChannelItemLayout.unreadBadgeHeight),
+          Padding(
+            padding: const EdgeInsets.only(top: 8),
+            child: UnreadBadge(count: unreadCount, isMuted: isMuted),
+          ),
       ],
     );
   }

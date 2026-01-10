@@ -88,6 +88,7 @@ class _ChannelCommentPageState extends State<ChannelCommentPage> {
   CommentModel? _rootComment;
   bool _isLoading = false;
   String? _error;
+  bool _isDisposed = false;
 
   @override
   void initState() {
@@ -105,7 +106,15 @@ class _ChannelCommentPageState extends State<ChannelCommentPage> {
     }
   }
 
+  @override
+  void dispose() {
+    _isDisposed = true;
+    super.dispose();
+  }
+
   Future<void> _loadRootComment() async {
+    if (_isDisposed) return;
+
     setState(() {
       _isLoading = true;
       _error = null;
@@ -116,14 +125,14 @@ class _ChannelCommentPageState extends State<ChannelCommentPage> {
         widget.rootCommentId!,
       );
 
-      if (!mounted) return;
+      if (_isDisposed) return;
 
       setState(() {
         _rootComment = rootComment;
         _isLoading = false;
       });
     } catch (e) {
-      if (!mounted) return;
+      if (_isDisposed) return;
 
       setState(() {
         _error = e.toString();
@@ -139,8 +148,9 @@ class _ChannelCommentPageState extends State<ChannelCommentPage> {
   Widget _buildMessageHeader(int commentCount) {
     if (widget.message == null) return const SizedBox.shrink();
 
+    // 使用 MediaQuery.sizeOf 替代 MediaQuery.of(context).size，性能更优
     final maxWidth =
-        MediaQuery.of(context).size.width *
+        MediaQuery.sizeOf(context).width *
         ChannelLayoutConstants.messageMaxWidthRatio;
 
     return Column(
