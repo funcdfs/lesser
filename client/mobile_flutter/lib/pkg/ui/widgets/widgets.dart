@@ -15,4 +15,5 @@ export 'toggle_switch.dart';
 export 'popup_menu.dart';
 export 'context_menu.dart';
 export 'subscriber_badge.dart';
+export 'time_badge.dart';
 export 'unread_badge.dart';

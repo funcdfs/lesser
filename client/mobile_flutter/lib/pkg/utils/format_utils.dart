@@ -38,25 +38,36 @@ String formatTimeHHmm(DateTime time) {
   return '${time.hour.toString().padLeft(2, '0')}:${time.minute.toString().padLeft(2, '0')}';
 }
 
-/// 格式化时间 - 聊天列表样式（今天显示时间，昨天显示"昨天"，本周显示星期，更早显示日期）
+/// 格式化时间 - 聊天列表样式
+/// - 今天：显示时间 (HH:mm)
+/// - 昨天：显示"昨天"
+/// - 本周：显示星期几
+/// - 今年：显示 X 月 X 日
+/// - 更早：显示 X 年 X 月 X 日
 String formatTimeChatList(DateTime time) {
   final now = DateTime.now();
-  final diff = now.difference(time);
+  final today = DateTime(now.year, now.month, now.day);
+  final timeDate = DateTime(time.year, time.month, time.day);
+  final diffDays = today.difference(timeDate).inDays;
 
-  if (diff.inDays == 0) {
+  if (diffDays == 0) {
     // 今天：显示时间
     return formatTimeHHmm(time);
-  } else if (diff.inDays == 1) {
+  } else if (diffDays == 1) {
     return '昨天';
-  } else if (diff.inDays < 7) {
+  } else if (diffDays < 7) {
     const weekdays = ['周一', '周二', '周三', '周四', '周五', '周六', '周日'];
     return weekdays[time.weekday - 1];
+  } else if (time.year == now.year) {
+    // 今年：X 月 X 日
+    return '${time.month} 月 ${time.day} 日';
   } else {
-    return '${time.month}/${time.day}';
+    // 更早：X 年 X 月 X 日
+    return '${time.year} 年 ${time.month} 月 ${time.day} 日';
   }
 }
 
-/// 格式化日期 - 中文格式（今天、昨天、前天、X月X日、X年X月X日）
+/// 格式化日期 - 中文格式（今天、昨天、前天、X 月 X 日、X 年 X 月 X 日）
 String formatDateChinese(DateTime date) {
   final now = DateTime.now();
   final today = DateTime(now.year, now.month, now.day);
@@ -70,9 +81,9 @@ String formatDateChinese(DateTime date) {
   } else if (diff == 2) {
     return '前天';
   } else if (date.year == now.year) {
-    return '${date.month}月${date.day}日';
+    return '${date.month} 月 ${date.day} 日';
   } else {
-    return '${date.year}年${date.month}月${date.day}日';
+    return '${date.year} 年 ${date.month} 月 ${date.day} 日';
   }
 }
 

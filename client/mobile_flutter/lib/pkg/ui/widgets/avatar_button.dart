@@ -15,12 +15,14 @@ class AvatarButton extends StatelessWidget {
     this.size = 40,
     this.onTap,
     this.placeholder,
+    this.enableTapScale = true,
   });
 
   final String? imageUrl;
   final double size;
   final VoidCallback? onTap;
   final String? placeholder;
+  final bool enableTapScale;
 
   @override
   Widget build(BuildContext context) {
@@ -28,19 +30,19 @@ class AvatarButton extends StatelessWidget {
     final bgColor = colors.surfaceElevated;
     final textColor = colors.textTertiary;
 
-    return TapScale(
-      onTap: onTap,
-      scale: 0.92,
-      child: Container(
-        width: size,
-        height: size,
-        decoration: BoxDecoration(shape: BoxShape.circle, color: bgColor),
-        clipBehavior: Clip.antiAlias,
-        child: imageUrl != null
-            ? _buildNetworkImage(textColor)
-            : _buildPlaceholder(textColor, size),
-      ),
+    final avatar = Container(
+      width: size,
+      height: size,
+      decoration: BoxDecoration(shape: BoxShape.circle, color: bgColor),
+      clipBehavior: Clip.antiAlias,
+      child: imageUrl != null
+          ? _buildNetworkImage(textColor)
+          : _buildPlaceholder(textColor, size),
     );
+
+    if (!enableTapScale) return avatar;
+
+    return TapScale(onTap: onTap, scale: TapScales.small, child: avatar);
   }
 
   /// 构建网络图片
@@ -84,6 +86,7 @@ class AvatarButton extends StatelessWidget {
             fontSize: size * 0.4,
             fontWeight: FontWeight.w600,
             color: textColor,
+            decoration: TextDecoration.none, // 避免 Hero 动画时出现黄色下划线
           ),
         ),
       );

@@ -4,12 +4,11 @@ import 'package:flutter/material.dart';
 import '../../../pkg/ui/effects/effects.dart';
 import '../../../pkg/ui/theme/theme.dart';
 import '../../../pkg/ui/widgets/widgets.dart';
-import '../../../pkg/utils/format_utils.dart';
 import '../models/channel_models.dart';
 
-/// 频道列表项 - 紧凑布局
-/// 第一行：频道名 + 订阅数 | 时间 + 状态图标
-/// 第二行：最后消息预览 | 未读徽章
+/// 频道列表项
+///
+/// 布局：头像 | 频道名+订阅数 / 最后消息 | 时间+状态 / 未读数
 class ChannelItem extends StatelessWidget {
   const ChannelItem({super.key, required this.channel, this.onTap});
 
@@ -24,108 +23,68 @@ class ChannelItem extends StatelessWidget {
       onTap: onTap,
       scale: TapScales.card,
       child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
         decoration: BoxDecoration(
           color: colors.surfaceBase,
           border: Border(bottom: BorderSide(color: colors.divider, width: 0.5)),
         ),
         child: Row(
           children: [
-            // 头像（Hero 动画）
-            Hero(
-              tag: 'channel_avatar_${channel.id}',
-              // 使用 placeholderBuilder 避免动画结束时的闪动
-              placeholderBuilder: (context, heroSize, child) {
-                return SizedBox(
-                  width: heroSize.width,
-                  height: heroSize.height,
-                  child: child,
-                );
-              },
-              flightShuttleBuilder: (context, anim, direction, fromCtx, toCtx) {
-                // 使用目标 widget 作为飞行 shuttle，配合 FadeTransition 平滑过渡
-                return FadeTransition(
-                  opacity: anim,
-                  child: Material(
-                    color: Colors.transparent,
-                    child: AvatarButton(
-                      imageUrl: channel.avatarUrl,
-                      size: 40,
-                      placeholder: channel.name.isNotEmpty
-                          ? channel.name[0]
-                          : '#',
-                    ),
-                  ),
-                );
-              },
-              child: AvatarButton(
-                imageUrl: channel.avatarUrl,
-                size: 40,
-                placeholder: channel.name.isNotEmpty ? channel.name[0] : '#',
-              ),
-            ),
+            // 头像（带 Hero 动画）
+            _ChannelAvatar(channel: channel),
             const SizedBox(width: 12),
-
-            // 中间内容
             Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  // 第一行：频道名 + 订阅数
-                  _buildTitleRow(colors),
-                  const SizedBox(height: 4),
-                  // 第二行：最后消息预览
-                  _buildMessageRow(colors),
-                ],
-              ),
+              child: _Content(channel: channel, colors: colors),
             ),
             const SizedBox(width: 8),
-
-            // 右侧：时间 + 状态图标 + 未读数
-            _buildRightColumn(colors),
+            _Trailing(channel: channel, colors: colors),
           ],
         ),
       ),
     );
   }
+}
 
-  /// 第一行：频道名 + 订阅数徽章
-  Widget _buildTitleRow(AppColorScheme colors) {
-    return Row(
+/// 频道头像（带 Hero 动画）
+class _ChannelAvatar extends StatelessWidget {
+  const _ChannelAvatar({required this.channel});
+
+  final ChannelModel channel;
+
+  @override
+  Widget build(BuildContext context) {
+    return Hero(
+      tag: 'channel_avatar_${channel.id}',
+      // 保持 child 可见，避免动画结束时闪烁
+      placeholderBuilder: (_, size, child) =>
+          SizedBox(width: size.width, height: size.height, child: child),
+      child: AvatarButton(
+        imageUrl: channel.avatarUrl,
+        size: 40,
+        placeholder: channel.name.isNotEmpty ? channel.name[0] : '#',
+        enableTapScale: false,
+      ),
+    );
+  }
+}
+
+/// 中间内容：频道名 + 订阅数 / 最后消息
+class _Content extends StatelessWidget {
+  const _Content({required this.channel, required this.colors});
+
+  final ChannelModel channel;
+  final AppColorScheme colors;
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      mainAxisSize: MainAxisSize.min,
       children: [
-        // 频道名称（Hero 动画）
-        Flexible(
-          child: Hero(
-            tag: 'channel_name_${channel.id}',
-            // 使用 placeholderBuilder 避免动画结束时的闪动
-            placeholderBuilder: (context, heroSize, child) {
-              return SizedBox(
-                width: heroSize.width,
-                height: heroSize.height,
-                child: child,
-              );
-            },
-            flightShuttleBuilder: (context, anim, direction, fromCtx, toCtx) {
-              // 使用目标 widget 作为飞行 shuttle，配合 FadeTransition 平滑过渡
-              return FadeTransition(
-                opacity: anim,
-                child: Material(
-                  color: Colors.transparent,
-                  child: Text(
-                    channel.name,
-                    softWrap: false,
-                    style: TextStyle(
-                      fontSize: 15,
-                      fontWeight: FontWeight.w600,
-                      color: colors.textPrimary,
-                    ),
-                  ),
-                ),
-              );
-            },
-            child: Material(
-              color: Colors.transparent,
+        // 频道名 + 订阅数
+        Row(
+          children: [
+            Flexible(
               child: Text(
                 channel.name,
                 style: TextStyle(
@@ -137,20 +96,27 @@ class ChannelItem extends StatelessWidget {
                 overflow: TextOverflow.ellipsis,
               ),
             ),
-          ),
+            const SizedBox(width: 8),
+            SubscriberBadge(count: channel.subscriberCount),
+          ],
         ),
-        const SizedBox(width: 6),
-        // 订阅数徽章（SVG 风格）
-        SubscriberBadge(
-          count: channel.subscriberCount,
-          size: SubscriberBadgeSize.small,
-        ),
+        const SizedBox(height: 5),
+        // 最后消息
+        _LastMessage(channel: channel, colors: colors),
       ],
     );
   }
+}
 
-  /// 第二行：最后消息预览
-  Widget _buildMessageRow(AppColorScheme colors) {
+/// 最后消息预览
+class _LastMessage extends StatelessWidget {
+  const _LastMessage({required this.channel, required this.colors});
+
+  final ChannelModel channel;
+  final AppColorScheme colors;
+
+  @override
+  Widget build(BuildContext context) {
     final hasMessage =
         channel.lastMessage != null && channel.lastMessage!.isNotEmpty;
 
@@ -164,51 +130,56 @@ class ChannelItem extends StatelessWidget {
       overflow: TextOverflow.ellipsis,
     );
   }
+}
 
-  /// 右侧列：时间 + 状态图标 + 未读数
-  Widget _buildRightColumn(AppColorScheme colors) {
+/// 右侧：时间 + 状态图标 / 未读数
+class _Trailing extends StatelessWidget {
+  const _Trailing({required this.channel, required this.colors});
+
+  final ChannelModel channel;
+  final AppColorScheme colors;
+
+  @override
+  Widget build(BuildContext context) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.end,
       mainAxisSize: MainAxisSize.min,
       children: [
-        // 第一行：时间 + 状态图标
+        // 时间 + 状态图标
         Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            // 置顶图标
             if (channel.isPinned)
               Padding(
                 padding: const EdgeInsets.only(right: 4),
                 child: Icon(
                   Icons.push_pin_rounded,
-                  size: 14,
-                  color: colors.textTertiary,
+                  size: 13,
+                  color: colors.textDisabled,
                 ),
               ),
-            // 静音图标
             if (channel.isMuted)
               Padding(
                 padding: const EdgeInsets.only(right: 4),
                 child: Icon(
                   Icons.notifications_off_rounded,
-                  size: 14,
-                  color: colors.textTertiary,
+                  size: 13,
+                  color: colors.textDisabled,
                 ),
               ),
-            // 时间
             if (channel.lastMessageTime != null)
-              Text(
-                formatTimeChatList(channel.lastMessageTime!),
-                style: TextStyle(fontSize: 12, color: colors.textTertiary),
+              TimeBadge(
+                time: channel.lastMessageTime!,
+                size: TimeBadgeSize.medium,
               ),
           ],
         ),
         const SizedBox(height: 6),
-        // 第二行：未读数徽章
+        // 未读数
         if (channel.unreadCount > 0)
           UnreadBadge(count: channel.unreadCount, isMuted: channel.isMuted)
         else
-          const SizedBox(height: 18), // 占位保持对齐
+          const SizedBox(height: 20),
       ],
     );
   }

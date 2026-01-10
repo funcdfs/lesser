@@ -1,4 +1,4 @@
-// 订阅量徽章组件 - 使用 SVG 风格显示
+// 订阅量徽章组件
 
 import 'package:flutter/material.dart';
 import '../theme/theme.dart';
@@ -6,8 +6,7 @@ import '../../utils/format_utils.dart';
 
 /// 订阅量徽章
 ///
-/// 使用 SVG 风格的圆角矩形背景 + 图标 + 数字
-/// 比单纯的文字更有视觉层次感
+/// 圆角矩形背景 + 双人线条图标 + 数字
 class SubscriberBadge extends StatelessWidget {
   const SubscriberBadge({
     super.key,
@@ -39,7 +38,7 @@ class SubscriberBadge extends StatelessWidget {
         children: [
           if (showIcon) ...[
             SizedBox(
-              width: config.iconSize,
+              width: config.iconSize * 1.4, // 双人图标需要更宽
               height: config.iconSize,
               child: CustomPaint(
                 painter: _SubscriberIconPainter(
@@ -124,7 +123,7 @@ class _BadgeConfig {
   final double strokeWidth;
 }
 
-/// 订阅者图标绘制器（人形图标）
+/// 订阅者图标绘制器（双人线条图标）
 class _SubscriberIconPainter extends CustomPainter {
   const _SubscriberIconPainter({
     required this.color,
@@ -136,6 +135,9 @@ class _SubscriberIconPainter extends CustomPainter {
 
   @override
   void paint(Canvas canvas, Size size) {
+    final w = size.width;
+    final h = size.height;
+
     final paint = Paint()
       ..color = color
       ..style = PaintingStyle.stroke
@@ -143,20 +145,31 @@ class _SubscriberIconPainter extends CustomPainter {
       ..strokeCap = StrokeCap.round
       ..strokeJoin = StrokeJoin.round;
 
-    final w = size.width;
-    final h = size.height;
+    // 后面的人（左侧，半透明）
+    final backPaint = Paint()
+      ..color = color.withValues(alpha: 0.5)
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = strokeWidth
+      ..strokeCap = StrokeCap.round
+      ..strokeJoin = StrokeJoin.round;
 
-    // 头部（圆形）
-    final headRadius = w * 0.22;
-    final headCenter = Offset(w * 0.5, h * 0.28);
-    canvas.drawCircle(headCenter, headRadius, paint);
+    // 后面的人 - 头
+    canvas.drawCircle(Offset(w * 0.28, h * 0.28), h * 0.20, backPaint);
+    // 后面的人 - 身体弧线
+    final backBody = Path()
+      ..moveTo(w * 0.06, h * 0.92)
+      ..quadraticBezierTo(w * 0.06, h * 0.52, w * 0.28, h * 0.52)
+      ..quadraticBezierTo(w * 0.50, h * 0.52, w * 0.50, h * 0.92);
+    canvas.drawPath(backBody, backPaint);
 
-    // 身体（弧形）
-    final bodyPath = Path();
-    bodyPath.moveTo(w * 0.15, h * 0.95);
-    bodyPath.quadraticBezierTo(w * 0.15, h * 0.55, w * 0.5, h * 0.55);
-    bodyPath.quadraticBezierTo(w * 0.85, h * 0.55, w * 0.85, h * 0.95);
-    canvas.drawPath(bodyPath, paint);
+    // 前面的人 - 头
+    canvas.drawCircle(Offset(w * 0.72, h * 0.28), h * 0.20, paint);
+    // 前面的人 - 身体弧线
+    final frontBody = Path()
+      ..moveTo(w * 0.50, h * 0.92)
+      ..quadraticBezierTo(w * 0.50, h * 0.52, w * 0.72, h * 0.52)
+      ..quadraticBezierTo(w * 0.94, h * 0.52, w * 0.94, h * 0.92);
+    canvas.drawPath(frontBody, paint);
   }
 
   @override

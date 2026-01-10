@@ -254,39 +254,21 @@ class _ChannelDetailPageState extends State<ChannelDetailPage> {
           ? null
           : Row(
               children: [
+                // 头像 Hero
                 Hero(
                   tag: 'channel_avatar_${widget.channelId}',
-                  // 使用 placeholderBuilder 避免动画结束时的闪动
-                  placeholderBuilder: (context, heroSize, child) {
-                    return SizedBox(
-                      width: heroSize.width,
-                      height: heroSize.height,
-                      child: child,
-                    );
-                  },
-                  flightShuttleBuilder:
-                      (context, anim, direction, fromCtx, toCtx) {
-                        // 使用目标 widget 作为飞行 shuttle，配合 FadeTransition 平滑过渡
-                        return FadeTransition(
-                          opacity: anim,
-                          child: Material(
-                            color: Colors.transparent,
-                            child: AvatarButton(
-                              imageUrl: _channel!.avatarUrl,
-                              size: 40,
-                              placeholder: _channel!.name.isNotEmpty
-                                  ? _channel!.name[0]
-                                  : '#',
-                            ),
-                          ),
-                        );
-                      },
+                  placeholderBuilder: (_, size, child) => SizedBox(
+                    width: size.width,
+                    height: size.height,
+                    child: child,
+                  ),
                   child: AvatarButton(
                     imageUrl: _channel!.avatarUrl,
                     size: 40,
                     placeholder: _channel!.name.isNotEmpty
                         ? _channel!.name[0]
                         : '#',
+                    enableTapScale: false,
                   ),
                 ),
                 const SizedBox(width: 10),
@@ -295,48 +277,16 @@ class _ChannelDetailPageState extends State<ChannelDetailPage> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      Hero(
-                        tag: 'channel_name_${widget.channelId}',
-                        // 使用 placeholderBuilder 避免动画结束时的闪动
-                        placeholderBuilder: (context, heroSize, child) {
-                          return SizedBox(
-                            width: heroSize.width,
-                            height: heroSize.height,
-                            child: child,
-                          );
-                        },
-                        flightShuttleBuilder:
-                            (context, anim, direction, fromCtx, toCtx) {
-                              // 使用目标 widget 作为飞行 shuttle，配合 FadeTransition 平滑过渡
-                              return FadeTransition(
-                                opacity: anim,
-                                child: Material(
-                                  color: Colors.transparent,
-                                  child: Text(
-                                    _channel!.name,
-                                    softWrap: false,
-                                    style: TextStyle(
-                                      fontSize: 15,
-                                      fontWeight: FontWeight.w600,
-                                      color: colors.textPrimary,
-                                    ),
-                                  ),
-                                ),
-                              );
-                            },
-                        child: Material(
-                          color: Colors.transparent,
-                          child: Text(
-                            _channel!.name,
-                            style: TextStyle(
-                              fontSize: 15,
-                              fontWeight: FontWeight.w600,
-                              color: colors.textPrimary,
-                            ),
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                          ),
+                      // 频道名 - 不使用 Hero，文字动画效果不佳
+                      Text(
+                        _channel!.name,
+                        style: TextStyle(
+                          fontSize: 15,
+                          fontWeight: FontWeight.w600,
+                          color: colors.textPrimary,
                         ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
                       ),
                       const SizedBox(height: 2),
                       SubscriberBadge(
