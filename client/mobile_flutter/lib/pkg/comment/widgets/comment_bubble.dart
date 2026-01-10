@@ -46,10 +46,12 @@ class CommentBubble extends StatelessWidget {
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
     // 预计算颜色，避免在子组件中重复计算
-    final borderColor = colors.divider.withValues(alpha: isDark ? 0.15 : 0.08);
-    final shadowColor = colors.textPrimary.withValues(
-      alpha: isDark ? 0.1 : 0.04,
-    );
+    // 暗色模式下边框更明显，提供视觉分隔
+    final borderColor = colors.divider.withValues(alpha: isDark ? 0.4 : 0.08);
+    // 暗色模式下使用白色阴影增加层次感
+    final shadowColor = isDark
+        ? Colors.white.withValues(alpha: 0.03)
+        : colors.textPrimary.withValues(alpha: 0.04);
 
     return Container(
       padding: const EdgeInsets.fromLTRB(11, 9, 11, 9),

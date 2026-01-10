@@ -121,7 +121,7 @@ class CommentItem extends StatelessWidget {
     Widget content = GestureDetector(
       onTapUp: (details) => _showContextMenu(context, details),
       child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 3),
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
         child: Row(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
