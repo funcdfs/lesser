@@ -7,15 +7,18 @@
 ```
 channel/
 ├── data_access/
+│   ├── channel_data_source.dart         # 频道数据源接口
 │   ├── channel_mock_data_source.dart    # 频道 Mock 数据源
-│   └── channel_comment_data_source.dart # 评论数据源
+│   ├── channel_comment_data_source.dart # 评论数据源
+│   └── mock/
+│       └── channel_mock_data.dart       # Mock 数据定义
 ├── handler/
-│   ├── channel_handler.dart             # 频道业务逻辑
-│   └── channel_mock_data.dart           # Mock 数据定义
+│   └── channel_handler.dart             # 频道业务逻辑
 ├── models/
 │   ├── channel_model.dart               # 频道模型
 │   ├── channel_message_model.dart       # 频道消息模型
-│   └── channel_comment_model.dart       # 评论模型
+│   ├── channel_comment_model.dart       # 评论模型
+│   └── channel_tag.dart                 # 频道标签模型
 ├── pages/
 │   ├── channel_page.dart                # 频道列表页
 │   ├── channel_detail_page.dart         # 频道详情页（消息列表）
@@ -23,8 +26,41 @@ channel/
 └── widgets/
     ├── channel_item.dart                # 频道列表项
     ├── channel_message.dart             # 消息组件
+    ├── detail_app_bar.dart              # 详情页 AppBar
+    ├── message_list_view.dart           # 消息列表视图
+    ├── message_list_controller.dart     # 消息列表控制器（缓存+高亮）
+    ├── comment_page_scaffold.dart       # 评论页脚手架
     └── ...
 ```
+
+## 架构设计原则
+
+### 分层架构
+
+```
+pages → handler → data_access → models
+```
+
+- `pages/`: UI 层，只负责渲染和用户交互
+- `handler/`: 业务逻辑层，处理状态管理和业务规则
+- `data_access/`: 数据访问层，抽象数据源（Mock/gRPC）
+- `models/`: 数据模型层，纯数据结构
+
+### 接口定义位置
+
+- 数据源接口（如 `ChannelDataSource`）定义在 `data_access/` 目录
+- Handler 通过依赖注入使用数据源接口
+
+### Widget 拆分原则
+
+- 私有方法返回 Widget 应改为私有 Widget 类
+- 复杂页面拆分为独立组件（如 `DetailAppBar`、`MessageListView`）
+- 缓存逻辑抽离到控制器类（如 `MessageListController`）
+
+### 状态管理
+
+- 选中状态由 UI 层管理（使用 `Set<String>`），不在 Model 中存储
+- 临时 UI 状态（如高亮）通过控制器管理
 
 ## 数据模型关系
 

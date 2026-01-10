@@ -1,10 +1,43 @@
-// 置顶消息横幅组件
+// =============================================================================
+// 置顶消息横幅组件 - Pinned Message Banner Widget
+// =============================================================================
+//
+// ## 设计目的
+// 在频道详情页顶部显示置顶消息，提供快速访问重要信息的入口。
+// 支持点击查看详情和关闭横幅两种操作。
+//
+// ## 视觉设计
+// - 图钉图标使用强调色背景
+// - 消息预览单行显示，超出部分省略
+// - 可选的关闭按钮
+// - 底部细线分隔
+//
+// ## 交互设计
+// - 点击整个横幅可查看置顶消息详情
+// - 点击关闭按钮可隐藏横幅（不影响置顶状态）
+// - 支持 TapScale 缩放反馈
+//
+// ## 使用示例
+// ```dart
+// PinnedMessageBanner(
+//   message: channel.pinnedMessage!.content,
+//   onTap: () => _scrollToPinnedMessage(),
+//   onClose: () => setState(() => _showPinnedBanner = false),
+// )
+// ```
+//
+// =============================================================================
 
 import 'package:flutter/material.dart';
 import '../../../pkg/ui/theme/theme.dart';
 import '../../../pkg/ui/effects/effects.dart';
 
 /// 置顶消息横幅
+///
+/// ## 参数说明
+/// - [message]: 置顶消息内容预览
+/// - [onTap]: 点击横幅回调（可选）
+/// - [onClose]: 关闭按钮回调（可选，不传则不显示关闭按钮）
 class PinnedMessageBanner extends StatelessWidget {
   const PinnedMessageBanner({
     super.key,

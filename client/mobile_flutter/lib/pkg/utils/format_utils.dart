@@ -108,6 +108,14 @@ String formatCountEnglish(int count) {
   return count.toString();
 }
 
+/// 格式化浏览数 - 中文风格（万）
+String formatViewCount(int count) {
+  if (count >= 10000) {
+    return '${(count / 10000).toStringAsFixed(1)}万';
+  }
+  return count.toString();
+}
+
 /// 格式化订阅者数量 - 中文风格（万）
 String formatSubscriberCount(int count) {
   if (count >= 100000000) {

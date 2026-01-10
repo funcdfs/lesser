@@ -1,24 +1,61 @@
+// =============================================================================
 // 频道评论模型
+// =============================================================================
+//
+// 定义频道评论相关的数据结构，包括评论、作者、媒体附件和输入状态。
+//
+// ## 设计说明
+//
+// 1. **与公共评论组件集成**：通过 `ChannelCommentModelExt` 扩展提供转换方法，
+//    将频道评论转换为公共评论组件可用的格式
+//
+// 2. **数据与状态分离**：`ChannelCommentModel` 存储业务数据，
+//    `CommentUIState` 管理临时 UI 状态
+//
+// 3. **哨兵值模式**：`ChannelCommentInputState.copyWith` 使用哨兵值，
+//    支持传入 null 清除 `replyTo` 字段
+//
+// ## 类结构
+//
+// - `CommentMediaType` - 媒体类型枚举
+// - `CommentMedia` - 媒体附件模型
+// - `CommentAuthor` - 评论作者模型
+// - `ChannelCommentModel` - 评论核心模型
+// - `CommentUIState` - 评论 UI 状态
+// - `ChannelMessageContext` - 消息上下文（评论页头部用）
+// - `ChannelCommentInputState` - 评论输入状态
 
 import '../../../pkg/comment/comment.dart' as pkg_comment;
 
-// 重新导出公共类型
+// 重新导出公共类型，方便外部使用
 export '../../../pkg/comment/comment.dart' show CommentIconState, ReplyTarget;
 
-// ============================================================================
-// 媒体
-// ============================================================================
+// =============================================================================
+// 媒体类型
+// =============================================================================
 
 /// 评论媒体类型
 enum CommentMediaType {
+  /// 静态图片
   image,
+
+  /// 视频
   video,
+
+  /// 动图
   gif;
 
+  /// 是否为动态媒体（视频或动图）
   bool get isAnimated => this == video || this == gif;
 }
 
+// =============================================================================
+// 媒体附件
+// =============================================================================
+
 /// 评论媒体附件
+///
+/// 表示评论中包含的图片、视频或动图。
 class CommentMedia {
   const CommentMedia({
     required this.url,
@@ -30,17 +67,32 @@ class CommentMedia {
     this.blurhash,
   });
 
+  /// 媒体资源 URL
   final String url;
+
+  /// 媒体类型
   final CommentMediaType type;
+
+  /// 原始宽度（像素）
   final int? width;
+
+  /// 原始高度（像素）
   final int? height;
+
+  /// 缩略图 URL（用于视频预览）
   final String? thumbnailUrl;
+
+  /// 视频时长（毫秒）
   final int? durationMs;
+
+  /// BlurHash 占位符（用于加载时显示模糊预览）
   final String? blurhash;
 
-  double? get aspectRatio => (width != null && height != null && height! > 0)
-      ? width! / height!
-      : null;
+  /// 宽高比（用于布局计算）
+  double? get aspectRatio {
+    if (width == null || height == null || height == 0) return null;
+    return width! / height!;
+  }
 
   @override
   bool operator ==(Object other) =>
@@ -50,11 +102,13 @@ class CommentMedia {
   int get hashCode => url.hashCode;
 }
 
-// ============================================================================
-// 作者
-// ============================================================================
+// =============================================================================
+// 评论作者
+// =============================================================================
 
 /// 评论作者
+///
+/// 包含作者的基本信息和在频道中的角色。
 class CommentAuthor {
   const CommentAuthor({
     required this.id,
@@ -66,14 +120,28 @@ class CommentAuthor {
     this.isChannelAdmin = false,
   });
 
+  /// 用户 ID
   final String id;
+
+  /// 用户名（唯一标识，如 @username）
   final String username;
+
+  /// 显示名称
   final String displayName;
+
+  /// 头像 URL
   final String avatarUrl;
+
+  /// 是否已认证
   final bool isVerified;
+
+  /// 是否是频道所有者
   final bool isChannelOwner;
+
+  /// 是否是频道管理员
   final bool isChannelAdmin;
 
+  /// 已注销用户的占位符
   static const deleted = CommentAuthor(
     id: '',
     username: 'deleted',
@@ -81,9 +149,13 @@ class CommentAuthor {
     avatarUrl: '',
   );
 
+  /// 是否为已注销用户
   bool get isDeleted => id.isEmpty;
+
+  /// 是否有特殊权限（所有者或管理员）
   bool get hasPrivilege => isChannelOwner || isChannelAdmin;
 
+  /// 角色标签（用于 UI 显示）
   String? get roleLabel {
     if (isChannelOwner) return '频道主';
     if (isChannelAdmin) return '管理员';
@@ -98,11 +170,13 @@ class CommentAuthor {
   int get hashCode => id.hashCode;
 }
 
-// ============================================================================
-// 评论
-// ============================================================================
+// =============================================================================
+// 评论核心模型
+// =============================================================================
 
 /// 频道评论
+///
+/// 表示频道消息下的一条评论，支持嵌套回复。
 class ChannelCommentModel {
   const ChannelCommentModel({
     required this.id,
@@ -119,46 +193,83 @@ class ChannelCommentModel {
     this.isDeleted = false,
     this.isPinned = false,
     this.isOwn = false,
-    // 评论交互状态
     this.interactionState = pkg_comment.CommentIconState.normal,
     this.isViewed = false,
     this.hasMyReply = false,
-    // UI 临时状态
-    this.isHighlighted = false,
-    this.isExpanded = false,
-    this.isSubmitting = false,
   });
 
+  /// 评论唯一标识
   final String id;
-  final String messageId; // 所属消息 ID
+
+  /// 所属消息 ID
+  final String messageId;
+
+  /// 所属频道 ID
   final String channelId;
+
+  /// 评论作者
   final CommentAuthor author;
+
+  /// 评论文本内容
   final String content;
-  final List<CommentMedia> media;
-  final pkg_comment.ReplyTarget? replyTo;
-  final int replyCount;
-  final int likeCount;
-  final bool isLiked;
+
+  /// 创建时间（毫秒时间戳）
   final int createdAtMs;
-  final bool isDeleted;
-  final bool isPinned;
-  final bool isOwn;
-  // 评论交互状态
+
+  /// 回复目标（如果是回复其他评论）
+  final pkg_comment.ReplyTarget? replyTo;
+
+  /// 回复数量
+  final int replyCount;
+
+  /// 点赞数量
+  final int likeCount;
+
+  /// 当前用户是否已点赞
+  final bool isLiked;
+
+  /// 评论交互状态（用于 UI 图标显示）
   final pkg_comment.CommentIconState interactionState;
+
+  /// 是否已删除
+  final bool isDeleted;
+
+  /// 是否置顶
+  final bool isPinned;
+
+  /// 是否是当前用户发布的
+  final bool isOwn;
+
+  /// 是否已查看
   final bool isViewed;
+
+  /// 当前用户是否有回复
   final bool hasMyReply;
-  // UI 临时状态
-  final bool isHighlighted;
-  final bool isExpanded;
-  final bool isSubmitting;
 
-  // ---- 便捷 getter ----
+  /// 媒体附件列表
+  final List<CommentMedia> media;
 
+  // ---------------------------------------------------------------------------
+  // 便捷 getter
+  // ---------------------------------------------------------------------------
+
+  /// 是否有回复
   bool get hasReplies => replyCount > 0;
+
+  /// 是否是回复（而非根评论）
   bool get isReply => replyTo != null;
+
+  /// 是否有媒体附件
   bool get hasMedia => media.isNotEmpty;
+
+  /// 创建时间（DateTime 格式）
   DateTime get createdAt => DateTime.fromMillisecondsSinceEpoch(createdAtMs);
 
+  // ---------------------------------------------------------------------------
+  // copyWith & 乐观更新
+  // ---------------------------------------------------------------------------
+
+  /// 复制并修改指定字段
   ChannelCommentModel copyWith({
     String? id,
     String? messageId,
@@ -177,9 +288,6 @@ class ChannelCommentModel {
     pkg_comment.CommentIconState? interactionState,
     bool? isViewed,
     bool? hasMyReply,
-    bool? isHighlighted,
-    bool? isExpanded,
-    bool? isSubmitting,
   }) {
     return ChannelCommentModel(
       id: id ?? this.id,
@@ -199,25 +307,17 @@ class ChannelCommentModel {
       interactionState: interactionState ?? this.interactionState,
       isViewed: isViewed ?? this.isViewed,
       hasMyReply: hasMyReply ?? this.hasMyReply,
-      isHighlighted: isHighlighted ?? this.isHighlighted,
-      isExpanded: isExpanded ?? this.isExpanded,
-      isSubmitting: isSubmitting ?? this.isSubmitting,
     );
   }
 
-  // ---- 乐观更新快捷方法 ----
-
-  /// 切换点赞状态
+  /// 切换点赞状态（乐观更新）
   ChannelCommentModel withLikeToggled() => copyWith(
     likeCount: isLiked ? likeCount - 1 : likeCount + 1,
     isLiked: !isLiked,
   );
 
+  /// 回复数 +1（乐观更新）
   ChannelCommentModel withReplyAdded() => copyWith(replyCount: replyCount + 1);
-  ChannelCommentModel withHighlight(bool value) =>
-      copyWith(isHighlighted: value);
-  ChannelCommentModel withSubmitting(bool value) =>
-      copyWith(isSubmitting: value);
 
   @override
   bool operator ==(Object other) =>
@@ -226,13 +326,89 @@ class ChannelCommentModel {
 
   @override
   int get hashCode => id.hashCode;
+
+  @override
+  String toString() {
+    final preview = content.length > 20
+        ? '${content.substring(0, 20)}...'
+        : content;
+    return 'ChannelCommentModel(id: $id, author: ${author.displayName}, content: $preview)';
+  }
 }
 
-// ============================================================================
-// 上下文
-// ============================================================================
+// =============================================================================
+// 评论 UI 状态
+// =============================================================================
 
-/// 频道消息上下文（评论页头部展示用）
+/// 评论 UI 状态
+///
+/// 管理评论的临时 UI 状态，与核心数据分离。
+class CommentUIState {
+  const CommentUIState({
+    required this.commentId,
+    this.isHighlighted = false,
+    this.isExpanded = false,
+    this.isSubmitting = false,
+  });
+
+  /// 关联的评论 ID
+  final String commentId;
+
+  /// 是否高亮显示
+  final bool isHighlighted;
+
+  /// 回复列表是否展开
+  final bool isExpanded;
+
+  /// 是否正在提交操作
+  final bool isSubmitting;
+
+  /// 复制并修改指定字段
+  CommentUIState copyWith({
+    bool? isHighlighted,
+    bool? isExpanded,
+    bool? isSubmitting,
+  }) {
+    return CommentUIState(
+      commentId: commentId,
+      isHighlighted: isHighlighted ?? this.isHighlighted,
+      isExpanded: isExpanded ?? this.isExpanded,
+      isSubmitting: isSubmitting ?? this.isSubmitting,
+    );
+  }
+
+  /// 设置高亮状态
+  CommentUIState withHighlight(bool value) => copyWith(isHighlighted: value);
+
+  /// 设置提交状态
+  CommentUIState withSubmitting(bool value) => copyWith(isSubmitting: value);
+
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is CommentUIState &&
+          commentId == other.commentId &&
+          isHighlighted == other.isHighlighted &&
+          isExpanded == other.isExpanded &&
+          isSubmitting == other.isSubmitting);
+
+  @override
+  int get hashCode =>
+      Object.hash(commentId, isHighlighted, isExpanded, isSubmitting);
+
+  @override
+  String toString() =>
+      'CommentUIState(id: $commentId, highlighted: $isHighlighted, '
+      'expanded: $isExpanded, submitting: $isSubmitting)';
+}
+
+// =============================================================================
+// 消息上下文
+// =============================================================================
+
+/// 频道消息上下文
+///
+/// 用于评论页头部展示原始消息的摘要信息。
 class ChannelMessageContext {
   const ChannelMessageContext({
     required this.messageId,
@@ -243,21 +419,39 @@ class ChannelMessageContext {
     required this.createdAtMs,
   });
 
+  /// 消息 ID
   final String messageId;
+
+  /// 频道 ID
   final String channelId;
+
+  /// 频道名称
   final String channelName;
+
+  /// 频道头像 URL
   final String channelAvatarUrl;
+
+  /// 消息内容预览
   final String contentPreview;
+
+  /// 创建时间（毫秒时间戳）
   final int createdAtMs;
 
+  /// 创建时间（DateTime 格式）
   DateTime get createdAt => DateTime.fromMillisecondsSinceEpoch(createdAtMs);
 }
 
-// ============================================================================
-// 输入
-// ============================================================================
+// =============================================================================
+// 评论输入状态
+// =============================================================================
+
+/// 用于 copyWith 方法中区分 null 和未传参的哨兵值
+const _notProvided = Object();
 
 /// 评论输入状态
+///
+/// 管理评论输入框的状态，包括文本、附件、回复目标等。
+/// `replyTo` 字段使用哨兵值模式，支持传入 null 清除回复目标。
 class ChannelCommentInputState {
   const ChannelCommentInputState({
     this.text = '',
@@ -267,44 +461,64 @@ class ChannelCommentInputState {
     this.error,
   });
 
+  /// 输入的文本内容
   final String text;
+
+  /// 待上传的附件列表
   final List<CommentMedia> attachments;
+
+  /// 回复目标（如果是回复其他评论）
   final pkg_comment.ReplyTarget? replyTo;
+
+  /// 是否正在提交
   final bool isSubmitting;
+
+  /// 错误信息
   final String? error;
 
+  /// 是否可以提交（有内容且未在提交中）
   bool get canSubmit => text.trim().isNotEmpty && !isSubmitting;
+
+  /// 是否有附件
   bool get hasAttachments => attachments.isNotEmpty;
+
+  /// 是否正在回复其他评论
   bool get isReplying => replyTo != null;
 
+  /// 复制并修改指定字段
   ChannelCommentInputState copyWith({
     String? text,
     List<CommentMedia>? attachments,
-    pkg_comment.ReplyTarget? replyTo,
+    Object? replyTo = _notProvided,
     bool? isSubmitting,
     String? error,
   }) {
     return ChannelCommentInputState(
       text: text ?? this.text,
       attachments: attachments ?? this.attachments,
-      replyTo: replyTo ?? this.replyTo,
+      replyTo: replyTo == _notProvided
+          ? this.replyTo
+          : (replyTo as pkg_comment.ReplyTarget?),
       isSubmitting: isSubmitting ?? this.isSubmitting,
       error: error,
     );
   }
 
+  /// 清空所有输入状态
   ChannelCommentInputState clear() => const ChannelCommentInputState();
+
+  /// 设置回复目标
   ChannelCommentInputState withReplyTo(pkg_comment.ReplyTarget? target) =>
       copyWith(replyTo: target);
 }
 
-// ============================================================================
+// =============================================================================
 // 模型转换扩展
-// ============================================================================
+// =============================================================================
 
 /// 频道评论模型转换扩展
 ///
-/// 提供统一的转换方法，避免在多处重复实现
+/// 提供将频道评论转换为公共评论组件格式的方法。
 extension ChannelCommentModelExt on ChannelCommentModel {
   /// 转换为公共评论模型
   pkg_comment.CommentModel toCommentModel() {

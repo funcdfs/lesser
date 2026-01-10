@@ -1,18 +1,57 @@
+// =============================================================================
 // 频道列表项组件
+// =============================================================================
+//
+// 显示频道列表中的单个频道项，包含头像、名称、订阅数、最后消息和状态信息。
+//
+// ## 布局结构
+//
+// ```
+// ┌─────────────────────────────────────────────────────────────┐
+// │  [头像]  │  频道名称  订阅数      │  📌 🔕  时间           │
+// │         │  最后消息预览...       │        未读数          │
+// └─────────────────────────────────────────────────────────────┘
+// ```
+//
+// ## 特性
+//
+// - Hero 动画：头像支持与详情页的共享元素过渡
+// - 状态图标：显示置顶、静音状态
+// - 未读徽章：显示未读消息数量
+//
+// ## 组件拆分
+//
+// 为保持代码清晰，将列表项拆分为多个私有 Widget：
+// - `_ChannelAvatar` - 头像（带 Hero）
+// - `_Content` - 中间内容区
+// - `_LastMessage` - 最后消息预览
+// - `_Trailing` - 右侧状态区
 
 import 'package:flutter/material.dart';
 import '../../../pkg/ui/effects/effects.dart';
 import '../../../pkg/ui/theme/theme.dart';
 import '../../../pkg/ui/widgets/widgets.dart';
 import '../models/channel_models.dart';
+import 'channel_constants.dart';
 
 /// 频道列表项
 ///
-/// 布局：头像 | 频道名+订阅数 / 最后消息 | 时间+状态 / 未读数
+/// 显示频道的基本信息和状态，点击可进入频道详情页。
 class ChannelItem extends StatelessWidget {
-  const ChannelItem({super.key, required this.channel, this.onTap});
+  const ChannelItem({
+    super.key,
+    required this.channel,
+    this.uiState,
+    this.onTap,
+  });
 
+  /// 频道数据
   final ChannelModel channel;
+
+  /// UI 状态（未读数、静音、置顶）
+  final ChannelUIState? uiState;
+
+  /// 点击回调
   final VoidCallback? onTap;
 
   @override
@@ -23,21 +62,20 @@ class ChannelItem extends StatelessWidget {
       onTap: onTap,
       scale: TapScales.card,
       child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+        padding: ChannelItemLayout.padding,
         decoration: BoxDecoration(
           color: colors.surfaceBase,
           border: Border(bottom: BorderSide(color: colors.divider, width: 0.5)),
         ),
         child: Row(
           children: [
-            // 头像（带 Hero 动画）
             _ChannelAvatar(channel: channel),
-            const SizedBox(width: 12),
+            const SizedBox(width: ChannelItemLayout.avatarSpacing),
             Expanded(
               child: _Content(channel: channel, colors: colors),
             ),
-            const SizedBox(width: 8),
-            _Trailing(channel: channel, colors: colors),
+            const SizedBox(width: ChannelItemLayout.trailingSpacing),
+            _Trailing(channel: channel, uiState: uiState, colors: colors),
           ],
         ),
       ),
@@ -45,7 +83,13 @@ class ChannelItem extends StatelessWidget {
   }
 }
 
-/// 频道头像（带 Hero 动画）
+// =============================================================================
+// 私有子组件
+// =============================================================================
+
+/// 频道头像
+///
+/// 使用 Hero 动画实现与详情页的共享元素过渡。
 class _ChannelAvatar extends StatelessWidget {
   const _ChannelAvatar({required this.channel});
 
@@ -55,20 +99,22 @@ class _ChannelAvatar extends StatelessWidget {
   Widget build(BuildContext context) {
     return Hero(
       tag: 'channel_avatar_${channel.id}',
-      // 保持 child 可见，避免动画结束时闪烁
+      // placeholderBuilder 保持 child 可见，避免动画结束时闪烁
       placeholderBuilder: (_, size, child) =>
           SizedBox(width: size.width, height: size.height, child: child),
       child: AvatarButton(
         imageUrl: channel.avatarUrl,
-        size: 40,
-        placeholder: channel.name.isNotEmpty ? channel.name[0] : '#',
+        size: ChannelItemLayout.avatarSize,
+        placeholder: channel.avatarPlaceholder,
         enableTapScale: false,
       ),
     );
   }
 }
 
-/// 中间内容：频道名 + 订阅数 / 最后消息
+/// 中间内容区
+///
+/// 显示频道名称、订阅数和最后消息预览。
 class _Content extends StatelessWidget {
   const _Content({required this.channel, required this.colors});
 
@@ -81,7 +127,7 @@ class _Content extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.start,
       mainAxisSize: MainAxisSize.min,
       children: [
-        // 频道名 + 订阅数
+        // 第一行：频道名 + 订阅数
         Row(
           children: [
             Flexible(
@@ -100,8 +146,8 @@ class _Content extends StatelessWidget {
             SubscriberBadge(count: channel.subscriberCount),
           ],
         ),
-        const SizedBox(height: 5),
-        // 最后消息
+        const SizedBox(height: ChannelItemLayout.titleSpacing),
+        // 第二行：最后消息预览
         _LastMessage(channel: channel, colors: colors),
       ],
     );
@@ -117,8 +163,7 @@ class _LastMessage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final hasMessage =
-        channel.lastMessage != null && channel.lastMessage!.isNotEmpty;
+    final hasMessage = channel.hasLastMessage;
 
     return Text(
       hasMessage ? channel.lastMessage! : '暂无消息',
@@ -132,24 +177,31 @@ class _LastMessage extends StatelessWidget {
   }
 }
 
-/// 右侧：时间 + 状态图标 / 未读数
+/// 右侧状态区
+///
+/// 显示时间、状态图标（置顶、静音）和未读徽章。
 class _Trailing extends StatelessWidget {
-  const _Trailing({required this.channel, required this.colors});
+  const _Trailing({required this.channel, this.uiState, required this.colors});
 
   final ChannelModel channel;
+  final ChannelUIState? uiState;
   final AppColorScheme colors;
 
   @override
   Widget build(BuildContext context) {
+    final isPinned = uiState?.isPinned ?? false;
+    final isMuted = uiState?.isMuted ?? false;
+    final unreadCount = uiState?.unreadCount ?? 0;
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.end,
       mainAxisSize: MainAxisSize.min,
       children: [
-        // 时间 + 状态图标
+        // 第一行：状态图标 + 时间
         Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            if (channel.isPinned)
+            if (isPinned)
               Padding(
                 padding: const EdgeInsets.only(right: 4),
                 child: Icon(
@@ -158,7 +210,7 @@ class _Trailing extends StatelessWidget {
                   color: colors.textDisabled,
                 ),
               ),
-            if (channel.isMuted)
+            if (isMuted)
               Padding(
                 padding: const EdgeInsets.only(right: 4),
                 child: Icon(
@@ -175,11 +227,11 @@ class _Trailing extends StatelessWidget {
           ],
         ),
         const SizedBox(height: 6),
-        // 未读数
-        if (channel.unreadCount > 0)
-          UnreadBadge(count: channel.unreadCount, isMuted: channel.isMuted)
+        // 第二行：未读徽章或占位
+        if (unreadCount > 0)
+          UnreadBadge(count: unreadCount, isMuted: isMuted)
         else
-          const SizedBox(height: 20),
+          const SizedBox(height: ChannelItemLayout.unreadBadgeHeight),
       ],
     );
   }

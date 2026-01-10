@@ -1,17 +1,48 @@
-// 频道评论页
+// =============================================================================
+// 频道评论页 - Channel Comment Page
+// =============================================================================
+//
+// ## 设计目的
+// 封装公共评论组件（pkg/comment），提供频道特定的数据源和消息头部。
+// 支持两种入口模式：
+// 1. 消息评论：显示原始消息 + 评论列表
+// 2. 线程视图：显示根评论 + 子评论列表（深层链接导航）
+//
+// ## 数据源
+// 使用 ChannelCommentDataSource 作为评论数据源，实现 CommentDataSource 接口。
+// 当前使用 Mock 数据，后续可替换为 gRPC 数据源。
+//
+// ## 深层链接支持
+// - rootCommentId: 根评论 ID，用于加载根评论数据
+// - targetCommentId: 目标评论 ID，用于滚动定位和高亮
+//
+// ## 消息头部
+// 非线程视图时，使用 ChannelMessageBubble 显示原始消息。
+// 消息气泡下方显示评论数量分隔符。
+//
+// =============================================================================
 
 import 'package:flutter/material.dart';
 import '../../../pkg/comment/comment.dart';
-import '../../../pkg/ui/theme/app_theme.dart';
 import '../data_access/channel_comment_data_source.dart';
-import '../handler/channel_mock_data.dart';
+import '../data_access/mock/channel_mock_data.dart';
 import '../models/channel_comment_model.dart' as channel;
 import '../models/channel_message_model.dart';
+import '../widgets/channel_constants.dart';
 import '../widgets/channel_message.dart' show ChannelMessageBubble;
+import '../widgets/comment_page_scaffold.dart';
 
 /// 频道评论页
 ///
 /// 封装公共评论组件，提供频道特定的数据源和消息头部。
+///
+/// ## 参数说明
+/// - [messageId]: 消息 ID（必需）
+/// - [channelId]: 频道 ID（必需）
+/// - [message]: 原始消息（可选，用于显示消息头部）
+/// - [rootComment]: 根评论（可选，线程视图模式）
+/// - [rootCommentId]: 根评论 ID（可选，深层链接需要加载根评论）
+/// - [targetCommentId]: 目标评论 ID（可选，深层链接滚动定位）
 class ChannelCommentPage extends StatefulWidget {
   const ChannelCommentPage({
     super.key,
@@ -31,6 +62,9 @@ class ChannelCommentPage extends StatefulWidget {
   final String? targetCommentId; // 深层链接目标评论 ID
 
   /// 从频道评论模型创建
+  ///
+  /// 便捷工厂方法，将 ChannelCommentModel 转换为通用 CommentModel。
+  /// 用于从评论列表点击进入线程视图。
   static ChannelCommentPage fromChannelComment({
     required String messageId,
     required String channelId,
@@ -71,7 +105,6 @@ class _ChannelCommentPageState extends State<ChannelCommentPage> {
     }
   }
 
-  /// 加载根评论
   Future<void> _loadRootComment() async {
     setState(() {
       _isLoading = true;
@@ -100,16 +133,21 @@ class _ChannelCommentPageState extends State<ChannelCommentPage> {
   }
 
   /// 构建消息头部（复用 ChannelMessageBubble）
+  ///
+  /// 仅在非线程视图且有消息数据时显示。
+  /// 包含消息气泡和评论数量分隔符。
   Widget _buildMessageHeader(int commentCount) {
     if (widget.message == null) return const SizedBox.shrink();
 
-    final maxWidth = MediaQuery.of(context).size.width * 0.87;
+    final maxWidth =
+        MediaQuery.of(context).size.width *
+        ChannelLayoutConstants.messageMaxWidthRatio;
 
     return Column(
       children: [
         // Part1: 消息气泡（带完整 interactions）
         Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+          padding: ChannelLayoutConstants.messagePadding,
           child: Align(
             alignment: Alignment.centerLeft,
             child: ConstrainedBox(
@@ -118,7 +156,7 @@ class _ChannelCommentPageState extends State<ChannelCommentPage> {
                 child: ChannelMessageBubble(
                   message: widget.message!,
                   onReactionTap: (emoji) {
-                    // TODO: 处理反应
+                    // 反应功能待实现
                   },
                 ),
               ),
@@ -133,58 +171,13 @@ class _ChannelCommentPageState extends State<ChannelCommentPage> {
 
   @override
   Widget build(BuildContext context) {
-    final colors = AppColors.of(context);
-
-    // 如果正在加载根评论，显示加载状态
-    if (_isLoading) {
-      return Scaffold(
-        backgroundColor: colors.surfaceBase,
-        appBar: AppBar(
-          backgroundColor: colors.surfaceBase,
-          leading: IconButton(
-            icon: const Icon(Icons.arrow_back_rounded),
-            onPressed: () => Navigator.pop(context),
-          ),
-        ),
-        body: Center(
-          child: CircularProgressIndicator(
-            strokeWidth: 2,
-            color: colors.textTertiary,
-          ),
-        ),
-      );
-    }
-
-    // 如果加载出错，显示错误状态
-    if (_error != null) {
-      return Scaffold(
-        backgroundColor: colors.surfaceBase,
-        appBar: AppBar(
-          backgroundColor: colors.surfaceBase,
-          leading: IconButton(
-            icon: const Icon(Icons.arrow_back_rounded),
-            onPressed: () => Navigator.pop(context),
-          ),
-        ),
-        body: Center(
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Icon(
-                Icons.error_outline_rounded,
-                size: 48,
-                color: colors.textDisabled,
-              ),
-              const SizedBox(height: 16),
-              Text(
-                '加载失败',
-                style: TextStyle(fontSize: 16, color: colors.textTertiary),
-              ),
-              const SizedBox(height: 8),
-              TextButton(onPressed: _loadRootComment, child: const Text('重试')),
-            ],
-          ),
-        ),
+    // 如果正在加载根评论或出错，使用统一脚手架
+    if (_isLoading || _error != null) {
+      return CommentPageScaffold(
+        isLoading: _isLoading,
+        error: _error,
+        onRetry: _loadRootComment,
+        body: const SizedBox.shrink(),
       );
     }
 
