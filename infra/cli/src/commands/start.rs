@@ -1,8 +1,9 @@
 use anyhow::Result;
+use std::path::PathBuf;
 use std::time::Duration;
 
 use crate::cli::StartTarget;
-use crate::config::Config;
+use crate::config::{find_project_root, Config};
 use crate::docker::DockerCompose;
 use crate::ui::{self, Spinner};
 
@@ -199,6 +200,7 @@ async fn start_flutter_interactive(config: &Config) -> Result<()> {
 
 /// 启动 Flutter Web
 async fn start_flutter_web(config: &Config) -> Result<()> {
+    use std::fs::File;
     use std::process::Stdio;
     use tokio::process::Command;
 
@@ -221,6 +223,9 @@ async fn start_flutter_web(config: &Config) -> Result<()> {
         return Ok(());
     }
 
+    // 创建日志目录
+    let log_dir = create_flutter_log_dir()?;
+
     // 启动双用户实例
     let users = [
         ("testuser1", config.flutter_port),
@@ -230,7 +235,12 @@ async fn start_flutter_web(config: &Config) -> Result<()> {
     ui::info("启动双用户开发环境...");
     println!();
 
-    for (username, port) in users {
+    for (i, (username, port)) in users.iter().enumerate() {
+        // 创建日志文件
+        let log_file = log_dir.join(format!("web_{:02}.log", i + 1));
+        let log_file_handle = File::create(&log_file)?;
+        let log_file_stderr = log_file_handle.try_clone()?;
+
         Command::new("flutter")
             .args([
                 "run",
@@ -242,11 +252,16 @@ async fn start_flutter_web(config: &Config) -> Result<()> {
                 "--dart-define=AUTO_LOGIN_PASSWORD=testtesttest",
             ])
             .current_dir(flutter_dir)
-            .stdout(Stdio::inherit())
-            .stderr(Stdio::inherit())
+            .stdout(Stdio::from(log_file_handle))
+            .stderr(Stdio::from(log_file_stderr))
             .spawn()?;
 
-        ui::step_done(&format!("用户 {} → http://localhost:{}", username, port));
+        ui::step_done(&format!(
+            "用户 {} → http://localhost:{} (日志: {})",
+            username,
+            port,
+            log_file.display()
+        ));
     }
 
     Ok(())
@@ -254,6 +269,7 @@ async fn start_flutter_web(config: &Config) -> Result<()> {
 
 /// 启动 Flutter Android
 async fn start_flutter_android(config: &Config) -> Result<()> {
+    use std::fs::File;
     use std::process::Stdio;
     use tokio::process::Command;
 
@@ -314,15 +330,21 @@ async fn start_flutter_android(config: &Config) -> Result<()> {
     }
     ui::step_done(&format!("ADB 端口转发已配置 ({})", ports.join(", ")));
 
+    // 创建日志目录和文件
+    let log_dir = create_flutter_log_dir()?;
+    let log_file = log_dir.join("android.log");
+    let log_file_handle = File::create(&log_file)?;
+    let log_file_stderr = log_file_handle.try_clone()?;
+
     // 启动 Flutter，使用实际设备 ID
-    ui::info("启动 Flutter Android...");
+    ui::info(&format!("启动 Flutter Android... (日志: {})", log_file.display()));
     println!();
 
     let status = Command::new("flutter")
         .args(["run", "-d", &device_id])
         .current_dir(flutter_dir)
-        .stdout(Stdio::inherit())
-        .stderr(Stdio::inherit())
+        .stdout(Stdio::from(log_file_handle))
+        .stderr(Stdio::from(log_file_stderr))
         .status()
         .await?;
 
@@ -377,6 +399,7 @@ fn parse_android_device_id(json_str: &str) -> Option<String> {
 
 /// 启动 Flutter iOS
 async fn start_flutter_ios(config: &Config) -> Result<()> {
+    use std::fs::File;
     use std::process::Stdio;
     use tokio::process::Command;
 
@@ -405,15 +428,21 @@ async fn start_flutter_ios(config: &Config) -> Result<()> {
         return Ok(());
     }
 
+    // 创建日志目录和文件
+    let log_dir = create_flutter_log_dir()?;
+    let log_file = log_dir.join("ios.log");
+    let log_file_handle = File::create(&log_file)?;
+    let log_file_stderr = log_file_handle.try_clone()?;
+
     // 启动 Flutter
-    ui::info("启动 Flutter iOS...");
+    ui::info(&format!("启动 Flutter iOS... (日志: {})", log_file.display()));
     println!();
 
     let status = Command::new("flutter")
         .args(["run", "-d", "ios"])
         .current_dir(flutter_dir)
-        .stdout(Stdio::inherit())
-        .stderr(Stdio::inherit())
+        .stdout(Stdio::from(log_file_handle))
+        .stderr(Stdio::from(log_file_stderr))
         .status()
         .await?;
 
@@ -442,6 +471,14 @@ async fn check_flutter() -> bool {
         return false;
     }
     true
+}
+
+/// 创建 Flutter 日志目录
+fn create_flutter_log_dir() -> Result<PathBuf> {
+    let project_root = find_project_root()?;
+    let log_dir = project_root.join("logs/flutter");
+    std::fs::create_dir_all(&log_dir)?;
+    Ok(log_dir)
 }
 
 /// 执行 flutter pub get

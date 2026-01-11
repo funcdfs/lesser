@@ -42,8 +42,7 @@ migrate_working_dir/
 /ios/Flutter/flutter_export_environment.sh
 
 # 日志文件（统一放在项目根目录 logs/flutter/）
-*.log
-flutter_*.log
+# 本目录下不应存放日志文件
 
 # Symbolication related
 app.*.symbols
