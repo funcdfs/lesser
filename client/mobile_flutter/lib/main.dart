@@ -66,7 +66,7 @@ void toggleThemeWithReveal(BuildContext context, Offset origin) {
   themeNotifier.toggle();
 
   // 执行动画帧
-  final duration = CircularRevealAnim.duration;
+  const duration = CircularRevealAnim.duration;
   final startTime = DateTime.now();
 
   void tick() {
