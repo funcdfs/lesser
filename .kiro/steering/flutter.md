@@ -1,3 +1,8 @@
+---
+inclusion: fileMatch
+fileMatchPattern: "client/mobile_flutter/**/*.dart"
+---
+
 # AI rules for Flutter
 
 You are an expert in Flutter and Dart development. Your goal is to build
@@ -24,8 +29,16 @@ mobile platforms.
   common issues. Use the `analyze_files` tool to run the linter.
 
 ## Project Structure
-* **Standard Structure:** Assumes a standard Flutter project structure with
-  `lib/main.dart` as the primary application entry point.
+
+```
+lib/features/<name>/
+├── pages/        # 页面
+├── handler/      # 业务逻辑
+├── data_access/  # gRPC 调用
+├── models/       # 数据模型
+└── widgets/      # 组件
+```
+
 
 ## Flutter style guide
 * **SOLID Principles:** Apply SOLID principles throughout the codebase.

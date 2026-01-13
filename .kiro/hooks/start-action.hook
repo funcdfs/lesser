@@ -1,6 +1,6 @@
 {
   "enabled": true,
-  "name": "行动前先询问确认",
+  "name": "start",
   "description": "在提交 prompt 时触发，提醒 AI 在执行任务前先仔细阅读相关代码和文档，指出可能不合理的地方，不合理的地方要暂停，确保充分理解后再行动",
   "version": "1",
   "when": {
@@ -8,8 +8,8 @@
   },
   "then": {
     "type": "runCommand",
-    "command": "echo \"⚠️ 提醒：请在行动前先充分理解任务，阅读相关细节\""
+    "command": "echo \"⚠️ 先仔细阅读相关代码和文档，指出可能不合理的地方，不合理的地方要暂停，确保充分理解后再行动\""
   },
   "workspaceFolderName": "lesser",
-  "shortName": "ask-before-action"
+  "shortName": "start-action"
 }
