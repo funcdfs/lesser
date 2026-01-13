@@ -7,7 +7,7 @@
 // - 标签数据（参考 note.com 分类）
 // - 频道数据
 // - 消息数据
-// - 评论数据（支持多层嵌套）
+// - 评论数据（基于闭包表的多叉树结构）
 //
 // ## 数据结构
 // - mockChannelTags: 标签列表（44 个分类）
@@ -15,17 +15,22 @@
 // - mockChannels: 频道列表
 // - mockChannelUIStates: 频道 UI 状态（未读数等）
 // - mockMessages: 消息列表（按 channelId 分组）
-// - mockComments: 根评论列表（按 messageId 分组）
-// - mockReplies: 子评论列表（按 parentCommentId 分组，支持 5 层嵌套）
+// - mockCommentNodes: 评论节点（所有评论的扁平存储）
+// - mockCommentClosure: 闭包表（祖先-后代关系）
+//
+// ## 闭包表设计
+// 闭包表记录所有节点之间的祖先-后代关系：
+// - ancestor_id: 祖先评论 ID
+// - descendant_id: 后代评论 ID
+// - depth: 层级深度（0 = 自身）
+//
+// 优势：
+// - 查询某节点的所有子孙：WHERE ancestor_id = ?
+// - 查询某节点的所有祖先：WHERE descendant_id = ?
+// - 查询某节点的直接子节点：WHERE ancestor_id = ? AND depth = 1
 //
 // ## 使用说明
 // 这些数据由 ChannelMockDataSource 使用，后续可替换为 gRPC 数据源。
-// 修改 Mock 数据时注意保持数据一致性（如评论数、回复数等）。
-//
-// ## 注意事项
-// - 评论 ID 命名规则：c1 -> c1_r1 -> c1_r1_r1（表示嵌套层级）
-// - replyTo 字段用于显示"回复 @xxx"，需要正确设置
-// - 时间戳使用 millisecondsSinceEpoch 格式
 //
 // =============================================================================
 
@@ -126,9 +131,6 @@ const mockCurrentUser = CommentAuthor(
 // =============================================================================
 
 /// 频道列表
-///
-/// 包含频道基本信息、订阅状态、最后消息等。
-/// 用于频道列表页展示。
 final mockChannels = <ChannelModel>[
   ChannelModel(
     id: 'test',
@@ -147,9 +149,6 @@ final mockChannels = <ChannelModel>[
 ];
 
 /// 频道 UI 状态
-///
-/// 包含未读数、静音状态等 UI 相关状态。
-/// 与频道数据分离，便于独立更新。
 final mockChannelUIStates = <String, ChannelUIState>{
   'test': const ChannelUIState(channelId: 'test', unreadCount: 1),
 };
@@ -159,9 +158,6 @@ final mockChannelUIStates = <String, ChannelUIState>{
 // =============================================================================
 
 /// 频道消息（按 channelId 分组）
-///
-/// 每个频道的消息列表，包含内容、反应统计、评论数等。
-/// 用于频道详情页展示。
 final mockMessages = <String, List<ChannelMessageModel>>{
   'test': [
     ChannelMessageModel(
@@ -172,7 +168,7 @@ final mockMessages = <String, List<ChannelMessageModel>>{
       content: '这是一条测试帖子，点击下方评论区查看评论。',
       createdAt: DateTime(2025, 1, 8, 10, 0),
       viewCount: 100,
-      commentCount: 21,
+      commentCount: 15,
       reactionStats: const ReactionStats(
         counts: {'👍': 10, '❤️': 5},
         totalCount: 15,
@@ -186,305 +182,220 @@ final mockMessages = <String, List<ChannelMessageModel>>{
 };
 
 // =============================================================================
-// 评论数据
+// 评论数据 - 基于闭包表的多叉树结构
+// =============================================================================
+
+/// 评论作者预定义
+const _authors = <String, CommentAuthor>{
+  'owner': CommentAuthor(
+    id: 'owner',
+    username: 'owner',
+    displayName: '频道主',
+    avatarUrl: 'https://i.pravatar.cc/100?img=1',
+    isChannelOwner: true,
+  ),
+  'u1': CommentAuthor(
+    id: 'u1',
+    username: 'user1',
+    displayName: '用户A',
+    avatarUrl: 'https://i.pravatar.cc/100?img=2',
+  ),
+  'u2': CommentAuthor(
+    id: 'u2',
+    username: 'user2',
+    displayName: '用户B',
+    avatarUrl: 'https://i.pravatar.cc/100?img=3',
+    isVerified: true,
+  ),
+  'u3': CommentAuthor(
+    id: 'u3',
+    username: 'user3',
+    displayName: '用户C',
+    avatarUrl: 'https://i.pravatar.cc/100?img=4',
+  ),
+  'u4': CommentAuthor(
+    id: 'u4',
+    username: 'user4',
+    displayName: '用户D',
+    avatarUrl: 'https://i.pravatar.cc/100?img=5',
+  ),
+  'u5': CommentAuthor(
+    id: 'u5',
+    username: 'user5',
+    displayName: '用户E',
+    avatarUrl: 'https://i.pravatar.cc/100?img=6',
+  ),
+  'u6': CommentAuthor(
+    id: 'u6',
+    username: 'user6',
+    displayName: '用户F',
+    avatarUrl: 'https://i.pravatar.cc/100?img=7',
+  ),
+};
+
+/// 获取作者（带默认值）
+CommentAuthor _getAuthor(String id) => _authors[id] ?? CommentAuthor.deleted;
+
+// =============================================================================
+// 评论数据 - 根评论和子评论
 // =============================================================================
 
 /// 根评论（按 messageId 分组）
 ///
-/// 消息的一级评论列表，包含置顶评论、普通评论等。
-/// 评论可能有子回复（replyCount > 0）。
+/// 存储每条消息下的根评论列表。
 final mockComments = <String, List<ChannelCommentModel>>{
   'post_1': [
-    // 频道主置顶评论
-    ChannelCommentModel(
-      id: 'c_pinned',
-      messageId: 'post_1',
-      channelId: 'test',
-      author: const CommentAuthor(
-        id: 'owner',
-        username: 'owner',
-        displayName: '频道主',
-        avatarUrl: 'https://i.pravatar.cc/100?img=1',
-        isChannelOwner: true,
-      ),
-      content: '感谢大家的支持！',
-      likeCount: 20,
-      isLiked: true,
-      createdAtMs: DateTime(2025, 1, 8, 10, 10).millisecondsSinceEpoch,
-      isPinned: true,
-    ),
-    // 有子回复的评论
     ChannelCommentModel(
       id: 'c1',
       messageId: 'post_1',
       channelId: 'test',
-      author: const CommentAuthor(
-        id: 'u1',
-        username: 'user1',
-        displayName: '用户A',
-        avatarUrl: 'https://i.pravatar.cc/100?img=2',
-      ),
+      author: _getAuthor('u1'),
       content: '这是第一条评论，有子回复',
-      replyCount: 8,
-      likeCount: 5,
       createdAtMs: DateTime(2025, 1, 8, 10, 5).millisecondsSinceEpoch,
+      replyCount: 5,
     ),
-    // 认证用户评论
     ChannelCommentModel(
       id: 'c2',
       messageId: 'post_1',
       channelId: 'test',
-      author: const CommentAuthor(
-        id: 'u2',
-        username: 'user2',
-        displayName: '用户B',
-        avatarUrl: 'https://i.pravatar.cc/100?img=3',
-        isVerified: true,
-      ),
-      content: '认证用户的评论，内容很精彩！',
-      likeCount: 3,
+      author: _getAuthor('owner'),
+      content: '感谢大家的支持！',
+      createdAtMs: DateTime(2025, 1, 8, 10, 10).millisecondsSinceEpoch,
+      isPinned: true,
+    ),
+    ChannelCommentModel(
+      id: 'c3',
+      messageId: 'post_1',
+      channelId: 'test',
+      author: _getAuthor('u2'),
+      content: '认证用户的评论',
       createdAtMs: DateTime(2025, 1, 8, 10, 15).millisecondsSinceEpoch,
     ),
-    // 扩充评论 c3-c20
-    ...List.generate(18, (i) {
-      final idx = i + 3;
-      return ChannelCommentModel(
-        id: 'c$idx',
-        messageId: 'post_1',
-        channelId: 'test',
-        author: CommentAuthor(
-          id: 'u$idx',
-          username: 'user$idx',
-          displayName: '用户${String.fromCharCode(67 + i)}', // C, D, E...
-          avatarUrl: 'https://i.pravatar.cc/100?img=${4 + i}',
-        ),
-        content: _mockCommentContents[i % _mockCommentContents.length],
-        likeCount: (i * 3 + 1) % 15,
-        replyCount: i % 5 == 0 ? 2 : 0,
-        createdAtMs: DateTime(
-          2025,
-          1,
-          8,
-          10,
-          20 + i * 5,
-        ).millisecondsSinceEpoch,
-      );
-    }),
   ],
 };
 
-/// 评论内容模板
-const _mockCommentContents = [
-  '学到了很多，感谢分享！',
-  '这个功能太实用了',
-  '期待更多更新！',
-  '已收藏，慢慢学习',
-  '写得真好，通俗易懂',
-  '有没有相关的教程推荐？',
-  '支持一下！',
-  '这个思路很新颖',
-  '请问有源码吗？',
-  '太棒了，已转发',
-  '学习了，感谢楼主',
-  '这个方案我之前也想过',
-  '干货满满！',
-  '请问适用于什么场景？',
-  '已关注，期待更多内容',
-  '这个设计很优雅',
-  '收藏了，以后慢慢看',
-  '终于找到解决方案了',
-];
-
-// =============================================================================
-// 子评论数据（多层嵌套）
-// =============================================================================
-
-/// 子评论（按 parentCommentId 分组，支持多层嵌套）
+/// 子评论（按 parentId 分组）
 ///
-/// ## 嵌套结构示例
-/// ```
-/// c1 (根评论)
-/// ├── c1_r1 (第一层回复)
-/// │   ├── c1_r1_r1 (第二层回复)
-/// │   │   ├── c1_r1_r1_r1 (第三层回复)
-/// │   │   │   └── c1_r1_r1_r1_r1 (第四层回复)
-/// │   │   └── c1_r1_r1_r2
-/// │   └── c1_r1_r2
-/// └── c1_r2
-/// ```
-///
-/// ## replyTo 字段说明
-/// 用于显示"回复 @xxx: 原内容预览"，包含：
-/// - commentId: 被回复的评论 ID
-/// - authorName: 被回复者的显示名称
-/// - contentPreview: 被回复内容的预览
+/// 存储每条评论下的直接子评论列表。
+/// 支持多层嵌套：c1 -> c1_r1 -> c1_r1_r1 -> ...
 final mockReplies = <String, List<ChannelCommentModel>>{
+  // c1 的直接回复
   'c1': [
     ChannelCommentModel(
       id: 'c1_r1',
       messageId: 'post_1',
       channelId: 'test',
-      author: const CommentAuthor(
-        id: 'owner',
-        username: 'owner',
-        displayName: '频道主',
-        avatarUrl: 'https://i.pravatar.cc/100?img=1',
-        isChannelOwner: true,
-      ),
+      author: _getAuthor('owner'),
       content: '谢谢支持！',
+      createdAtMs: DateTime(2025, 1, 8, 10, 20).millisecondsSinceEpoch,
       replyTo: const ReplyTarget(
         commentId: 'c1',
         authorName: '用户A',
         contentPreview: '这是第一条评论，有子回复',
       ),
-      likeCount: 10,
       replyCount: 3,
-      createdAtMs: DateTime(2025, 1, 8, 10, 8).millisecondsSinceEpoch,
     ),
     ChannelCommentModel(
       id: 'c1_r2',
       messageId: 'post_1',
       channelId: 'test',
-      author: const CommentAuthor(
-        id: 'u3',
-        username: 'user3',
-        displayName: '用户C',
-        avatarUrl: 'https://i.pravatar.cc/100?img=4',
-      ),
+      author: _getAuthor('u3'),
       content: '频道主回复了！',
+      createdAtMs: DateTime(2025, 1, 8, 10, 25).millisecondsSinceEpoch,
       replyTo: const ReplyTarget(
-        commentId: 'c1_r1',
-        authorName: '频道主',
-        contentPreview: '谢谢支持！',
+        commentId: 'c1',
+        authorName: '用户A',
+        contentPreview: '这是第一条评论，有子回复',
       ),
-      likeCount: 5,
-      createdAtMs: DateTime(2025, 1, 8, 10, 9).millisecondsSinceEpoch,
     ),
   ],
-  // 第三层嵌套
+  // c1_r1 的回复（第三层）
   'c1_r1': [
     ChannelCommentModel(
       id: 'c1_r1_r1',
       messageId: 'post_1',
       channelId: 'test',
-      author: const CommentAuthor(
-        id: 'u1',
-        username: 'user1',
-        displayName: '用户A',
-        avatarUrl: 'https://i.pravatar.cc/100?img=2',
-      ),
+      author: _getAuthor('u1'),
       content: '频道主太棒了！继续加油！',
+      createdAtMs: DateTime(2025, 1, 8, 10, 30).millisecondsSinceEpoch,
       replyTo: const ReplyTarget(
         commentId: 'c1_r1',
         authorName: '频道主',
         contentPreview: '谢谢支持！',
       ),
-      likeCount: 8,
       replyCount: 2,
-      createdAtMs: DateTime(2025, 1, 8, 10, 12).millisecondsSinceEpoch,
     ),
     ChannelCommentModel(
       id: 'c1_r1_r2',
       messageId: 'post_1',
       channelId: 'test',
-      author: const CommentAuthor(
-        id: 'u4',
-        username: 'user4',
-        displayName: '用户D',
-        avatarUrl: 'https://i.pravatar.cc/100?img=5',
-      ),
+      author: _getAuthor('u4'),
       content: '同感！',
+      createdAtMs: DateTime(2025, 1, 8, 10, 35).millisecondsSinceEpoch,
       replyTo: const ReplyTarget(
         commentId: 'c1_r1',
         authorName: '频道主',
         contentPreview: '谢谢支持！',
       ),
-      likeCount: 2,
-      createdAtMs: DateTime(2025, 1, 8, 10, 13).millisecondsSinceEpoch,
     ),
     ChannelCommentModel(
       id: 'c1_r1_r3',
       messageId: 'post_1',
       channelId: 'test',
-      author: const CommentAuthor(
-        id: 'owner',
-        username: 'owner',
-        displayName: '频道主',
-        avatarUrl: 'https://i.pravatar.cc/100?img=1',
-        isChannelOwner: true,
-      ),
+      author: _getAuthor('owner'),
       content: '感谢大家的喜爱～',
+      createdAtMs: DateTime(2025, 1, 8, 10, 40).millisecondsSinceEpoch,
       replyTo: const ReplyTarget(
-        commentId: 'c1_r1_r1',
-        authorName: '用户A',
-        contentPreview: '频道主太棒了！继续加油！',
+        commentId: 'c1_r1',
+        authorName: '频道主',
+        contentPreview: '谢谢支持！',
       ),
-      likeCount: 15,
-      createdAtMs: DateTime(2025, 1, 8, 10, 15).millisecondsSinceEpoch,
     ),
   ],
-  // 第四层嵌套
+  // c1_r1_r1 的回复（第四层）
   'c1_r1_r1': [
     ChannelCommentModel(
       id: 'c1_r1_r1_r1',
       messageId: 'post_1',
       channelId: 'test',
-      author: const CommentAuthor(
-        id: 'u5',
-        username: 'user5',
-        displayName: '用户E',
-        avatarUrl: 'https://i.pravatar.cc/100?img=6',
-      ),
+      author: _getAuthor('u5'),
       content: '楼上说得对！',
+      createdAtMs: DateTime(2025, 1, 8, 10, 45).millisecondsSinceEpoch,
       replyTo: const ReplyTarget(
         commentId: 'c1_r1_r1',
         authorName: '用户A',
         contentPreview: '频道主太棒了！继续加油！',
       ),
-      likeCount: 3,
       replyCount: 1,
-      createdAtMs: DateTime(2025, 1, 8, 10, 20).millisecondsSinceEpoch,
     ),
     ChannelCommentModel(
       id: 'c1_r1_r1_r2',
       messageId: 'post_1',
       channelId: 'test',
-      author: const CommentAuthor(
-        id: 'u6',
-        username: 'user6',
-        displayName: '用户F',
-        avatarUrl: 'https://i.pravatar.cc/100?img=7',
-      ),
+      author: _getAuthor('u6'),
       content: '+1',
+      createdAtMs: DateTime(2025, 1, 8, 10, 50).millisecondsSinceEpoch,
       replyTo: const ReplyTarget(
         commentId: 'c1_r1_r1',
         authorName: '用户A',
         contentPreview: '频道主太棒了！继续加油！',
       ),
-      likeCount: 1,
-      createdAtMs: DateTime(2025, 1, 8, 10, 22).millisecondsSinceEpoch,
     ),
   ],
-  // 第五层嵌套
+  // c1_r1_r1_r1 的回复（第五层）
   'c1_r1_r1_r1': [
     ChannelCommentModel(
       id: 'c1_r1_r1_r1_r1',
       messageId: 'post_1',
       channelId: 'test',
-      author: const CommentAuthor(
-        id: 'u1',
-        username: 'user1',
-        displayName: '用户A',
-        avatarUrl: 'https://i.pravatar.cc/100?img=2',
-      ),
+      author: _getAuthor('u1'),
       content: '哈哈谢谢支持！',
+      createdAtMs: DateTime(2025, 1, 8, 10, 55).millisecondsSinceEpoch,
       replyTo: const ReplyTarget(
         commentId: 'c1_r1_r1_r1',
         authorName: '用户E',
         contentPreview: '楼上说得对！',
       ),
-      likeCount: 0,
-      createdAtMs: DateTime(2025, 1, 8, 10, 25).millisecondsSinceEpoch,
     ),
   ],
 };

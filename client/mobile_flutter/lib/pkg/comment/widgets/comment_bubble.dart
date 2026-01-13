@@ -3,7 +3,7 @@
 // 设计原则：
 // - 内容为中心，减少装饰性元素
 // - 用户名颜色区分身份
-// - 引用框简洁，左边框指示
+// - 引用框简洁，左边框指示，点击可跳转到原评论
 // - 精致的渐变边框和微妙阴影
 
 import 'package:flutter/material.dart';
@@ -26,6 +26,9 @@ class CommentBubble extends StatelessWidget {
     this.isPinned = false,
     this.isDeleted = false,
     this.trailing,
+    this.channelId,
+    this.messageId,
+    this.onQuoteTap,
   });
 
   final String displayName;
@@ -39,6 +42,15 @@ class CommentBubble extends StatelessWidget {
   final bool isPinned;
   final bool isDeleted;
   final Widget? trailing;
+
+  /// 频道 ID（用于构建回复引用的 Link）
+  final String? channelId;
+
+  /// 消息 ID（用于构建回复引用的 Link）
+  final String? messageId;
+
+  /// 引用点击回调
+  final void Function(String commentId)? onQuoteTap;
 
   @override
   Widget build(BuildContext context) {
@@ -88,11 +100,14 @@ class CommentBubble extends StatelessWidget {
             isPinned: isPinned,
             createdAt: createdAt,
           ),
-          // 引用框
+          // 引用框（可点击跳转）
           if (replyTo != null)
             _QuoteBox(
               target: replyTo!,
               quoteColor: getNameColor(replyTo!.commentId),
+              onTap: onQuoteTap != null
+                  ? () => onQuoteTap!(replyTo!.commentId)
+                  : null,
             ),
           // 内容
           const SizedBox(height: 5),
@@ -208,12 +223,13 @@ class _UserRow extends StatelessWidget {
   }
 }
 
-/// 引用框 - 带背景色的左边框样式
+/// 引用框 - 带背景色的左边框样式，点击可跳转到原评论
 class _QuoteBox extends StatelessWidget {
-  const _QuoteBox({required this.target, required this.quoteColor});
+  const _QuoteBox({required this.target, required this.quoteColor, this.onTap});
 
   final ReplyTarget target;
   final Color quoteColor;
+  final VoidCallback? onTap;
 
   @override
   Widget build(BuildContext context) {
@@ -223,8 +239,7 @@ class _QuoteBox extends StatelessWidget {
     final bgColor = quoteColor.withValues(alpha: 0.08);
     final borderColor = quoteColor.withValues(alpha: 0.6);
 
-    return Container(
-      margin: const EdgeInsets.only(top: 6),
+    final content = Container(
       decoration: BoxDecoration(
         color: bgColor,
         borderRadius: BorderRadius.circular(6),
@@ -260,6 +275,16 @@ class _QuoteBox extends StatelessWidget {
         ),
       ),
     );
+
+    // 可跳转时添加点击效果
+    if (onTap != null) {
+      return Container(
+        margin: const EdgeInsets.only(top: 6),
+        child: GestureDetector(onTap: onTap, child: content),
+      );
+    }
+
+    return Container(margin: const EdgeInsets.only(top: 6), child: content);
   }
 }
 

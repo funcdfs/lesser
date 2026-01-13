@@ -201,6 +201,7 @@ class _Trailing extends StatelessWidget {
     final isPinned = uiState.isPinned;
     final isMuted = uiState.isMuted;
     final unreadCount = uiState.unreadCount;
+    final lastMessageTime = channel.lastMessageTime;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.end,
@@ -228,11 +229,8 @@ class _Trailing extends StatelessWidget {
                   color: colors.textDisabled,
                 ),
               ),
-            if (channel.lastMessageTime != null)
-              TimeBadge(
-                time: channel.lastMessageTime!,
-                size: TimeBadgeSize.medium,
-              ),
+            if (lastMessageTime != null)
+              TimeBadge(time: lastMessageTime, size: TimeBadgeSize.medium),
           ],
         ),
         // 第二行：未读徽章（有未读时显示，无未读时不占位）

@@ -190,6 +190,10 @@ class DefaultLinkResolver implements LinkResolver {
 
         case LinkContentType.post:
           return _resolvePost(link.targetId);
+
+        case LinkContentType.anchor:
+          // 锚点类型不需要解析元数据，直接返回空
+          return LinkMetadata.empty;
       }
     } catch (e) {
       // 解析失败返回空元数据

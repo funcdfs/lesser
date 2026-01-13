@@ -10,6 +10,7 @@ import '../animation/animation.dart';
 /// ```dart
 /// TapScale(
 ///   onTap: () => print('tapped'),
+///   onLongPress: () => print('long pressed'),
 ///   child: Icon(Icons.favorite),
 /// )
 /// ```
@@ -18,6 +19,7 @@ class TapScale extends StatefulWidget {
     super.key,
     required this.child,
     this.onTap,
+    this.onLongPress,
     this.scale = TapScales.small,
     this.duration = AnimDurations.fast,
     this.haptic = true,
@@ -25,6 +27,9 @@ class TapScale extends StatefulWidget {
 
   final Widget child;
   final VoidCallback? onTap;
+
+  /// 长按回调
+  final VoidCallback? onLongPress;
 
   /// 按下时的缩放比例，默认 0.9
   final double scale;
@@ -66,11 +71,19 @@ class _TapScaleState extends State<TapScale>
     widget.onTap?.call();
   }
 
+  void _onLongPress() {
+    if (widget.haptic) {
+      HapticFeedback.mediumImpact();
+    }
+    widget.onLongPress?.call();
+  }
+
   @override
   Widget build(BuildContext context) {
     return GestureDetector(
       behavior: HitTestBehavior.opaque,
       onTap: _onTap,
+      onLongPress: widget.onLongPress != null ? _onLongPress : null,
       child: AnimatedBuilder(
         animation: _ctrl,
         builder: (context, child) {

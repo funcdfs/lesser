@@ -7,8 +7,8 @@
 // 2. 使用 CommentPage 显示评论页面
 // 3. 使用 CommentEntry 显示评论入口（头像 + 数量）
 
+export 'logic/logic.dart';
 export 'models/models.dart';
 export 'widgets/widgets.dart';
-export 'comment_handler.dart';
 export 'comment_page.dart';
 export 'utils.dart';

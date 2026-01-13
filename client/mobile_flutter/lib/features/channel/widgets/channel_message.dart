@@ -149,6 +149,7 @@ class ChannelMessageBubble extends StatelessWidget {
   Widget build(BuildContext context) {
     final colors = AppColors.of(context);
     final isDark = Theme.of(context).brightness == Brightness.dark;
+    final linkUrl = message.linkUrl;
 
     return GestureDetector(
       onLongPressStart: onLongPress,
@@ -165,10 +166,10 @@ class ChannelMessageBubble extends StatelessWidget {
             mainAxisSize: MainAxisSize.min,
             children: [
               _MessageContent(content: message.content, colors: colors),
-              if (message.linkUrl != null) ...[
+              if (linkUrl != null) ...[
                 const SizedBox(height: 10),
                 _LinkPreview(
-                  linkUrl: message.linkUrl!,
+                  linkUrl: linkUrl,
                   linkTitle: message.linkTitle,
                   colors: colors,
                   onTap: onLinkTap,

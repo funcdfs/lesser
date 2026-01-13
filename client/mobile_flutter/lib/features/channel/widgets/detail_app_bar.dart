@@ -66,6 +66,7 @@ class DetailAppBar extends StatelessWidget implements PreferredSizeWidget {
   @override
   Widget build(BuildContext context) {
     final colors = AppColors.of(context);
+    final channelData = channel;
 
     return FrostedAppBar(
       blur: 20,
@@ -79,9 +80,9 @@ class DetailAppBar extends StatelessWidget implements PreferredSizeWidget {
         ),
         onPressed: onBack,
       ),
-      title: channel == null
+      title: channelData == null
           ? null
-          : _ChannelTitle(channel: channel!, channelId: channelId),
+          : _ChannelTitle(channel: channelData, channelId: channelId),
       actions: [
         IconButton(
           key: moreButtonKey,

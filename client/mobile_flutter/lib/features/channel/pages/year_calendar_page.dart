@@ -61,6 +61,7 @@ class _YearCalendarPageState extends State<YearCalendarPage> {
   late int _startYear; // 起始年份（最早消息所在年）
   late int _endYear; // 结束年份（当前年）
   late int _endMonth; // 结束月份（当前月）
+  late DateTime _today; // 今天的日期（缓存，避免重复计算）
 
   // 月份 GlobalKey 懒加载缓存
   // 仅在需要滚动定位时创建，避免预先创建大量 Key
@@ -79,6 +80,7 @@ class _YearCalendarPageState extends State<YearCalendarPage> {
 
     // 计算年份范围：从最早消息到当前
     final now = DateTime.now();
+    _today = DateTime(now.year, now.month, now.day);
     _endYear = now.year;
     _endMonth = now.month;
 
@@ -237,9 +239,6 @@ class _YearCalendarPageState extends State<YearCalendarPage> {
 
   /// 构建月份视图
   Widget _buildMonthView(int year, int month, AppColorScheme colors) {
-    final now = DateTime.now();
-    final today = DateTime(now.year, now.month, now.day);
-
     final firstDay = DateTime(year, month, 1);
     final daysInMonth = DateTime(year, month + 1, 0).day;
     // 周一为 1，周日为 7
@@ -271,7 +270,7 @@ class _YearCalendarPageState extends State<YearCalendarPage> {
             daysInMonth: daysInMonth,
             startWeekday: startWeekday,
             totalCells: totalCells,
-            today: today,
+            today: _today,
             initialDate: widget.initialDate,
             messageDates: widget.messageDates,
             onDateSelected: widget.onDateSelected,
@@ -317,6 +316,13 @@ class _MonthGrid extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // 预计算 initialDate 的日期部分，避免在循环中重复创建 DateTime 对象
+    final initialDateOnly = DateTime(
+      initialDate.year,
+      initialDate.month,
+      initialDate.day,
+    );
+
     return LayoutBuilder(
       builder: (context, constraints) {
         // 计算每个单元格的宽度（7 列）
@@ -338,9 +344,7 @@ class _MonthGrid extends StatelessWidget {
             // 是否是今天
             final isToday = dateOnly == today;
             // 是否是选中日期
-            final isSelected =
-                dateOnly ==
-                DateTime(initialDate.year, initialDate.month, initialDate.day);
+            final isSelected = dateOnly == initialDateOnly;
             // 是否是未来日期
             final isFuture = dateOnly.isAfter(today);
 

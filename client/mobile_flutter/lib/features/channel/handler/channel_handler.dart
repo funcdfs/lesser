@@ -106,8 +106,9 @@ class ChannelHandler extends ChangeNotifier {
   /// 返回排序后的频道列表。
   Future<List<ChannelModel>> getChannels() async {
     // 防抖：如果已在加载中，返回同一个 Future
-    if (_loadingCompleter != null) {
-      return _loadingCompleter!.future;
+    final existingCompleter = _loadingCompleter;
+    if (existingCompleter != null) {
+      return existingCompleter.future;
     }
 
     _loadingCompleter = Completer<List<ChannelModel>>();

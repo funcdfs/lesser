@@ -2,6 +2,7 @@
 
 export 'animated_count.dart';
 export 'count_divider.dart';
+export 'loading_dots.dart';
 export 'dotted_divider.dart';
 export 'icon_painter.dart';
 export 'avatar_button.dart';

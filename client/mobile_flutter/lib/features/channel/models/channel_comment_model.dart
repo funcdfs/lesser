@@ -91,8 +91,10 @@ class CommentMedia {
 
   /// 宽高比（用于布局计算）
   double? get aspectRatio {
-    if (width == null || height == null || height == 0) return null;
-    return width! / height!;
+    final w = width;
+    final h = height;
+    if (w == null || h == null || h == 0) return null;
+    return w / h;
   }
 
   @override
@@ -532,6 +534,9 @@ class ChannelCommentInputState {
 extension ChannelCommentModelExt on ChannelCommentModel {
   /// 转换为公共评论模型
   pkg_comment.CommentModel toCommentModel() {
+    // 使用局部变量避免 ! 强制解包
+    final replyTarget = replyTo;
+
     return pkg_comment.CommentModel(
       id: id,
       targetId: messageId,
@@ -545,12 +550,12 @@ extension ChannelCommentModelExt on ChannelCommentModel {
         roleLabel: author.roleLabel,
       ),
       content: content,
-      replyTo: replyTo != null
+      replyTo: replyTarget != null
           ? pkg_comment.ReplyTarget(
-              commentId: replyTo!.commentId,
-              authorName: replyTo!.authorName,
-              contentPreview: replyTo!.contentPreview,
-              isDeleted: replyTo!.isDeleted,
+              commentId: replyTarget.commentId,
+              authorName: replyTarget.authorName,
+              contentPreview: replyTarget.contentPreview,
+              isDeleted: replyTarget.isDeleted,
             )
           : null,
       replyCount: replyCount,

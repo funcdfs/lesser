@@ -1,13 +1,13 @@
 // 评论项组件
 
 import 'package:flutter/material.dart';
+import '../../ui/effects/highlight_effect.dart';
 import '../../ui/widgets/avatar_button.dart';
 import '../../ui/widgets/context_menu.dart';
 import '../models/comment_model.dart';
 import '../utils.dart';
 import 'comment_bubble.dart';
 import 'comment_actions.dart';
-import 'comment_highlight.dart';
 
 /// 评论菜单操作类型
 enum CommentMenuAction {
@@ -30,10 +30,13 @@ class CommentItem extends StatelessWidget {
     this.isPinned = false,
     this.showViewReplies = true,
     this.isHighlighted = false,
+    this.channelId,
+    this.messageId,
     this.onMenuAction,
     this.onLikeTap,
     this.onViewReplies,
     this.onHighlightComplete,
+    this.onQuoteTap,
   });
 
   final CommentModel comment;
@@ -41,10 +44,20 @@ class CommentItem extends StatelessWidget {
   final bool isPinned;
   final bool showViewReplies; // 是否显示展开回复按钮
   final bool isHighlighted; // 是否高亮显示（深层链接导航时）
+
+  /// 频道 ID（用于回复引用的 Link 跳转）
+  final String? channelId;
+
+  /// 消息 ID（用于回复引用的 Link 跳转）
+  final String? messageId;
+
   final void Function(CommentMenuAction action)? onMenuAction;
   final VoidCallback? onLikeTap;
   final VoidCallback? onViewReplies;
   final VoidCallback? onHighlightComplete; // 高亮动画完成回调
+
+  /// 引用点击回调
+  final void Function(String commentId)? onQuoteTap;
 
   /// 显示上下文菜单（点按触发）
   void _showContextMenu(BuildContext context, TapUpDetails details) {
@@ -154,6 +167,9 @@ class CommentItem extends StatelessWidget {
                 replyTo: comment.replyTo,
                 isPinned: isPinned,
                 isDeleted: comment.isDeleted,
+                channelId: channelId,
+                messageId: messageId,
+                onQuoteTap: onQuoteTap,
                 trailing: CommentActions(
                   likeCount: comment.likeCount,
                   replyCount: showViewReplies ? descendantCount : 0,
@@ -171,7 +187,7 @@ class CommentItem extends StatelessWidget {
 
     // 如果需要高亮，包裹高亮动画组件
     if (isHighlighted) {
-      content = CommentHighlight(
+      content = HighlightEffect(
         isHighlighted: true,
         onHighlightComplete: onHighlightComplete,
         child: content,

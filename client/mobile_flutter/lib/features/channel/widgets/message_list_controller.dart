@@ -131,16 +131,21 @@ class HighlightController {
 
   /// 获取或创建指定索引的 GlobalKey（带 LRU 缓存策略）
   GlobalKey getKeyForIndex(int index) {
-    if (_itemKeys.containsKey(index)) {
+    // 检查缓存中是否已存在
+    final existingKey = _itemKeys[index];
+    if (existingKey != null) {
+      // 更新 LRU 访问顺序
       _keyAccessOrder.remove(index);
       _keyAccessOrder.add(index);
-      return _itemKeys[index]!;
+      return existingKey;
     }
 
+    // 创建新的 GlobalKey
     final key = GlobalKey();
     _itemKeys[index] = key;
     _keyAccessOrder.add(index);
 
+    // LRU 淘汰：超过最大缓存数时移除最旧的
     while (_keyAccessOrder.length > maxCachedKeys) {
       final oldestIndex = _keyAccessOrder.removeAt(0);
       _itemKeys.remove(oldestIndex);
@@ -213,7 +218,7 @@ class HighlightController {
             _highlightedMessageId = messageId;
             onHighlightChanged?.call(messageId);
           })
-          .catchError((error) {
+          .catchError((Object error) {
             // 滚动动画被中断时忽略错误，仍然设置高亮
             if (_isDisposed) return;
             _highlightedMessageId = messageId;
@@ -240,7 +245,7 @@ class HighlightController {
             _highlightedMessageId = messageId;
             onHighlightChanged?.call(messageId);
           })
-          .catchError((error) {
+          .catchError((Object error) {
             // 滚动动画被中断时忽略错误，仍然设置高亮
             if (_isDisposed) return;
             _highlightedMessageId = messageId;

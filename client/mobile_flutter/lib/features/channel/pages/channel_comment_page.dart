@@ -109,11 +109,15 @@ class _ChannelCommentPageState extends State<ChannelCommentPage> {
   @override
   void dispose() {
     _isDisposed = true;
+    _dataSource.dispose();
     super.dispose();
   }
 
   Future<void> _loadRootComment() async {
     if (_isDisposed) return;
+
+    final rootCommentId = widget.rootCommentId;
+    if (rootCommentId == null) return;
 
     setState(() {
       _isLoading = true;
@@ -121,9 +125,7 @@ class _ChannelCommentPageState extends State<ChannelCommentPage> {
     });
 
     try {
-      final rootComment = await _dataSource.getRootCommentById(
-        widget.rootCommentId!,
-      );
+      final rootComment = await _dataSource.getRootCommentById(rootCommentId);
 
       if (_isDisposed) return;
 
@@ -146,7 +148,8 @@ class _ChannelCommentPageState extends State<ChannelCommentPage> {
   /// 仅在非线程视图且有消息数据时显示。
   /// 包含消息气泡和评论数量分隔符。
   Widget _buildMessageHeader(int commentCount) {
-    if (widget.message == null) return const SizedBox.shrink();
+    final message = widget.message;
+    if (message == null) return const SizedBox.shrink();
 
     // 使用 MediaQuery.sizeOf 替代 MediaQuery.of(context).size，性能更优
     final maxWidth =
@@ -164,7 +167,7 @@ class _ChannelCommentPageState extends State<ChannelCommentPage> {
               constraints: BoxConstraints(maxWidth: maxWidth),
               child: IntrinsicWidth(
                 child: ChannelMessageBubble(
-                  message: widget.message!,
+                  message: message,
                   onReactionTap: (emoji) {
                     // 反应功能待实现
                   },

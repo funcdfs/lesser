@@ -157,7 +157,7 @@ class _ChannelCardState extends State<ChannelCard> {
       height: 4,
       margin: const EdgeInsets.only(top: 12),
       decoration: BoxDecoration(
-        color: colors.textTertiary.withValues(alpha: 0.3),
+        color: colors.textDisabled,
         borderRadius: BorderRadius.circular(2),
       ),
     );
@@ -218,7 +218,7 @@ class _ChannelCardState extends State<ChannelCard> {
       width: double.infinity,
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: colors.textPrimary.withValues(alpha: 0.04),
+        color: colors.surfaceBase,
         borderRadius: BorderRadius.circular(10),
       ),
       child: Text(
@@ -251,7 +251,10 @@ class _ChannelCardState extends State<ChannelCard> {
   Widget _buildSubscribeButton(AppColorScheme colors) {
     final isSubscribed = _isSubscribed;
     final buttonColor = isSubscribed ? colors.surfaceBase : colors.accent;
-    final textColor = isSubscribed ? colors.textSecondary : Colors.white;
+    // 激活状态使用 surfaceElevated 确保在深色主题下也有足够对比度
+    final textColor = isSubscribed
+        ? colors.textSecondary
+        : colors.surfaceElevated;
     final borderColor = isSubscribed ? colors.divider : Colors.transparent;
 
     return TapScale(

@@ -1,8 +1,13 @@
 // 深层链接 URL 解析器
 //
 // 解析 lesser.app 的深层链接 URL，提取内容类型和 ID
+//
+// 评论相关的链接构建请使用 comment/comment_link.dart
 
 import 'models/link_model.dart';
+
+// 重新导出评论链接工具，保持向后兼容
+export 'comment/comment_link.dart' show CommentLink;
 
 /// 链接解析器
 ///
@@ -14,6 +19,7 @@ import 'models/link_model.dart';
 /// - comment: 评论
 /// - user: 用户
 /// - post: 通用帖子
+/// - anchor: 锚点（header/bottom）
 ///
 /// 示例 URL:
 /// - https://lesser.app/channel/123
@@ -24,7 +30,7 @@ class LinkParser {
   LinkParser._();
 
   /// 基础 URL
-  static const _baseUrl = 'https://lesser.app';
+  static const baseUrl = 'https://lesser.app';
 
   /// 备用基础 URL（支持 http）
   static const _baseUrlHttp = 'http://lesser.app';
@@ -36,6 +42,7 @@ class LinkParser {
     'comment': LinkContentType.comment,
     'user': LinkContentType.user,
     'post': LinkContentType.post,
+    'anchor': LinkContentType.anchor,
   };
 
   /// 枚举到类型字符串的映射
@@ -45,6 +52,7 @@ class LinkParser {
     LinkContentType.comment: 'comment',
     LinkContentType.user: 'user',
     LinkContentType.post: 'post',
+    LinkContentType.anchor: 'anchor',
   };
 
   /// 解析 URL 为 LinkModel
@@ -57,8 +65,8 @@ class LinkParser {
 
     // 检查是否是 lesser.app 链接
     String path;
-    if (trimmedUrl.startsWith(_baseUrl)) {
-      path = trimmedUrl.substring(_baseUrl.length);
+    if (trimmedUrl.startsWith(baseUrl)) {
+      path = trimmedUrl.substring(baseUrl.length);
     } else if (trimmedUrl.startsWith(_baseUrlHttp)) {
       path = trimmedUrl.substring(_baseUrlHttp.length);
     } else {
@@ -113,9 +121,9 @@ class LinkParser {
   ///
   /// 从 segments 列表构建完整的 URL
   static String buildUrl(List<LinkSegment> segments) {
-    if (segments.isEmpty) return _baseUrl;
+    if (segments.isEmpty) return baseUrl;
 
-    final buffer = StringBuffer(_baseUrl);
+    final buffer = StringBuffer(baseUrl);
     for (final segment in segments) {
       final typeStr = _reverseTypeMap[segment.type];
       if (typeStr != null) {
@@ -127,30 +135,73 @@ class LinkParser {
 
   /// 构建频道链接
   static String buildChannelUrl(String channelId) {
-    return '$_baseUrl/channel/$channelId';
+    return '$baseUrl/channel/$channelId';
   }
 
   /// 构建消息链接
   static String buildMessageUrl(String channelId, String messageId) {
-    return '$_baseUrl/channel/$channelId/message/$messageId';
+    return '$baseUrl/channel/$channelId/message/$messageId';
   }
 
+  /// 构建用户链接
+  static String buildUserUrl(String userId) {
+    return '$baseUrl/user/$userId';
+  }
+
+  /// 构建帖子链接
+  static String buildPostUrl(String postId) {
+    return '$baseUrl/post/$postId';
+  }
+
+  // ===========================================================================
+  // 评论相关方法 - 委托给 CommentLink（保持向后兼容）
+  // ===========================================================================
+
+  /// 特殊锚点：header（帖子/消息头部）
+  /// @deprecated 使用 CommentLink.headerAnchor
+  static const headerAnchor = 'header';
+
+  /// 特殊锚点：bottom（最后一条评论）
+  /// @deprecated 使用 CommentLink.bottomAnchor
+  static const bottomAnchor = 'bottom';
+
   /// 构建评论链接
+  /// @deprecated 使用 CommentLink.buildUrl
   static String buildCommentUrl(
     String channelId,
     String messageId,
     String commentId,
   ) {
-    return '$_baseUrl/channel/$channelId/message/$messageId/comment/$commentId';
+    return '$baseUrl/channel/$channelId/message/$messageId/comment/$commentId';
   }
 
-  /// 构建用户链接
-  static String buildUserUrl(String userId) {
-    return '$_baseUrl/user/$userId';
+  /// 构建 header 锚点链接（用于置顶）
+  /// @deprecated 使用 CommentLink.buildHeaderUrl
+  static String buildHeaderUrl(String channelId, String messageId) {
+    return '$baseUrl/channel/$channelId/message/$messageId/anchor/$headerAnchor';
   }
 
-  /// 构建帖子链接
-  static String buildPostUrl(String postId) {
-    return '$_baseUrl/post/$postId';
+  /// 构建 bottom 锚点链接（用于置底）
+  /// @deprecated 使用 CommentLink.buildBottomUrl
+  static String buildBottomUrl(String channelId, String messageId) {
+    return '$baseUrl/channel/$channelId/message/$messageId/anchor/$bottomAnchor';
   }
+
+  /// 构建锚点链接（通用）
+  /// @deprecated 使用 CommentLink.buildAnchorUrl
+  static String buildAnchorUrl(
+    String channelId,
+    String messageId,
+    String anchorId,
+  ) {
+    return '$baseUrl/channel/$channelId/message/$messageId/anchor/$anchorId';
+  }
+
+  /// 检查是否是 header 锚点
+  /// @deprecated 使用 CommentLink.isHeaderAnchor
+  static bool isHeaderAnchor(String anchorId) => anchorId == headerAnchor;
+
+  /// 检查是否是 bottom 锚点
+  /// @deprecated 使用 CommentLink.isBottomAnchor
+  static bool isBottomAnchor(String anchorId) => anchorId == bottomAnchor;
 }

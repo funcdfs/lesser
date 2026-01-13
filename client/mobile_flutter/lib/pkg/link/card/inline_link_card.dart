@@ -7,6 +7,7 @@ import 'package:flutter/material.dart';
 
 import '../../ui/effects/effects.dart';
 import '../../ui/theme/theme.dart';
+import '../../ui/widgets/loading_dots.dart';
 import '../link_parser.dart';
 import '../models/link_model.dart';
 
@@ -121,32 +122,24 @@ class InlineLinkCard extends StatelessWidget {
 
   /// 获取内容类型对应的图标
   IconData _getIconForType(LinkContentType type) {
-    switch (type) {
-      case LinkContentType.channel:
-        return Icons.campaign_rounded;
-      case LinkContentType.message:
-        return Icons.article_rounded;
-      case LinkContentType.comment:
-        return Icons.chat_bubble_outline_rounded;
-      case LinkContentType.user:
-        return Icons.person_rounded;
-      case LinkContentType.post:
-        return Icons.description_rounded;
-    }
+    return switch (type) {
+      LinkContentType.channel => Icons.campaign_rounded,
+      LinkContentType.message => Icons.article_rounded,
+      LinkContentType.comment => Icons.chat_bubble_outline_rounded,
+      LinkContentType.user => Icons.person_rounded,
+      LinkContentType.post => Icons.description_rounded,
+      LinkContentType.anchor => Icons.tag_rounded, // 锚点使用 tag 图标
+    };
   }
 
   /// 获取内容类型标签
   String _getContentTypeLabel(LinkContentType type) {
-    switch (type) {
-      case LinkContentType.comment:
-        return '评论';
-      case LinkContentType.message:
-        return '消息';
-      case LinkContentType.post:
-        return '帖子';
-      default:
-        return '内容';
-    }
+    return switch (type) {
+      LinkContentType.comment => '评论',
+      LinkContentType.message => '消息',
+      LinkContentType.post => '帖子',
+      _ => '内容',
+    };
   }
 }
 
@@ -237,14 +230,8 @@ class _InlineLinkCardFromUrlState extends State<InlineLinkCardFromUrl> {
         child: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            SizedBox(
-              width: 12,
-              height: 12,
-              child: CircularProgressIndicator(
-                strokeWidth: 1.5,
-                color: colors.textDisabled,
-              ),
-            ),
+            // 使用项目自定义的 LoadingDots 组件
+            LoadingDots.mini(color: colors.textDisabled),
             const SizedBox(width: 6),
             Text(
               '加载中...',

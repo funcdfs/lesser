@@ -1,6 +1,7 @@
 // 评论列表组件
 
 import 'package:flutter/material.dart';
+import '../../ui/effects/effects.dart';
 import '../../ui/theme/theme.dart';
 import '../models/comment_model.dart';
 import 'comment_item.dart';
@@ -14,25 +15,55 @@ class CommentList extends StatelessWidget {
     required this.scrollController,
     required this.getDescendantCount,
     this.highlightedCommentId,
+    this.highlightHeader = false,
+    this.channelId,
+    this.messageId,
     this.messageHeader,
     this.headerBuilder,
+    this.headerKey,
     this.onMenuAction,
     this.onLikeTap,
     this.onViewReplies,
     this.onHighlightComplete,
+    this.onHeaderHighlightComplete,
+    this.getCommentKey,
+    this.onQuoteTap,
   });
 
   final CommentListState state;
   final ScrollController scrollController;
   final int Function(String commentId) getDescendantCount;
-  final String? highlightedCommentId; // 需要高亮的评论 ID
-  final MessageHeaderData? messageHeader; // 消息头部数据（非线程视图时显示）
-  final Widget Function(int commentCount)? headerBuilder; // 自定义头部构建器
+  final String? highlightedCommentId;
+
+  /// 是否高亮 header
+  final bool highlightHeader;
+
+  /// 频道 ID（用于回复引用的 Link 跳转）
+  final String? channelId;
+
+  /// 消息 ID（用于回复引用的 Link 跳转）
+  final String? messageId;
+
+  final MessageHeaderData? messageHeader;
+  final Widget Function(int commentCount)? headerBuilder;
+
+  /// Header 的 GlobalKey（用于滚动定位，仅在使用默认 MessageHeader 时需要）
+  final GlobalKey? headerKey;
+
   final void Function(CommentModel comment, CommentMenuAction action)?
   onMenuAction;
   final void Function(String commentId)? onLikeTap;
   final void Function(CommentModel comment)? onViewReplies;
-  final VoidCallback? onHighlightComplete; // 高亮动画完成回调
+  final VoidCallback? onHighlightComplete;
+
+  /// Header 高亮完成回调
+  final VoidCallback? onHeaderHighlightComplete;
+
+  /// 获取评论的 GlobalKey（用于滚动定位）
+  final GlobalKey Function(String commentId)? getCommentKey;
+
+  /// 引用点击回调（跳转到被引用的评论）
+  final void Function(String commentId)? onQuoteTap;
 
   @override
   Widget build(BuildContext context) {
@@ -113,8 +144,10 @@ class CommentList extends StatelessWidget {
       final comment = state.rootComment!;
       final replyCount = state.comments.length;
       final isHighlighted = highlightedCommentId == comment.id;
+      final commentKey = getCommentKey?.call(comment.id);
 
       return Column(
+        key: commentKey,
         children: [
           // 根评论区域 - 带淡色背景
           Container(
@@ -129,6 +162,8 @@ class CommentList extends StatelessWidget {
               descendantCount: getDescendantCount(comment.id),
               showViewReplies: false,
               isHighlighted: isHighlighted,
+              channelId: channelId,
+              messageId: messageId,
               onMenuAction: onMenuAction == null
                   ? null
                   : (action) => onMenuAction!(comment, action),
@@ -136,6 +171,7 @@ class CommentList extends StatelessWidget {
                   ? null
                   : () => onLikeTap!(comment.id),
               onHighlightComplete: isHighlighted ? onHighlightComplete : null,
+              onQuoteTap: onQuoteTap,
             ),
           ),
           // 精致分隔符 - 回复指示器
@@ -147,10 +183,15 @@ class CommentList extends StatelessWidget {
     // 子评论
     final comment = state.comments[index - 1];
     final isHighlighted = highlightedCommentId == comment.id;
+    final commentKey = getCommentKey?.call(comment.id);
+
     return CommentItem(
+      key: commentKey,
       comment: comment,
       descendantCount: getDescendantCount(comment.id),
       isHighlighted: isHighlighted,
+      channelId: channelId,
+      messageId: messageId,
       onMenuAction: onMenuAction == null
           ? null
           : (action) => onMenuAction!(comment, action),
@@ -159,6 +200,7 @@ class CommentList extends StatelessWidget {
           ? null
           : () => onViewReplies!(comment),
       onHighlightComplete: isHighlighted ? onHighlightComplete : null,
+      onQuoteTap: onQuoteTap,
     );
   }
 
@@ -168,12 +210,24 @@ class CommentList extends StatelessWidget {
     if (hasHeader && index == 0) {
       // 优先使用自定义 headerBuilder
       if (headerBuilder != null) {
-        return headerBuilder!(state.totalCount);
+        // 自定义 header 已经在外部包裹了 KeyedSubtree，这里包裹高亮效果
+        return HighlightEffect(
+          isHighlighted: highlightHeader,
+          onHighlightComplete: onHeaderHighlightComplete,
+          child: headerBuilder!(state.totalCount),
+        );
       }
-      // 否则使用默认的 MessageHeader
-      return MessageHeader(
-        data: messageHeader!,
-        commentCount: state.totalCount,
+      // 否则使用默认的 MessageHeader，包裹高亮效果
+      return KeyedSubtree(
+        key: headerKey,
+        child: HighlightEffect(
+          isHighlighted: highlightHeader,
+          onHighlightComplete: onHeaderHighlightComplete,
+          child: MessageHeader(
+            data: messageHeader!,
+            commentCount: state.totalCount,
+          ),
+        ),
       );
     }
 
@@ -184,11 +238,16 @@ class CommentList extends StatelessWidget {
     if (hasPinned && adjustedIndex == 0) {
       final comment = state.pinnedComment!;
       final isHighlighted = highlightedCommentId == comment.id;
+      final commentKey = getCommentKey?.call(comment.id);
+
       return CommentItem(
+        key: commentKey,
         comment: comment,
         descendantCount: getDescendantCount(comment.id),
         isPinned: true,
         isHighlighted: isHighlighted,
+        channelId: channelId,
+        messageId: messageId,
         onMenuAction: onMenuAction == null
             ? null
             : (action) => onMenuAction!(comment, action),
@@ -197,6 +256,7 @@ class CommentList extends StatelessWidget {
             ? null
             : () => onViewReplies!(comment),
         onHighlightComplete: isHighlighted ? onHighlightComplete : null,
+        onQuoteTap: onQuoteTap,
       );
     }
 
@@ -204,10 +264,15 @@ class CommentList extends StatelessWidget {
     final commentIndex = hasPinned ? adjustedIndex - 1 : adjustedIndex;
     final comment = state.comments[commentIndex];
     final isHighlighted = highlightedCommentId == comment.id;
+    final commentKey = getCommentKey?.call(comment.id);
+
     return CommentItem(
+      key: commentKey,
       comment: comment,
       descendantCount: getDescendantCount(comment.id),
       isHighlighted: isHighlighted,
+      channelId: channelId,
+      messageId: messageId,
       onMenuAction: onMenuAction == null
           ? null
           : (action) => onMenuAction!(comment, action),
@@ -216,6 +281,7 @@ class CommentList extends StatelessWidget {
           ? null
           : () => onViewReplies!(comment),
       onHighlightComplete: isHighlighted ? onHighlightComplete : null,
+      onQuoteTap: onQuoteTap,
     );
   }
 }

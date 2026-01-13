@@ -155,8 +155,10 @@ class ChannelModel {
   String get avatarPlaceholder => displayName.isNotEmpty ? displayName[0] : '#';
 
   /// 是否有最后消息
-  bool get hasLastMessage =>
-      lastMessagePreview != null && lastMessagePreview!.isNotEmpty;
+  bool get hasLastMessage {
+    final preview = lastMessagePreview;
+    return preview != null && preview.isNotEmpty;
+  }
 
   /// 是否有置顶消息
   bool get hasPinnedMessage => pinnedMessage != null;

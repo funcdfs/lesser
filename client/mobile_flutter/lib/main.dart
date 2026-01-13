@@ -5,6 +5,7 @@ import 'package:flutter/rendering.dart';
 import 'features/channel/pages/channel_comment_page.dart';
 import 'features/channel/pages/channel_detail_page.dart';
 import 'features/home/pages/home_page.dart';
+import 'pkg/comment/comment_page.dart';
 import 'pkg/link/link.dart';
 import 'pkg/ui/theme/theme.dart';
 
@@ -164,14 +165,22 @@ class _AppState extends State<_App> {
     String channelId,
     String messageId,
     String rootCommentId,
-    String targetCommentId,
-  ) async {
+    String targetCommentId, {
+    LinkNavigateMode mode = LinkNavigateMode.push,
+  }) async {
+    if (mode == LinkNavigateMode.replace) {
+      // replace 模式：在当前页面内瞬移到目标位置
+      return CommentPage.navigateInPlace(targetCommentId);
+    }
+
+    // push 模式：创建新的总览层页面
+    // 注意：不传递 rootCommentId，这样会打开总览层而不是线程视图
+    // targetCommentId 用于滚动定位和高亮
     Navigator.of(context).push(
       MaterialPageRoute(
         builder: (_) => ChannelCommentPage(
           messageId: messageId,
           channelId: channelId,
-          rootCommentId: rootCommentId,
           targetCommentId: targetCommentId,
         ),
       ),

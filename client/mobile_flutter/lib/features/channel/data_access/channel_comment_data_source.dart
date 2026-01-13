@@ -57,6 +57,13 @@ class ChannelCommentDataSource implements CommentDataSource {
   /// 最大递归深度限制，防止恶意数据导致栈溢出
   static const int _maxRecursionDepth = 100;
 
+  /// 释放资源
+  ///
+  /// 清理缓存数据，防止内存泄漏。
+  void dispose() {
+    _descendantCounts.clear();
+  }
+
   // ===========================================================================
   // CommentDataSource 接口实现
   // ===========================================================================

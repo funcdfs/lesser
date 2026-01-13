@@ -7,7 +7,7 @@ import 'package:flutter/material.dart';
 import 'link_parser.dart';
 import 'link_resolver.dart';
 import 'models/link_model.dart';
-import 'widgets/channel_card.dart';
+import 'card/channel_card.dart';
 
 /// 链接服务
 ///
@@ -46,7 +46,15 @@ class LinkService {
   bool get isInitialized => _resolver != null;
 
   /// 从 URL 导航
-  Future<LinkNavigateResult> navigate(BuildContext context, String url) async {
+  ///
+  /// [mode] 导航模式：
+  /// - [LinkNavigateMode.push]：新增页面（默认）
+  /// - [LinkNavigateMode.replace]：替换当前页面（页面内滚动）
+  Future<LinkNavigateResult> navigate(
+    BuildContext context,
+    String url, {
+    LinkNavigateMode mode = LinkNavigateMode.push,
+  }) async {
     if (!isInitialized) {
       return LinkNavigateResult.notInitialized;
     }
@@ -57,14 +65,15 @@ class LinkService {
       return LinkNavigateResult.invalidLink;
     }
 
-    return navigateToLink(context, link);
+    return navigateToLink(context, link, mode: mode);
   }
 
   /// 从 LinkModel 导航
   Future<LinkNavigateResult> navigateToLink(
     BuildContext context,
-    LinkModel link,
-  ) async {
+    LinkModel link, {
+    LinkNavigateMode mode = LinkNavigateMode.push,
+  }) async {
     if (!isInitialized) {
       return LinkNavigateResult.notInitialized;
     }
@@ -78,7 +87,10 @@ class LinkService {
           return _navigateToMessage(context, link);
 
         case LinkContentType.comment:
-          return _navigateToComment(context, link);
+          return _navigateToComment(context, link, mode: mode);
+
+        case LinkContentType.anchor:
+          return _navigateToAnchor(context, link, mode: mode);
 
         case LinkContentType.user:
         case LinkContentType.post:
@@ -159,8 +171,9 @@ class LinkService {
   /// 导航到评论
   Future<LinkNavigateResult> _navigateToComment(
     BuildContext context,
-    LinkModel link,
-  ) async {
+    LinkModel link, {
+    LinkNavigateMode mode = LinkNavigateMode.push,
+  }) async {
     // 获取频道 ID 和消息 ID
     final channelSegment = link.getSegment(LinkContentType.channel);
     final messageSegment = link.getSegment(LinkContentType.message);
@@ -173,7 +186,7 @@ class LinkService {
     final messageId = messageSegment.id;
     final commentId = link.targetId;
 
-    // 解析评论的根节点 ID
+    // 普通评论：解析根节点 ID
     final rootCommentId = await _resolver!.resolveCommentRoot(commentId);
     if (rootCommentId == null) {
       return LinkNavigateResult.notFound;
@@ -190,6 +203,45 @@ class LinkService {
       messageId,
       rootCommentId,
       commentId,
+      mode: mode,
+    );
+
+    return (success ?? false)
+        ? LinkNavigateResult.success
+        : LinkNavigateResult.notFound;
+  }
+
+  /// 导航到锚点（header/bottom）
+  Future<LinkNavigateResult> _navigateToAnchor(
+    BuildContext context,
+    LinkModel link, {
+    LinkNavigateMode mode = LinkNavigateMode.push,
+  }) async {
+    // 获取频道 ID 和消息 ID
+    final channelSegment = link.getSegment(LinkContentType.channel);
+    final messageSegment = link.getSegment(LinkContentType.message);
+
+    if (channelSegment == null || messageSegment == null) {
+      return LinkNavigateResult.invalidLink;
+    }
+
+    final channelId = channelSegment.id;
+    final messageId = messageSegment.id;
+    final anchorId = link.targetId;
+
+    // 检查 context 是否仍然有效
+    if (!context.mounted) {
+      return LinkNavigateResult.failed;
+    }
+
+    // 锚点导航：使用特殊的 rootCommentId 和 targetCommentId
+    final success = await _onNavigateToComment?.call(
+      context,
+      channelId,
+      messageId,
+      anchorId, // rootCommentId = anchorId
+      anchorId, // targetCommentId = anchorId
+      mode: mode,
     );
 
     return (success ?? false)
@@ -229,6 +281,15 @@ enum LinkNavigateResult {
   failed,
 }
 
+/// 导航模式
+enum LinkNavigateMode {
+  /// 新增页面（push 新页面）
+  push,
+
+  /// 替换当前页面（页面内滚动，不创建新页面）
+  replace,
+}
+
 /// 导航到频道回调
 typedef NavigateToChannelCallback =
     Future<bool> Function(BuildContext context, String channelId);
@@ -249,5 +310,6 @@ typedef NavigateToCommentCallback =
       String channelId,
       String messageId,
       String rootCommentId,
-      String targetCommentId,
-    );
+      String targetCommentId, {
+      LinkNavigateMode mode,
+    });

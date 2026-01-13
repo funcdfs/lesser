@@ -286,9 +286,10 @@ class _TagChip extends StatelessWidget {
         child: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            if (tag.icon != null) ...[
+            // 使用局部变量避免 ! 强制解包
+            if (tag.icon case final icon?) ...[
               Text(
-                tag.icon!,
+                icon,
                 style: const TextStyle(fontSize: TagChipLayout.iconFontSize),
               ),
               const SizedBox(width: TagChipLayout.iconSpacing),

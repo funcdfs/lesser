@@ -95,21 +95,14 @@ class LinkNavigator {
     LinkModel link,
   ) async {
     try {
-      switch (link.targetType) {
-        case LinkContentType.channel:
-          return _navigateToChannel(context, link);
-
-        case LinkContentType.message:
-          return _navigateToMessage(context, link);
-
-        case LinkContentType.comment:
-          return _navigateToComment(context, link);
-
-        case LinkContentType.user:
-        case LinkContentType.post:
-          // 暂不支持
-          return LinkNavigationResult.failed;
-      }
+      return switch (link.targetType) {
+        LinkContentType.channel => _navigateToChannel(context, link),
+        LinkContentType.message => _navigateToMessage(context, link),
+        LinkContentType.comment => _navigateToComment(context, link),
+        LinkContentType.user ||
+        LinkContentType.post ||
+        LinkContentType.anchor => Future.value(LinkNavigationResult.failed),
+      };
     } catch (e) {
       return LinkNavigationResult.failed;
     }

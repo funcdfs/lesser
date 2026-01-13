@@ -148,47 +148,35 @@ class LinkCard extends StatelessWidget {
 
   /// 获取内容类型对应的图标
   IconData _getIconForType(LinkContentType type) {
-    switch (type) {
-      case LinkContentType.channel:
-        return Icons.campaign_rounded;
-      case LinkContentType.message:
-        return Icons.article_rounded;
-      case LinkContentType.comment:
-        return Icons.chat_bubble_outline_rounded;
-      case LinkContentType.user:
-        return Icons.person_rounded;
-      case LinkContentType.post:
-        return Icons.description_rounded;
-    }
+    return switch (type) {
+      LinkContentType.channel => Icons.campaign_rounded,
+      LinkContentType.message => Icons.article_rounded,
+      LinkContentType.comment => Icons.chat_bubble_outline_rounded,
+      LinkContentType.user => Icons.person_rounded,
+      LinkContentType.post => Icons.description_rounded,
+      LinkContentType.anchor => Icons.tag_rounded, // 锚点使用 tag 图标
+    };
   }
 
   /// 获取内容类型标签
   String _getTypeLabel(LinkContentType type) {
-    switch (type) {
-      case LinkContentType.channel:
-        return '频道';
-      case LinkContentType.message:
-        return '消息';
-      case LinkContentType.comment:
-        return '评论';
-      case LinkContentType.user:
-        return '用户';
-      case LinkContentType.post:
-        return '帖子';
-    }
+    return switch (type) {
+      LinkContentType.channel => '频道',
+      LinkContentType.message => '消息',
+      LinkContentType.comment => '评论',
+      LinkContentType.user => '用户',
+      LinkContentType.post => '帖子',
+      LinkContentType.anchor => '锚点',
+    };
   }
 
   /// 获取内容类型标签（用于显示文本）
   String _getContentTypeLabel(LinkContentType type) {
-    switch (type) {
-      case LinkContentType.comment:
-        return '评论';
-      case LinkContentType.message:
-        return '消息';
-      case LinkContentType.post:
-        return '帖子';
-      default:
-        return '内容';
-    }
+    return switch (type) {
+      LinkContentType.comment => '评论',
+      LinkContentType.message => '消息',
+      LinkContentType.post => '帖子',
+      _ => '内容',
+    };
   }
 }

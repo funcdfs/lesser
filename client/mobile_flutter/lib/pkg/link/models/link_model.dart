@@ -18,6 +18,9 @@ enum LinkContentType {
 
   /// 通用帖子
   post,
+
+  /// 锚点（header/bottom 等特殊位置）
+  anchor,
 }
 
 /// 链接路径段

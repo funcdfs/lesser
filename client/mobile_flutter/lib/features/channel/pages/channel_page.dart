@@ -285,23 +285,19 @@ class _ChannelPageState extends State<ChannelPage> {
 
   Widget _buildContent(AppColorScheme colors) {
     if (_handler.isLoading) {
-      return _LoadingView(colors: colors);
+      return const _LoadingView();
     }
 
-    if (_handler.error != null) {
-      return _ErrorView(
-        colors: colors,
-        error: _handler.error!,
-        onRetry: _onRetry,
-      );
+    final error = _handler.error;
+    if (error != null) {
+      return _ErrorView(error: error, onRetry: _onRetry);
     }
 
     if (_handler.channels.isEmpty) {
-      return _EmptyView(colors: colors);
+      return const _EmptyView();
     }
 
     return _ChannelListView(
-      colors: colors,
       channels: _handler.channels,
       getUIState: _handler.getUIState,
       onRefresh: _onRefresh,
@@ -320,12 +316,11 @@ class _ChannelPageState extends State<ChannelPage> {
 
 /// 加载中视图
 class _LoadingView extends StatelessWidget {
-  const _LoadingView({required this.colors});
-
-  final AppColorScheme colors;
+  const _LoadingView();
 
   @override
   Widget build(BuildContext context) {
+    final colors = AppColors.of(context);
     return Center(
       child: CircularProgressIndicator(
         strokeWidth: 2,
@@ -337,12 +332,11 @@ class _LoadingView extends StatelessWidget {
 
 /// 空状态视图
 class _EmptyView extends StatelessWidget {
-  const _EmptyView({required this.colors});
-
-  final AppColorScheme colors;
+  const _EmptyView();
 
   @override
   Widget build(BuildContext context) {
+    final colors = AppColors.of(context);
     return Center(
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
@@ -366,18 +360,14 @@ class _EmptyView extends StatelessWidget {
 
 /// 错误视图
 class _ErrorView extends StatelessWidget {
-  const _ErrorView({
-    required this.colors,
-    required this.error,
-    required this.onRetry,
-  });
+  const _ErrorView({required this.error, required this.onRetry});
 
-  final AppColorScheme colors;
   final String error;
   final VoidCallback onRetry;
 
   @override
   Widget build(BuildContext context) {
+    final colors = AppColors.of(context);
     return Center(
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
@@ -401,10 +391,11 @@ class _ErrorView extends StatelessWidget {
           const SizedBox(height: 16),
           TapScale(
             onTap: onRetry,
+            scale: TapScales.medium,
             child: Container(
               padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
               decoration: BoxDecoration(
-                color: colors.accent.withValues(alpha: 0.1),
+                color: colors.accentSoft,
                 borderRadius: BorderRadius.circular(20),
               ),
               child: Text(
@@ -429,14 +420,12 @@ class _ErrorView extends StatelessWidget {
 /// 列表项使用 ChannelItem 组件，传入 UI 状态用于显示未读数等。
 class _ChannelListView extends StatelessWidget {
   const _ChannelListView({
-    required this.colors,
     required this.channels,
     required this.getUIState,
     required this.onRefresh,
     required this.onChannelTap,
   });
 
-  final AppColorScheme colors;
   final List<ChannelModel> channels;
   final ChannelUIState? Function(String channelId) getUIState;
   final Future<void> Function() onRefresh;
@@ -444,6 +433,7 @@ class _ChannelListView extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colors = AppColors.of(context);
     return RefreshIndicator(
       onRefresh: onRefresh,
       color: colors.textPrimary,

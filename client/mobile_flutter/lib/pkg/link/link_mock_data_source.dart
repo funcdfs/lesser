@@ -61,7 +61,7 @@ class LinkMockDataSource implements LinkResolverDataSource {
   // 模拟评论数据（包含嵌套关系）
   // 格式：commentId -> (rootId, channelId, channelName, messageId, content, authorName)
   static final _comments = <String, CommentInfo>{
-    // 根评论
+    // ========== 根评论 ==========
     'c1': const CommentInfo(
       id: 'c1',
       rootId: null,
@@ -89,7 +89,8 @@ class LinkMockDataSource implements LinkResolverDataSource {
       content: '认证用户的评论',
       authorName: '用户B',
     ),
-    // 第二层回复（回复 c1）
+
+    // ========== 第二层回复（回复 c1）==========
     'c1_r1': const CommentInfo(
       id: 'c1_r1',
       rootId: 'c1',
@@ -108,7 +109,8 @@ class LinkMockDataSource implements LinkResolverDataSource {
       content: '频道主回复了！',
       authorName: '用户C',
     ),
-    // 第三层回复（回复 c1_r1，但根节点仍是 c1）
+
+    // ========== 第三层回复（回复 c1_r1，但根节点仍是 c1）==========
     'c1_r1_r1': const CommentInfo(
       id: 'c1_r1_r1',
       rootId: 'c1',
@@ -136,7 +138,8 @@ class LinkMockDataSource implements LinkResolverDataSource {
       content: '感谢大家的喜爱～',
       authorName: '频道主',
     ),
-    // 第四层回复
+
+    // ========== 第四层回复 ==========
     'c1_r1_r1_r1': const CommentInfo(
       id: 'c1_r1_r1_r1',
       rootId: 'c1',
@@ -155,7 +158,8 @@ class LinkMockDataSource implements LinkResolverDataSource {
       content: '+1',
       authorName: '用户F',
     ),
-    // 第五层回复
+
+    // ========== 第五层回复 ==========
     'c1_r1_r1_r1_r1': const CommentInfo(
       id: 'c1_r1_r1_r1_r1',
       rootId: 'c1',
@@ -164,6 +168,28 @@ class LinkMockDataSource implements LinkResolverDataSource {
       messageId: 'post_1',
       content: '哈哈谢谢支持！',
       authorName: '用户A',
+    ),
+
+    // ========== 用于 Link 跳转测试的特殊评论 ==========
+    // 顶部评论（用于测试跳转到顶部）
+    'top_comment': const CommentInfo(
+      id: 'top_comment',
+      rootId: null,
+      channelId: 'test',
+      channelName: '测试频道',
+      messageId: 'post_1',
+      content: '🔝 这是顶部评论，用于测试 Link 跳转到顶部功能',
+      authorName: '系统测试',
+    ),
+    // 底部评论（用于测试跳转到底部）
+    'bottom_comment': const CommentInfo(
+      id: 'bottom_comment',
+      rootId: null,
+      channelId: 'test',
+      channelName: '测试频道',
+      messageId: 'post_1',
+      content: '🔻 这是底部评论，用于测试 Link 跳转到底部功能',
+      authorName: '系统测试',
     ),
   };
 
@@ -232,4 +258,21 @@ class LinkMockDataSource implements LinkResolverDataSource {
     // 否则返回根评论 ID
     return comment.rootId;
   }
+
+  /// 获取所有测试评论 ID 列表
+  ///
+  /// 用于 Link 跳转测试
+  static List<String> get testCommentIds => _comments.keys.toList();
+
+  /// 获取顶部测试评论 ID
+  static String get topTestCommentId => 'top_comment';
+
+  /// 获取底部测试评论 ID
+  static String get bottomTestCommentId => 'bottom_comment';
+
+  /// 获取测试频道 ID
+  static String get testChannelId => 'test';
+
+  /// 获取测试消息 ID
+  static String get testMessageId => 'post_1';
 }

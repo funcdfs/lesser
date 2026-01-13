@@ -15,6 +15,9 @@ import '../models/link_model.dart';
 ///
 /// 自动识别文本中的 lesser.app 链接，将其渲染为可点击的高亮文本
 /// 点击链接时调用 LinkService 进行导航
+///
+/// 注意：由于 TextSpan.recognizer 的限制，内联链接仅支持点击，不支持长按。
+/// 如需长按功能，请使用 LinkPreview 组件。
 class LinkText extends StatefulWidget {
   const LinkText({
     super.key,
@@ -128,15 +131,15 @@ class _LinkTextState extends State<LinkText> {
 
       // 添加链接
       final url = match.group(0)!;
-      final recognizer = TapGestureRecognizer()
+      final tapRecognizer = TapGestureRecognizer()
         ..onTap = () => _handleLinkTap(context, url);
-      _recognizers.add(recognizer);
+      _recognizers.add(tapRecognizer);
 
       spans.add(
         TextSpan(
           text: _formatLinkDisplay(url),
           style: linkStyle,
-          recognizer: recognizer,
+          recognizer: tapRecognizer,
         ),
       );
 
@@ -159,23 +162,18 @@ class _LinkTextState extends State<LinkText> {
     if (link == null) return url;
 
     // 根据链接类型生成简短显示文本（简洁风格，无 emoji）
-    switch (link.targetType) {
-      case LinkContentType.channel:
-        return '频道链接';
-      case LinkContentType.message:
-        return '消息链接';
-      case LinkContentType.comment:
-        return '评论链接';
-      case LinkContentType.user:
-        return '用户链接';
-      case LinkContentType.post:
-        return '帖子链接';
-    }
+    return switch (link.targetType) {
+      LinkContentType.channel => '频道链接',
+      LinkContentType.message => '消息链接',
+      LinkContentType.comment => '评论链接',
+      LinkContentType.user => '用户链接',
+      LinkContentType.post => '帖子链接',
+      LinkContentType.anchor => '锚点链接',
+    };
   }
 
   /// 处理链接点击
   void _handleLinkTap(BuildContext context, String url) {
-    // 触感反馈
     HapticFeedback.lightImpact();
 
     if (widget.onLinkTap != null) {
@@ -200,9 +198,20 @@ class LinkDetector {
     caseSensitive: false,
   );
 
+  /// 通用 URL 正则
+  static final _urlPattern = RegExp(
+    r'https?://[^\s\)\]\}]+',
+    caseSensitive: false,
+  );
+
   /// 检测文本中是否包含 lesser.app 链接
   static bool containsLink(String text) {
     return _linkPattern.hasMatch(text);
+  }
+
+  /// 检测文本中是否包含任意 URL
+  static bool containsUrl(String text) {
+    return _urlPattern.hasMatch(text);
   }
 
   /// 提取文本中的所有 lesser.app 链接
@@ -210,9 +219,33 @@ class LinkDetector {
     return _linkPattern.allMatches(text).map((m) => m.group(0)!).toList();
   }
 
-  /// 提取第一个链接
+  /// 提取文本中的所有 URL
+  static List<String> extractUrls(String text) {
+    return _urlPattern.allMatches(text).map((m) => m.group(0)!).toList();
+  }
+
+  /// 提取第一个 lesser.app 链接
   static String? extractFirstLink(String text) {
     final match = _linkPattern.firstMatch(text);
     return match?.group(0);
+  }
+
+  /// 提取第一个 URL
+  static String? extractFirstUrl(String text) {
+    final match = _urlPattern.firstMatch(text);
+    return match?.group(0);
+  }
+
+  /// 将文本中的链接替换为指定内容
+  static String replaceLinks(
+    String text,
+    String Function(String url) replacer,
+  ) {
+    return text.replaceAllMapped(_linkPattern, (m) => replacer(m.group(0)!));
+  }
+
+  /// 统计文本中的链接数量
+  static int countLinks(String text) {
+    return _linkPattern.allMatches(text).length;
   }
 }

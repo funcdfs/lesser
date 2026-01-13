@@ -358,7 +358,7 @@ class _ChannelDetailPageState extends State<ChannelDetailPage> {
                     left: 0,
                     right: 0,
                     child: PinnedMessageBanner(
-                      message: _state.channel!.pinnedMessage!.content,
+                      message: _state.channel?.pinnedMessage?.content ?? '',
                       onClose: _onClosePinnedBanner,
                     ),
                   ),

@@ -240,3 +240,23 @@ class CommentInputState {
 
   CommentInputState clear() => const CommentInputState();
 }
+
+/// 评论入口数据
+///
+/// 提供评论入口所需的数据：头像列表 + 评论数
+/// 使用方（如 channel）拿到数据后自行决定如何渲染
+class CommentEntryData {
+  const CommentEntryData({required this.avatarUrls, required this.count});
+
+  /// 评论者头像 URL 列表
+  final List<String> avatarUrls;
+
+  /// 评论总数
+  final int count;
+
+  /// 是否有评论
+  bool get hasComments => count > 0;
+
+  /// 空数据
+  static const empty = CommentEntryData(avatarUrls: [], count: 0);
+}

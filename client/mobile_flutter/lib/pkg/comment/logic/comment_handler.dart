@@ -4,8 +4,8 @@
 
 import 'package:flutter/foundation.dart';
 
-import 'models/comment_model.dart';
-import 'utils.dart';
+import '../models/comment_model.dart';
+import '../utils.dart';
 
 /// 评论操作结果
 class CommentResult<T> {
