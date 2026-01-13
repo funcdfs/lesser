@@ -15,7 +15,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-Lesser is a Twitter-like social platform built with pure gRPC microservices architecture. Flutter cross-platform client (mobile + web), Go backend services, Docker Compose infrastructure.
+Lesser is a [Twitter+telegram+thread]-like social platform built with pure gRPC microservices architecture. Flutter cross-platform client (mobile + web), Go backend services, Docker Compose infrastructure.
 
 ## Commands
 
