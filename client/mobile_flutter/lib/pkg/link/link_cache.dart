@@ -3,6 +3,7 @@
 // 缓存链接的元数据，避免重复请求
 
 import 'dart:async';
+import 'package:flutter/foundation.dart';
 
 import 'models/link_model.dart';
 import 'link_resolver.dart';
@@ -171,21 +172,12 @@ class CachedLinkResolver implements LinkResolver {
 
   /// 预加载链接元数据
   Future<void> preload(List<String> urls) async {
-    // 过滤掉已缓存的 URL
-    final uncached = urls.where((url) => !cache.contains(url)).toList();
-    if (uncached.isEmpty) return;
-
-    // 并行加载
-    await Future.wait(
-      uncached.map((url) async {
-        final link = LinkModel(url: url, segments: []);
-        try {
-          await resolve(link);
-        } catch (_) {
-          // 忽略加载失败
-        }
-      }),
-    );
+    if (kDebugMode) {
+      debugPrint(
+        '[Link] preload is disabled. urls=${urls.length}',
+      );
+    }
+    return;
   }
 
   /// 使缓存失效
