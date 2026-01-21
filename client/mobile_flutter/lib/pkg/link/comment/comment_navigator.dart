@@ -14,8 +14,8 @@ import 'comment_link.dart';
 /// 处理评论链接的导航逻辑，包括：
 /// - 普通评论跳转
 /// - 锚点跳转（header/bottom）
-class CommentNavigator {
-  CommentNavigator({required this.resolver, required this.onNavigateToComment});
+class LinkCommentNavigator {
+  LinkCommentNavigator({required this.resolver, required this.onNavigateToComment});
 
   /// 链接解析器
   final LinkResolver resolver;
