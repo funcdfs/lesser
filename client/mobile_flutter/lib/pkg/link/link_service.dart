@@ -75,12 +75,22 @@ class LinkService {
     String url, {
     LinkNavigateMode mode = LinkNavigateMode.push,
   }) async {
+    if (kDebugMode) {
+      debugPrint('[Link] navigate() entry: url=$url mode=$mode');
+    }
+
     if (!isInitialized) {
+      if (kDebugMode) {
+        debugPrint('[Link] navigate() failed: service not initialized');
+      }
       return LinkNavigateResult.notInitialized;
     }
 
     final trimmed = url.trim();
     if (trimmed.isEmpty) {
+      if (kDebugMode) {
+        debugPrint('[Link] navigate() failed: empty url');
+      }
       return LinkNavigateResult.invalidLink;
     }
 
@@ -97,6 +107,11 @@ class LinkService {
     // 解析 URL
     final link = LinkParser.parse(trimmed);
     if (link == null) {
+      if (kDebugMode) {
+        debugPrint(
+          '[Link] navigate() failed: invalid link format url=$trimmed',
+        );
+      }
       return LinkNavigateResult.invalidLink;
     }
 

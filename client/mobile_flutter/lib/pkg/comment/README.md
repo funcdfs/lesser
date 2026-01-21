@@ -40,9 +40,9 @@ comment/
 
 ## 整体工作流程
 
-### 与外部的交互
+### 1. 入口与外部交互
 
-**入口**：【堆叠头像】【xxx 条评论】
+**入口形式**：【堆叠头像】【xxx 条评论】
 
 评论接口提供具体的数据，头像和评论数的渲染由使用者自行决定。
 
@@ -64,42 +64,41 @@ Widget build() {
 }
 ```
 
-**需要的参数**：一个 `content id`，作为这一颗评论树的根节点。
+**需要的参数**：一个 `content id`（如 `messageId`），作为这一颗评论树的根节点。
 
-### 内部实现架构
+### 2. 内部实现架构
 
 进入评论区后，任何外部行为与内部评论区无关。
 
-- **存储方式**：多叉树结构
+#### 数据结构
+
+- **存储方式**：多叉树结构（推荐使用闭包表 Closure Table）
 - **UI 展示**：`Stack<Page>` 页面栈
 
+#### 层级结构
+
+```mermaid
+graph TD
+    A[第 0 层：根总览层] --> B[Header: 消息/帖子内容]
+    A --> C[分割线]
+    A --> D[评论列表: 所有评论按时间排序]
+    
+    D --> E[评论 1: 你好]
+    D --> F[评论 2: 引用「你好」你也好]
+    D --> G[评论 3: 哈哈]
+    
+    E -->|点击「查看回复」| H[第 1 层：子层]
+    H --> I[根评论: 你好]
+    H --> J[该评论的所有回复按时间排序]
+    
+    J -->|点击「查看回复」| K[第 2 层：子层]
+    K --> L[根评论]
+    K --> M[该评论的所有回复]
+    
+    M -->|最多 30 层| N[...]
 ```
-┌─────────────────────────────────────────────────────────────────────────┐
-│                           评论区层级结构                                  │
-└─────────────────────────────────────────────────────────────────────────┘
 
-第 0 层（总览层）：
-├── Header：根据 content id 通过 Link 系统获取具体内容
-├── ─────────── 分割线 ───────────
-└── 评论列表：多叉树所有节点按时间排序的遍历结果
-    ├── xxx：你好
-    ├── xxx：引用【你好】你也好
-    └── xxx：哈哈
-
-第 1 层（子层）：stack.push
-├── 根评论
-└── 所有以该评论为 root 的节点按时间排序
-
-第 2 层（子层）：stack.push
-├── 根评论
-└── 所有以该评论为 root 的节点按时间排序
-
-... 以此类推，最多 30 层
-```
-
-**层级限制**：最多 30 层。超过时提示：「当前讨论层级过深，建议通过评论链接继续讨论」
-
-### 路由层级说明
+**层级说明**：
 
 | 层级类型 | 说明 | Header |
 |---------|------|--------|
@@ -107,23 +106,69 @@ Widget build() {
 | 子层 | 某条评论的回复线程 | rootComment |
 | 新总览层 | 引用点击产生的新页面 | 帖子/消息 header |
 
-### 滚动行为
+**层级限制**：最多 30 层。超过时提示：「当前讨论层级过深，建议通过评论链接继续讨论」
+
+### 3. 导航与跳转流程
+
+```mermaid
+flowchart TD
+    Start[用户操作] --> Action{操作类型}
+    
+    Action -->|点击「查看回复」| Push[push 新页面]
+    Push --> SubLayer[进入子层]
+    
+    Action -->|点击引用| QuoteCheck{当前层级?}
+    QuoteCheck -->|根总览层| Replace[replace 模式]
+    Replace --> Scroll1[页面内瞬移到评论并高亮]
+    QuoteCheck -->|子层/新总览层| PushNew[push 新总览层]
+    PushNew --> Scroll2[滚动到评论并高亮]
+    
+    Action -->|点击「返回帖子」| PopAll[pop 所有评论页面]
+    PopAll --> ToTop[回到根总览层并置顶]
+    
+    Action -->|点击置顶按钮| AnchorTop{层级类型?}
+    AnchorTop -->|总览层| HeaderAnchor[跳转到 header]
+    AnchorTop -->|子层| RootAnchor[跳转到 root comment]
+    
+    Action -->|点击置底按钮| AnchorBottom[跳转到列表最底部]
+```
+
+### 4. 滚动行为
 
 | 层级 | 置顶 | 置底 |
 |------|------|------|
 | 总览层 | header（瞬移） | 列表最底部（瞬移） |
 | 子层 | root comment（瞬移） | 列表最底部（瞬移） |
 
-### 引用跳转
+### 5. Link 系统集成
 
-| 当前层级 | 跳转模式 | 行为 |
-|---------|---------|------|
-| 根总览层 | replace | 页面内瞬移到对应评论并高亮 |
-| 子层/新总览层 | push | 新开总览层，滚动到对应评论并高亮 |
+所有跳转行为统一使用 Link 系统实现：
 
-### 返回帖子
+| 操作 | Link 类型 | 行为 |
+|------|----------|------|
+| 置顶按钮 | `anchor/header` | 跳转到 header |
+| 置底按钮 | `anchor/bottom` | 跳转到列表最底部 |
+| 回复引用 | `comment/{id}` | 跳转到原评论 |
+| 查看回复 | push 新页面 | 进入评论线程 |
 
-pop 所有评论相关页面直到根总览层，并执行置顶（瞬移）。
+#### Anchor Token 设计
+
+Anchor 是特殊的 Link 类型，用于页面内定位：
+
+- `header`：总览层的顶部（消息/帖子 header）
+- `bottom`：当前页面的最底部评论
+- 在子层中，`header` 指向 root comment
+
+**URL 格式**：
+```
+lesser.app/channel/{channelId}/message/{messageId}/anchor/header
+lesser.app/channel/{channelId}/message/{messageId}/anchor/bottom
+```
+
+**实现原理**：
+- `CommentScrollController` 维护 `topAnchorId` 和 `bottomAnchorId`
+- 通过 `LinkService.navigate()` 触发跳转
+- `onNavigateToComment` 回调接收 anchor token 并执行滚动
 
 ---
 
@@ -228,7 +273,11 @@ CommentPage(
 )
 
 // 页面内跳转（replace 模式）
-CommentPage.navigateInPlace('comment_123');
+LinkService.instance.navigate(
+  context,
+  'lesser.app/channel/$channelId/message/$messageId/comment/$commentId',
+  mode: LinkNavigateMode.replace,
+);
 ```
 
 ---
@@ -269,9 +318,31 @@ CommentPage.navigateInPlace('comment_123');
 
 位于 `logic/scroll_controller.dart`：
 
-- 顶部/底部锚点管理
-- 未读消息计数
-- 通过 Link 系统实现跳转
+```dart
+// 控制器初始化
+final controller = CommentScrollController(
+  channelId: 'channel_1',
+  messageId: 'msg_1',
+);
+
+// 更新锚点（数据加载后调用）
+controller.updateAnchorsForOverview(bottomCommentId: 'latest_comment');
+// 或
+controller.updateAnchorsForThread(
+  rootCommentId: 'first_comment',
+  bottomCommentId: 'latest_comment',
+);
+
+// 新消息到达
+controller.onNewMessage('new_comment_id');
+
+// 通过 Link 系统跳转
+LinkService.instance.navigate(
+  context,
+  'lesser.app/channel/$channelId/message/$messageId/anchor/header',
+  mode: LinkNavigateMode.replace,
+);
+```
 
 ### CommentModel（评论模型）
 
@@ -303,68 +374,167 @@ CommentModel(
 - **置顶评论**：支持 `pinnedComment` 显示在列表顶部
 - **上下文菜单**：点击显示操作菜单（回复、复制、转发等）
 - **层级限制**：最多 30 层嵌套，防止过深讨论
-
----
-
-## Link 跳转系统
-
-所有跳转行为统一使用 Link 系统实现：
-
-| 操作 | Link 类型 | 行为 |
-|------|----------|------|
-| 置顶按钮 | anchor/header | 跳转到 header |
-| 置底按钮 | anchor/bottom | 跳转到列表最底部 |
-| 回复引用 | comment/{id} | 跳转到原评论 |
-| 查看回复 | push 新页面 | 进入评论线程 |
-
-### ScrollButtons 使用
-
-```dart
-// 控制器初始化
-final controller = CommentScrollController(
-  channelId: 'channel_1',
-  messageId: 'msg_1',
-);
-
-// 更新锚点（数据加载后调用）
-controller.updateAnchorsForOverview(bottomCommentId: 'latest_comment');
-// 或
-controller.updateAnchorsForThread(
-  rootCommentId: 'first_comment',
-  bottomCommentId: 'latest_comment',
-);
-
-// 新消息到达
-controller.onNewMessage('new_comment_id');
-```
-
-### 回复引用跳转
-
-```dart
-CommentBubble(
-  // ... 其他参数
-  replyTo: ReplyTarget(...),
-  channelId: 'channel_1',  // 必须提供才能跳转
-  messageId: 'msg_1',
-  onQuoteTap: (commentId) => _handleQuoteTap(commentId),
-)
-```
+- **Anchor 导航**：通过 `header`/`bottom` token 实现快速定位
 
 ---
 
 ## 实现细节
 
-### 分片加载
+### 1. Handler 化架构
+
+所有业务逻辑封装在 `CommentHandler` 中：
+
+```dart
+class CommentHandler extends ChangeNotifier {
+  // 状态管理
+  CommentListState _listState;
+  CommentInputState _inputState;
+  
+  // 业务方法
+  Future<void> loadComments();
+  Future<void> loadMore();
+  Future<void> submitComment(String content);
+  Future<void> toggleLike(String commentId);
+  Future<void> deleteComment(String commentId);
+  
+  // 乐观更新
+  void _optimisticUpdate(String commentId, Function update);
+  void _rollback(String commentId);
+}
+```
+
+### 2. Anchor Token 设计
+
+Anchor 是特殊的 Link 类型，用于页面内快速定位：
+
+```dart
+// CommentScrollController 维护锚点
+class CommentScrollController {
+  String? topAnchorId;    // 'header' 或 rootCommentId
+  String? bottomAnchorId; // 最新评论 ID
+  
+  void updateAnchorsForOverview({required String bottomCommentId}) {
+    topAnchorId = 'header';
+    bottomAnchorId = bottomCommentId;
+  }
+  
+  void updateAnchorsForThread({
+    required String rootCommentId,
+    required String bottomCommentId,
+  }) {
+    topAnchorId = rootCommentId;
+    bottomAnchorId = bottomCommentId;
+  }
+}
+```
+
+**跳转流程**：
+
+```mermaid
+sequenceDiagram
+    participant User
+    participant ScrollButtons
+    participant LinkService
+    participant ChannelLinkHandler
+    participant CommentPage
+    
+    User->>ScrollButtons: 点击置顶按钮
+    ScrollButtons->>LinkService: navigate(anchor/header)
+    LinkService->>ChannelLinkHandler: handle anchor link
+    ChannelLinkHandler->>CommentPage: onNavigateToComment(anchorId='header')
+    CommentPage->>CommentPage: 识别 anchor token
+    CommentPage->>CommentPage: 滚动到 header 位置
+```
+
+### 3. 分片加载
 
 如果某一层有大量回复（如 10w 条），多叉树节点需要支持 Cursor-based Pagination（基于游标的分页），避免 `ORDER BY` 在深分页时拖慢数据库。
 
-### Link 系统耦合
+```dart
+Future<CommentListState> loadMoreComments(String cursor) async {
+  final response = await _client.getComments(
+    targetId: targetId,
+    cursor: cursor,
+    limit: 20,
+  );
+  
+  return CommentListState(
+    comments: response.comments,
+    cursor: response.nextCursor,
+    hasMore: response.hasMore,
+  );
+}
+```
+
+### 4. Link 系统耦合
 
 确保 Link 系统返回的 Header 包含足够的元数据（如原作者状态、是否删除等），防止第 0 层显示异常。
 
-### 数据库存储
+### 5. 数据库存储
 
 推荐使用闭包表（Closure Table）存储评论树结构，专门开一张关联表记录所有节点之间的祖先-后代关系。
+
+```sql
+-- 评论表
+CREATE TABLE comments (
+  id BIGINT PRIMARY KEY,
+  target_id BIGINT NOT NULL,
+  target_type VARCHAR(50) NOT NULL,
+  author_id BIGINT NOT NULL,
+  content TEXT NOT NULL,
+  reply_to_id BIGINT,
+  created_at TIMESTAMP NOT NULL
+);
+
+-- 闭包表
+CREATE TABLE comment_closure (
+  ancestor_id BIGINT NOT NULL,
+  descendant_id BIGINT NOT NULL,
+  depth INT NOT NULL,
+  PRIMARY KEY (ancestor_id, descendant_id),
+  FOREIGN KEY (ancestor_id) REFERENCES comments(id),
+  FOREIGN KEY (descendant_id) REFERENCES comments(id)
+);
+
+-- 查询某评论的所有子孙数量
+SELECT COUNT(*) FROM comment_closure
+WHERE ancestor_id = ? AND depth > 0;
+
+-- 查询某评论的根节点
+SELECT ancestor_id FROM comment_closure
+WHERE descendant_id = ? AND depth = (
+  SELECT MAX(depth) FROM comment_closure WHERE descendant_id = ?
+);
+```
+
+---
+
+## 调试日志
+
+所有关键路径都包含 debug 日志，便于追踪问题：
+
+```dart
+// LinkService.navigate() 入口
+[Link] navigate() entry: url=... mode=...
+[Link] navigate() failed: service not initialized
+[Link] navigate() failed: empty url
+[Link] navigate() failed: invalid link format url=...
+
+// ChannelLinkHandler 处理
+[Link][Channel] handle url=... segments=... mode=...
+[Link][Channel] invalidLink: invalid channelKey format channelKey=...
+[Link][Channel] invalidLink: first segment not "channel" segments=...
+[Link][Channel] invalidLink: missing channelId segments=...
+[Link][Channel] invalidLink: invalid anchorId (must be header/bottom) anchorId=...
+[Link][Channel] invalidLink: unrecognized path pattern segments=...
+
+// 导航结果
+[Link][Channel] notFound: channel not found channelKey=...
+[Link][Channel] notFound: comment root not resolved commentId=...
+[Link][Channel] failed: context not mounted channelKey=...
+[Link][Channel] success: channel card shown channelKey=...
+[Link][Channel] success: comment navigation result commentId=... rootCommentId=...
+```
 
 ---
 
@@ -383,3 +553,15 @@ String time = formatTime(dateTime);  // "刚刚" / "5分钟前" / "昨天"
 // 截断文本
 String text = truncateText(content, 100);
 ```
+
+---
+
+## 最佳实践
+
+1. **始终通过 Handler 操作数据**：不要在 Widget 中直接调用数据源
+2. **使用 Link 系统进行跳转**：统一的跳转逻辑，便于维护和调试
+3. **合理使用 Anchor**：`header`/`bottom` 提供快速定位能力
+4. **注意层级限制**：超过 30 层时引导用户使用链接
+5. **乐观更新要有回滚**：网络失败时恢复原状态
+6. **分页加载要用游标**：避免深分页性能问题
+7. **闭包表查询要加索引**：`(ancestor_id, depth)` 和 `(descendant_id, depth)`
