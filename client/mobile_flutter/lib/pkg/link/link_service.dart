@@ -2,8 +2,11 @@
 //
 // 全局单例服务，处理应用内的深层链接导航
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 
+import 'channel/channel_link_handler.dart';
+import 'link_handler.dart';
 import 'link_parser.dart';
 import 'link_resolver.dart';
 import 'link_types.dart';
@@ -26,6 +29,8 @@ class LinkService {
   LinkResolverDataSource? _dataSource;
   DefaultLinkResolver? _resolver;
 
+  final List<LinkHandler> _handlers = [];
+
   /// 导航回调
   NavigateToChannelCallback? _onNavigateToChannel;
   NavigateToMessageCallback? _onNavigateToMessage;
@@ -43,6 +48,18 @@ class LinkService {
     _onNavigateToChannel = onNavigateToChannel;
     _onNavigateToMessage = onNavigateToMessage;
     _onNavigateToComment = onNavigateToComment;
+
+    _handlers
+      ..clear()
+      ..add(
+        ChannelLinkHandler(
+          dataSource: dataSource,
+          resolver: _resolver!,
+          onNavigateToChannel: onNavigateToChannel,
+          onNavigateToMessage: onNavigateToMessage,
+          onNavigateToComment: onNavigateToComment,
+        ),
+      );
   }
 
   /// 是否已初始化
@@ -62,8 +79,23 @@ class LinkService {
       return LinkNavigateResult.notInitialized;
     }
 
+    final trimmed = url.trim();
+    if (trimmed.isEmpty) {
+      return LinkNavigateResult.invalidLink;
+    }
+
+    for (final handler in _handlers) {
+      if (!handler.canHandle(trimmed)) continue;
+      if (kDebugMode) {
+        debugPrint(
+          '[Link] dispatch to handler=${handler.runtimeType} mode=$mode url=$trimmed',
+        );
+      }
+      return handler.navigate(context, trimmed, mode: mode);
+    }
+
     // 解析 URL
-    final link = LinkParser.parse(url);
+    final link = LinkParser.parse(trimmed);
     if (link == null) {
       return LinkNavigateResult.invalidLink;
     }
