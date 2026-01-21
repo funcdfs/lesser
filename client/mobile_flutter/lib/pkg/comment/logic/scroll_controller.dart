@@ -65,7 +65,9 @@ class CommentScrollController extends ChangeNotifier {
     if (_topAnchorId == null) return null;
     // header 锚点使用 anchor 类型
     if (LinkParser.isHeaderAnchor(_topAnchorId!)) {
-      return LinkParser.buildAnchorUrl(channelId, messageId, _topAnchorId!);
+      final anchorId =
+          LinkParser.anchorIdFromToken(_topAnchorId!) ?? _topAnchorId!;
+      return LinkParser.buildAnchorUrl(channelId, messageId, anchorId);
     }
     // 普通评论使用 comment 类型
     return LinkParser.buildCommentUrl(channelId, messageId, _topAnchorId!);
@@ -76,7 +78,9 @@ class CommentScrollController extends ChangeNotifier {
     if (_bottomAnchorId == null) return null;
     // bottom 锚点使用 anchor 类型
     if (LinkParser.isBottomAnchor(_bottomAnchorId!)) {
-      return LinkParser.buildAnchorUrl(channelId, messageId, _bottomAnchorId!);
+      final anchorId =
+          LinkParser.anchorIdFromToken(_bottomAnchorId!) ?? _bottomAnchorId!;
+      return LinkParser.buildAnchorUrl(channelId, messageId, anchorId);
     }
     // 普通评论使用 comment 类型
     return LinkParser.buildCommentUrl(channelId, messageId, _bottomAnchorId!);
@@ -89,9 +93,9 @@ class CommentScrollController extends ChangeNotifier {
   void updateAnchorsForOverview({String? bottomCommentId}) {
     if (_disposed) return;
 
-    _topAnchorId = LinkParser.headerAnchor;
+    _topAnchorId = LinkParser.anchorToken(LinkParser.headerAnchor);
     // 总览层始终使用 bottom 锚点，跳转到列表最底部
-    _bottomAnchorId = LinkParser.bottomAnchor;
+    _bottomAnchorId = LinkParser.anchorToken(LinkParser.bottomAnchor);
     notifyListeners();
   }
 
@@ -109,7 +113,7 @@ class CommentScrollController extends ChangeNotifier {
     // 子层也使用 bottom 锚点，确保跳转到列表最底部
     // 如果没有回复或只有 root，底部锚点为空
     if (bottomCommentId != null && bottomCommentId != rootCommentId) {
-      _bottomAnchorId = LinkParser.bottomAnchor;
+      _bottomAnchorId = LinkParser.anchorToken(LinkParser.bottomAnchor);
     } else {
       _bottomAnchorId = null;
     }

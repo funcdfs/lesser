@@ -24,6 +24,7 @@
 
 import 'package:flutter/material.dart';
 import '../../../pkg/comment/comment.dart';
+import '../data_access/channel_mock_data_source.dart';
 import '../data_access/channel_comment_data_source.dart';
 import '../data_access/mock/channel_mock_data.dart';
 import '../models/channel_comment_model.dart' as channel;
@@ -86,6 +87,8 @@ class ChannelCommentPage extends StatefulWidget {
 class _ChannelCommentPageState extends State<ChannelCommentPage> {
   late final ChannelCommentDataSource _dataSource;
   CommentModel? _rootComment;
+  ChannelMessageModel? _message;
+  late final ChannelMockDataSource _channelDataSource;
   bool _isLoading = false;
   String? _error;
   bool _isDisposed = false;
@@ -93,16 +96,22 @@ class _ChannelCommentPageState extends State<ChannelCommentPage> {
   @override
   void initState() {
     super.initState();
+    _channelDataSource = ChannelMockDataSource();
     // 使用 Mock 数据的当前用户 ID，生产环境应从认证服务获取
     _dataSource = ChannelCommentDataSource(
       channelId: widget.channelId,
       currentUserId: mockCurrentUserId,
     );
     _rootComment = widget.rootComment;
+    _message = widget.message;
 
     // 如果提供了 rootCommentId 但没有 rootComment，需要加载
     if (_rootComment == null && widget.rootCommentId != null) {
       _loadRootComment();
+    }
+
+    if (_rootComment == null && _message == null) {
+      _loadMessage();
     }
   }
 
@@ -111,6 +120,46 @@ class _ChannelCommentPageState extends State<ChannelCommentPage> {
     _isDisposed = true;
     _dataSource.dispose();
     super.dispose();
+  }
+
+  Future<void> _loadMessage() async {
+    if (_isDisposed) return;
+
+    setState(() {
+      _isLoading = true;
+      _error = null;
+    });
+
+    try {
+      final messages = await _channelDataSource.getMessages(widget.channelId);
+      ChannelMessageModel? message;
+      for (final m in messages) {
+        if (m.id == widget.messageId) {
+          message = m;
+          break;
+        }
+      }
+
+      if (_isDisposed) return;
+      if (message == null) {
+        setState(() {
+          _error = 'message not found';
+          _isLoading = false;
+        });
+        return;
+      }
+
+      setState(() {
+        _message = message;
+        _isLoading = false;
+      });
+    } catch (e) {
+      if (_isDisposed) return;
+      setState(() {
+        _error = e.toString();
+        _isLoading = false;
+      });
+    }
   }
 
   Future<void> _loadRootComment() async {
@@ -148,7 +197,7 @@ class _ChannelCommentPageState extends State<ChannelCommentPage> {
   /// 仅在非线程视图且有消息数据时显示。
   /// 包含消息气泡和评论数量分隔符。
   Widget _buildMessageHeader(int commentCount) {
-    final message = widget.message;
+    final message = _message;
     if (message == null) return const SizedBox.shrink();
 
     // 使用 MediaQuery.sizeOf 替代 MediaQuery.of(context).size，性能更优
@@ -195,7 +244,7 @@ class _ChannelCommentPageState extends State<ChannelCommentPage> {
     }
 
     // 非线程视图且有消息时，使用自定义 headerBuilder
-    final useCustomHeader = _rootComment == null && widget.message != null;
+    final useCustomHeader = _rootComment == null && _message != null;
 
     return CommentPage(
       targetId: widget.messageId,

@@ -73,7 +73,11 @@ class CommentPage extends StatefulWidget {
   /// 返回 true 表示成功，false 表示没有可用的评论页面
   static bool navigateInPlace(String targetCommentId) {
     return CommentNavigator.instance.navigateInPlace(
-      targetCommentId,
+      LinkParser.isHeaderAnchor(targetCommentId)
+          ? LinkParser.anchorToken(LinkParser.headerAnchor)
+          : LinkParser.isBottomAnchor(targetCommentId)
+          ? LinkParser.anchorToken(LinkParser.bottomAnchor)
+          : targetCommentId,
       alignToBottom: LinkParser.isBottomAnchor(targetCommentId),
     );
   }
@@ -370,6 +374,16 @@ class _CommentPageState extends State<CommentPage>
     final targetId = widget.targetCommentId!;
     final state = _handler.listState;
 
+    if (LinkParser.isHeaderAnchor(targetId) || LinkParser.isBottomAnchor(targetId)) {
+      _hasScrolledToTarget = true;
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) {
+          _scrollToTarget(targetId);
+        }
+      });
+      return;
+    }
+
     // 检查目标评论是否在当前列表中
     bool found = false;
     if (state.rootComment?.id == targetId) {
@@ -538,16 +552,17 @@ class _CommentPageState extends State<CommentPage>
   }
 
   void _copyCommentLink(CommentModel comment) {
-    String link;
-    if (widget.channelId != null) {
-      link = LinkParser.buildCommentUrl(
-        widget.channelId!,
-        widget.targetId,
-        comment.id,
-      );
-    } else {
-      link = 'https://lesser.app/post/${widget.targetId}/comment/${comment.id}';
+    final channelId = widget.channelId;
+    if (channelId == null) {
+      _showSnackBar('当前场景不支持复制评论链接');
+      return;
     }
+
+    final link = LinkParser.buildCommentUrl(
+      channelId,
+      widget.targetId,
+      comment.id,
+    );
     Clipboard.setData(ClipboardData(text: link));
     _showSnackBar('链接已复制');
   }

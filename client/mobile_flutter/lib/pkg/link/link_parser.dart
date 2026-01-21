@@ -35,6 +35,8 @@ class LinkParser {
   /// 备用基础 URL（支持 http）
   static const _baseUrlHttp = 'http://lesser.app';
 
+  static const _anchorTokenPrefix = 'anchor:';
+
   /// 类型字符串到枚举的映射
   static const _typeMap = {
     'channel': LinkContentType.channel,
@@ -165,6 +167,18 @@ class LinkParser {
   /// @deprecated 使用 CommentLink.bottomAnchor
   static const bottomAnchor = 'bottom';
 
+  static String anchorToken(String anchorId) => '$_anchorTokenPrefix$anchorId';
+
+  static bool isAnchorToken(String value) {
+    return value.startsWith(_anchorTokenPrefix) &&
+        value.length > _anchorTokenPrefix.length;
+  }
+
+  static String? anchorIdFromToken(String token) {
+    if (!isAnchorToken(token)) return null;
+    return token.substring(_anchorTokenPrefix.length);
+  }
+
   /// 构建评论链接
   /// @deprecated 使用 CommentLink.buildUrl
   static String buildCommentUrl(
@@ -199,9 +213,15 @@ class LinkParser {
 
   /// 检查是否是 header 锚点
   /// @deprecated 使用 CommentLink.isHeaderAnchor
-  static bool isHeaderAnchor(String anchorId) => anchorId == headerAnchor;
+  static bool isHeaderAnchor(String anchorId) {
+    if (anchorId == headerAnchor) return true;
+    return anchorIdFromToken(anchorId) == headerAnchor;
+  }
 
   /// 检查是否是 bottom 锚点
   /// @deprecated 使用 CommentLink.isBottomAnchor
-  static bool isBottomAnchor(String anchorId) => anchorId == bottomAnchor;
+  static bool isBottomAnchor(String anchorId) {
+    if (anchorId == bottomAnchor) return true;
+    return anchorIdFromToken(anchorId) == bottomAnchor;
+  }
 }
