@@ -1,6 +1,6 @@
 # Lesser Flutter 客户端
 
-社交平台 Flutter 客户端，采用 gRPC 与后端通信。
+影视聚合评价平台 Flutter 客户端，采用 gRPC 与后端通信。
 
 ---
 
@@ -10,18 +10,18 @@
 lib/
 ├── gen_protos/         # protoc 生成代码【禁止手动修改】
 ├── pkg/                # 公共库
-│   ├── constants/      # 端点、颜色常量
-│   ├── network/        # gRPC Channel 管理
-│   ├── errors/         # 异常处理
-│   ├── logs/           # 日志工具
-│   ├── ui/             # 主题、通用组件
+│   ├── comment/        # 通用评论组件
+│   ├── link/           # 深层链接处理
+│   ├── models/         # 通用数据模型
+│   ├── ui/             # 主题、通用 UI 组件
 │   └── utils/          # 工具函数
 ├── features/           # 业务模块
-│   ├── auth/           # 登录页
-│   ├── home/           # Tab 1: 首页
-│   ├── channel/        # Tab 2: 频道
-│   ├── chat/           # Tab 3: 聊天
-│   └── profile/        # Tab 4: 我的
+│   ├── home/           # 首页容器 (Bottom Navigation)
+│   ├── inspection/     # Tab 1: 首页/推荐 (Info/Discovery)
+│   ├── series/         # Tab 2: 剧集 (Series) - 原 Channel
+│   ├── watchlist/      # Tab 3: 动态/关注 (Watchlist/Updates)
+│   ├── profile/        # Tab 4: 我的 (Profile)
+│   └── auth/           # 登录认证 (独立模块)
 ├── app.dart
 └── main.dart
 ```
@@ -35,7 +35,7 @@ lib/
 ```text
 features/<name>/
 ├── handler/            # 业务逻辑层（状态管理）
-├── data_access/        # 数据访问层（gRPC 调用）
+├── data_access/        # 数据访问层（gRPC 调用 / Mock）
 ├── models/             # 模型层（业务对象）
 ├── pages/              # 页面
 └── widgets/            # 组件
@@ -67,17 +67,17 @@ pages → handler → data_access → gRPC → Gateway → Service
 
 - **模块私有**: 仅在单个模块使用的组件，放在 `features/<name>/widgets/`
 - **跨模块公用**: 多个模块共用的组件，放在 `pkg/ui/`
-- **原子化**: 颜色、字体、间距引用 `pkg/constants/`，禁止硬编码
+- **原子化**: 颜色、字体、间距引用 `pkg/ui/theme/`，禁止硬编码
 
 ### 2. 状态管理
 
-- 使用 Riverpod + StateNotifier
+- 使用 Riverpod + StateNotifier / ChangeNotifier
 - Handler 负责业务逻辑，Pages 只负责渲染
 - 保持 State 扁平化，避免不必要的重绘
 
 ### 3. 导出规范
 
-每个目录建立 `index.dart` 统一导出：
+每个目录建立 `index.dart` 统一导出（推荐但不强制）：
 
 ```dart
 // widgets/index.dart
@@ -95,14 +95,12 @@ import '../widgets/index.dart';
 
 ## 底部导航栏
 
-| Tab | 名称 | Feature | 后端服务 |
-|-----|------|---------|---------|
-| 1 | 首页 | home | Timeline + Content + Comment + Interaction + Search |
-| 2 | 频道 | channel | Channel (广播频道服务) |
-| 3 | 聊天 | chat | Chat (私聊/群聊) + Notification |
-| 4 | 我的 | profile | User |
-
-登录页（auth）独立，不在底部导航栏。
+| Tab | 名称 | Feature | 对应页面 | 功能描述 |
+|-----|------|---------|---------|----------|
+| 1 | 首页 | inspection | `InspectionPage` | 推荐内容、热门榜单、Discovery |
+| 2 | 剧集 | series | `SeriesPage` | 剧集列表、频道聚合 (原 Channel) |
+| 3 | 动态 | watchlist | `WatchlistPage` | 关注内容的更新动态、观看列表 |
+| 4 | 我的 | profile | `ProfilePage` | 用户个人中心 |
 
 ---
 
@@ -112,9 +110,12 @@ import '../widgets/index.dart';
 # 安装依赖
 flutter pub get
 
-# 生成 Proto 代码
-devlesser proto dart
+# 生成 Proto 代码 (如果需要)
+# devlesser proto dart
 
-# 运行
+# 运行 (Profile 模式推荐用于真机/模拟器性能测试)
+flutter run --profile
+
+# 运行 (Debug 模式)
 flutter run
 ```

@@ -2,8 +2,8 @@
 
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
-import 'features/channel/pages/channel_comment_page.dart';
-import 'features/channel/pages/channel_detail_page.dart';
+import 'features/series/pages/series_comment_page.dart';
+import 'features/series/pages/series_detail_page.dart';
 import 'features/home/pages/home_page.dart';
 import 'pkg/comment/comment_page.dart';
 import 'pkg/link/link.dart';
@@ -125,35 +125,35 @@ class _AppState extends State<_App> {
   void _initLinkService() {
     LinkService.instance.init(
       dataSource: LinkMockDataSource(),
-      onNavigateToChannel: _navigateToChannel,
-      onNavigateToMessage: _navigateToMessage,
+      onNavigateToChannel: _navigateToSeries,
+      onNavigateToMessage: _navigateToPost,
       onNavigateToComment: _navigateToComment,
     );
   }
 
-  Future<bool> _navigateToChannel(
+  Future<bool> _navigateToSeries(
     BuildContext context,
-    String channelId,
+    String seriesId,
   ) async {
     Navigator.of(context).push(
       MaterialPageRoute(
-        builder: (_) => ChannelDetailPage(channelId: channelId),
+        builder: (_) => SeriesDetailPage(seriesId: seriesId),
       ),
     );
     return true;
   }
 
-  Future<bool> _navigateToMessage(
+  Future<bool> _navigateToPost(
     BuildContext context,
-    String channelId,
-    String messageId, {
+    String seriesId,
+    String postId, {
     bool highlightMessage = false,
   }) async {
     Navigator.of(context).push(
       MaterialPageRoute(
-        builder: (_) => ChannelDetailPage(
-          channelId: channelId,
-          highlightMessageId: highlightMessage ? messageId : null,
+        builder: (_) => SeriesDetailPage(
+          seriesId: seriesId,
+          highlightPostId: highlightMessage ? postId : null,
         ),
       ),
     );
@@ -162,8 +162,8 @@ class _AppState extends State<_App> {
 
   Future<bool> _navigateToComment(
     BuildContext context,
-    String channelId,
-    String messageId,
+    String seriesId,
+    String postId,
     String rootCommentId,
     String targetCommentId, {
     LinkNavigateMode mode = LinkNavigateMode.push,
@@ -178,9 +178,9 @@ class _AppState extends State<_App> {
     // targetCommentId 用于滚动定位和高亮
     Navigator.of(context).push(
       MaterialPageRoute(
-        builder: (_) => ChannelCommentPage(
-          messageId: messageId,
-          channelId: channelId,
+        builder: (_) => SeriesCommentPage(
+          postId: postId,
+          seriesId: seriesId,
           targetCommentId: targetCommentId,
         ),
       ),

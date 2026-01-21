@@ -15,7 +15,7 @@
 
 ### 3. 交互的“瞬时性”反馈 (Instantaneous Interaction)
 
-chat page 借鉴 Telegram 的高效。
+Watchlist & News page 借鉴 News App 的高效浏览。
 
 * **状态优先：** 任何交互（点赞、发送、切换 Tab）必须先在 UI 上给予**乐观更新 (Optimistic UI)**。即用户点击后，UI 立即变化，后台异步请求。
 * **触感反馈层：** 所有点击区域必须有明确的、符合物理直觉的视觉反馈（如轻微的缩放或底色变幻），模拟物理按钮的反馈逻辑。
@@ -29,7 +29,7 @@ chat page 借鉴 Telegram 的高效。
 
 ### 5. 导航的“直觉映射” (Navigation Intuition)
 
-* **单一焦点原则：** 每个页面只能有一个核心动作。首页是“浏览”，消息页是“沟通”，发布页是“创作”。
+* **单一焦点原则：** 每个页面只能有一个核心动作。首页是“发现/Info”，Channel 是“讨论”，Watchlist 是“追踪”。
 * **全局导航的持久性：** 底部导航条是应用的“锚点”，无论用户进入多深的内容层级，都应支持通过简单的滑动手势或点击 Tab 回到核心流。
 
 ---
@@ -58,6 +58,33 @@ chat page 借鉴 Telegram 的高效。
 * **微交互：** 点赞时的心形跳动、切换 Tab 时的下划线平滑位移，这些不是点缀，而是告诉用户“你的操作已生效”的确认。这些微小的细腻交互也不可马虎。
 
 ---
+
+### 6. 新版页面结构定义 (New Page Structure)
+
+1.  **Info Page (首页)**
+    *   **定位：** 信息展示与发现中心 (Discovery)。
+    *   **UI 模式：** 多个横向滚动列表 (Horizontal Scroll Sections) 垂直堆叠。
+    *   **核心模块：**
+        *   今日热门 (Today's Hot): 横向滚动。
+        *   本周站内热门 (Weekly Hot): 横向滚动。
+        *   最近受欢迎的标签 (Popular Tags): 横向滚动。
+        *   最受欢迎的演员 (Popular Actors): 横向滚动。
+        *   更多 (More): 可扩展区域。
+
+2.  **Channel Page (讨论组)**
+    *   **定位：** 针对特定电视剧/电影的讨论组 (Discussion Group)。
+    *   **层级关系：** 每一个电视剧 -> 一个 Channel。每一集 -> 一个 Channel Message Item。
+    *   **筛选机制 (Tags)：**
+        *   官方 (Official): 资讯、周边、时间表。
+        *   用户 (User): 评价、讨论。
+        *   高级用户/明星 (VIP): 推广、专业评价。
+
+3.  **Watchlist + News Page (动态/追踪)**
+    *   **定位：** 个人关注内容与新闻聚合。
+    *   **核心模块：**
+        *   稍后再看 (Watch Later): 横向滚动 + 列表。
+        *   Top News: 横向滚动 + 列表。
+
 
 # 大局观组件图：
 

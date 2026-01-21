@@ -5,16 +5,15 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import '../../../pkg/ui/theme/theme.dart';
 import '../../../pkg/ui/widgets/widgets.dart';
-import '../../feed/pages/feed_page.dart';
-import '../../channel/pages/channel_page.dart';
-import '../../chat/pages/chat_page.dart';
+import '../../inspection/pages/inspection_page.dart';
+import '../../series/pages/series_page.dart';
+import '../../watchlist/pages/watchlist_page.dart';
 import '../../profile/pages/profile_page.dart';
 
 // 导航图标 SVG 路径（24x24 viewBox）
-const _iconFeed = 'M4 4H16 M4 9H20 M4 14H20 M4 19H14';
-const _iconChannel = 'M10 3L8 21 M16 3L14 21 M4 8H20 M3 16H19';
-const _iconChat =
-    'M21 11.5C21 16.1944 16.9706 20 12 20C10.8053 20 9.66406 19.8047 8.61551 19.4474L3 21L4.5 16.5C3.55399 15.0994 3 13.3681 3 11.5C3 6.80558 7.02944 3 12 3C16.9706 3 21 6.80558 21 11.5Z';
+const _iconInfo = 'M4 4H16 M4 9H20 M4 14H20 M4 19H14';
+const _iconSeries = 'M10 3L8 21 M16 3L14 21 M4 8H20 M3 16H19';
+const _iconWatchlist = 'M12 4.5C7 4.5 2.73 7.61 1 12c1.73 4.39 6 7.5 11 7.5s9.27-3.11 11-7.5c-1.73-4.39-6-7.5-11-7.5zM12 17c-2.76 0-5-2.24-5-5s2.24-5 5-5 5 2.24 5 5-2.24 5-5 5zm0-8c-1.66 0-3 1.34-3 3s1.34 3 3 3 3-1.34 3-3-1.34-3-3-3z'; // Eye icon
 const _iconProfile =
     'M12 12C14.21 12 16 10.21 16 8C16 5.79 14.21 4 12 4C9.79 4 8 5.79 8 8C8 10.21 9.79 12 12 12Z M4 20C4 17 8 15 12 15C16 15 20 17 20 20';
 
@@ -40,11 +39,11 @@ class HomePageState extends State<HomePage> {
         index: _tabIndex,
         children: [
           // 只构建已访问过的页面，未访问的用空容器占位
-          _loadedTabs.contains(0) ? const FeedPage() : const SizedBox.shrink(),
+          _loadedTabs.contains(0) ? const InspectionPage() : const SizedBox.shrink(),
           _loadedTabs.contains(1)
-              ? const ChannelPage()
+              ? const SeriesPage()
               : const SizedBox.shrink(),
-          _loadedTabs.contains(2) ? const ChatPage() : const SizedBox.shrink(),
+          _loadedTabs.contains(2) ? const WatchlistPage() : const SizedBox.shrink(),
           _loadedTabs.contains(3)
               ? const ProfilePage()
               : const SizedBox.shrink(),
@@ -74,9 +73,9 @@ class _FrostedBottomNavBar extends StatelessWidget {
   final ValueChanged<int> onTap;
 
   static const _items = [
-    (label: '动态', icon: _iconFeed),
-    (label: '频道', icon: _iconChannel),
-    (label: '聊天', icon: _iconChat),
+    (label: '首页', icon: _iconInfo),
+    (label: '剧集', icon: _iconSeries),
+    (label: '动态', icon: _iconWatchlist),
     (label: '我的', icon: _iconProfile),
   ];
 
