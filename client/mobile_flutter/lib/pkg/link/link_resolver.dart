@@ -4,6 +4,8 @@
 
 import 'dart:async';
 
+import 'package:flutter/foundation.dart';
+
 import 'models/link_model.dart';
 
 /// 链接解析器接口
@@ -206,6 +208,9 @@ class DefaultLinkResolver implements LinkResolver {
     try {
       return await dataSource.getCommentRootId(commentId);
     } catch (e) {
+      if (kDebugMode) {
+        debugPrint('[Link] resolveCommentRoot failed commentId=$commentId error=$e');
+      }
       return null;
     }
   }

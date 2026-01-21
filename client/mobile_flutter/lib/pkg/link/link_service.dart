@@ -114,6 +114,11 @@ class LinkService {
     }
 
     try {
+      if (kDebugMode) {
+        debugPrint(
+          '[Link] navigateToLink targetType=${link.targetType} mode=$mode url=${link.url}',
+        );
+      }
       switch (link.targetType) {
         case LinkContentType.channel:
           return _navigateToChannel(context, link);
@@ -133,6 +138,11 @@ class LinkService {
           return LinkNavigateResult.unsupported;
       }
     } catch (e) {
+      if (kDebugMode) {
+        debugPrint(
+          '[Link] navigateToLink failed targetType=${link.targetType} mode=$mode url=${link.url} error=$e',
+        );
+      }
       return LinkNavigateResult.failed;
     }
   }

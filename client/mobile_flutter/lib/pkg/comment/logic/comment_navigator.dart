@@ -10,6 +10,7 @@
 // - 通过回调通知 UI 层执行具体操作
 
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart';
 
 /// 评论页面状态接口
 ///
@@ -55,11 +56,17 @@ class CommentNavigator {
   /// 注册页面到栈
   void registerPage(CommentPageDelegate page) {
     _pageStack.add(page);
+    if (kDebugMode) {
+      debugPrint('[CommentNavigator] register page=${page.runtimeType} size=${_pageStack.length}');
+    }
   }
 
   /// 从栈中移除页面
   void unregisterPage(CommentPageDelegate page) {
     _pageStack.remove(page);
+    if (kDebugMode) {
+      debugPrint('[CommentNavigator] unregister page=${page.runtimeType} size=${_pageStack.length}');
+    }
   }
 
   /// 判断是否是根总览层
@@ -91,6 +98,11 @@ class CommentNavigator {
       targetCommentId,
       alignToBottom: alignToBottom,
     );
+    if (kDebugMode) {
+      debugPrint(
+        '[CommentNavigator] navigateInPlace target=$targetCommentId alignToBottom=$alignToBottom',
+      );
+    }
     return true;
   }
 
@@ -107,6 +119,10 @@ class CommentNavigator {
     // 计算需要 pop 的次数
     final currentIndex = _pageStack.indexOf(currentPage);
     if (currentIndex <= 0) return; // 已经是根总览层，不需要返回
+
+    if (kDebugMode) {
+      debugPrint('[CommentNavigator] returnToPost popCount=$currentIndex');
+    }
 
     // 连续 pop 直到只剩根总览层
     int popCount = currentIndex;
