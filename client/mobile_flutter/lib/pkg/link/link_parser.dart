@@ -39,6 +39,7 @@ class LinkParser {
 
   /// 类型字符串到枚举的映射
   static const _typeMap = {
+    'c': LinkContentType.channel,
     'channel': LinkContentType.channel,
     'message': LinkContentType.message,
     'comment': LinkContentType.comment,

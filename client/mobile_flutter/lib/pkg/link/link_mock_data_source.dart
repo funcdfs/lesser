@@ -31,6 +31,13 @@ class LinkMockDataSource implements LinkResolverDataSource {
       subscriberCount: 1234,
       isSubscribed: true,
     ),
+    'test_channel': const ChannelInfo(
+      id: 'test',
+      name: '测试频道',
+      description: '用于测试评论功能',
+      subscriberCount: 1234,
+      isSubscribed: true,
+    ),
   };
 
   // 模拟消息数据

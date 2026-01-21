@@ -130,7 +130,7 @@ class LinkService {
       subscriberCount: info.subscriberCount,
       isSubscribed: info.isSubscribed,
       onOpen: () {
-        _onNavigateToChannel?.call(context, channelId);
+        _onNavigateToChannel?.call(context, info.id);
       },
     );
 
