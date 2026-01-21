@@ -6,8 +6,11 @@ import 'package:flutter/material.dart';
 
 import 'link_parser.dart';
 import 'link_resolver.dart';
+import 'link_types.dart';
 import 'models/link_model.dart';
 import 'card/channel_card.dart';
+
+export 'link_types.dart';
 
 /// 链接服务
 ///
@@ -259,57 +262,3 @@ class LinkService {
     return _resolver!.resolve(link);
   }
 }
-
-/// 导航结果
-enum LinkNavigateResult {
-  /// 成功
-  success,
-
-  /// 服务未初始化
-  notInitialized,
-
-  /// 链接无效
-  invalidLink,
-
-  /// 内容不存在
-  notFound,
-
-  /// 不支持的链接类型
-  unsupported,
-
-  /// 导航失败
-  failed,
-}
-
-/// 导航模式
-enum LinkNavigateMode {
-  /// 新增页面（push 新页面）
-  push,
-
-  /// 替换当前页面（页面内滚动，不创建新页面）
-  replace,
-}
-
-/// 导航到频道回调
-typedef NavigateToChannelCallback =
-    Future<bool> Function(BuildContext context, String channelId);
-
-/// 导航到消息回调
-typedef NavigateToMessageCallback =
-    Future<bool> Function(
-      BuildContext context,
-      String channelId,
-      String messageId, {
-      bool highlightMessage,
-    });
-
-/// 导航到评论回调
-typedef NavigateToCommentCallback =
-    Future<bool> Function(
-      BuildContext context,
-      String channelId,
-      String messageId,
-      String rootCommentId,
-      String targetCommentId, {
-      LinkNavigateMode mode,
-    });

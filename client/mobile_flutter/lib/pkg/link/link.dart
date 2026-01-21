@@ -19,6 +19,7 @@ export 'link_parser.dart';
 export 'link_resolver.dart';
 export 'link_navigator.dart';
 export 'link_service.dart';
+export 'link_types.dart';
 export 'link_mock_data_source.dart';
 export 'link_utils.dart';
 export 'link_cache.dart';
