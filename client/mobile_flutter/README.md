@@ -17,9 +17,9 @@ lib/
 │   └── utils/          # 工具函数
 ├── features/           # 业务模块
 │   ├── home/           # 首页容器 (Bottom Navigation)
-│   ├── inspection/     # Tab 1: 首页/推荐 (Info/Discovery)
-│   ├── series/         # Tab 2: 剧集 (Series) - 原 Channel
-│   ├── watchlist/      # Tab 3: 动态/关注 (Watchlist/Updates)
+│   ├── discovery/      # Tab 1: 首页 (Discovery)
+│   ├── subject/        # Tab 2: 书影音 (Subject) - 原 Series
+│   ├── tracker/        # Tab 3: 追踪 (Tracker) - 原 Watchlist
 │   ├── profile/        # Tab 4: 我的 (Profile)
 │   └── auth/           # 登录认证 (独立模块)
 ├── app.dart
@@ -97,9 +97,9 @@ import '../widgets/index.dart';
 
 | Tab | 名称 | Feature | 对应页面 | 功能描述 |
 |-----|------|---------|---------|----------|
-| 1 | 首页 | inspection | `InspectionPage` | 推荐内容、热门榜单、Discovery |
-| 2 | 剧集 | series | `SeriesPage` | 剧集列表、频道聚合 (原 Channel) |
-| 3 | 动态 | watchlist | `WatchlistPage` | 关注内容的更新动态、观看列表 |
+| 1 | 首页 | discovery | `DiscoveryPage` | 推荐内容、热门榜单 (Discovery) |
+| 2 | 书影音 | subject | `SubjectPage` | 书影音列表、详情 (原 Series) |
+| 3 | 追踪 | tracker | `TrackerPage` | 追剧日历、续播记录、收藏列表 (原 Watchlist) |
 | 4 | 我的 | profile | `ProfilePage` | 用户个人中心 |
 
 ---

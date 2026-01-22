@@ -5,9 +5,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import '../../../pkg/ui/theme/theme.dart';
 import '../../../pkg/ui/widgets/widgets.dart';
-import '../../inspection/pages/inspection_page.dart';
-import '../../series/pages/series_page.dart';
-import '../../watchlist/pages/watchlist_page.dart';
+import '../../discovery/pages/discovery_page.dart';
+import '../../subject/pages/subject_page.dart';
+import '../../tracker/pages/tracker_page.dart';
 import '../../profile/pages/profile_page.dart';
 
 // 导航图标 SVG 路径（24x24 viewBox）
@@ -39,11 +39,11 @@ class HomePageState extends State<HomePage> {
         index: _tabIndex,
         children: [
           // 只构建已访问过的页面，未访问的用空容器占位
-          _loadedTabs.contains(0) ? const InspectionPage() : const SizedBox.shrink(),
+          _loadedTabs.contains(0) ? const DiscoveryPage() : const SizedBox.shrink(),
           _loadedTabs.contains(1)
-              ? const SeriesPage()
+              ? const SubjectPage()
               : const SizedBox.shrink(),
-          _loadedTabs.contains(2) ? const WatchlistPage() : const SizedBox.shrink(),
+          _loadedTabs.contains(2) ? const TrackerPage() : const SizedBox.shrink(),
           _loadedTabs.contains(3)
               ? const ProfilePage()
               : const SizedBox.shrink(),
@@ -75,7 +75,7 @@ class _FrostedBottomNavBar extends StatelessWidget {
   static const _items = [
     (label: '首页', icon: _iconInfo),
     (label: '剧集', icon: _iconSeries),
-    (label: '动态', icon: _iconWatchlist),
+    (label: '追踪', icon: _iconWatchlist),
     (label: '我的', icon: _iconProfile),
   ];
 

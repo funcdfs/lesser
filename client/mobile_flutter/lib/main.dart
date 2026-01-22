@@ -2,8 +2,8 @@
 
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
-import 'features/series/pages/series_comment_page.dart';
-import 'features/series/pages/series_detail_page.dart';
+import 'features/subject/pages/subject_comment_page.dart';
+import 'features/subject/pages/subject_detail_page.dart';
 import 'features/home/pages/home_page.dart';
 import 'pkg/comment/comment_page.dart';
 import 'pkg/link/link.dart';
@@ -125,19 +125,19 @@ class _AppState extends State<_App> {
   void _initLinkService() {
     LinkService.instance.init(
       dataSource: LinkMockDataSource(),
-      onNavigateToChannel: _navigateToSeries,
+      onNavigateToChannel: _navigateToSubject,
       onNavigateToMessage: _navigateToPost,
-      onNavigateToComment: _navigateToComment,
+      onNavigateToComment: _navigateToComment, // Update other methods similarly if needed
     );
   }
 
-  Future<bool> _navigateToSeries(
+  Future<bool> _navigateToSubject(
     BuildContext context,
-    String seriesId,
+    String subjectId,
   ) async {
     Navigator.of(context).push(
       MaterialPageRoute(
-        builder: (_) => SeriesDetailPage(seriesId: seriesId),
+        builder: (_) => SubjectDetailPage(subjectId: subjectId),
       ),
     );
     return true;
@@ -145,14 +145,14 @@ class _AppState extends State<_App> {
 
   Future<bool> _navigateToPost(
     BuildContext context,
-    String seriesId,
+    String subjectId,
     String postId, {
     bool highlightMessage = false,
   }) async {
     Navigator.of(context).push(
       MaterialPageRoute(
-        builder: (_) => SeriesDetailPage(
-          seriesId: seriesId,
+        builder: (_) => SubjectDetailPage(
+          subjectId: subjectId,
           highlightPostId: highlightMessage ? postId : null,
         ),
       ),
@@ -162,7 +162,7 @@ class _AppState extends State<_App> {
 
   Future<bool> _navigateToComment(
     BuildContext context,
-    String seriesId,
+    String subjectId,
     String postId,
     String rootCommentId,
     String targetCommentId, {
@@ -178,9 +178,9 @@ class _AppState extends State<_App> {
     // targetCommentId 用于滚动定位和高亮
     Navigator.of(context).push(
       MaterialPageRoute(
-        builder: (_) => SeriesCommentPage(
+        builder: (_) => SubjectCommentPage(
           postId: postId,
-          seriesId: seriesId,
+          subjectId: subjectId,
           targetCommentId: targetCommentId,
         ),
       ),
