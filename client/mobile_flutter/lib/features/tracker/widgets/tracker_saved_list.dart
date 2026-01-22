@@ -32,7 +32,7 @@ class TrackerSavedList extends StatelessWidget {
               ),
               alignment: Alignment.center,
               child: Text(
-                "$labelPrefix #$index",
+                '$labelPrefix #$index',
                 style: TextStyle(color: AppColors.of(context).textPrimary),
               ),
             );

@@ -306,7 +306,7 @@ class _SubjectPageState extends State<SubjectPage> {
     }
     
     if (subjectList.isEmpty) {
-       return Center(child: Text("没有找到匹配的剧集", style: TextStyle(color: colors.textTertiary)));
+       return Center(child: Text('没有找到匹配的剧集', style: TextStyle(color: colors.textTertiary)));
     }
 
     return _SubjectListView(

@@ -26,7 +26,7 @@ class TrackerContinueWatching extends StatelessWidget {
                         color: Colors.blueGrey.withValues(alpha: 0.2),
                         borderRadius: BorderRadius.circular(12),
                         image: const DecorationImage(
-                          image: NetworkImage("https://picsum.photos/300/160"),
+                          image: NetworkImage('https://picsum.photos/300/160'),
                           fit: BoxFit.cover,
                         ),
                       ),
@@ -47,7 +47,7 @@ class TrackerContinueWatching extends StatelessWidget {
                   ),
                   const SizedBox(height: 8),
                   Text(
-                    "Series Title S1:E${index + 1}",
+                    'Series Title S1:E${index + 1}',
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                     style: TextStyle(
@@ -69,7 +69,7 @@ class TrackerContinueWatching extends StatelessWidget {
                   ),
                   const SizedBox(height: 4),
                   Text(
-                    "${(40 + index * 10)}m left",
+                    '${(40 + index * 10)}m left',
                     style: TextStyle(
                       fontSize: 11,
                       color: AppColors.of(context).textTertiary,

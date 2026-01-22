@@ -1,11 +1,20 @@
 import 'package:flutter/material.dart';
 import '../widgets/discovery_actor_list.dart';
 import '../widgets/discovery_collection_list.dart';
-import '../widgets/discovery_horizontal_list.dart';
 import '../widgets/discovery_section_header.dart';
 import '../widgets/discovery_tag_list.dart';
 import '../widgets/discovery_news_list.dart';
+import '../widgets/discovery_trending_section.dart';
 
+/// Discovery 页面 - 发现内容
+///
+/// ⚠️ 当前为 UI 原型阶段，使用假数据展示
+///
+/// TODO: 实现完整的数据驱动架构
+/// - [ ] 创建 models/discovery_content_model.dart
+/// - [ ] 创建 handler/discovery_handler.dart
+/// - [ ] 创建 data_access/discovery_data_source.dart
+/// - [ ] 连接后端 TimelineService.GetHotFeed API (time_range: day/week/month/year)
 class DiscoveryPage extends StatelessWidget {
   const DiscoveryPage({super.key});
 
@@ -14,32 +23,49 @@ class DiscoveryPage extends StatelessWidget {
     return Scaffold(
       body: CustomScrollView(
         slivers: [
-          const SliverAppBar(
-            title: Text('发现'),
-            floating: true,
+          // Sticky header
+          SliverAppBar(
+            pinned: true,
+            elevation: 0,
+            backgroundColor: Theme.of(
+              context,
+            ).scaffoldBackgroundColor.withValues(alpha: 0.9),
+            title: const Text(
+              'Discovery',
+              style: TextStyle(
+                fontSize: 28,
+                fontWeight: FontWeight.bold,
+                letterSpacing: -0.5,
+              ),
+            ),
           ),
-          const DiscoverySectionHeader(title: "今日热门"),
-          const DiscoveryHorizontalList(count: 10, labelPrefix: "电影", baseColor: Colors.redAccent),
-          
-          const DiscoverySectionHeader(title: "本周热门"),
-          const DiscoveryHorizontalList(count: 10, labelPrefix: "剧集", baseColor: Colors.blueAccent),
-          
-          const DiscoverySectionHeader(title: "热门标签"),
-          const DiscoveryTagList(tags: ["科幻", "动作", "爱情", "惊悚", "历史", "喜剧"]),
-          
-          const DiscoverySectionHeader(title: "人气明星"),
-          const DiscoveryActorList(count: 10),
-          
-          const DiscoverySectionHeader(title: "精选片单"),
+
+          // Trending Now section
+          const DiscoveryTrendingSection(),
+
+          // Popular Tags
+          const DiscoverySectionHeader(title: 'Popular Tags'),
+          const DiscoveryTagList(),
+
+          // Actors
+          const DiscoverySectionHeader(title: 'Actors'),
+          const DiscoveryActorList(),
+
+          // Curated Playlists
+          const DiscoverySectionHeader(
+            title: 'Curated Playlists',
+            showViewAll: true,
+          ),
           const DiscoveryCollectionList(),
 
-          const DiscoverySectionHeader(title: "资讯动态"),
+          // Latest News
+          const DiscoverySectionHeader(title: 'Latest News', showViewAll: true),
           const DiscoveryNewsList(),
-          // Add extra padding for bottom nav
+
+          // Bottom padding for navigation bar
           const SliverPadding(padding: EdgeInsets.only(bottom: 100)),
         ],
       ),
     );
   }
 }
-

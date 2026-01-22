@@ -1,51 +1,109 @@
 import 'package:flutter/material.dart';
-import '../../../../pkg/ui/theme/theme.dart';
 
+/// Curated Playlists 组件 - 匹配 HTML 设计的渐变卡片
 class DiscoveryCollectionList extends StatelessWidget {
   const DiscoveryCollectionList({super.key});
+
+  static const List<Map<String, dynamic>> _playlists = [
+    {
+      'title': 'Best Sci-Fi of\nthe Decade',
+      'gradient': [Color(0xFF1E3A8A), Colors.transparent],
+      'image': 'https://picsum.photos/seed/scifi/480/256',
+    },
+    {
+      'title': 'Summer\nBlockbusters',
+      'gradient': [Color(0xFF7C2D12), Colors.transparent],
+      'image': 'https://picsum.photos/seed/summer/480/256',
+    },
+    {
+      'title': 'Cult Classics',
+      'gradient': [Color(0xFF581C87), Colors.transparent],
+      'image': 'https://picsum.photos/seed/cult/480/256',
+    },
+  ];
 
   @override
   Widget build(BuildContext context) {
     return SliverToBoxAdapter(
       child: SizedBox(
-        height: 140,
-        child: ListView.separated(
+        height: 128,
+        child: ListView.builder(
           scrollDirection: Axis.horizontal,
           padding: const EdgeInsets.symmetric(horizontal: 16),
-          itemCount: 6,
-          separatorBuilder: (_, __) => const SizedBox(width: 12),
+          itemCount: _playlists.length,
           itemBuilder: (context, index) {
-            return Container(
-              width: 240,
-              decoration: BoxDecoration(
-                color: AppColors.of(context).surfaceElevated,
-                borderRadius: BorderRadius.circular(12),
-                image: const DecorationImage(
-                  image: NetworkImage("https://picsum.photos/400/200"),
-                  fit: BoxFit.cover,
-                  colorFilter: ColorFilter.mode(Colors.black45, BlendMode.darken),
-                ),
-              ),
-              child: Padding(
-                padding: const EdgeInsets.all(16.0),
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.end,
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      "精选片单 #$index",
-                      style: const TextStyle(
-                        color: Colors.white,
-                        fontSize: 16,
-                        fontWeight: FontWeight.bold,
-                      ),
+            final playlist = _playlists[index];
+            return Padding(
+              padding: const EdgeInsets.only(right: 16),
+              child: GestureDetector(
+                onTap: () {
+                  // TODO: 跳转到片单详情
+                },
+                child: ClipRRect(
+                  borderRadius: BorderRadius.circular(16),
+                  child: SizedBox(
+                    width: 240,
+                    child: Stack(
+                      fit: StackFit.expand,
+                      children: [
+                        // 背景图片
+                        Image.network(
+                          playlist['image'] as String,
+                          fit: BoxFit.cover,
+                          loadingBuilder: (context, child, loadingProgress) {
+                            if (loadingProgress == null) return child;
+                            return Container(
+                              color: Colors.grey.shade800,
+                              child: const Center(
+                                child: CircularProgressIndicator(
+                                  strokeWidth: 2,
+                                ),
+                              ),
+                            );
+                          },
+                          errorBuilder: (context, error, stackTrace) {
+                            return Container(
+                              color: Colors.grey.shade800,
+                              child: const Icon(
+                                Icons.broken_image,
+                                color: Colors.white54,
+                                size: 48,
+                              ),
+                            );
+                          },
+                        ),
+                        // 渐变遮罩
+                        Container(
+                          decoration: BoxDecoration(
+                            gradient: LinearGradient(
+                              colors: playlist['gradient'] as List<Color>,
+                              begin: Alignment.centerLeft,
+                              end: Alignment.centerRight,
+                            ),
+                          ),
+                        ),
+                        // 文字内容
+                        Padding(
+                          padding: const EdgeInsets.all(16),
+                          child: Align(
+                            alignment: Alignment.centerLeft,
+                            child: SizedBox(
+                              width: 160,
+                              child: Text(
+                                playlist['title'] as String,
+                                style: const TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 18,
+                                  fontWeight: FontWeight.bold,
+                                  height: 1.2,
+                                ),
+                              ),
+                            ),
+                          ),
+                        ),
+                      ],
                     ),
-                    const SizedBox(height: 4),
-                    const Text(
-                      "编辑精选 · 20 部",
-                      style: TextStyle(color: Colors.white70, fontSize: 12),
-                    ),
-                  ],
+                  ),
                 ),
               ),
             );

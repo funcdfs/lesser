@@ -13,7 +13,7 @@ class TrackerCalendar extends StatelessWidget {
           Padding(
             padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
             child: Text(
-              "This Week",
+              'This Week',
               style: TextStyle(
                 fontSize: 16,
                 fontWeight: FontWeight.bold,
@@ -43,7 +43,7 @@ class TrackerCalendar extends StatelessWidget {
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
                       Text(
-                        ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"][index],
+                        ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'][index],
                         style: TextStyle(
                           fontSize: 12,
                           color: isToday
@@ -53,7 +53,7 @@ class TrackerCalendar extends StatelessWidget {
                       ),
                       const SizedBox(height: 4),
                       Text(
-                        "${22 + index}",
+                        '${22 + index}',
                         style: TextStyle(
                           fontSize: 18,
                           fontWeight: FontWeight.bold,

@@ -1,0 +1,407 @@
+<!DOCTYPE html>
+<html class="" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Discovery Page</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@300;400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<script>tailwind.config = {darkMode: "class", theme: {extend: {fontFamily: {sans: ["Inter", "sans-serif"], display: "Be Vietnam Pro"}, colors: {primary: "#e394dc", "background-light": "#f8f6f8", "background-dark": "#1f131e", "surface-light": "#ffffff", "surface-dark": "#1e293b", "text-secondary-light": "#6b7280", "text-secondary-dark": "#94a3b8"}, borderRadius: {DEFAULT: "0.25rem", lg: "0.5rem", xl: "0.75rem", full: "9999px"}}}};</script>
+<style>
+        .scrollbar-hide::-webkit-scrollbar {
+            display: none;
+        }
+        .scrollbar-hide {
+            -ms-overflow-style: none;
+            scrollbar-width: none;
+        }
+        .glass-nav {
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+        }
+    </style>
+<style>
+        body {
+            min-height: max(884px, 100dvh);
+        }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="bg-background-light dark:bg-background-dark text-gray-900 dark:text-white pb-24 font-sans selection:bg-primary selection:text-white transition-colors duration-200">
+<header class="sticky top-0 z-30 bg-background-light/90 dark:bg-background-dark/90 glass-nav px-4 py-3 flex justify-between items-center">
+<h1 class="text-3xl font-bold tracking-tight">Discovery</h1>
+</header>
+<section class="mt-6">
+<div class="px-4 flex flex-col space-y-4 mb-3">
+<div class="flex justify-between items-center">
+<h2 class="text-xl font-bold">Trending Now</h2>
+<div class="bg-gray-200 dark:bg-surface-dark rounded-lg p-1 flex items-center text-[10px] font-semibold">
+<button class="bg-white dark:bg-gray-700 text-primary shadow-sm rounded-md px-3 py-1 transition-all">Today</button>
+<button class="text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white px-3 py-1 transition-colors">Weekly</button>
+<button class="text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white px-3 py-1 transition-colors">Month</button>
+</div>
+</div>
+<div class="flex space-x-3 overflow-x-auto scrollbar-hide pb-2 -mx-1 px-1">
+<button class="bg-primary/10 dark:bg-surface-dark border border-primary text-primary px-5 py-1.5 rounded-full whitespace-nowrap text-xs font-semibold">
+                All
+            </button>
+<button class="bg-white dark:bg-surface-dark/50 text-text-secondary-light dark:text-text-secondary-dark px-5 py-1.5 rounded-full whitespace-nowrap text-xs font-medium border border-transparent dark:border-gray-700">
+                Movies
+            </button>
+<button class="bg-white dark:bg-surface-dark/50 text-text-secondary-light dark:text-text-secondary-dark px-5 py-1.5 rounded-full whitespace-nowrap text-xs font-medium border border-transparent dark:border-gray-700">
+                TV Shows
+            </button>
+<button class="bg-white dark:bg-surface-dark/50 text-text-secondary-light dark:text-text-secondary-dark px-5 py-1.5 rounded-full whitespace-nowrap text-xs font-medium border border-transparent dark:border-gray-700">
+                Documentaries
+            </button>
+<button class="bg-white dark:bg-surface-dark/50 text-text-secondary-light dark:text-text-secondary-dark px-5 py-1.5 rounded-full whitespace-nowrap text-xs font-medium border border-transparent dark:border-gray-700">
+                Anime
+            </button>
+</div>
+</div>
+<div class="px-4 overflow-x-auto scrollbar-hide">
+<div class="grid grid-rows-2 grid-flow-col gap-4 w-max pb-2">
+<div class="w-32 flex flex-col">
+<div class="relative w-32 h-48 rounded-xl overflow-hidden shadow-lg bg-gray-800 group">
+<img alt="Dune Poster" class="w-full h-full object-cover" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBxmxTWMlIL-UbqjWGaf15Vmdr1S2D2NqL1hpzwU9s9c-m4U3gys7ihwcUsuD5RbR4XMKnYWMOGTFepeyBBsTBuMKebUg564B5gKU-OAs-FhMSORCYT7pxcildXm0sXv5A58Q_BnlYSXQL-TEBNf29nW62HhDJTXIqcarRzzWDCUASVgJZBsMWk7nXpgu2YWb99t-8WvAwycbcpUuXWME1JABHmRNZ0nOGnE4ILr3uaB1lQVO4ZL82zvmWvZYTczO81b07mFjjwaUpa"/>
+<div class="absolute top-0 left-2 text-white/90 drop-shadow-lg">
+<i class="fas fa-bookmark text-lg shadow-black/50 drop-shadow-md"></i>
+</div>
+<div class="absolute top-2 right-2 bg-black/60 backdrop-blur-md px-1.5 py-0.5 rounded text-[10px] font-bold text-yellow-400">
+<i class="fas fa-star text-[8px] mr-0.5"></i>4.5
+                        </div>
+<button class="absolute bottom-2 left-2 w-7 h-7 bg-white/20 backdrop-blur-md border border-white/20 rounded-lg flex items-center justify-center text-white hover:bg-white/30 transition-colors">
+<i class="fas fa-play text-[10px]"></i>
+</button>
+<button class="absolute bottom-2 right-2 w-7 h-7 bg-primary/90 backdrop-blur-md rounded-lg flex items-center justify-center text-white shadow-lg hover:bg-primary transition-colors">
+<i class="fas fa-plus text-[10px]"></i>
+</button>
+</div>
+<h3 class="mt-2 text-sm font-semibold truncate">Dune: Part Two</h3>
+</div>
+<div class="w-32 flex flex-col">
+<div class="relative w-32 h-48 rounded-xl overflow-hidden shadow-lg bg-gray-800 group">
+<img alt="Furiosa Poster" class="w-full h-full object-cover" src="https://lh3.googleusercontent.com/aida-public/AB6AXuA2f5l5_nlkjXbhak7a7cRdD3W9N7V0KzQVaeZI7JI9XI5RbrQ73I1D9LXm9-xL-29poUUbcNlvFyUEuQmQ45-Rdev3X3aos2XrQLmTCQ21kfxTvVKnIuhWihl28vDh_CiglPFeYt0WPc5lRpPLmbHWN_m26HMkMD7cSJ5yDVNfpOHFNdhpdJLTmK34Mo8R7ppo99WuBzntCqn0UohXSraImynqIbR4e4JdwE6hbHTlhIdcHaSNx0l3csAdcteA1zI2m_aa29TraMIB"/>
+<div class="absolute top-0 left-2 text-white/90 drop-shadow-lg">
+<i class="fas fa-bookmark text-lg shadow-black/50 drop-shadow-md"></i>
+</div>
+<div class="absolute top-2 right-2 bg-black/60 backdrop-blur-md px-1.5 py-0.5 rounded text-[10px] font-bold text-yellow-400">
+<i class="fas fa-star text-[8px] mr-0.5"></i>4.8
+                        </div>
+<button class="absolute bottom-2 left-2 w-7 h-7 bg-white/20 backdrop-blur-md border border-white/20 rounded-lg flex items-center justify-center text-white hover:bg-white/30 transition-colors">
+<i class="fas fa-play text-[10px]"></i>
+</button>
+<button class="absolute bottom-2 right-2 w-7 h-7 bg-primary/90 backdrop-blur-md rounded-lg flex items-center justify-center text-white shadow-lg hover:bg-primary transition-colors">
+<i class="fas fa-plus text-[10px]"></i>
+</button>
+</div>
+<h3 class="mt-2 text-sm font-semibold truncate">Furiosa</h3>
+</div>
+<div class="w-32 flex flex-col">
+<div class="relative w-32 h-48 rounded-xl overflow-hidden shadow-lg bg-gray-800 group">
+<img alt="The Fall Guy Poster" class="w-full h-full object-cover" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBDfivDvLIXroNFaTO0g4R9l2cPZArmWwxVgFy7jdHICYI8kpObnmSapabKQZFUaq3ERgsSAh4qAkUL7EHukgjljgeR5QIGbe5y87Hzka7Y3wE7LfdiSYRkfvqFiDi4b7-Fk0Yt4CPNJ8CdppQlDyZg-chbMRrTYmYvKxeagDzHRset2Id-MDpT_3RkkHPbatnOOFiI6Is7OW0nLZsy6MLxT8NQtSPi19Use7aBqbVIreLP4ld3Ip34u8qHm0BRak4srJaU2dl8Cb2u"/>
+<div class="absolute top-0 left-2 text-white/90 drop-shadow-lg">
+<i class="fas fa-bookmark text-lg shadow-black/50 drop-shadow-md"></i>
+</div>
+<div class="absolute top-2 right-2 bg-black/60 backdrop-blur-md px-1.5 py-0.5 rounded text-[10px] font-bold text-yellow-400">
+<i class="fas fa-star text-[8px] mr-0.5"></i>4.5
+                        </div>
+<button class="absolute bottom-2 left-2 w-7 h-7 bg-white/20 backdrop-blur-md border border-white/20 rounded-lg flex items-center justify-center text-white hover:bg-white/30 transition-colors">
+<i class="fas fa-play text-[10px]"></i>
+</button>
+<button class="absolute bottom-2 right-2 w-7 h-7 bg-primary/90 backdrop-blur-md rounded-lg flex items-center justify-center text-white shadow-lg hover:bg-primary transition-colors">
+<i class="fas fa-plus text-[10px]"></i>
+</button>
+</div>
+<h3 class="mt-2 text-sm font-semibold truncate">The Fall Guy</h3>
+</div>
+<div class="w-32 flex flex-col">
+<div class="relative w-32 h-48 rounded-xl overflow-hidden shadow-lg bg-gray-800 group">
+<img alt="Challengers Poster" class="w-full h-full object-cover" src="https://lh3.googleusercontent.com/aida-public/AB6AXuB49e3_oQfvgYf1VHftCGeD_d50bbSfhxy4JilnneWnZOQW9nXjQADywAwzYzOEfxtzQT36vxVbhFAdXTYWzfzxW0UDETvYm9m5JUvMDfQT17hDWUPHnbDTTrG4_6GevEf2hcLZZ6gdbRnm3aUXvzOjGUuZ4WokhcBXY3ERbdvHS_R_smd0Fd5klpgEPXtArPfcZpnRy8q_YSRdDwPqxvYqSOTfENN47RB6xQLDLXC5axEEN0j9VGsJN5zuyPBOO0p_KN3DzIipxePV"/>
+<div class="absolute top-0 left-2 text-white/90 drop-shadow-lg">
+<i class="fas fa-bookmark text-lg shadow-black/50 drop-shadow-md"></i>
+</div>
+<div class="absolute top-2 right-2 bg-black/60 backdrop-blur-md px-1.5 py-0.5 rounded text-[10px] font-bold text-yellow-400">
+<i class="fas fa-star text-[8px] mr-0.5"></i>4.9
+                        </div>
+<button class="absolute bottom-2 left-2 w-7 h-7 bg-white/20 backdrop-blur-md border border-white/20 rounded-lg flex items-center justify-center text-white hover:bg-white/30 transition-colors">
+<i class="fas fa-play text-[10px]"></i>
+</button>
+<button class="absolute bottom-2 right-2 w-7 h-7 bg-primary/90 backdrop-blur-md rounded-lg flex items-center justify-center text-white shadow-lg hover:bg-primary transition-colors">
+<i class="fas fa-plus text-[10px]"></i>
+</button>
+</div>
+<h3 class="mt-2 text-sm font-semibold truncate">Challengers</h3>
+</div>
+<div class="w-32 flex flex-col">
+<div class="relative w-32 h-48 rounded-xl overflow-hidden shadow-lg bg-gray-800 group">
+<img alt="Immaculate Poster" class="w-full h-full object-cover" src="https://lh3.googleusercontent.com/aida-public/AB6AXuAFRDUJDCR4kKwt0oBaE3N8lfMiMv44Y0nt-QKKSCrC5rxqbEcz1bMwlnxHopN4Qrq8CnWZ29Li6kRcC6zV0LjR3LpdmhT1UBIcfuL44UeBhOS5QFaaYzPFwhFxiQIrMKtugftGk0b5lzpWk-vLPujbHgVbiuen5xlMyIhn3-my5n9z3Qic8eqWh34_DN-4ChYbwGC7CiPhDxSHK0odAm7X4aJWIIXgpFlu4dc11m-saV5KX6uvVS98s6CRDuMl4WPQRnyZlssCfv0W"/>
+<div class="absolute top-0 left-2 text-white/90 drop-shadow-lg">
+<i class="fas fa-bookmark text-lg shadow-black/50 drop-shadow-md"></i>
+</div>
+<div class="absolute top-2 right-2 bg-black/60 backdrop-blur-md px-1.5 py-0.5 rounded text-[10px] font-bold text-yellow-400">
+<i class="fas fa-star text-[8px] mr-0.5"></i>4.2
+                        </div>
+<button class="absolute bottom-2 left-2 w-7 h-7 bg-white/20 backdrop-blur-md border border-white/20 rounded-lg flex items-center justify-center text-white hover:bg-white/30 transition-colors">
+<i class="fas fa-play text-[10px]"></i>
+</button>
+<button class="absolute bottom-2 right-2 w-7 h-7 bg-primary/90 backdrop-blur-md rounded-lg flex items-center justify-center text-white shadow-lg hover:bg-primary transition-colors">
+<i class="fas fa-plus text-[10px]"></i>
+</button>
+</div>
+<h3 class="mt-2 text-sm font-semibold truncate">Immaculate</h3>
+</div>
+<div class="w-32 flex flex-col">
+<div class="relative w-32 h-48 rounded-xl overflow-hidden shadow-lg bg-gray-800 group">
+<img alt="Civil War Poster" class="w-full h-full object-cover" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBqf5a8yIUtrVU7wF3DtylS3hBKsWNACaW4nZp1HqwN4I0xfh2E6J2vLnp1AynrUTsaqmIhJKGtNcO8OUs-1ptgIgeqpEby6bULrxqppeDUhcJ4rmIgSD6_jBW-l8Y6qbvfYEFc3uc-JiJwkv7ShycECZ-3Qoh3P3XWf1C2CwxFwzYmm_mO9yvqWABHv0mw0ADAGBX4s2hrJH2D5IgxDqGw20NkklV5svbKEV9ppLe5jJWrkp9n-coaQtCvlTtNCDEUxIb1mnEi_HGh"/>
+<div class="absolute top-0 left-2 text-white/90 drop-shadow-lg">
+<i class="fas fa-bookmark text-lg shadow-black/50 drop-shadow-md"></i>
+</div>
+<div class="absolute top-2 right-2 bg-black/60 backdrop-blur-md px-1.5 py-0.5 rounded text-[10px] font-bold text-yellow-400">
+<i class="fas fa-star text-[8px] mr-0.5"></i>4.7
+                        </div>
+<button class="absolute bottom-2 left-2 w-7 h-7 bg-white/20 backdrop-blur-md border border-white/20 rounded-lg flex items-center justify-center text-white hover:bg-white/30 transition-colors">
+<i class="fas fa-play text-[10px]"></i>
+</button>
+<button class="absolute bottom-2 right-2 w-7 h-7 bg-primary/90 backdrop-blur-md rounded-lg flex items-center justify-center text-white shadow-lg hover:bg-primary transition-colors">
+<i class="fas fa-plus text-[10px]"></i>
+</button>
+</div>
+<h3 class="mt-2 text-sm font-semibold truncate">Civil War</h3>
+</div>
+<div class="w-32 flex flex-col">
+<div class="relative w-32 h-48 rounded-xl overflow-hidden shadow-lg bg-gray-800 group">
+<img alt="Kingdom Planet Apes Poster" class="w-full h-full object-cover" src="https://lh3.googleusercontent.com/aida-public/AB6AXuAeX-O0vvPn3em4FVXYzRakNt7rtGuvIPkeqM_N1BVf4za3p6E8cK58fSL1a_b4uFRS-k7cj_6oe91hdQl2AVFUyd6leiQZVE1FAbf5ZyJzyUAgtUSlTZ4y32QnXZ1Xz6bymUN8hwvqeO8n5UQW3o9R3_q3Vzx5i81g_wbhVAxHvPovzcx9fX0d0Sy9ILxcf97ok2ObttC9Yb17IpGNPCE1_Z25Zr6SZDzg1qbHIrHwJf3VEQc6fjwFsVcXBrSR2FTx3xYqXkEpHSVA"/>
+<div class="absolute top-0 left-2 text-white/90 drop-shadow-lg">
+<i class="fas fa-bookmark text-lg shadow-black/50 drop-shadow-md"></i>
+</div>
+<div class="absolute top-2 right-2 bg-black/60 backdrop-blur-md px-1.5 py-0.5 rounded text-[10px] font-bold text-yellow-400">
+<i class="fas fa-star text-[8px] mr-0.5"></i>4.6
+                        </div>
+<button class="absolute bottom-2 left-2 w-7 h-7 bg-white/20 backdrop-blur-md border border-white/20 rounded-lg flex items-center justify-center text-white hover:bg-white/30 transition-colors">
+<i class="fas fa-play text-[10px]"></i>
+</button>
+<button class="absolute bottom-2 right-2 w-7 h-7 bg-primary/90 backdrop-blur-md rounded-lg flex items-center justify-center text-white shadow-lg hover:bg-primary transition-colors">
+<i class="fas fa-plus text-[10px]"></i>
+</button>
+</div>
+<h3 class="mt-2 text-sm font-semibold truncate">Kingdom Apes</h3>
+</div>
+<div class="w-32 flex flex-col">
+<div class="relative w-32 h-48 rounded-xl overflow-hidden shadow-lg bg-gray-800 group">
+<img alt="Kung Fu Panda 4 Poster" class="w-full h-full object-cover" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBd5SOJKDkCnxoZ-QzZenlIu4CvcuZJOjlYb9em7EBikgh8IpG-K32VWM2KEXz4ZyA6axc23f2QbnuKl9PT9IcdghVaEeJ3F_-dwOOw8kc4wCUb-WNnJ75p8sN2xJ0MY9NGAfwUOGJBLlU0ZDGGX-cQcyyhZaJwPiWyQsxCFpACQLPaW-J77TuERFafwO8hgnqn-u3NfkYzQPgQjEAvekeDK33NFMQxIHnyFNWReo52GLcjqiri1yIRmgT4bJRw_6V7JKGbkOvQQb3F"/>
+<div class="absolute top-0 left-2 text-white/90 drop-shadow-lg">
+<i class="fas fa-bookmark text-lg shadow-black/50 drop-shadow-md"></i>
+</div>
+<div class="absolute top-2 right-2 bg-black/60 backdrop-blur-md px-1.5 py-0.5 rounded text-[10px] font-bold text-yellow-400">
+<i class="fas fa-star text-[8px] mr-0.5"></i>4.4
+                        </div>
+<button class="absolute bottom-2 left-2 w-7 h-7 bg-white/20 backdrop-blur-md border border-white/20 rounded-lg flex items-center justify-center text-white hover:bg-white/30 transition-colors">
+<i class="fas fa-play text-[10px]"></i>
+</button>
+<button class="absolute bottom-2 right-2 w-7 h-7 bg-primary/90 backdrop-blur-md rounded-lg flex items-center justify-center text-white shadow-lg hover:bg-primary transition-colors">
+<i class="fas fa-plus text-[10px]"></i>
+</button>
+</div>
+<h3 class="mt-2 text-sm font-semibold truncate">Kung Fu Panda 4</h3>
+</div>
+<div class="w-32 flex flex-col">
+<div class="relative w-32 h-48 rounded-xl overflow-hidden shadow-lg bg-gray-800 group">
+<img alt="Wonka Poster" class="w-full h-full object-cover" src="https://lh3.googleusercontent.com/aida-public/AB6AXuB1Ehb6-LN4nc08awOwLqMhIfZ-DPk1EhJXAOwlP5oMlDbjqKkEkiL2Xn0wPpYETbDcGkAVWalU8gzSS_roFQIfI6hUSN__mSD60kkQzhHg6i1TCb6g5juJV9rGCPaVG2c1KOfObQ7J7uMxcCsNucxfzPC2Vv68YLlucQYtZjAKA_ymI7I4AesGwRBIXqD3tMgJSp9seBCRvvZLcCk_-82VcdV4DCHpqBp_m3A-Dc3vW1ClefUdtLDoUP5xIouZ8l65EKMrkan8kVbB"/>
+<div class="absolute top-0 left-2 text-white/90 drop-shadow-lg">
+<i class="fas fa-bookmark text-lg shadow-black/50 drop-shadow-md"></i>
+</div>
+<div class="absolute top-2 right-2 bg-black/60 backdrop-blur-md px-1.5 py-0.5 rounded text-[10px] font-bold text-yellow-400">
+<i class="fas fa-star text-[8px] mr-0.5"></i>4.3
+                        </div>
+<button class="absolute bottom-2 left-2 w-7 h-7 bg-white/20 backdrop-blur-md border border-white/20 rounded-lg flex items-center justify-center text-white hover:bg-white/30 transition-colors">
+<i class="fas fa-play text-[10px]"></i>
+</button>
+<button class="absolute bottom-2 right-2 w-7 h-7 bg-primary/90 backdrop-blur-md rounded-lg flex items-center justify-center text-white shadow-lg hover:bg-primary transition-colors">
+<i class="fas fa-plus text-[10px]"></i>
+</button>
+</div>
+<h3 class="mt-2 text-sm font-semibold truncate">Wonka</h3>
+</div>
+<div class="w-32 flex flex-col">
+<div class="relative w-32 h-48 rounded-xl overflow-hidden shadow-lg bg-gray-800 group">
+<img alt="Godzilla Poster" class="w-full h-full object-cover" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBhAdXTtgG6ImcNyQ0E8UQRiC8JGh87yopAw0JEMpO0qHr80x-N35An5X2CQ45P0BW2rJ_qh4G2epEZLU25CqKP2W9uDEcEaltIAPzvhw7crBGtnnCQTysQ-29CvVKNjZ3LKisoUVoescuVLaCmFoULOMZDnCqCndR9HnbJfwPX4DQRSSCgkVzvT8qoE-jvxbp_cl_dAjh9u8hG__yUaQXHdMTdXJ3Jd0OXv4JhCXu0nsJ2kYDFbXQN85fExjWKE0rgi5oEQwdg222b"/>
+<div class="absolute top-0 left-2 text-white/90 drop-shadow-lg">
+<i class="fas fa-bookmark text-lg shadow-black/50 drop-shadow-md"></i>
+</div>
+<div class="absolute top-2 right-2 bg-black/60 backdrop-blur-md px-1.5 py-0.5 rounded text-[10px] font-bold text-yellow-400">
+<i class="fas fa-star text-[8px] mr-0.5"></i>4.8
+                        </div>
+<button class="absolute bottom-2 left-2 w-7 h-7 bg-white/20 backdrop-blur-md border border-white/20 rounded-lg flex items-center justify-center text-white hover:bg-white/30 transition-colors">
+<i class="fas fa-play text-[10px]"></i>
+</button>
+<button class="absolute bottom-2 right-2 w-7 h-7 bg-primary/90 backdrop-blur-md rounded-lg flex items-center justify-center text-white shadow-lg hover:bg-primary transition-colors">
+<i class="fas fa-plus text-[10px]"></i>
+</button>
+</div>
+<h3 class="mt-2 text-sm font-semibold truncate">Godzilla x Kong</h3>
+</div>
+</div>
+</div>
+</section>
+<section class="mt-8 px-4">
+<h2 class="text-xl font-bold mb-4">Popular Tags</h2>
+<div class="grid grid-rows-3 grid-flow-col gap-2.5 overflow-x-auto scrollbar-hide pb-2">
+<button class="bg-primary text-white px-4 py-2 rounded-lg text-sm font-medium flex items-center justify-center space-x-2 shadow-lg shadow-primary/20 hover:bg-primary/90 transition-colors w-max">
+<span>Filter</span>
+<i class="fas fa-arrow-right text-xs"></i>
+</button>
+<button class="bg-gray-200 dark:bg-surface-dark hover:bg-gray-300 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300 px-4 py-2 rounded-lg text-sm transition-colors w-max">Cyberpunk</button>
+<button class="bg-gray-200 dark:bg-surface-dark hover:bg-gray-300 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300 px-4 py-2 rounded-lg text-sm transition-colors w-max">Award Winners</button>
+<button class="bg-gray-200 dark:bg-surface-dark hover:bg-gray-300 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300 px-4 py-2 rounded-lg text-sm transition-colors w-max">Based on True Story</button>
+<button class="bg-gray-200 dark:bg-surface-dark hover:bg-gray-300 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300 px-4 py-2 rounded-lg text-sm transition-colors w-max">Rom-Com</button>
+<button class="bg-gray-200 dark:bg-surface-dark hover:bg-gray-300 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300 px-4 py-2 rounded-lg text-sm transition-colors w-max">Post-Apocalyptic</button>
+<button class="bg-gray-200 dark:bg-surface-dark hover:bg-gray-300 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300 px-4 py-2 rounded-lg text-sm transition-colors w-max">Space Opera</button>
+<button class="bg-gray-200 dark:bg-surface-dark hover:bg-gray-300 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300 px-4 py-2 rounded-lg text-sm transition-colors w-max">Psychological</button>
+<button class="bg-gray-200 dark:bg-surface-dark hover:bg-gray-300 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300 px-4 py-2 rounded-lg text-sm transition-colors w-max">Anime</button>
+<button class="bg-gray-200 dark:bg-surface-dark hover:bg-gray-300 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300 px-4 py-2 rounded-lg text-sm transition-colors w-max">Critically Acclaimed</button>
+<button class="bg-gray-200 dark:bg-surface-dark hover:bg-gray-300 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300 px-4 py-2 rounded-lg text-sm transition-colors w-max">Dark Fantasy</button>
+</div>
+</section>
+<section class="mt-8">
+<h2 class="text-xl font-bold px-4 mb-4">Actors</h2>
+<div class="flex overflow-x-auto space-x-6 px-4 scrollbar-hide pb-2">
+<div class="flex flex-col items-center space-y-2 min-w-[70px] relative">
+<div class="w-[70px] h-[70px] rounded-full p-0.5 bg-gradient-to-tr from-primary to-purple-500 relative">
+<img alt="Timothée" class="w-full h-full rounded-full object-cover border-2 border-background-light dark:border-background-dark" src="https://lh3.googleusercontent.com/aida-public/AB6AXuB1bJA6zWOVVIj14xJ-ggehyI-EKfaWysgM_jAfpO7PdhbxOKDy4wdeFggt6QbZcfdMTBV9UM0Z3_uUxaUaUivqicmycGa-BtPIQEorWI0KuzdGPnUTB_JupFzq0sPU_ugLllS6AttAZpABZQBD3QHduRqjNsUGqWc3QOPfecb4QCyWpfVyH0NNrGBIh7xbwIWlO2lh4xE2YGFKn01rMagVlwd5q2B6J14X3tJK0YnSdlAyqtmjTTNsUaJ2oReQ6HGQJr448XYuNZfT"/>
+</div>
+<div class="absolute -top-1 -right-1 bg-blue-500 text-white text-[10px] font-bold w-5 h-5 flex items-center justify-center rounded-full border-2 border-background-light dark:border-background-dark z-10">1</div>
+<div class="absolute bottom-9 right-0 bg-white dark:bg-surface-dark shadow-md rounded-full w-5 h-5 flex items-center justify-center border border-gray-200 dark:border-gray-700 z-10">
+<i class="fas fa-caret-up text-green-500 text-[10px]"></i>
+</div>
+<p class="text-xs text-center leading-tight text-gray-600 dark:text-gray-300">Timothée<br/>Chalamet</p>
+</div>
+<div class="flex flex-col items-center space-y-2 min-w-[70px] relative">
+<div class="w-[70px] h-[70px] rounded-full p-0.5 bg-gradient-to-tr from-gray-300 to-gray-500 dark:from-gray-700 dark:to-gray-600">
+<img alt="Florence" class="w-full h-full rounded-full object-cover border-2 border-background-light dark:border-background-dark" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDm9B_pu3K3qtt13zPBDX69ZyX2e4JfgERo5XHRsIVuR3CnjIUIEML9_UGGVPcwV21mTq_U5J44fXr4_t4ioUBTXJDuL6DHWX9IZnCWySU_TwM2ewfcz0A6ECiQ5sUlNESW7XdpY4nMAP6aUTX5yX3Tr91JVwYBztPVddMNJiJQ5jRjThSwG4YtawcfgF77B1c2BFzxtls74WO4x5buQGpXhDlhjYXwv1XaDy-A1fXEoaMJYenQCDrN6QjgGUb-wJFDYENMnZOp75ZB"/>
+</div>
+<div class="absolute -top-1 -right-1 bg-gray-400 text-white text-[10px] font-bold w-5 h-5 flex items-center justify-center rounded-full border-2 border-background-light dark:border-background-dark z-10">2</div>
+<div class="absolute bottom-9 right-0 bg-white dark:bg-surface-dark shadow-md rounded-full w-5 h-5 flex items-center justify-center border border-gray-200 dark:border-gray-700 z-10">
+<i class="fas fa-minus text-gray-400 text-[8px]"></i>
+</div>
+<p class="text-xs text-center leading-tight text-gray-600 dark:text-gray-300">Florence<br/>Pugh</p>
+</div>
+<div class="flex flex-col items-center space-y-2 min-w-[70px] relative">
+<div class="w-[70px] h-[70px] rounded-full p-0.5 bg-gradient-to-tr from-gray-300 to-gray-500 dark:from-gray-700 dark:to-gray-600">
+<img alt="Zendaya" class="w-full h-full rounded-full object-cover border-2 border-background-light dark:border-background-dark" src="https://lh3.googleusercontent.com/aida-public/AB6AXuCceyMQjjGKczA0SIrZyerScKUHiMfD1xGu9s3FWETbhEAblebncux5LbOemd92sFzjAhj8hyVAvc2H8JiDY0XRNF0fFy6oT8Emrs3YSHzk6zyp68O9bMAa2jTUgOxVuAMkBKHMTm8PTrlplxHUuEJfW6E_AS85LVVjmPtBrM_W7DykyxzFYysf7TQqHgJgCbmHSDR-kcMucxhY19PEKExi13ox_ZCit0pfwbVumyNgSNICy788oFtDMNIJvGEjOuyI8k2XH5c-ZdoA"/>
+</div>
+<div class="absolute -top-1 -right-1 bg-gray-400 text-white text-[10px] font-bold w-5 h-5 flex items-center justify-center rounded-full border-2 border-background-light dark:border-background-dark z-10">3</div>
+<div class="absolute bottom-9 right-0 bg-white dark:bg-surface-dark shadow-md rounded-full w-5 h-5 flex items-center justify-center border border-gray-200 dark:border-gray-700 z-10">
+<i class="fas fa-caret-down text-red-500 text-[10px]"></i>
+</div>
+<p class="text-xs text-center leading-tight text-gray-600 dark:text-gray-300">Zendaya</p>
+</div>
+<div class="flex flex-col items-center space-y-2 min-w-[70px] relative">
+<div class="w-[70px] h-[70px] rounded-full p-0.5 bg-gradient-to-tr from-gray-300 to-gray-500 dark:from-gray-700 dark:to-gray-600">
+<img alt="John" class="w-full h-full rounded-full object-cover border-2 border-background-light dark:border-background-dark" src="https://lh3.googleusercontent.com/aida-public/AB6AXuAxtA9MoDtC-M9lQMI5r48dnOXRoVqABaVxIYpSH17UvPzzzF7VyNVG04iTLLR_gGa6XKga6xpul0Cg5x0MhRmE2wWK32ePX2ufL0CUERSAdEhIOwgH6xq7icQCvPzFxhR_UJgMlKE5jTuF2GeUbcI4PWBDFw8tZODQML6XdVM_7GfRvxFOsXrI_xoUcwjr1RwT9H6w9Kie_Ul7kL3gNdwntaVMyc5DD4bq_3tuZ_7LPU8aiRq8Zj3P6s8NhBdJiA9y1giOyqxW5Gvm"/>
+</div>
+<div class="absolute -top-1 -right-1 bg-gray-400 text-white text-[10px] font-bold w-5 h-5 flex items-center justify-center rounded-full border-2 border-background-light dark:border-background-dark z-10">4</div>
+<p class="text-xs text-center leading-tight text-gray-600 dark:text-gray-300">John<br/>Krasinski</p>
+</div>
+<div class="flex flex-col items-center space-y-2 min-w-[70px] relative">
+<div class="w-[70px] h-[70px] rounded-full p-0.5 bg-gradient-to-tr from-gray-300 to-gray-500 dark:from-gray-700 dark:to-gray-600">
+<img alt="Emily" class="w-full h-full rounded-full object-cover border-2 border-background-light dark:border-background-dark" src="https://lh3.googleusercontent.com/aida-public/AB6AXuB_dUtZCXkNftJ-PPNgHvi9zQwAha0szq--dRajdaSDe3TXwl5p_O3og777oV7seJb6-qM9dqk9I3DtusgeTIxHdH2fEA8Mj0dIJzpN8N7EL-0IoLidbAYmjUy6UYtgZnHuH5hrUlkuFYGI-UeW6WzX5kguob4lkp-mwRSLoMsJMXPr8c4fUJEC1PvsL980zwVVDQx4J-BALk3x7WV6EdJU0DHPDvFTgrbOuzWUoBfY5O5r5Yrj7Fz51O-9x8ZymkoiTXvwn2AxhtDc"/>
+</div>
+<div class="absolute -top-1 -right-1 bg-gray-400 text-white text-[10px] font-bold w-5 h-5 flex items-center justify-center rounded-full border-2 border-background-light dark:border-background-dark z-10">5</div>
+<p class="text-xs text-center leading-tight text-gray-600 dark:text-gray-300">Emily<br/>Blunt</p>
+</div>
+</div>
+</section>
+<section class="mt-8">
+<div class="px-4 flex justify-between items-center mb-4">
+<h2 class="text-xl font-bold">Curated Playlists</h2>
+<button class="text-primary text-sm font-medium">View All</button>
+</div>
+<div class="flex overflow-x-auto space-x-4 px-4 scrollbar-hide pb-2">
+<div class="relative min-w-[240px] h-32 rounded-2xl overflow-hidden group">
+<img alt="Sci-Fi" class="w-full h-full object-cover transition-transform group-hover:scale-105 duration-500" src="https://lh3.googleusercontent.com/aida-public/AB6AXuAIg70_HAiVEOc_pvqKzczJduw94NhepzVmGHUDAi6Ft3YR0vbt9T7wfsGev-AXYcV04YJ4jnZtWcyrfbB6GkOa0gW4lzY3Tgp_2wvvr-C96GbSZif7qOTqFOoucqJuqNpRcO7r-PX3y5KdqfjJgdYgEfqsKLScRMeuX5OsiJvaCE-3GNNNeeeb8PaNDuXs_XUvpRaox4-Nfv7yEByxqJ1F_wVliZrqYsJNJqNGru6n5NpnA6UBOKb6CK061qO8U_gUbbtnrpiBYO43"/>
+<div class="absolute inset-0 bg-gradient-to-r from-blue-900/90 to-transparent"></div>
+<div class="absolute inset-0 p-4 flex flex-col justify-center">
+<p class="text-white font-bold text-lg leading-tight w-2/3">Best Sci-Fi of the Decade</p>
+</div>
+</div>
+<div class="relative min-w-[240px] h-32 rounded-2xl overflow-hidden group">
+<img alt="Summer" class="w-full h-full object-cover transition-transform group-hover:scale-105 duration-500" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDLI3-LQR6Z-Fp4k4QFQiPR-W4D51RrZ5UlyOrGKuJc3T_8FDRFPglberFzwHsL5SlgGRlS_Su-3lApzJKbXhUVJT43S_xr6x4Kvna6Ti2pJY3TJzDQxXgo0VZQsWtG_LQhuBvhnAUEePpQbyzg2kRwS81-RkejwrdU1m5z-Ar0wI4VQJ7grYrzJ4FRH47VDc-GTAs-oupE6Wu0E81c3EZhJ2G6bRCAJRqiQs46KXVubSOfqvLEjCBPfy1NtJu6VrxuqQ9GnE1nnFW0"/>
+<div class="absolute inset-0 bg-gradient-to-r from-orange-900/80 to-transparent"></div>
+<div class="absolute inset-0 p-4 flex flex-col justify-center">
+<p class="text-white font-bold text-lg leading-tight w-2/3">Summer Blockbusters</p>
+</div>
+</div>
+<div class="relative min-w-[240px] h-32 rounded-2xl overflow-hidden group">
+<img alt="Classic" class="w-full h-full object-cover transition-transform group-hover:scale-105 duration-500" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBhQi2WHAmiqe-RhCZTj_xkFy-Z0NIvE8JYR-Jp3P5rvznh9k5jhDMQAIvUNro-pwDGArkBcvKbEDsHa8ElqKQ-JoCPxym__U9oqhEimYXWb516nSomjly2JsydzzA4T4DipzMsjylZRfXq8XEA8HObkY2CCQvvjl-nt_Mv0lUK9ZZIwejJMoDiQ0u2GVylu_lElhibnMXGEqi1lOXCNgNYTMeN9d1AowqlpaBBj_CzdN2iyUuRs3vOnCCdqAVtZXkhi6-BVrGT4aYq"/>
+<div class="absolute inset-0 bg-gradient-to-r from-purple-900/80 to-transparent"></div>
+<div class="absolute inset-0 p-4 flex flex-col justify-center">
+<p class="text-white font-bold text-lg leading-tight w-2/3">Cult Classics</p>
+</div>
+</div>
+</div>
+</section>
+<section class="mt-8 mb-4">
+<div class="px-4 flex justify-between items-center mb-4">
+<h2 class="text-xl font-bold">Latest News</h2>
+<button class="text-primary text-sm font-medium">View All</button>
+</div>
+<div class="flex overflow-x-auto space-x-4 px-4 scrollbar-hide">
+<div class="min-w-[280px] bg-white dark:bg-surface-dark rounded-2xl overflow-hidden shadow-sm border border-gray-100 dark:border-gray-700/50">
+<div class="h-32 w-full relative">
+<img alt="Trailers" class="w-full h-full object-cover object-top" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBl-zyVdCdQIP25qihvK0HW78NnJSFtG2I-_8Z3bgQgEZiKHsAcXIFNyoE4zrwRIQBvyuDwGY3ukNZPM7CwidHjx21_-NhCRRx_-UVJfnXoFW9kslG5o4hbgrrH7sB2Lgjpi0bzPi1aatQrffL4_dq-eHfE3-zH-hn1o7XFI6-6Z_qqwNnFPopD-L6IAabzSl80TAOrLIKtafGF03vaXuYkLuzCYe9vaFBoBTak43LGoku2jxbbmxrGzM7Ff-QT_qQTNETffQ3qSple"/>
+</div>
+<div class="p-3">
+<h3 class="font-bold text-base mb-1 truncate">New Trailers Released</h3>
+<p class="text-xs text-text-secondary-light dark:text-text-secondary-dark line-clamp-2">The latest release for Dune: Part Two has fans speculating about the ending...</p>
+</div>
+</div>
+<div class="min-w-[280px] bg-white dark:bg-surface-dark rounded-2xl overflow-hidden shadow-sm border border-gray-100 dark:border-gray-700/50">
+<div class="h-32 w-full grid grid-cols-2 gap-0.5 bg-gray-900">
+<img alt="Actor 1" class="w-full h-full object-cover" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBDrU3trFjun7oCAaQ3f4XNCiRcGbGF88aNlVjPVJZTRdgUwB0iLsczr9V8NjKg9gq_6Acgan4OFNxzZwyWccXisPisHVZ5uTe9DImBDG8bs0N7hZsibqUMJdHf0-O-JUOZymZWWjrYfILENUy7VCPyrYpGaw-ETU4jvUXRDe3qg95VGCkE24DU7gr9HvRRA5_V1Th_clzaNidFNSDrF1IvWPDK5wfhWeuvIhLpqie6vCcoOjA8ObovFE7NKBT2v6DbmkG83Lsjkxln"/>
+<img alt="Actor 2" class="w-full h-full object-cover" src="https://lh3.googleusercontent.com/aida-public/AB6AXuA-WhiIiTmpQJ-YVPbOj9F8drXsd4DIkU8RRP1cMnaHjZqbLvzF_5HoFHMJLYsAc1wCuiXRnynIRFh1D0sJO6AQVXLQ1H5KS6dSWWG5C6cl2XAwujOIUbdpG0f-8KPJPnhVAVNQSCMWSIgc9rjzq9mBNij2-CstrB7n73AkBLthhQOdUwMqBWkf90nK20K96p6XsQA6VmFZNACtJDRc3d9-tfU__jNPHPNq21pBVyUSVz7G2nrZkPIkLG_9qEEOEbxc3Hm1pIrvX5oD"/>
+</div>
+<div class="p-3">
+<h3 class="font-bold text-base mb-1 truncate">Casting News</h3>
+<p class="text-xs text-text-secondary-light dark:text-text-secondary-dark line-clamp-2">Major casting announcements for the upcoming Marvel phase revealed today.</p>
+</div>
+</div>
+</div>
+</section>
+<nav class="fixed bottom-0 w-full bg-surface-light/95 dark:bg-surface-dark/95 backdrop-blur-md border-t border-gray-200 dark:border-gray-800 pb-6 pt-3 px-6 z-40">
+<div class="flex justify-between items-center">
+<button class="flex flex-col items-center space-y-1 text-primary transition-colors">
+<i class="fas fa-home text-xl"></i>
+<span class="text-[10px] font-medium">Home</span>
+</button>
+<button class="flex flex-col items-center space-y-1 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 transition-colors">
+<i class="fas fa-search text-xl"></i>
+<span class="text-[10px] font-medium">Search</span>
+</button>
+<button class="flex flex-col items-center space-y-1 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 transition-colors">
+<div class="bg-transparent p-1.5 rounded-full mb-[-6px]">
+<i class="fas fa-compass text-xl"></i>
+</div>
+<span class="text-[10px] font-medium mt-1">Discovery</span>
+</button>
+<button class="flex flex-col items-center space-y-1 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 transition-colors">
+<i class="fas fa-user text-xl"></i>
+<span class="text-[10px] font-medium">Profile</span>
+</button>
+</div>
+</nav>
+</body></html>

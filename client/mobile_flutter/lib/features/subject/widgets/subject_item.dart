@@ -155,12 +155,12 @@ class _Content extends StatelessWidget {
                      color: colors.accent,
                      borderRadius: BorderRadius.circular(4),
                   ),
-                  child: const Text("OFFICIAL", style: TextStyle(color: Colors.white, fontSize: 8, fontWeight: FontWeight.bold)),
+                  child: const Text('OFFICIAL', style: TextStyle(color: Colors.white, fontSize: 8, fontWeight: FontWeight.bold)),
                 ),
               ),
             if (subject.isVerified)
-               Padding(
-                padding: const EdgeInsets.only(left: 4),
+               const Padding(
+                padding: EdgeInsets.only(left: 4),
                 child: Icon(Icons.verified_rounded, size: 14, color: Colors.blueAccent),
               ),
             const SizedBox(width: 8),

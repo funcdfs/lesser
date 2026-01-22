@@ -36,7 +36,6 @@ import '../../../pkg/ui/theme/theme.dart';
 import '../../../pkg/ui/widgets/widgets.dart';
 
 
-import '../../../pkg/ui/widgets/widgets.dart';
 import '../models/subject_model.dart';
 
 /// 剧集详情页毛玻璃 AppBar

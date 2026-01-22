@@ -10,26 +10,26 @@ class TrackerPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
+    return const Scaffold(
       body: CustomScrollView(
         slivers: [
-          const SliverAppBar(
+          SliverAppBar(
             title: Text('Tracker'),
             floating: true,
           ),
           
-          const TrackerCalendar(),
+          TrackerCalendar(),
 
-          const TrackerSectionHeader(title: "Start Watching"),
-          const TrackerContinueWatching(),
+          TrackerSectionHeader(title: 'Start Watching'),
+          TrackerContinueWatching(),
 
-          const TrackerSectionHeader(title: "Watchlist"),
-          const TrackerSavedList(count: 10, labelPrefix: "Saved", baseColor: Colors.orange),
+          TrackerSectionHeader(title: 'Watchlist'),
+          TrackerSavedList(count: 10, labelPrefix: 'Saved', baseColor: Colors.orange),
           
 
 
           // Add extra padding for bottom nav
-          const SliverPadding(padding: EdgeInsets.only(bottom: 100)),
+          SliverPadding(padding: EdgeInsets.only(bottom: 100)),
         ],
       ),
     );

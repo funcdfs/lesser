@@ -5,7 +5,7 @@ class TrackerSectionHeader extends StatelessWidget {
   const TrackerSectionHeader({
     super.key,
     required this.title,
-    this.actionLabel = "10+ More",
+    this.actionLabel = '10+ More',
   });
 
   final String title;
