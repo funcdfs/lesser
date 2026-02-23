@@ -260,15 +260,24 @@ class _SubjectPageState extends State<SubjectPage> {
                           )
                         : null,
                     leadingWidth: _selectedTags.isNotEmpty ? 100 : null,
-                    title: Text(
-                      '剧集',
-                      style: TextStyle(
-                        fontSize: 17,
-                        fontWeight: FontWeight.w600,
-                        color: colors.textPrimary,
+                    title: GestureDetector(
+                      onTap: () {
+                        PrimaryScrollController.of(context).animateTo(
+                          0.0,
+                          duration: const Duration(milliseconds: 300),
+                          curve: Curves.easeOutCubic,
+                        );
+                      },
+                      child: Text(
+                        '频道',
+                        style: TextStyle(
+                          fontSize: 17,
+                          fontWeight: FontWeight.w600,
+                          color: colors.textPrimary,
+                        ),
                       ),
                     ),
-                    // 右侧：搜索 + 创建剧集
+                    // 右侧：搜索 + 创建频道（剧集）
                     actions: [
                       // 搜索按钮
                       TapScale(

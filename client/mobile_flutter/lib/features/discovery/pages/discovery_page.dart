@@ -31,12 +31,21 @@ class DiscoveryPage extends StatelessWidget {
             backgroundColor: Theme.of(
               context,
             ).scaffoldBackgroundColor.withValues(alpha: 0.9),
-            title: const Text(
-              'Discovery',
-              style: TextStyle(
-                fontSize: 28,
-                fontWeight: FontWeight.bold,
-                letterSpacing: -0.5,
+            title: GestureDetector(
+              onTap: () {
+                PrimaryScrollController.of(context).animateTo(
+                  0.0,
+                  duration: const Duration(milliseconds: 300),
+                  curve: Curves.easeOutCubic,
+                );
+              },
+              child: const Text(
+                'Discovery',
+                style: TextStyle(
+                  fontSize: 28,
+                  fontWeight: FontWeight.bold,
+                  letterSpacing: -0.5,
+                ),
               ),
             ),
           ),

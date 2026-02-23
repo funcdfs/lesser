@@ -10,11 +10,20 @@ class TrackerPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return const Scaffold(
+    return Scaffold(
       body: CustomScrollView(
         slivers: [
           SliverAppBar(
-            title: Text('My Tracker'),
+            title: GestureDetector(
+              onTap: () {
+                PrimaryScrollController.of(context).animateTo(
+                  0.0,
+                  duration: const Duration(milliseconds: 300),
+                  curve: Curves.easeOutCubic,
+                );
+              },
+              child: const Text('My Tracker'),
+            ),
             floating: true,
             automaticallyImplyLeading: false,
           ),

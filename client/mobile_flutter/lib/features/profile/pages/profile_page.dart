@@ -19,7 +19,16 @@ class ProfilePage extends StatelessWidget {
       body: CustomScrollView(
         slivers: [
           SliverAppBar(
-            title: const Text('Profile'),
+            title: GestureDetector(
+              onTap: () {
+                PrimaryScrollController.of(context).animateTo(
+                  0.0,
+                  duration: const Duration(milliseconds: 300),
+                  curve: Curves.easeOutCubic,
+                );
+              },
+              child: const Text('Profile'),
+            ),
             automaticallyImplyLeading: false,
             centerTitle: true,
             backgroundColor: colors.surfaceBase,
