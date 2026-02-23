@@ -105,24 +105,19 @@ class PostListController {
 /// 高亮控制器
 ///
 /// 管理动态高亮状态和滚动定位逻辑，用于深层链接导航场景。
-/// 使用 LRU 策略缓存 GlobalKey，防止内存无限增长。
+/// 依靠预估列表项高度来执行平滑滚动，不破坏 ListView 的 Element 复用机制。
 class HighlightController {
   HighlightController({
     required this.scrollController,
     this.onHighlightChanged,
-    this.maxCachedKeys = 100,
   });
 
   final ScrollController scrollController;
   final void Function(String?)? onHighlightChanged;
-  final int maxCachedKeys;
 
   String? _highlightedPostId;
   bool _hasScrolledToTarget = false;
   bool _isDisposed = false;
-
-  final Map<int, GlobalKey> _itemKeys = {};
-  final List<int> _keyAccessOrder = [];
 
   /// 当前高亮的动态 ID
   String? get highlightedPostId => _highlightedPostId;
@@ -130,30 +125,7 @@ class HighlightController {
   /// 是否已滚动到目标
   bool get hasScrolledToTarget => _hasScrolledToTarget;
 
-  /// 获取或创建指定索引的 GlobalKey（带 LRU 缓存策略）
-  GlobalKey getKeyForIndex(int index) {
-    // 检查缓存中是否已存在
-    final existingKey = _itemKeys[index];
-    if (existingKey != null) {
-      // 更新 LRU 访问顺序
-      _keyAccessOrder.remove(index);
-      _keyAccessOrder.add(index);
-      return existingKey;
-    }
 
-    // 创建新的 GlobalKey
-    final key = GlobalKey();
-    _itemKeys[index] = key;
-    _keyAccessOrder.add(index);
-
-    // LRU 淘汰：超过最大缓存数时移除最旧的
-    while (_keyAccessOrder.length > maxCachedKeys) {
-      final oldestIndex = _keyAccessOrder.removeAt(0);
-      _itemKeys.remove(oldestIndex);
-    }
-
-    return key;
-  }
 
   /// 滚动到目标动态并高亮
   ///
@@ -189,69 +161,39 @@ class HighlightController {
     _hasScrolledToTarget = false;
   }
 
-  /// 清理缓存的 keys
-  void clearKeys() {
-    _itemKeys.clear();
-    _keyAccessOrder.clear();
-  }
-
   /// 销毁控制器
   void dispose() {
     _isDisposed = true;
-    clearKeys();
   }
 
   void _scrollToIndexAndHighlight(int index, String postId) {
     if (_isDisposed) return;
 
-    final key = _itemKeys[index];
-    final keyContext = key?.currentContext;
-
-    if (keyContext != null) {
-      Scrollable.ensureVisible(
-            keyContext,
-            alignment: SubjectLayoutConstants.scrollAlignment,
-            duration: SubjectLayoutConstants.scrollDuration,
-            curve: Curves.easeOut,
-          )
-          .then((_) {
-            if (_isDisposed) return;
-            _highlightedPostId = postId;
-            onHighlightChanged?.call(postId);
-          })
-          .catchError((Object error) {
-            // 滚动动画被中断时忽略错误，仍然设置高亮
-            if (_isDisposed) return;
-            _highlightedPostId = postId;
-            onHighlightChanged?.call(postId);
-          });
-    } else {
-      if (!scrollController.hasClients) {
-        _highlightedPostId = postId;
-        onHighlightChanged?.call(postId);
-        return;
-      }
-
-      final targetOffset = index * SubjectLayoutConstants.estimatedItemHeight;
-      final maxExtent = scrollController.position.maxScrollExtent;
-
-      scrollController
-          .animateTo(
-            targetOffset.clamp(0.0, maxExtent),
-            duration: SubjectLayoutConstants.scrollDuration,
-            curve: Curves.easeOut,
-          )
-          .then((_) {
-            if (_isDisposed) return;
-            _highlightedPostId = postId;
-            onHighlightChanged?.call(postId);
-          })
-          .catchError((Object error) {
-            // 滚动动画被中断时忽略错误，仍然设置高亮
-            if (_isDisposed) return;
-            _highlightedPostId = postId;
-            onHighlightChanged?.call(postId);
-          });
+    if (!scrollController.hasClients) {
+      _highlightedPostId = postId;
+      onHighlightChanged?.call(postId);
+      return;
     }
+
+    final targetOffset = index * SubjectLayoutConstants.estimatedItemHeight;
+    final maxExtent = scrollController.position.maxScrollExtent;
+
+    scrollController
+        .animateTo(
+          targetOffset.clamp(0.0, maxExtent),
+          duration: SubjectLayoutConstants.scrollDuration,
+          curve: Curves.easeOut,
+        )
+        .then((_) {
+          if (_isDisposed) return;
+          _highlightedPostId = postId;
+          onHighlightChanged?.call(postId);
+        })
+        .catchError((Object error) {
+          // 滚动动画被中断时忽略错误，仍然设置高亮
+          if (_isDisposed) return;
+          _highlightedPostId = postId;
+          onHighlightChanged?.call(postId);
+        });
   }
 }

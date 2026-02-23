@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../../../pkg/ui/theme/theme.dart';
 
 /// Curated Playlists 组件 - 匹配 HTML 设计的渐变卡片
 class DiscoveryCollectionList extends StatelessWidget {
@@ -53,20 +54,21 @@ class DiscoveryCollectionList extends StatelessWidget {
                           loadingBuilder: (context, child, loadingProgress) {
                             if (loadingProgress == null) return child;
                             return Container(
-                              color: Colors.grey.shade800,
-                              child: const Center(
+                              color: AppColors.of(context).surfaceElevated,
+                              child: Center(
                                 child: CircularProgressIndicator(
                                   strokeWidth: 2,
+                                  color: AppColors.of(context).accent,
                                 ),
                               ),
                             );
                           },
                           errorBuilder: (context, error, stackTrace) {
                             return Container(
-                              color: Colors.grey.shade800,
-                              child: const Icon(
-                                Icons.broken_image,
-                                color: Colors.white54,
+                              color: AppColors.of(context).surfaceElevated,
+                              child: Icon(
+                                Icons.broken_image_rounded,
+                                color: AppColors.of(context).textDisabled,
                                 size: 48,
                               ),
                             );

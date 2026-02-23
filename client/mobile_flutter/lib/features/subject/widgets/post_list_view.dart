@@ -106,12 +106,10 @@ class PostListView extends StatelessWidget {
         itemCount: items.length,
         itemBuilder: (context, index) {
           final item = items[index];
-          // 为每个列表项分配 GlobalKey，用于精确滚动定位
-          final itemKey = highlightController.getKeyForIndex(index);
 
           if (item is DateItem) {
             return DateSeparator(
-              key: itemKey,
+              key: ValueKey(item.date),
               date: item.date,
               messageDates: postDates,
               onDateSelected: onDateSelected,
@@ -120,7 +118,8 @@ class PostListView extends StatelessWidget {
             final post = item.post;
             final isHighlighted = highlightedPostId == post.id;
             return SubjectPost(
-              key: itemKey,
+              // 仅对于被高亮的项，为方便查找使用局部 ValueKey，否则不强制传 Key，恢复复用池机制
+              key: isHighlighted ? ValueKey(post.id) : null,
               post: post,
               isHighlighted: isHighlighted,
               onHighlightComplete: isHighlighted ? onHighlightComplete : null,
@@ -129,7 +128,7 @@ class PostListView extends StatelessWidget {
               onReactionTap: onReactionTap,
             );
           }
-          return SizedBox.shrink(key: itemKey);
+          return const SizedBox.shrink();
         },
       ),
     );

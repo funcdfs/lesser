@@ -293,29 +293,15 @@ class _SubjectDetailPageState extends State<SubjectDetailPage> {
 
     if (targetIndex == -1) return;
 
-    // 使用 HighlightController 滚动到目标位置
-    final itemKey = _highlightController.getKeyForIndex(targetIndex);
-    final keyContext = itemKey.currentContext;
-
-    if (keyContext != null) {
-      Scrollable.ensureVisible(
-        keyContext,
-        alignment: SubjectLayoutConstants.scrollAlignment,
-        duration: SubjectLayoutConstants.scrollDuration,
-        curve: Curves.easeOut,
-      );
-    } else {
-      // 降级处理：当 context 不可用时，使用估算位置滚动
-      if (!_scrollController.hasClients) return;
-      final targetOffset =
-          targetIndex * SubjectLayoutConstants.estimatedItemHeight;
-      final maxExtent = _scrollController.position.maxScrollExtent;
-      _scrollController.animateTo(
-        targetOffset.clamp(0.0, maxExtent),
-        duration: SubjectLayoutConstants.scrollDuration,
-        curve: Curves.easeOut,
-      );
-    }
+    if (!_scrollController.hasClients) return;
+    final targetOffset =
+        targetIndex * SubjectLayoutConstants.estimatedItemHeight;
+    final maxExtent = _scrollController.position.maxScrollExtent;
+    _scrollController.animateTo(
+      targetOffset.clamp(0.0, maxExtent),
+      duration: SubjectLayoutConstants.scrollDuration,
+      curve: Curves.easeOut,
+    );
   }
 
   @override

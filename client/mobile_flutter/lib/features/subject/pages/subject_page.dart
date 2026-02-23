@@ -63,6 +63,9 @@ class _SubjectPageState extends State<SubjectPage> {
   // 标记 Handler 是否已初始化，防止 initState 异常时 dispose 崩溃
   bool _isHandlerInitialized = false;
 
+  // 缓存过滤后的剧集列表，避免在 build() 中高频重新计算 O(N*M)
+  List<SubjectModel>? _filteredSubjectList;
+
   @override
   void initState() {
     super.initState();
@@ -77,7 +80,20 @@ class _SubjectPageState extends State<SubjectPage> {
   ///
   /// 注意：已有 mounted 检查，确保 dispose 后不会调用 setState
   void _onHandlerChanged() {
-    if (mounted) setState(() {});
+    if (!mounted) return;
+    _updateFilteredList();
+    setState(() {});
+  }
+
+  /// 预计算并缓存过滤后的列表
+  void _updateFilteredList() {
+    var list = _handler.subjectList;
+    if (_selectedTags.isNotEmpty) {
+      list = list.where((s) {
+        return s.tags.any((t) => _selectedTags.contains(t));
+      }).toList();
+    }
+    _filteredSubjectList = list;
   }
 
   @override
@@ -125,11 +141,15 @@ class _SubjectPageState extends State<SubjectPage> {
       } else {
         _selectedTags.add(tag.id);
       }
+      _updateFilteredList();
     });
   }
 
   void _onClearTags() {
-    setState(() => _selectedTags.clear());
+    setState(() {
+      _selectedTags.clear();
+      _updateFilteredList();
+    });
   }
 
   void _onRetry() {
@@ -297,13 +317,7 @@ class _SubjectPageState extends State<SubjectPage> {
       return const _EmptyView();
     }
 
-    var subjectList = _handler.subjectList;
-    if (_selectedTags.isNotEmpty) {
-      subjectList = subjectList.where((s) {
-        // Simple OR logic: if series has any of the selected tags, show it.
-        return s.tags.any((t) => _selectedTags.contains(t));
-      }).toList();
-    }
+    final subjectList = _filteredSubjectList ?? _handler.subjectList;
     
     if (subjectList.isEmpty) {
        return Center(child: Text('没有找到匹配的剧集', style: TextStyle(color: colors.textTertiary)));

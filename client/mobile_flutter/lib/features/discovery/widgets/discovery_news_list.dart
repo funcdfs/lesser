@@ -68,20 +68,21 @@ class DiscoveryNewsList extends StatelessWidget {
                             loadingBuilder: (context, child, loadingProgress) {
                               if (loadingProgress == null) return child;
                               return Container(
-                                color: Colors.grey.shade300,
-                                child: const Center(
+                                color: surfaceElevated,
+                                child: Center(
                                   child: CircularProgressIndicator(
                                     strokeWidth: 2,
+                                    color: AppColors.of(context).accent,
                                   ),
                                 ),
                               );
                             },
                             errorBuilder: (context, error, stackTrace) {
                               return Container(
-                                color: Colors.grey.shade300,
-                                child: const Icon(
-                                  Icons.broken_image,
-                                  color: Colors.grey,
+                                color: surfaceElevated,
+                                child: Icon(
+                                  Icons.broken_image_rounded,
+                                  color: textSecondary,
                                   size: 48,
                                 ),
                               );

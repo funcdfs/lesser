@@ -78,20 +78,21 @@ class DiscoveryActorList extends StatelessWidget {
                                   (context, child, loadingProgress) {
                                     if (loadingProgress == null) return child;
                                     return Container(
-                                      color: Colors.grey.shade400,
-                                      child: const Center(
+                                      color: surfaceElevated,
+                                      child: Center(
                                         child: CircularProgressIndicator(
                                           strokeWidth: 2,
+                                          color: accentColor,
                                         ),
                                       ),
                                     );
                                   },
                               errorBuilder: (context, error, stackTrace) {
                                 return Container(
-                                  color: Colors.grey.shade400,
-                                  child: const Icon(
-                                    Icons.person,
-                                    color: Colors.white54,
+                                  color: surfaceElevated,
+                                  child: Icon(
+                                    Icons.person_rounded,
+                                    color: textSecondary,
                                     size: 32,
                                   ),
                                 );
