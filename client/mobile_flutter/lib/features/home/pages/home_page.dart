@@ -13,7 +13,7 @@ import '../../profile/pages/profile_page.dart';
 // 导航图标 SVG 路径（24x24 viewBox）
 const _iconInfo = 'M4 4H16 M4 9H20 M4 14H20 M4 19H14';
 const _iconSeries = 'M10 3L8 21 M16 3L14 21 M4 8H20 M3 16H19';
-const _iconWatchlist = 'M12 4.5C7 4.5 2.73 7.61 1 12c1.73 4.39 6 7.5 11 7.5s9.27-3.11 11-7.5c-1.73-4.39-6-7.5-11-7.5zM12 17c-2.76 0-5-2.24-5-5s2.24-5 5-5 5 2.24 5 5-2.24 5-5 5zm0-8c-1.66 0-3 1.34-3 3s1.34 3 3 3 3-1.34 3-3-1.34-3-3-3z'; // Eye icon
+const _iconTracker = 'M6 3H18V21L12 16.5L6 21Z M10 8V13L14 10.5Z'; // Bookmark + Play
 const _iconProfile =
     'M12 12C14.21 12 16 10.21 16 8C16 5.79 14.21 4 12 4C9.79 4 8 5.79 8 8C8 10.21 9.79 12 12 12Z M4 20C4 17 8 15 12 15C16 15 20 17 20 20';
 
@@ -75,7 +75,7 @@ class _FrostedBottomNavBar extends StatelessWidget {
   static const _items = [
     (label: '首页', icon: _iconInfo),
     (label: '剧集', icon: _iconSeries),
-    (label: '追踪', icon: _iconWatchlist),
+    (label: '追踪', icon: _iconTracker),
     (label: '我的', icon: _iconProfile),
   ];
 

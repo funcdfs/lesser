@@ -27,6 +27,7 @@ class DiscoveryPage extends StatelessWidget {
           SliverAppBar(
             pinned: true,
             elevation: 0,
+            automaticallyImplyLeading: false,
             backgroundColor: Theme.of(
               context,
             ).scaffoldBackgroundColor.withValues(alpha: 0.9),

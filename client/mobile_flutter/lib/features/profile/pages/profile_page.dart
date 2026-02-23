@@ -17,13 +17,8 @@ class ProfilePage extends StatelessWidget {
     return Scaffold(
       backgroundColor: colors.surfaceBase,
       appBar: AppBar(
-        title: Text(
-          '我的',
-          style: TextStyle(
-            fontWeight: FontWeight.w600,
-            color: colors.textPrimary,
-          ),
-        ),
+        title: const Text('Profile'),
+        automaticallyImplyLeading: false,
         centerTitle: true,
         backgroundColor: colors.surfaceBase,
         elevation: 0,

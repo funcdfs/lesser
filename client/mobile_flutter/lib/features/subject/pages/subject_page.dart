@@ -189,6 +189,7 @@ class _SubjectPageState extends State<SubjectPage> {
       appBar: AppBar(
         backgroundColor: colors.surfaceBase,
         surfaceTintColor: Colors.transparent,
+        automaticallyImplyLeading: false,
         elevation: 0,
         scrolledUnderElevation: 0,
         centerTitle: true,

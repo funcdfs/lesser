@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
-import '../widgets/tracker_calendar.dart';
-import '../widgets/tracker_continue_watching.dart';
 
-import '../widgets/tracker_saved_list.dart';
-import '../widgets/tracker_section_header.dart';
+import '../widgets/tracker_heatmap.dart';
+import '../widgets/tracker_stats_cards.dart';
+import '../widgets/tracker_timeline.dart';
+import '../widgets/tracker_playlists.dart';
 
 class TrackerPage extends StatelessWidget {
   const TrackerPage({super.key});
@@ -14,25 +14,27 @@ class TrackerPage extends StatelessWidget {
       body: CustomScrollView(
         slivers: [
           SliverAppBar(
-            title: Text('Tracker'),
+            title: Text('My Tracker'),
             floating: true,
+            automaticallyImplyLeading: false,
           ),
-          
-          TrackerCalendar(),
 
-          TrackerSectionHeader(title: 'Start Watching'),
-          TrackerContinueWatching(),
+          // 1. 想看 / 看过（立体书架效果）
+          TrackerStatsCards(),
 
-          TrackerSectionHeader(title: 'Watchlist'),
-          TrackerSavedList(count: 10, labelPrefix: 'Saved', baseColor: Colors.orange),
-          
+          // 2. 活跃度热力图
+          TrackerHeatmap(),
 
+          // 3. 播放列表
+          TrackerPlaylists(),
 
-          // Add extra padding for bottom nav
+          // 4. 最近活动（移至最末）
+          TrackerTimeline(),
+
+          // 底部导航栏预留间距
           SliverPadding(padding: EdgeInsets.only(bottom: 100)),
         ],
       ),
     );
   }
 }
-
