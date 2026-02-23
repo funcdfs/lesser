@@ -186,113 +186,132 @@ class _SubjectPageState extends State<SubjectPage> {
 
     return Scaffold(
       backgroundColor: colors.surfaceBase,
-      appBar: AppBar(
-        backgroundColor: colors.surfaceBase,
-        surfaceTintColor: Colors.transparent,
-        automaticallyImplyLeading: false,
-        elevation: 0,
-        scrolledUnderElevation: 0,
-        centerTitle: true,
-        // AppBar 底部分割线
-        bottom: PreferredSize(
-          preferredSize: const Size.fromHeight(0.5),
-          child: Container(height: 0.5, color: colors.divider),
-        ),
-        // 左侧：清除筛选按钮（仅在有选中标签时显示，使用与选中 tag 一致的样式）
-        leading: _selectedTags.isNotEmpty
-            ? Center(
-                child: Padding(
-                  padding: const EdgeInsets.only(left: 16),
-                  child: TapScale(
-                    onTap: _onClearTags,
-                    scale: TapScales.small,
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 10,
-                        vertical: 5,
-                      ),
-                      decoration: BoxDecoration(
-                        color: colors.accentSoft,
-                        borderRadius: BorderRadius.circular(14),
-                        border: Border.all(color: colors.accent, width: 1.5),
-                      ),
-                      child: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Icon(
-                            Icons.filter_list_rounded,
-                            size: 14,
-                            color: colors.accent,
-                          ),
-                          const SizedBox(width: 4),
-                          Text(
-                            '${_selectedTags.length}',
-                            style: TextStyle(
-                              fontSize: 13,
-                              fontWeight: FontWeight.w600,
-                              color: colors.accent,
-                            ),
-                          ),
-                          const SizedBox(width: 4),
-                          Icon(
-                            Icons.close_rounded,
-                            size: 14,
-                            color: colors.accent,
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
-                ),
-              )
-            : null,
-        leadingWidth: _selectedTags.isNotEmpty ? 100 : null,
-        title: Text(
-          '剧集',
-          style: TextStyle(
-            fontSize: 17,
-            fontWeight: FontWeight.w600,
-            color: colors.textPrimary,
-          ),
-        ),
-        // 右侧：搜索 + 创建剧集
-        actions: [
-          // 搜索按钮
-          TapScale(
-            onTap: _onSearchTap,
-            scale: TapScales.small,
-            child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 8),
-              child: Icon(
-                Icons.search_rounded,
-                size: 24,
-                color: colors.textPrimary,
-              ),
-            ),
-          ),
-          // 创建剧集按钮
-          TapScale(
-            onTap: _onCreateSeriesTap,
-            scale: TapScales.small,
-            child: Padding(
-              padding: const EdgeInsets.only(
-                right: 16,
-                left: 6,
-                top: 8,
-                bottom: 8,
-              ),
-              child: Icon(
-                Icons.add_rounded,
-                size: 26,
-                color: colors.textPrimary,
-              ),
-            ),
-          ),
-        ],
-      ),
       body: Stack(
         children: [
-          Positioned.fill(child: _buildContent(colors)),
+          Positioned.fill(
+            child: RefreshIndicator(
+              onRefresh: _onRefresh,
+              color: colors.textPrimary,
+              backgroundColor: colors.surfaceElevated,
+              child: CustomScrollView(
+                slivers: [
+                  SliverAppBar(
+                    backgroundColor: colors.surfaceBase,
+                    surfaceTintColor: Colors.transparent,
+                    automaticallyImplyLeading: false,
+                    elevation: 0,
+                    scrolledUnderElevation: 0,
+                    floating: true,
+                    centerTitle: true,
+                    // AppBar 底部分割线
+                    bottom: PreferredSize(
+                      preferredSize: const Size.fromHeight(0.5),
+                      child: Container(height: 0.5, color: colors.divider),
+                    ),
+                    // 左侧：清除筛选按钮（仅在有选中标签时显示，使用与选中 tag 一致的样式）
+                    leading: _selectedTags.isNotEmpty
+                        ? Center(
+                            child: Padding(
+                              padding: const EdgeInsets.only(left: 16),
+                              child: TapScale(
+                                onTap: _onClearTags,
+                                scale: TapScales.small,
+                                child: Container(
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 10,
+                                    vertical: 5,
+                                  ),
+                                  decoration: BoxDecoration(
+                                    color: colors.accentSoft,
+                                    borderRadius: BorderRadius.circular(14),
+                                    border: Border.all(
+                                      color: colors.accent,
+                                      width: 1.5,
+                                    ),
+                                  ),
+                                  child: Row(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      Icon(
+                                        Icons.filter_list_rounded,
+                                        size: 14,
+                                        color: colors.accent,
+                                      ),
+                                      const SizedBox(width: 4),
+                                      Text(
+                                        '${_selectedTags.length}',
+                                        style: TextStyle(
+                                          fontSize: 13,
+                                          fontWeight: FontWeight.w600,
+                                          color: colors.accent,
+                                        ),
+                                      ),
+                                      const SizedBox(width: 4),
+                                      Icon(
+                                        Icons.close_rounded,
+                                        size: 14,
+                                        color: colors.accent,
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ),
+                            ),
+                          )
+                        : null,
+                    leadingWidth: _selectedTags.isNotEmpty ? 100 : null,
+                    title: Text(
+                      '剧集',
+                      style: TextStyle(
+                        fontSize: 17,
+                        fontWeight: FontWeight.w600,
+                        color: colors.textPrimary,
+                      ),
+                    ),
+                    // 右侧：搜索 + 创建剧集
+                    actions: [
+                      // 搜索按钮
+                      TapScale(
+                        onTap: _onSearchTap,
+                        scale: TapScales.small,
+                        child: Padding(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 6,
+                            vertical: 8,
+                          ),
+                          child: Icon(
+                            Icons.search_rounded,
+                            size: 24,
+                            color: colors.textPrimary,
+                          ),
+                        ),
+                      ),
+                      // 创建剧集按钮
+                      TapScale(
+                        onTap: _onCreateSeriesTap,
+                        scale: TapScales.small,
+                        child: Padding(
+                          padding: const EdgeInsets.only(
+                            right: 16,
+                            left: 6,
+                            top: 8,
+                            bottom: 8,
+                          ),
+                          child: Icon(
+                            Icons.add_rounded,
+                            size: 26,
+                            color: colors.textPrimary,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                  _buildContent(colors),
+                  const SliverPadding(padding: EdgeInsets.only(bottom: 100)),
+                ],
+              ),
+            ),
+          ),
           // 使用统一的 SubjectTagDrawer 组件，标签数据从 mock_data 获取
           SubjectTagDrawer(
             tags: mockSubjectTags,
@@ -319,9 +338,17 @@ class _SubjectPageState extends State<SubjectPage> {
     }
 
     final subjectList = _filteredSubjectList ?? _handler.subjectList;
-    
+
     if (subjectList.isEmpty) {
-       return Center(child: Text('没有找到匹配的剧集', style: TextStyle(color: colors.textTertiary)));
+      return SliverFillRemaining(
+        hasScrollBody: false,
+        child: Center(
+          child: Text(
+            '没有找到匹配的剧集',
+            style: TextStyle(color: colors.textTertiary),
+          ),
+        ),
+      );
     }
 
     return _SubjectListView(
@@ -344,10 +371,13 @@ class _LoadingView extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final colors = AppColors.of(context);
-    return Center(
-      child: CircularProgressIndicator(
-        strokeWidth: 2,
-        color: colors.textTertiary,
+    return SliverFillRemaining(
+      hasScrollBody: false,
+      child: Center(
+        child: CircularProgressIndicator(
+          strokeWidth: 2,
+          color: colors.textTertiary,
+        ),
       ),
     );
   }
@@ -360,22 +390,25 @@ class _EmptyView extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final colors = AppColors.of(context);
-    return Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Icon(Icons.tv_rounded, size: 64, color: colors.textDisabled),
-          const SizedBox(height: 16),
-          Text(
-            '暂无关注剧集',
-            style: TextStyle(fontSize: 16, color: colors.textTertiary),
-          ),
-          const SizedBox(height: 8),
-          Text(
-            '关注感兴趣的剧集，获取最新动态',
-            style: TextStyle(fontSize: 14, color: colors.textDisabled),
-          ),
-        ],
+    return SliverFillRemaining(
+      hasScrollBody: false,
+      child: Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(Icons.tv_rounded, size: 64, color: colors.textDisabled),
+            const SizedBox(height: 16),
+            Text(
+              '暂无关注剧集',
+              style: TextStyle(fontSize: 16, color: colors.textTertiary),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              '关注感兴趣的剧集，获取最新动态',
+              style: TextStyle(fontSize: 14, color: colors.textDisabled),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -391,47 +424,53 @@ class _ErrorView extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final colors = AppColors.of(context);
-    return Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Icon(
-            Icons.error_outline_rounded,
-            size: 64,
-            color: colors.textDisabled,
-          ),
-          const SizedBox(height: 16),
-          Text(
-            '加载失败',
-            style: TextStyle(fontSize: 16, color: colors.textTertiary),
-          ),
-          const SizedBox(height: 8),
-          Text(
-            error,
-            style: TextStyle(fontSize: 14, color: colors.textDisabled),
-            textAlign: TextAlign.center,
-          ),
-          const SizedBox(height: 16),
-          TapScale(
-            onTap: onRetry,
-            scale: TapScales.medium,
-            child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
-              decoration: BoxDecoration(
-                color: colors.accentSoft,
-                borderRadius: BorderRadius.circular(20),
-              ),
-              child: Text(
-                '重试',
-                style: TextStyle(
-                  fontSize: 14,
-                  fontWeight: FontWeight.w500,
-                  color: colors.accent,
+    return SliverFillRemaining(
+      hasScrollBody: false,
+      child: Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(
+              Icons.error_outline_rounded,
+              size: 64,
+              color: colors.textDisabled,
+            ),
+            const SizedBox(height: 16),
+            Text(
+              '加载失败',
+              style: TextStyle(fontSize: 16, color: colors.textTertiary),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              error,
+              style: TextStyle(fontSize: 14, color: colors.textDisabled),
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 16),
+            TapScale(
+              onTap: onRetry,
+              scale: TapScales.medium,
+              child: Container(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 20,
+                  vertical: 10,
+                ),
+                decoration: BoxDecoration(
+                  color: colors.accentSoft,
+                  borderRadius: BorderRadius.circular(20),
+                ),
+                child: Text(
+                  '重试',
+                  style: TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w500,
+                    color: colors.accent,
+                  ),
                 ),
               ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }
@@ -456,22 +495,15 @@ class _SubjectListView extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final colors = AppColors.of(context);
-    return RefreshIndicator(
-      onRefresh: onRefresh,
-      color: colors.textPrimary,
-      backgroundColor: colors.surfaceElevated,
-      child: ListView.builder(
-        itemCount: subjectList.length,
-        itemBuilder: (context, index) {
-          final subject = subjectList[index];
-          return SubjectItem(
-            subject: subject,
-            uiState: getUIState(subject.id),
-            onTap: () => onSeriesTap(subject),
-          );
-        },
-      ),
+    return SliverList(
+      delegate: SliverChildBuilderDelegate((context, index) {
+        final subject = subjectList[index];
+        return SubjectItem(
+          subject: subject,
+          uiState: getUIState(subject.id),
+          onTap: () => onSeriesTap(subject),
+        );
+      }, childCount: subjectList.length),
     );
   }
 }

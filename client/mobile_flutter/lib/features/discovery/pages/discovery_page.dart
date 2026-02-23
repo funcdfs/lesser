@@ -25,7 +25,7 @@ class DiscoveryPage extends StatelessWidget {
         slivers: [
           // Sticky header
           SliverAppBar(
-            pinned: true,
+            floating: true,
             elevation: 0,
             automaticallyImplyLeading: false,
             backgroundColor: Theme.of(

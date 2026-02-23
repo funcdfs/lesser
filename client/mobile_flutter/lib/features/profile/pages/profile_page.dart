@@ -16,27 +16,38 @@ class ProfilePage extends StatelessWidget {
 
     return Scaffold(
       backgroundColor: colors.surfaceBase,
-      appBar: AppBar(
-        title: const Text('Profile'),
-        automaticallyImplyLeading: false,
-        centerTitle: true,
-        backgroundColor: colors.surfaceBase,
-        elevation: 0,
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.science_rounded),
-            tooltip: '组件测试',
-            color: colors.textTertiary,
-            onPressed: () => Navigator.push(
-              context,
-              MaterialPageRoute(builder: (_) => const TestPage()),
+      body: CustomScrollView(
+        slivers: [
+          SliverAppBar(
+            title: const Text('Profile'),
+            automaticallyImplyLeading: false,
+            centerTitle: true,
+            backgroundColor: colors.surfaceBase,
+            elevation: 0,
+            floating: true,
+            actions: [
+              IconButton(
+                icon: const Icon(Icons.science_rounded),
+                tooltip: '组件测试',
+                color: colors.textTertiary,
+                onPressed: () => Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (_) => const TestPage()),
+                ),
+              ),
+            ],
+          ),
+          SliverPadding(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+            sliver: SliverList(
+              delegate: SliverChildListDelegate([
+                _ThemeSwitchCard(isDark: isDark),
+              ]),
             ),
           ),
+          // Bottom padding for navigation bar
+          const SliverPadding(padding: EdgeInsets.only(bottom: 100)),
         ],
-      ),
-      body: ListView(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-        children: [_ThemeSwitchCard(isDark: isDark)],
       ),
     );
   }
