@@ -1,4 +1,3 @@
-import 'dart:ui';
 import 'package:flutter/material.dart';
 import '../../../../pkg/ui/effects/effects.dart';
 import '../../../../pkg/ui/theme/theme.dart';
@@ -187,24 +186,18 @@ class _PlaylistCard extends StatelessWidget {
                                 fit: StackFit.expand,
                                 children: [
                                   imageWidget,
-                                  ClipRect(
-                                    child: BackdropFilter(
-                                      filter: ImageFilter.blur(
-                                        sigmaX: 8.0,
-                                        sigmaY: 8.0,
-                                      ),
-                                      child: Container(
-                                        color: colors.accent.withValues(
-                                          alpha: 0.3,
-                                        ),
-                                        alignment: Alignment.center,
-                                        child: Text(
-                                          '+$overflowCount',
-                                          style: const TextStyle(
-                                            fontSize: 20,
-                                            fontWeight: FontWeight.w700,
-                                            color: Colors.white,
-                                          ),
+                                  FrostedGlass(
+                                    blur: 8.0,
+                                    opacity: 0.3,
+                                    color: colors.accent,
+                                    borderRadius: borderRadius,
+                                    child: Center(
+                                      child: Text(
+                                        '+$overflowCount',
+                                        style: const TextStyle(
+                                          fontSize: 20,
+                                          fontWeight: FontWeight.w700,
+                                          color: Colors.white,
                                         ),
                                       ),
                                     ),
