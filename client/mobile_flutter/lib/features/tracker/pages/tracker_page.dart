@@ -22,6 +22,7 @@ class TrackerPage extends StatelessWidget {
                   curve: Curves.easeOutCubic,
                 );
               },
+          
               child: const Text('My Tracker'),
             ),
             floating: true,
@@ -29,19 +30,19 @@ class TrackerPage extends StatelessWidget {
           ),
 
           // 1. 想看 / 看过（立体书架效果）
-          TrackerStatsCards(),
+          const TrackerStatsCards(),
 
           // 2. 活跃度热力图
-          TrackerHeatmap(),
+          const TrackerHeatmap(),
 
           // 3. 播放列表
-          TrackerPlaylists(),
+          const TrackerPlaylists(),
 
           // 4. 最近活动（移至最末）
-          TrackerTimeline(),
+          const TrackerTimeline(),
 
           // 底部导航栏预留间距
-          SliverPadding(padding: EdgeInsets.only(bottom: 100)),
+          const SliverPadding(padding: EdgeInsets.only(bottom: 100)),
         ],
       ),
     );

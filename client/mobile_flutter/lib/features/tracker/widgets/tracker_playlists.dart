@@ -128,7 +128,7 @@ class _PlaylistCard extends StatelessWidget {
                 borderRadius: BorderRadius.circular(16),
                 child: LayoutBuilder(
                   builder: (context, constraints) {
-                    final spacing = 4.0;
+                    const spacing = 4.0;
                     // 计算每个小格子的尺寸
                     final itemSize = (constraints.maxWidth - spacing) / 2;
 
