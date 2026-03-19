@@ -378,44 +378,68 @@ class _InputRow extends StatelessWidget {
           ),
           const SizedBox(width: 4),
           // 右侧区域：附件/更多 或 发送按钮
-          AnimatedSwitcher(
+          // 使用 AnimatedContainer 平滑改变宽度，避免输入框宽度瞬间跳动
+          AnimatedContainer(
             duration: _kAnimDuration,
-            switchInCurve: Curves.easeOutBack,
-            switchOutCurve: Curves.easeIn,
-            transitionBuilder: (child, animation) {
-              return ScaleTransition(scale: animation, child: child);
-            },
-            child: hasText
-                ? _SendButton(
-                    key: const ValueKey('send'),
-                    isSubmitting: isSubmitting,
-                    onTap: onSubmit,
-                  )
-                : Row(
-                    key: const ValueKey('actions'),
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      _ActionButton(
-                        icon: Icons.attach_file_rounded,
-                        onTap: onAttachmentTap,
-                        colors: colors,
-                      ),
-                      const SizedBox(width: 2),
-                      GestureDetector(
-                        onTapUp: onMoreTap,
-                        behavior: HitTestBehavior.opaque,
-                        child: SizedBox(
-                          width: 36,
-                          height: 36,
-                          child: Icon(
-                            Icons.more_horiz_rounded,
-                            size: _kActionIconSize,
-                            color: colors.textSecondary,
+            curve: Curves.easeOutCubic,
+            width: hasText ? _kSendButtonSize : 74.0, // 36 + 2 + 36
+            height: _kSendButtonSize,
+            alignment: Alignment.centerRight,
+            child: Stack(
+              alignment: Alignment.centerRight,
+              children: [
+                // 附件/更多 按钮组
+                AnimatedOpacity(
+                  duration: _kAnimDuration,
+                  curve: Curves.easeOut,
+                  opacity: hasText ? 0.0 : 1.0,
+                  child: IgnorePointer(
+                    ignoring: hasText,
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        _ActionButton(
+                          icon: Icons.attach_file_rounded,
+                          onTap: onAttachmentTap,
+                          colors: colors,
+                        ),
+                        const SizedBox(width: 2),
+                        GestureDetector(
+                          onTapUp: onMoreTap,
+                          behavior: HitTestBehavior.opaque,
+                          child: SizedBox(
+                            width: 36,
+                            height: 36,
+                            child: Icon(
+                              Icons.more_horiz_rounded,
+                              size: _kActionIconSize,
+                              color: colors.textSecondary,
+                            ),
                           ),
                         ),
-                      ),
-                    ],
+                      ],
+                    ),
                   ),
+                ),
+                // 发送按钮
+                AnimatedScale(
+                  duration: const Duration(milliseconds: 250),
+                  curve: Curves.easeOutBack,
+                  scale: hasText ? 1.0 : 0.0,
+                  child: AnimatedOpacity(
+                    duration: _kAnimDuration,
+                    opacity: hasText ? 1.0 : 0.0,
+                    child: IgnorePointer(
+                      ignoring: !hasText,
+                      child: _SendButton(
+                        isSubmitting: isSubmitting,
+                        onTap: onSubmit,
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ),
           ),
         ],
       ),
@@ -485,7 +509,7 @@ class _ActionButton extends StatelessWidget {
 
 /// 发送按钮
 class _SendButton extends StatelessWidget {
-  const _SendButton({super.key, this.isSubmitting = false, this.onTap});
+  const _SendButton({this.isSubmitting = false, this.onTap});
 
   final bool isSubmitting;
   final VoidCallback? onTap;
