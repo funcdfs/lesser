@@ -7,7 +7,7 @@
 // 将列表渲染逻辑从页面中抽离，提高代码可维护性。
 //
 // ## 核心功能
-// - 混合列表：支持 DateTime（日期分隔符）和 SubjectPostModel（动态）两种类型
+// - 混合列表：支持 DateTime（日期分隔符）和 MessageModel（动态）两种类型
 // - 动态高亮：支持深层链接导航时高亮目标动态
 // - 滚动定位：通过 HighlightController 实现精确滚动到指定动态
 // - 淡入动画：列表加载完成后有淡入效果
@@ -16,47 +16,19 @@
 // - PostListController: 管理列表数据和日期分组
 // - HighlightController: 管理动态高亮和滚动定位
 // - DateSeparator: 日期分隔符组件
-// - SubjectPost: 动态气泡组件
-//
-// ## 使用示例
-// ```dart
-// PostListView(
-//   listController: _listController,
-//   scrollController: _scrollController,
-//   highlightController: _highlightController,
-//   highlightedPostId: _highlightedPostId,
-//   topPadding: topPadding,
-//   onHighlightComplete: _highlightController.onHighlightComplete,
-//   onCommentTap: _openCommentPage,
-//   onMenuAction: _handleMenuAction,
-//   onReactionTap: (emoji) {},
-//   onDateSelected: _scrollToDate,
-// )
-// ```
+// - MessageItem: 消息气泡组件
 //
 // =============================================================================
 
 import 'package:flutter/material.dart';
 import '../../../pkg/ui/effects/effects.dart';
 import '../../../pkg/ui/theme/theme.dart';
-import '../models/subject_post_model.dart';
-import 'subject_post.dart';
+import '../models/message_model.dart';
+import 'message_item.dart';
 import 'date_separator.dart';
 import 'post_list_controller.dart';
 
-/// 动态列表视图
-///
-/// ## 参数说明
-/// - [listController]: 列表数据控制器，提供混合列表项和日期集合
-/// - [scrollController]: 滚动控制器，用于滚动定位
-/// - [highlightController]: 高亮控制器，管理动态高亮状态
-/// - [highlightedPostId]: 当前高亮的动态 ID
-/// - [topPadding]: 顶部内边距（考虑 AppBar 和置顶横幅）
-/// - [onHighlightComplete]: 高亮动画完成回调
-/// - [onCommentTap]: 评论按钮点击回调
-/// - [onMenuAction]: 动态菜单操作回调
-/// - [onReactionTap]: 反应按钮点击回调
-/// - [onDateSelected]: 日期选择回调（从年历选择器）
+/// 动态列表视图 (普通 ListView 版本)
 class PostListView extends StatelessWidget {
   const PostListView({
     super.key,
@@ -78,9 +50,8 @@ class PostListView extends StatelessWidget {
   final String? highlightedPostId;
   final double topPadding;
   final VoidCallback onHighlightComplete;
-  final void Function(SubjectPostModel) onCommentTap;
-  final void Function(SubjectPostMenuAction, SubjectPostModel)
-  onMenuAction;
+  final void Function(MessageModel) onCommentTap;
+  final void Function(MessageMenuAction, MessageModel) onMenuAction;
   final void Function(String) onReactionTap;
   final void Function(DateTime) onDateSelected;
 
@@ -105,8 +76,78 @@ class PostListView extends StatelessWidget {
         padding: EdgeInsets.only(top: topPadding, bottom: 8),
         itemCount: items.length,
         itemBuilder: (context, index) {
-          final item = items[index];
+          return _buildItem(context, items[index], postDates);
+        },
+      ),
+    );
+  }
 
+  Widget _buildItem(BuildContext context, dynamic item, Set<DateTime> postDates) {
+    if (item is DateItem) {
+      return DateSeparator(
+        key: ValueKey(item.date),
+        date: item.date,
+        messageDates: postDates,
+        onDateSelected: onDateSelected,
+      );
+    } else if (item is PostItem) {
+      final post = item.post;
+      final isHighlighted = highlightedPostId == post.id;
+      return MessageItem(
+        key: isHighlighted ? ValueKey(post.id) : null,
+        message: post,
+        isHighlighted: isHighlighted,
+        onHighlightComplete: isHighlighted ? onHighlightComplete : null,
+        onCommentTap: () => onCommentTap(post),
+        onMenuAction: (action) => onMenuAction(action, post),
+        onReactionTap: onReactionTap,
+      );
+    }
+    return const SizedBox.shrink();
+  }
+}
+
+/// Sliver 版本的动态列表视图
+class PostListViewSliver extends StatelessWidget {
+  const PostListViewSliver({
+    super.key,
+    required this.listController,
+    required this.highlightController,
+    required this.highlightedPostId,
+    required this.onHighlightComplete,
+    required this.onCommentTap,
+    required this.onMenuAction,
+    required this.onReactionTap,
+    required this.onDateSelected,
+    required this.posts,
+  });
+
+  final PostListController listController;
+  final HighlightController highlightController;
+  final String? highlightedPostId;
+  final VoidCallback onHighlightComplete;
+  final void Function(MessageModel) onCommentTap;
+  final void Function(MessageMenuAction, MessageModel) onMenuAction;
+  final void Function(String) onReactionTap;
+  final void Function(DateTime) onDateSelected;
+  final List<MessageModel> posts;
+
+  @override
+  Widget build(BuildContext context) {
+    final items = listController.listItems;
+    final postDates = listController.postDates;
+
+    if (items.isEmpty) {
+      return const SliverFillRemaining(
+        hasScrollBody: false,
+        child: _EmptyPostView(),
+      );
+    }
+
+    return SliverList(
+      delegate: SliverChildBuilderDelegate(
+        (context, index) {
+          final item = items[index];
           if (item is DateItem) {
             return DateSeparator(
               key: ValueKey(item.date),
@@ -117,10 +158,9 @@ class PostListView extends StatelessWidget {
           } else if (item is PostItem) {
             final post = item.post;
             final isHighlighted = highlightedPostId == post.id;
-            return SubjectPost(
-              // 仅对于被高亮的项，为方便查找使用局部 ValueKey，否则不强制传 Key，恢复复用池机制
+            return MessageItem(
               key: isHighlighted ? ValueKey(post.id) : null,
-              post: post,
+              message: post,
               isHighlighted: isHighlighted,
               onHighlightComplete: isHighlighted ? onHighlightComplete : null,
               onCommentTap: () => onCommentTap(post),
@@ -130,14 +170,13 @@ class PostListView extends StatelessWidget {
           }
           return const SizedBox.shrink();
         },
+        childCount: items.length,
       ),
     );
   }
 }
 
 /// 空动态视图
-///
-/// 当剧集没有动态时显示的占位视图，包含图标和提示文字。
 class _EmptyPostView extends StatelessWidget {
   const _EmptyPostView();
 

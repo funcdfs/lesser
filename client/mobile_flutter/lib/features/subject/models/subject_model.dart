@@ -24,7 +24,8 @@
 
 import '../../../pkg/utils/copy_with_utils.dart';
 import '../../../pkg/utils/format_utils.dart';
-import 'subject_post_model.dart';
+import 'message_model.dart';
+import 'subject_view_mode.dart';
 
 // =============================================================================
 // 剧集核心模型
@@ -149,7 +150,7 @@ class SubjectModel {
   // ---------------------------------------------------------------------------
 
   /// 置顶动态（可选）
-  final SubjectPostModel? pinnedPost;
+  final MessageModel? pinnedPost;
 
   /// 最后动态预览文本（用于列表显示）
   final String? lastPostPreview;
@@ -234,7 +235,7 @@ class SubjectModel {
       tags: tags ?? this.tags,
       pinnedPost: pinnedPost == sentinel
           ? this.pinnedPost
-          : castOrNull<SubjectPostModel>(pinnedPost),
+          : castOrNull<MessageModel>(pinnedPost),
       lastPostPreview: lastPostPreview == sentinel
           ? this.lastPostPreview
           : castOrNull<String>(lastPostPreview),
@@ -270,12 +271,14 @@ class SubjectUIState {
     this.unreadCount = 0,
     this.isMuted = false,
     this.isPinned = false,
+    this.viewMode = SubjectViewMode.telegram,
   });
-
-
 
   /// 关联的剧集 ID
   final String subjectId;
+
+  /// 视图模式
+  final SubjectViewMode viewMode;
 
   /// 未读动态数量
   final int unreadCount;
@@ -290,12 +293,18 @@ class SubjectUIState {
   bool get hasUnread => unreadCount > 0;
 
   /// 复制并修改指定字段
-  SubjectUIState copyWith({int? unreadCount, bool? isMuted, bool? isPinned}) {
+  SubjectUIState copyWith({
+    int? unreadCount,
+    bool? isMuted,
+    bool? isPinned,
+    SubjectViewMode? viewMode,
+  }) {
     return SubjectUIState(
       subjectId: subjectId,
       unreadCount: unreadCount ?? this.unreadCount,
       isMuted: isMuted ?? this.isMuted,
       isPinned: isPinned ?? this.isPinned,
+      viewMode: viewMode ?? this.viewMode,
     );
   }
 
@@ -306,14 +315,15 @@ class SubjectUIState {
           subjectId == other.subjectId &&
           unreadCount == other.unreadCount &&
           isMuted == other.isMuted &&
-          isPinned == other.isPinned);
+          isPinned == other.isPinned &&
+          viewMode == other.viewMode);
 
   @override
-  int get hashCode => Object.hash(subjectId, unreadCount, isMuted, isPinned);
+  int get hashCode => Object.hash(subjectId, unreadCount, isMuted, isPinned, viewMode);
 
   @override
   String toString() =>
-      'SubjectUIState(id: $subjectId, unread: $unreadCount, muted: $isMuted, pinned: $isPinned)';
+      'SubjectUIState(id: $subjectId, unread: $unreadCount, muted: $isMuted, pinned: $isPinned, viewMode: $viewMode)';
 }
 
 // =============================================================================

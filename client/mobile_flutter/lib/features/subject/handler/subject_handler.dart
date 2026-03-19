@@ -175,10 +175,17 @@ class SubjectHandler extends ChangeNotifier {
   /// 获取剧集动态列表
   ///
   /// 返回指定剧集的动态列表，按时间升序排列（最新在底部）。
-  Future<List<SubjectPostModel>> getPosts(String subjectId) async {
-    final posts = await _dataSource.getPosts(subjectId);
+  Future<List<MessageModel>> getPosts(String subjectId, {String? topicId}) async {
+    final posts = await _dataSource.getPosts(subjectId, topicId: topicId);
     return List.from(posts)
       ..sort((a, b) => a.createdAt.compareTo(b.createdAt));
+  }
+
+  /// 获取剧集话题列表
+  ///
+  /// 返回指定剧集的话题列表（用于 Discord 模式）。
+  Future<List<SubjectTopicModel>> getTopics(String subjectId) async {
+    return _dataSource.getTopics(subjectId);
   }
 
   /// 刷新剧集列表
@@ -242,6 +249,20 @@ class SubjectHandler extends ChangeNotifier {
       _safeNotifyListeners();
       rethrow;
     }
+  }
+
+  /// 切换视图模式
+  ///
+  /// 切换 Telegram/Discord 视图模式
+  void toggleViewMode(String subjectId, SubjectViewMode mode) {
+    final currentState = _uiStates[subjectId];
+    if (currentState == null) return;
+
+    if (currentState.viewMode == mode) return;
+
+    _uiStates[subjectId] = currentState.copyWith(viewMode: mode);
+    _safeNotifyListeners();
+    // 视图模式属于本地状态，如果需要保存到服务端则在这里发请求
   }
 
   /// 更新未读数

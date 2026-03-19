@@ -12,7 +12,7 @@
 //
 
 import 'package:flutter/material.dart';
-import '../models/subject_post_model.dart';
+import '../models/message_model.dart';
 import 'subject_constants.dart';
 
 // =============================================================================
@@ -31,7 +31,7 @@ class DateItem extends ListItem {
 /// 动态项
 class PostItem extends ListItem {
   PostItem(this.post);
-  final SubjectPostModel post;
+  final MessageModel post;
 }
 
 /// 动态列表缓存控制器
@@ -50,7 +50,7 @@ class PostListController {
   Set<DateTime> get postDates => _cachedPostDates;
 
   /// 更新缓存
-  void updateCache(List<SubjectPostModel> posts) {
+  void updateCache(List<MessageModel> posts) {
     _cachedListItems = _buildListItems(posts);
     _cachedPostDates = posts.map((p) {
       return DateTime(p.createdAt.year, p.createdAt.month, p.createdAt.day);
@@ -69,7 +69,7 @@ class PostListController {
   }
 
   /// 构建列表项（动态 + 日期分隔符）
-  List<ListItem> _buildListItems(List<SubjectPostModel> posts) {
+  List<ListItem> _buildListItems(List<MessageModel> posts) {
     final items = <ListItem>[];
     DateTime? lastDate;
 

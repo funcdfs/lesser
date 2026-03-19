@@ -38,10 +38,16 @@ abstract class SubjectDataSource {
   /// 如果剧集不存在，返回 null。
   Future<SubjectModel?> getSubjectDetail(String id);
 
+  /// 获取剧集话题列表
+  ///
+  /// 返回指定剧集的话题列表（用于 Discord 模式）。
+  Future<List<SubjectTopicModel>> getTopics(String subjectId);
+
   /// 获取剧集动态列表
   ///
   /// 返回指定剧集的动态列表，按时间升序排列（最新在底部）。
-  Future<List<SubjectPostModel>> getPosts(String subjectId);
+  /// 可选 [topicId] 用于过滤特定话题的动态。
+  Future<List<MessageModel>> getPosts(String subjectId, {String? topicId});
 
   /// 切换静音状态
   ///

@@ -25,6 +25,7 @@ class CommentBubble extends StatelessWidget {
     this.replyTo,
     this.isPinned = false,
     this.isDeleted = false,
+    this.isOwn = false,
     this.trailing,
     this.channelId,
     this.messageId,
@@ -41,6 +42,7 @@ class CommentBubble extends StatelessWidget {
   final ReplyTarget? replyTo;
   final bool isPinned;
   final bool isDeleted;
+  final bool isOwn;
   final Widget? trailing;
 
   /// 频道 ID（用于构建回复引用的 Link）
@@ -65,16 +67,31 @@ class CommentBubble extends StatelessWidget {
         ? Colors.white.withValues(alpha: 0.03)
         : colors.textPrimary.withValues(alpha: 0.04);
 
+    // 自己的评论使用 accent 淡色背景
+    final bgColor = isOwn
+        ? colors.accent.withValues(alpha: isDark ? 0.15 : 0.10)
+        : colors.surfaceElevated;
+
+    // 圆角方向：自己的评论右下小圆角，他人评论左下小圆角
+    final borderRadius = isOwn
+        ? const BorderRadius.only(
+            topLeft: Radius.circular(18),
+            topRight: Radius.circular(18),
+            bottomLeft: Radius.circular(18),
+            bottomRight: Radius.circular(6),
+          )
+        : const BorderRadius.only(
+            topLeft: Radius.circular(18),
+            topRight: Radius.circular(18),
+            bottomLeft: Radius.circular(6),
+            bottomRight: Radius.circular(18),
+          );
+
     return Container(
       padding: const EdgeInsets.fromLTRB(11, 9, 11, 9),
       decoration: BoxDecoration(
-        color: colors.surfaceElevated,
-        borderRadius: const BorderRadius.only(
-          topLeft: Radius.circular(18),
-          topRight: Radius.circular(18),
-          bottomLeft: Radius.circular(6),
-          bottomRight: Radius.circular(18),
-        ),
+        color: bgColor,
+        borderRadius: borderRadius,
         // 精致边框
         border: Border.all(color: borderColor, width: 0.5),
         // 微妙阴影

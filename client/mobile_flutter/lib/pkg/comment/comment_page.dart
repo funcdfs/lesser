@@ -637,10 +637,14 @@ class _CommentPageState extends State<CommentPage>
     await _handler.submitComment(widget.targetId, widget.targetType);
     _inputController.clear();
 
-    final state = _handler.listState;
-    if (state.comments.isNotEmpty) {
-      _scrollButtonController?.onNewMessage(state.comments.last.id);
-    }
+    // 发送成功后自动滚动到底部（自己发的不计入未读）
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted && _scrollController.hasClients) {
+        _scrollController.jumpTo(
+          _scrollController.position.maxScrollExtent,
+        );
+      }
+    });
   }
 
   /// 返回帖子 - 委托给 CommentNavigator
@@ -685,22 +689,11 @@ class _CommentPageState extends State<CommentPage>
 
     final body = Column(
       children: [
-        Expanded(
-          child: Stack(
-            children: [
-              commentList,
-              if (_scrollButtonController != null)
-                Positioned(
-                  right: 12,
-                  bottom: 12,
-                  child: ScrollButtons(controller: _scrollButtonController!),
-                ),
-            ],
-          ),
-        ),
+        Expanded(child: commentList),
         CommentInputBar(
           controller: _inputController,
           focusNode: _inputFocusNode,
+          scrollController: _scrollButtonController,
           replyTo: inputState.replyTo,
           isSubmitting: inputState.isSubmitting,
           onSubmit: _onSubmit,

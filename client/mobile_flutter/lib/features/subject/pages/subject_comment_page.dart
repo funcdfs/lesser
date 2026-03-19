@@ -24,13 +24,12 @@
 
 import 'package:flutter/material.dart';
 import '../../../pkg/comment/comment.dart';
-import '../data_access/subject_mock_data_source.dart';
 import '../data_access/subject_comment_data_source.dart';
 import '../data_access/mock/subject_mock_data.dart';
 import '../models/subject_comment_model.dart' as subject;
-import '../models/subject_post_model.dart';
+import '../models/subject_models.dart';
 import '../widgets/subject_constants.dart';
-import '../widgets/subject_post.dart' show SubjectPostBubble;
+import '../widgets/message_item.dart' show MessageBubble;
 import '../widgets/comment_page_scaffold.dart';
 
 /// 剧集评论页
@@ -57,7 +56,7 @@ class SubjectCommentPage extends StatefulWidget {
 
   final String postId;
   final String subjectId;
-  final SubjectPostModel? post; // 原始动态（用于显示动态头部）
+  final MessageModel? post; // 原始动态（用于显示动态头部）
   final CommentModel? rootComment;
   final String? rootCommentId; // 根评论 ID（用于深层链接，需要加载根评论）
   final String? targetCommentId; // 深层链接目标评论 ID
@@ -87,8 +86,7 @@ class SubjectCommentPage extends StatefulWidget {
 class _SubjectCommentPageState extends State<SubjectCommentPage> {
   late final SubjectCommentDataSource _dataSource;
   CommentModel? _rootComment;
-  SubjectPostModel? _post;
-  late final SubjectMockDataSource _subjectDataSource;
+  MessageModel? _post;
   bool _isLoading = false;
   String? _error;
   bool _isDisposed = false;
@@ -96,7 +94,6 @@ class _SubjectCommentPageState extends State<SubjectCommentPage> {
   @override
   void initState() {
     super.initState();
-    _subjectDataSource = SubjectMockDataSource();
     // 使用 Mock 数据的当前用户 ID，生产环境应从认证服务获取
     _dataSource = SubjectCommentDataSource(
       subjectId: widget.subjectId,
@@ -131,17 +128,17 @@ class _SubjectCommentPageState extends State<SubjectCommentPage> {
     });
 
     try {
-      final posts = await _subjectDataSource.getPosts(widget.subjectId);
-      SubjectPostModel? post;
-      for (final p in posts) {
+      final subjectPosts = mockPosts[widget.subjectId] ?? [];
+      MessageModel? foundPost;
+      for (final p in subjectPosts) {
         if (p.id == widget.postId) {
-          post = p;
+          foundPost = p;
           break;
         }
       }
 
       if (_isDisposed) return;
-      if (post == null) {
+      if (foundPost == null) {
         setState(() {
           _error = 'post not found';
           _isLoading = false;
@@ -150,7 +147,7 @@ class _SubjectCommentPageState extends State<SubjectCommentPage> {
       }
 
       setState(() {
-        _post = post;
+        _post = foundPost;
         _isLoading = false;
       });
     } catch (e) {
@@ -215,8 +212,8 @@ class _SubjectCommentPageState extends State<SubjectCommentPage> {
             child: ConstrainedBox(
               constraints: BoxConstraints(maxWidth: maxWidth),
               child: IntrinsicWidth(
-                child: SubjectPostBubble(
-                  post: post,
+                child: MessageBubble(
+                  message: post,
                   onReactionTap: (emoji) {
                     // 反应功能待实现
                   },

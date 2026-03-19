@@ -48,10 +48,22 @@ class SubjectMockDataSource implements SubjectDataSource {
   }
 
   @override
-  Future<List<SubjectPostModel>> getPosts(String subjectId) async {
+  Future<List<SubjectTopicModel>> getTopics(String subjectId) async {
+    await Future.delayed(const Duration(milliseconds: 50));
+    final topics = mockTopics[subjectId];
+    return topics != null ? List.from(topics) : [];
+  }
+
+  @override
+  Future<List<MessageModel>> getPosts(String subjectId, {String? topicId}) async {
     await Future.delayed(const Duration(milliseconds: 50));
     final posts = mockPosts[subjectId];
-    return posts != null ? List.from(posts) : [];
+    if (posts == null) return [];
+    
+    if (topicId != null) {
+      return posts.where((p) => p.topicId == topicId).toList();
+    }
+    return List.from(posts);
   }
 
   @override

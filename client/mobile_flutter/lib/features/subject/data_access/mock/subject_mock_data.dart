@@ -24,8 +24,9 @@
 // =============================================================================
 
 import '../../models/subject_comment_model.dart';
-import '../../models/subject_post_model.dart';
+import '../../models/message_model.dart';
 import '../../models/subject_model.dart';
+import '../../models/subject_topic_model.dart';
 import '../../models/subject_tag.dart';
 import '../../models/reaction_model.dart';
 
@@ -139,11 +140,12 @@ final mockSubjectUIStates = <String, SubjectUIState>{
 // =============================================================================
 
 /// 剧集动态（按 seriesId 分组）
-final mockPosts = <String, List<SubjectPostModel>>{
+final mockPosts = <String, List<MessageModel>>{
   'three_body': [
-    SubjectPostModel(
+    MessageModel(
       id: 'ep_30',
       subjectId: 'three_body',
+      topicId: 'topic_three_body_01',
       authorId: 'official_tb',
       authorName: '三体官方',
       content: '第30集：大结局详细解读，高能预警！\n本集主要讲述了古筝计划的实施以及叶文洁的最终审判...',
@@ -155,9 +157,10 @@ final mockPosts = <String, List<SubjectPostModel>>{
         totalCount: 700,
       ),
     ),
-    SubjectPostModel(
+    MessageModel(
       id: 'ep_29',
       subjectId: 'three_body',
+      topicId: 'topic_three_body_01',
       authorId: 'official_tb',
       authorName: '三体官方',
       content: '第29集：古筝行动前奏\n史强制定了详细的作战计划...',
@@ -167,15 +170,50 @@ final mockPosts = <String, List<SubjectPostModel>>{
     ),
   ],
   'breaking_bad_fans': [
-     SubjectPostModel(
+     MessageModel(
       id: 'bb_discussion_1',
       subjectId: 'breaking_bad_fans',
+      topicId: 'topic_bb_01',
       authorId: 'fan_leader',
       authorName: '老白迷弟',
       content: 'E14: Ozymandias 依然是神作！\n昨晚重温了一遍，汉克死的时候心都碎了。',
       createdAt: DateTime(2025, 1, 21, 15, 30),
       viewCount: 300,
       commentCount: 45,
+    ),
+  ],
+};
+
+// =============================================================================
+// 话题数据
+// =============================================================================
+
+/// 剧集话题（按 seriesId 分组）
+final mockTopics = <String, List<SubjectTopicModel>>{
+  'three_body': [
+    SubjectTopicModel(
+      id: 'topic_three_body_01',
+      title: '剧情讨论专区',
+      description: '关于三体电视剧每一集的详细剧情讨论',
+      postCount: 2,
+      lastPostTime: DateTime(2025, 1, 22, 20, 0),
+      isPinned: true,
+    ),
+    SubjectTopicModel(
+      id: 'topic_three_body_02',
+      title: '原著党集合',
+      description: '原著小说与电视剧的改编差异讨论',
+      postCount: 0,
+      lastPostTime: DateTime(2025, 1, 20, 10, 0),
+    ),
+  ],
+  'breaking_bad_fans': [
+    SubjectTopicModel(
+      id: 'topic_bb_01',
+      title: '经典剧集回顾',
+      description: '第一季到第五季的精彩细节挖掘',
+      postCount: 1,
+      lastPostTime: DateTime(2025, 1, 21, 15, 30),
     ),
   ],
 };

@@ -1,42 +1,25 @@
 // =============================================================================
-// 剧集列表项组件
+// 剧集列表项组件 - Premium Subject Item
 // =============================================================================
 //
-// 显示剧集列表中的单个剧集项，包含头像、名称、订阅数、最后动态和状态信息。
+// 以“消息/话题”风格显示剧集，包含头像、标题、内容预览、统计信息。
 //
-// ## 布局结构
+// ## 设计美学
+// - 采用左侧头像引导，右侧内容展开的平衡布局
+// - 高密度设计：缩减边距，合并统计信息到元数据行
+// - 元数据（点赞、浏览、评论）使用彩色微图标
+// - 话题标签（Tags）使用浅背景胶囊（Chip）样式
 //
-// ```
-// ┌─────────────────────────────────────────────────────────────┐
-// │  [头像]  │  剧集名称  订阅数      │  📌 🔕  时间           │
-// │         │  最后动态预览...       │        未读数          │
-// └─────────────────────────────────────────────────────────────┘
-// ```
-//
-// ## 特性
-//
-// - Hero 动画：头像支持与详情页的共享元素过渡
-// - 状态图标：显示置顶、静音状态
-// - 未读徽章：显示未读动态数量
-//
-// ## 组件拆分
-//
-// 为保持代码清晰，将列表项拆分为多个私有 Widget：
-// - `_SubjectAvatar` - 头像（带 Hero）
-// - `_Content` - 中间内容区
-// - `_LastPost` - 最后动态预览
-// - `_Trailing` - 右侧状态区
+// =============================================================================
 
 import 'package:flutter/material.dart';
 import '../../../pkg/ui/effects/effects.dart';
 import '../../../pkg/ui/theme/theme.dart';
-import '../../../pkg/ui/widgets/widgets.dart';
+import '../../../pkg/utils/format_utils.dart';
 import '../models/subject_models.dart';
-import 'subject_constants.dart';
+import '../data_access/mock/subject_mock_data.dart';
 
-/// 剧集列表项
-///
-/// 显示剧集的基本信息和状态，点击可进入剧集详情页。
+/// 剧集列表项 - プレミアム话题展示
 class SubjectItem extends StatelessWidget {
   const SubjectItem({
     super.key,
@@ -45,218 +28,216 @@ class SubjectItem extends StatelessWidget {
     this.onTap,
   });
 
-  /// 剧集数据
   final SubjectModel subject;
-
-  /// UI 状态（未读数、静音、置顶）
   final SubjectUIState? uiState;
-
-  /// 点击回调
   final VoidCallback? onTap;
 
   @override
   Widget build(BuildContext context) {
     final colors = AppColors.of(context);
+    final unreadCount = uiState?.unreadCount ?? 0;
 
     return TapScale(
       onTap: onTap,
       scale: TapScales.card,
-      child: Container(
-        padding: SubjectItemLayout.padding,
-        decoration: BoxDecoration(
-          color: colors.surfaceBase,
-          border: Border(bottom: BorderSide(color: colors.divider, width: 0.5)),
-        ),
-        child: Row(
-          children: [
-            _SubjectAvatar(subject: subject),
-            const SizedBox(width: SubjectItemLayout.avatarSpacing),
-            Expanded(
-              child: _Content(subject: subject, colors: colors),
-            ),
-            const SizedBox(width: SubjectItemLayout.trailingSpacing),
-            _Trailing(
-              subject: subject,
-              uiState: uiState ?? SubjectUIState(subjectId: subject.id),
-              colors: colors,
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-// =============================================================================
-// 私有子组件
-// =============================================================================
-
-/// 剧集头像
-///
-/// 使用 Hero 动画实现与详情页的共享元素过渡。
-class _SubjectAvatar extends StatelessWidget {
-  const _SubjectAvatar({required this.subject});
-
-  final SubjectModel subject;
-
-  @override
-  Widget build(BuildContext context) {
-    return Hero(
-      tag: 'subject_avatar_${subject.id}',
-      // placeholderBuilder 保持 child 可见，避免动画结束时闪烁
-      placeholderBuilder: (_, size, child) =>
-          SizedBox(width: size.width, height: size.height, child: child),
-      child: AvatarButton(
-        imageUrl: subject.coverUrl,
-        size: SubjectItemLayout.avatarSize,
-        placeholder: subject.coverPlaceholder,
-        enableTapScale: false,
-      ),
-    );
-  }
-}
-
-/// 中间内容区
-///
-/// 显示剧集名称、订阅数和最后动态预览。
-class _Content extends StatelessWidget {
-  const _Content({required this.subject, required this.colors});
-
-  final SubjectModel subject;
-  final AppColorScheme colors;
-
-  @override
-  Widget build(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        // 第一行：剧集名 + 订阅数 + 徽章
-        Row(
-          children: [
-            Flexible(
-              child: Text(
-                subject.title,
-                style: TextStyle(
-                  fontSize: 15,
-                  fontWeight: FontWeight.w600,
-                  color: colors.textPrimary,
+      child: Stack(
+        clipBehavior: Clip.none,
+        children: [
+          // 列表项容器 (Card Container)
+          Container(
+            margin: const EdgeInsets.symmetric(vertical: 4, horizontal: 12),
+            decoration: BoxDecoration(
+              color: colors.surfaceElevated,
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(color: colors.divider.withValues(alpha: 0.08), width: 0.5),
+              boxShadow: [
+                BoxShadow(
+                  color: colors.textPrimary.withValues(alpha: 0.04),
+                  blurRadius: 10,
+                  offset: const Offset(0, 3),
                 ),
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-              ),
+              ],
             ),
-            if (subject.isOfficial)
-              Padding(
-                padding: const EdgeInsets.only(left: 4),
-                child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
-                  decoration: BoxDecoration(
-                     color: colors.accent,
-                     borderRadius: BorderRadius.circular(4),
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(12, 10, 12, 10),
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  _buildAvatar(colors),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        _buildHeader(colors),
+                        const SizedBox(height: 3),
+                        _buildLastMessage(colors),
+                        const SizedBox(height: 8),
+                        _buildFooter(colors),
+                      ],
+                    ),
                   ),
-                  child: const Text('OFFICIAL', style: TextStyle(color: Colors.white, fontSize: 8, fontWeight: FontWeight.bold)),
-                ),
+                ],
               ),
-            if (subject.isVerified)
-               const Padding(
-                padding: EdgeInsets.only(left: 4),
-                child: Icon(Icons.verified_rounded, size: 14, color: Colors.blueAccent),
-              ),
-            const SizedBox(width: 8),
-            SubscriberBadge(count: subject.subscriberCount),
-          ],
+            ),
+          ),
+          // 3. 右上角未读数 (Unread Badge at Top-Right)
+          if (unreadCount > 0)
+            Positioned(
+              top: 0,
+              right: 8,
+              child: _buildUnreadBadge(unreadCount, colors),
+            ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildUnreadBadge(int count, AppColorScheme colors) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+      decoration: BoxDecoration(
+        color: Colors.redAccent,
+        borderRadius: BorderRadius.circular(10),
+        border: Border.all(color: Colors.white, width: 1.5),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.redAccent.withValues(alpha: 0.3),
+            blurRadius: 4,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: Text(
+        count > 99 ? '99+' : count.toString(),
+        style: const TextStyle(
+          fontSize: 10,
+          color: Colors.white,
+          fontWeight: FontWeight.bold,
+          height: 1,
         ),
-        const SizedBox(height: SubjectItemLayout.titleSpacing),
-        // 第二行：最后动态预览
-        _LastPost(subject: subject, colors: colors),
+      ),
+    );
+  }
+
+  Widget _buildAvatar(AppColorScheme colors) {
+    final hasCover = subject.coverUrl != null && subject.coverUrl!.isNotEmpty;
+    return Container(
+      width: 44,
+      height: 44,
+      decoration: BoxDecoration(
+        color: colors.surfaceBase,
+        borderRadius: BorderRadius.circular(12),
+        image: hasCover
+            ? DecorationImage(image: NetworkImage(subject.coverUrl!), fit: BoxFit.cover)
+            : null,
+      ),
+      child: !hasCover
+          ? Icon(Icons.movie_filter_rounded, color: colors.textDisabled)
+          : null,
+    );
+  }
+
+  Widget _buildHeader(AppColorScheme colors) {
+    final descriptionPrefix = subject.description?.split('\n').first ?? '';
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.center,
+      children: [
+        Text(
+          subject.title,
+          style: TextStyle(
+            fontSize: 15,
+            fontWeight: FontWeight.bold,
+            color: colors.textPrimary,
+            letterSpacing: -0.2,
+          ),
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+        ),
+        if (descriptionPrefix.isNotEmpty) ...[
+          const SizedBox(width: 8),
+          Expanded(
+            child: Text(
+              descriptionPrefix,
+              style: TextStyle(
+                fontSize: 12,
+                color: colors.textTertiary,
+              ),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+            ),
+          ),
+        ],
       ],
     );
   }
-}
 
-/// 最后动态预览
-class _LastPost extends StatelessWidget {
-  const _LastPost({required this.subject, required this.colors});
-
-  final SubjectModel subject;
-  final AppColorScheme colors;
-
-  @override
-  Widget build(BuildContext context) {
-    final lastPost = subject.lastPostPreview;
-    final hasPost = lastPost != null && lastPost.isNotEmpty;
-
+  Widget _buildLastMessage(AppColorScheme colors) {
     return Text(
-      hasPost ? lastPost : '暂无动态',
+      subject.lastPostPreview ?? '暂无动态',
       style: TextStyle(
-        fontSize: 14,
-        color: hasPost ? colors.textSecondary : colors.textDisabled,
+        fontSize: 13.5,
+        color: colors.textSecondary,
+        height: 1.4,
       ),
       maxLines: 1,
       overflow: TextOverflow.ellipsis,
     );
   }
+
+  Widget _buildFooter(AppColorScheme colors) {
+    final tags = subject.tags.take(2).map((id) {
+      return mockSubjectTags.firstWhere(
+        (t) => t.id == id,
+        orElse: () => SubjectTag(id: id, name: id),
+      );
+    }).toList();
+
+    return Row(
+      children: [
+        if (tags.isNotEmpty)
+          Expanded(
+            child: Wrap(
+              spacing: 6,
+              children: tags.map((t) => _TagChip(tag: t, colors: colors)).toList(),
+            ),
+          ),
+        const Spacer(),
+        if (subject.lastPostTime != null)
+          Text(
+            formatTimeRelative(subject.lastPostTime!),
+            style: TextStyle(
+              fontSize: 11,
+              color: colors.textTertiary,
+            ),
+          ),
+      ],
+    );
+  }
 }
 
-/// 右侧状态区
-///
-/// 显示时间、状态图标（置顶、静音）和未读徽章。
-class _Trailing extends StatelessWidget {
-  const _Trailing({
-    required this.subject,
-    required this.uiState,
-    required this.colors,
-  });
+class _TagChip extends StatelessWidget {
+  const _TagChip({required this.tag, required this.colors});
 
-  final SubjectModel subject;
-  final SubjectUIState uiState;
+  final SubjectTag tag;
   final AppColorScheme colors;
 
   @override
   Widget build(BuildContext context) {
-    final isPinned = uiState.isPinned;
-    final isMuted = uiState.isMuted;
-    final unreadCount = uiState.unreadCount;
-    final lastPostTime = subject.lastPostTime;
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.end,
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        // 第一行：状态图标 + 时间
-        Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            if (isPinned)
-              Padding(
-                padding: const EdgeInsets.only(right: 4),
-                child: Icon(
-                  Icons.push_pin_rounded,
-                  size: 13,
-                  color: colors.textDisabled,
-                ),
-              ),
-            if (isMuted)
-              Padding(
-                padding: const EdgeInsets.only(right: 4),
-                child: Icon(
-                  Icons.notifications_off_rounded,
-                  size: 13,
-                  color: colors.textDisabled,
-                ),
-              ),
-            if (lastPostTime != null)
-              TimeBadge(time: lastPostTime, size: TimeBadgeSize.medium),
-          ],
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+      decoration: BoxDecoration(
+        color: colors.accentSoft.withValues(alpha: 0.5),
+        borderRadius: BorderRadius.circular(20),
+      ),
+      child: Text(
+        '#${tag.name}',
+        style: TextStyle(
+          fontSize: 11,
+          color: colors.accent,
+          fontWeight: FontWeight.bold,
         ),
-        // 第二行：未读徽章（有未读时显示，无未读时不占位）
-        if (unreadCount > 0)
-          Padding(
-            padding: const EdgeInsets.only(top: 8),
-            child: UnreadBadge(count: unreadCount, isMuted: isMuted),
-          ),
-      ],
+      ),
     );
   }
 }

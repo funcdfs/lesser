@@ -54,10 +54,11 @@ import 'reaction_model.dart';
 /// - **反应字段**：reactionStats, myReaction
 /// - **评论字段**：commentCount, commentAvatars
 /// - **统计字段**：viewCount
-class SubjectPostModel {
-  const SubjectPostModel({
+class MessageModel {
+  const MessageModel({
     required this.id,
     required this.subjectId,
+    this.topicId,
     required this.authorId,
     required this.content,
     this.mediaUrls = const [],
@@ -84,6 +85,9 @@ class SubjectPostModel {
 
   /// 所属剧集 ID
   final String subjectId;
+
+  /// 所属话题 ID（可选，用于 Discord 模式）
+  final String? topicId;
 
   /// 作者用户 ID
   final String authorId;
@@ -195,11 +199,12 @@ class SubjectPostModel {
   ///
   /// 对于可选字段（如 `myReaction`、`linkUrl` 等），使用哨兵值模式：
   /// - 不传参：保留原值
-  /// - 传入 `null`：清除该字段
-  /// - 传入具体值：更新为新值
-  SubjectPostModel copyWith({
+  /// - 传入 `null` : 清除该字段
+  /// - 传入具体值 : 更新为新值
+  MessageModel copyWith({
     String? id,
     String? subjectId,
+    Object? topicId = sentinel,
     String? authorId,
     String? content,
     List<String>? mediaUrls,
@@ -216,9 +221,12 @@ class SubjectPostModel {
     Object? linkTitle = sentinel,
     List<String>? commentAvatars,
   }) {
-    return SubjectPostModel(
+    return MessageModel(
       id: id ?? this.id,
       subjectId: subjectId ?? this.subjectId,
+      topicId: topicId == sentinel
+          ? this.topicId
+          : castOrNull<String>(topicId),
       authorId: authorId ?? this.authorId,
       content: content ?? this.content,
       mediaUrls: mediaUrls ?? this.mediaUrls,
@@ -253,7 +261,7 @@ class SubjectPostModel {
   ///
   /// 立即返回更新后的动态，用于 UI 即时反馈。
   /// 如果服务端请求失败，调用方应回滚到原始状态。
-  SubjectPostModel withReactionAdded(String emoji) => copyWith(
+  MessageModel withReactionAdded(String emoji) => copyWith(
     reactionStats: reactionStats.withAdded(emoji),
     myReaction: emoji,
   );
@@ -261,7 +269,7 @@ class SubjectPostModel {
   /// 移除反应（乐观更新）
   ///
   /// 如果当前没有反应，返回 this 避免不必要的对象创建。
-  SubjectPostModel withReactionRemoved() {
+  MessageModel withReactionRemoved() {
     final currentReaction = myReaction;
     if (currentReaction == null) return this;
 
@@ -274,7 +282,7 @@ class SubjectPostModel {
   /// 切换反应（乐观更新）
   ///
   /// 如果已有相同反应则移除，否则添加新反应（同时移除旧反应）。
-  SubjectPostModel withReactionToggled(String emoji) {
+  MessageModel withReactionToggled(String emoji) {
     if (myReaction == emoji) {
       return withReactionRemoved();
     }
@@ -285,7 +293,7 @@ class SubjectPostModel {
   }
 
   /// 评论数 +1（乐观更新）
-  SubjectPostModel withCommentAdded() =>
+  MessageModel withCommentAdded() =>
       copyWith(commentCount: commentCount + 1);
 
   // ---------------------------------------------------------------------------
@@ -296,7 +304,7 @@ class SubjectPostModel {
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
-      (other is SubjectPostModel && id == other.id);
+      (other is MessageModel && id == other.id);
 
   @override
   int get hashCode => id.hashCode;
@@ -306,6 +314,6 @@ class SubjectPostModel {
     final preview = content.length > 20
         ? '${content.substring(0, 20)}...'
         : content;
-    return 'SubjectPostModel(id: $id, content: $preview)';
+    return 'MessageModel(id: $id, content: $preview)';
   }
 }

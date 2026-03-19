@@ -127,60 +127,66 @@ class CommentItem extends StatelessWidget {
     final screenWidth = MediaQuery.of(context).size.width;
     final maxBubbleWidth = screenWidth * 0.75;
     const minBubbleWidth = 120.0;
+    final isOwn = comment.isOwn;
 
     // 计算回复按钮状态
     final replyState = _getReplyState();
+
+    // 头像组件
+    final avatar = Padding(
+      padding: const EdgeInsets.only(top: 2),
+      child: AvatarButton(
+        imageUrl: comment.author.avatarUrl,
+        size: 32,
+        placeholder: comment.author.displayName.isNotEmpty
+            ? comment.author.displayName[0]
+            : null,
+      ),
+    );
+
+    // 气泡组件
+    final bubble = ConstrainedBox(
+      constraints: BoxConstraints(
+        minWidth: minBubbleWidth,
+        maxWidth: maxBubbleWidth,
+      ),
+      child: CommentBubble(
+        displayName: comment.author.displayName,
+        username: comment.author.username,
+        roleLabel: comment.author.roleLabel,
+        isVerified: comment.author.isVerified,
+        createdAt: comment.createdAt,
+        content: comment.content,
+        nameColor: nameColor,
+        replyTo: comment.replyTo,
+        isPinned: isPinned,
+        isDeleted: comment.isDeleted,
+        isOwn: isOwn,
+        channelId: channelId,
+        messageId: messageId,
+        onQuoteTap: onQuoteTap,
+        trailing: CommentActions(
+          likeCount: comment.likeCount,
+          replyCount: showViewReplies ? descendantCount : 0,
+          isLiked: comment.isLiked,
+          replyState: replyState,
+          onLikeTap: onLikeTap,
+          onReplyTap: replyState.canExpand ? onViewReplies : null,
+        ),
+      ),
+    );
 
     Widget content = GestureDetector(
       onTapUp: (details) => _showContextMenu(context, details),
       child: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
         child: Row(
+          mainAxisAlignment:
+              isOwn ? MainAxisAlignment.end : MainAxisAlignment.start,
           crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // 头像
-            Padding(
-              padding: const EdgeInsets.only(top: 2),
-              child: AvatarButton(
-                imageUrl: comment.author.avatarUrl,
-                size: 32,
-                placeholder: comment.author.displayName.isNotEmpty
-                    ? comment.author.displayName[0]
-                    : null,
-              ),
-            ),
-            const SizedBox(width: 8),
-            // 气泡
-            ConstrainedBox(
-              constraints: BoxConstraints(
-                minWidth: minBubbleWidth,
-                maxWidth: maxBubbleWidth,
-              ),
-              child: CommentBubble(
-                displayName: comment.author.displayName,
-                username: comment.author.username,
-                roleLabel: comment.author.roleLabel,
-                isVerified: comment.author.isVerified,
-                createdAt: comment.createdAt,
-                content: comment.content,
-                nameColor: nameColor,
-                replyTo: comment.replyTo,
-                isPinned: isPinned,
-                isDeleted: comment.isDeleted,
-                channelId: channelId,
-                messageId: messageId,
-                onQuoteTap: onQuoteTap,
-                trailing: CommentActions(
-                  likeCount: comment.likeCount,
-                  replyCount: showViewReplies ? descendantCount : 0,
-                  isLiked: comment.isLiked,
-                  replyState: replyState,
-                  onLikeTap: onLikeTap,
-                  onReplyTap: replyState.canExpand ? onViewReplies : null,
-                ),
-              ),
-            ),
-          ],
+          children: isOwn
+              ? [bubble, const SizedBox(width: 8), avatar]
+              : [avatar, const SizedBox(width: 8), bubble],
         ),
       ),
     );
