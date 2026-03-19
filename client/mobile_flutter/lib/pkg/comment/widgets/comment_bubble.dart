@@ -7,6 +7,7 @@
 // - 精致的渐变边框和微妙阴影
 
 import 'package:flutter/material.dart';
+import '../../ui/effects/effects.dart';
 import '../../ui/theme/theme.dart';
 import '../models/comment_model.dart';
 import '../utils.dart';
@@ -251,53 +252,70 @@ class _QuoteBox extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final colors = AppColors.of(context);
+    final isDark = Theme.of(context).brightness == Brightness.dark;
 
-    // 预计算颜色
-    final bgColor = quoteColor.withValues(alpha: 0.08);
-    final borderColor = quoteColor.withValues(alpha: 0.6);
+    // 预计算颜色 - 优化左侧竖线和背景的视觉效果
+    final bgColor = quoteColor.withValues(alpha: isDark ? 0.12 : 0.10);
+    final borderColor = quoteColor.withValues(alpha: isDark ? 0.8 : 0.7);
 
     final content = Container(
       decoration: BoxDecoration(
         color: bgColor,
-        borderRadius: BorderRadius.circular(6),
-        border: Border(left: BorderSide(color: borderColor, width: 3)),
+        borderRadius: BorderRadius.circular(8),
+        // 使用更粗的左边框，增加圆角，提升视觉效果
+        border: Border(left: BorderSide(color: borderColor, width: 3.5)),
       ),
       child: Padding(
-        padding: const EdgeInsets.fromLTRB(8, 5, 8, 5),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          mainAxisSize: MainAxisSize.min,
+        padding: const EdgeInsets.fromLTRB(10, 6, 10, 6),
+        child: Row(
           children: [
-            Text(
-              target.authorName,
-              style: TextStyle(
-                fontSize: 11,
-                fontWeight: FontWeight.w600,
-                color: quoteColor,
-                height: 1.2,
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(
+                    target.authorName,
+                    style: TextStyle(
+                      fontSize: 11.5,
+                      fontWeight: FontWeight.w600,
+                      color: quoteColor,
+                      height: 1.2,
+                    ),
+                  ),
+                  const SizedBox(height: 2),
+                  Text(
+                    target.isDeleted ? '消息已删除' : target.contentPreview,
+                    style: TextStyle(
+                      fontSize: 11.5,
+                      color: colors.textTertiary,
+                      height: 1.3,
+                    ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ],
               ),
             ),
-            const SizedBox(height: 2),
-            Text(
-              target.isDeleted ? '消息已删除' : target.contentPreview,
-              style: TextStyle(
-                fontSize: 11,
-                color: colors.textTertiary,
-                height: 1.3,
+            // 可点击时显示跳转图标提示
+            if (onTap != null) ...[
+              const SizedBox(width: 6),
+              Icon(
+                Icons.arrow_forward_rounded,
+                size: 14,
+                color: quoteColor.withValues(alpha: 0.6),
               ),
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-            ),
+            ],
           ],
         ),
       ),
     );
 
-    // 可跳转时添加点击效果
+    // 可跳转时添加点击效果和手势反馈
     if (onTap != null) {
       return Container(
         margin: const EdgeInsets.only(top: 6),
-        child: GestureDetector(onTap: onTap, child: content),
+        child: TapScale(onTap: onTap, child: content),
       );
     }
 
