@@ -15,7 +15,7 @@ void main() {
     // 测试数据
     final testData = ReviewCardData(
       id: 'test-bug-1',
-      user: UserInfo(
+      user: const UserInfo(
         name: '测试用户',
         avatar: 'https://example.com/avatar.jpg',
       ),
@@ -43,9 +43,7 @@ void main() {
       );
     }
 
-    testWidgets('布局结构测试: 卡片应使用 Stack 层叠布局显示全屏海报感', (
-      WidgetTester tester,
-    ) async {
+    testWidgets('布局结构测试: 卡片应使用 Stack 层叠布局显示全屏海报感', (WidgetTester tester) async {
       // Arrange
       await tester.pumpWidget(
         buildReviewCardWithTheme(data: testData, theme: buildLightTheme()),
@@ -68,9 +66,7 @@ void main() {
       );
     });
 
-    testWidgets('背景色测试: 内容区背景应带有毛玻璃感渐变', (
-      WidgetTester tester,
-    ) async {
+    testWidgets('背景色测试: 内容区背景应带有毛玻璃感渐变', (WidgetTester tester) async {
       // Arrange
       await tester.pumpWidget(
         buildReviewCardWithTheme(data: testData, theme: buildLightTheme()),
@@ -96,9 +92,7 @@ void main() {
       );
     });
 
-    testWidgets('文字颜色测试: 标题应使用深色以确保可读性', (
-      WidgetTester tester,
-    ) async {
+    testWidgets('文字颜色测试: 标题应使用深色以确保可读性', (WidgetTester tester) async {
       // Arrange
       await tester.pumpWidget(
         buildReviewCardWithTheme(data: testData, theme: buildLightTheme()),

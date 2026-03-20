@@ -29,6 +29,8 @@ import '../../models/subject_model.dart';
 import '../../models/subject_topic_model.dart';
 import '../../models/subject_tag.dart';
 import '../../models/reaction_model.dart';
+import '../../models/comment_notification_model.dart';
+
 
 // 重新导出 ReplyTarget 供外部使用
 export '../../models/subject_comment_model.dart' show ReplyTarget;
@@ -809,3 +811,42 @@ final mockReplies = <String, List<SubjectCommentModel>>{
     ),
   ],
 };
+
+/// 评论通知 Mock 数据
+final mockCommentNotifications = <CommentNotificationModel>[
+  CommentNotificationModel(
+    id: 'n1',
+    type: CommentNotificationType.reply,
+    subjectId: 'three_body',
+    postId: 'ep_30',
+    fromUserId: 'u2',
+    fromUserName: '用户B',
+    fromUserAvatar: 'https://i.pravatar.cc/100?img=3',
+    contentPreview: '是的，那段确实很精彩！',
+    createdAt: DateTime.now().subtract(const Duration(hours: 2)),
+  ),
+  CommentNotificationModel(
+    id: 'n2',
+    type: CommentNotificationType.like,
+    subjectId: 'three_body',
+    postId: 'ep_30',
+    fromUserId: 'u3',
+    fromUserName: '用户C',
+    fromUserAvatar: 'https://i.pravatar.cc/100?img=4',
+    contentPreview: '你的分析很有道理。',
+    createdAt: DateTime.now().subtract(const Duration(hours: 5)),
+  ),
+  CommentNotificationModel(
+    id: 'n3',
+    type: CommentNotificationType.reply,
+    subjectId: 'breaking_bad_fans',
+    postId: 'bb_discussion_1',
+    fromUserId: 'u4',
+    fromUserName: '用户D',
+    fromUserAvatar: 'https://i.pravatar.cc/100?img=5',
+    contentPreview: '我也这么觉得，细节拉满。',
+    createdAt: DateTime.now().subtract(const Duration(days: 1)),
+    isRead: true,
+  ),
+];
+

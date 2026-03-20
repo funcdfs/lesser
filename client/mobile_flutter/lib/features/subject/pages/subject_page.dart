@@ -21,8 +21,10 @@ import '../data_access/mock/subject_mock_data.dart';
 import '../handler/subject_handler.dart';
 import '../models/subject_models.dart';
 import '../widgets/subject_item.dart';
+import '../widgets/notification_item.dart';
 import '../widgets/subject_tag_drawer.dart';
 import 'subject_detail_page.dart';
+import 'comment_notification_page.dart';
 
 class SubjectPage extends StatefulWidget {
   const SubjectPage({super.key});
@@ -159,7 +161,7 @@ class _SubjectPageState extends State<SubjectPage> {
                 slivers: [
                   _buildAppBar(colors),
                   if (_isSearching) _buildSearchTagPanel(colors),
-                  _buildContent(colors),
+                  ..._buildContent(colors),
                   const SliverPadding(padding: EdgeInsets.only(bottom: 100)),
                 ],
               ),
@@ -294,50 +296,70 @@ class _SubjectPageState extends State<SubjectPage> {
     );
   }
 
-  Widget _buildContent(AppColorScheme colors) {
+  List<Widget> _buildContent(AppColorScheme colors) {
     if (_handler.isLoading) {
-      return const _LoadingView();
+      return [const _LoadingView()];
     }
 
     final error = _handler.error;
     if (error != null) {
-      return _ErrorView(error: error, onRetry: _onRetry);
+      return [
+        _ErrorView(error: error, onRetry: _onRetry),
+      ];
     }
 
-    final subjectList = _filteredSubjectList ?? _handler.subjectList;
+    final subjectList = _isSearching ? (_filteredSubjectList ?? []) : _handler.subjectList;
 
     if (subjectList.isEmpty) {
-      return SliverFillRemaining(
-        hasScrollBody: false,
-        child: Center(
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Icon(Icons.search_off_rounded, size: 48, color: colors.textDisabled),
-              const SizedBox(height: 16),
-              Text(
-                '没有找到匹配的话题',
-                style: TextStyle(color: colors.textTertiary),
-              ),
-            ],
+      return [
+        SliverFillRemaining(
+          hasScrollBody: false,
+          child: Center(
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Icon(Icons.search_off_rounded, size: 48, color: colors.textDisabled),
+                const SizedBox(height: 16),
+                Text(
+                  '没有找到匹配的话题',
+                  style: TextStyle(color: colors.textTertiary),
+                ),
+              ],
+            ),
           ),
         ),
-      );
+      ];
     }
 
-    return SliverList(
-      delegate: SliverChildBuilderDelegate(
-        (context, index) {
-          final subject = subjectList[index];
-          return SubjectItem(
-            subject: subject,
-            uiState: _handler.getUIState(subject.id),
-            onTap: () => _onSeriesTap(subject),
-          );
-        },
-        childCount: subjectList.length,
+    return [
+      // 置顶通知箱
+      SliverToBoxAdapter(
+        child: SubjectNotificationItem(
+          notifications: mockCommentNotifications,
+          onTap: () {
+            Navigator.of(context).push(
+              MaterialPageRoute(
+                builder: (_) => const CommentNotificationPage(),
+              ),
+            );
+          },
+        ),
       ),
-    );
+      // 话题列表
+      SliverList(
+        delegate: SliverChildBuilderDelegate(
+          (context, index) {
+            final subject = subjectList[index];
+            return SubjectItem(
+              subject: subject,
+              uiState: _handler.getUIState(subject.id),
+              onTap: () => _onSeriesTap(subject),
+            );
+          },
+          childCount: subjectList.length,
+        ),
+      ),
+    ];
   }
 }
 
