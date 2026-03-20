@@ -7,17 +7,17 @@ class DiscoveryCollectionList extends StatelessWidget {
 
   static const List<Map<String, dynamic>> _playlists = [
     {
-      'title': 'Best Sci-Fi of\nthe Decade',
+      'title': '十年最佳\n科幻片',
       'gradient': [Color(0xFF1E3A8A), Colors.transparent],
       'image': 'https://picsum.photos/seed/scifi/480/256',
     },
     {
-      'title': 'Summer\nBlockbusters',
+      'title': '夏日\n大片',
       'gradient': [Color(0xFF7C2D12), Colors.transparent],
       'image': 'https://picsum.photos/seed/summer/480/256',
     },
     {
-      'title': 'Cult Classics',
+      'title': '邪典经典',
       'gradient': [Color(0xFF581C87), Colors.transparent],
       'image': 'https://picsum.photos/seed/cult/480/256',
     },

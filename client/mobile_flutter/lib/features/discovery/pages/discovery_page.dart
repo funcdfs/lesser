@@ -20,62 +20,30 @@ class DiscoveryPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      body: CustomScrollView(
-        slivers: [
-          // Sticky header
-          SliverAppBar(
-            floating: true,
-            elevation: 0,
-            automaticallyImplyLeading: false,
-            backgroundColor: Theme.of(
-              context,
-            ).scaffoldBackgroundColor.withValues(alpha: 0.9),
-            title: GestureDetector(
-              onTap: () {
-                PrimaryScrollController.of(context).animateTo(
-                  0.0,
-                  duration: const Duration(milliseconds: 300),
-                  curve: Curves.easeOutCubic,
-                );
-              },
-              child: const Text(
-                'Discovery',
-                style: TextStyle(
-                  fontSize: 28,
-                  fontWeight: FontWeight.bold,
-                  letterSpacing: -0.5,
-                ),
-              ),
-            ),
-          ),
+    return const CustomScrollView(
+      slivers: [
+        // Trending Now section
+        DiscoveryTrendingSection(),
 
-          // Trending Now section
-          const DiscoveryTrendingSection(),
+        // Popular Tags
+        DiscoverySectionHeader(title: '热门标签'),
+        DiscoveryTagList(),
 
-          // Popular Tags
-          const DiscoverySectionHeader(title: 'Popular Tags'),
-          const DiscoveryTagList(),
+        // Actors
+        DiscoverySectionHeader(title: '演员'),
+        DiscoveryActorList(),
 
-          // Actors
-          const DiscoverySectionHeader(title: 'Actors'),
-          const DiscoveryActorList(),
+        // Curated Playlists
+        DiscoverySectionHeader(title: '精选合集', showViewAll: true),
+        DiscoveryCollectionList(),
 
-          // Curated Playlists
-          const DiscoverySectionHeader(
-            title: 'Curated Playlists',
-            showViewAll: true,
-          ),
-          const DiscoveryCollectionList(),
+        // Latest News
+        DiscoverySectionHeader(title: '最新资讯', showViewAll: true),
+        DiscoveryNewsList(),
 
-          // Latest News
-          const DiscoverySectionHeader(title: 'Latest News', showViewAll: true),
-          const DiscoveryNewsList(),
-
-          // Bottom padding for navigation bar
-          const SliverPadding(padding: EdgeInsets.only(bottom: 100)),
-        ],
-      ),
+        // Bottom padding for navigation bar
+        SliverPadding(padding: EdgeInsets.only(bottom: 100)),
+      ],
     );
   }
 }

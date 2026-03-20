@@ -7,15 +7,13 @@ class DiscoveryNewsList extends StatelessWidget {
 
   static const List<Map<String, String>> _news = [
     {
-      'title': 'New Trailers Released',
-      'description':
-          'The latest release for Dune: Part Two has fans speculating about the ending...',
+      'title': '最新预告片发布',
+      'description': '《沙丘 2》的最新预告片让粉丝们对结局充满期待...',
       'image': 'https://picsum.photos/seed/news1/560/256',
     },
     {
-      'title': 'Casting News',
-      'description':
-          'Major casting announcements for the upcoming Marvel phase revealed today.',
+      'title': '演员阵容公布',
+      'description': '漫威电影宇宙新阶段的主要演员阵容今日揭晓。',
       'image': 'https://picsum.photos/seed/news2/560/256',
     },
   ];

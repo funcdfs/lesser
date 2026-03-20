@@ -6,17 +6,17 @@ class DiscoveryTagList extends StatelessWidget {
   const DiscoveryTagList({super.key});
 
   static const List<String> _tags = [
-    'Filter',
-    'Cyberpunk',
-    'Award Winners',
-    'Based on True Story',
-    'Rom-Com',
-    'Post-Apocalyptic',
-    'Space Opera',
-    'Psychological',
-    'Anime',
-    'Critically Acclaimed',
-    'Dark Fantasy',
+    '筛选',
+    '赛博朋克',
+    '获奖作品',
+    '真实故事改编',
+    '浪漫喜剧',
+    '末日题材',
+    '太空歌剧',
+    '心理惊悚',
+    '动漫',
+    '口碑佳作',
+    '黑暗奇幻',
   ];
 
   @override
@@ -123,7 +123,7 @@ class DiscoveryTagList extends StatelessWidget {
         mainAxisSize: MainAxisSize.min,
         children: [
           Text(
-            'Filter',
+            '筛选',
             style: TextStyle(
               color: Colors.white,
               fontSize: 14,

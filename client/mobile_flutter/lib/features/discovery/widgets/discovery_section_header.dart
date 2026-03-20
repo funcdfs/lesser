@@ -36,7 +36,7 @@ class DiscoverySectionHeader extends StatelessWidget {
               GestureDetector(
                 onTap: onViewAllTap,
                 child: Text(
-                  'View All',
+                  '查看全部',
                   style: TextStyle(
                     fontSize: 14,
                     fontWeight: FontWeight.w500,

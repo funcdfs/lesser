@@ -12,17 +12,11 @@ class DiscoveryTrendingSection extends StatefulWidget {
 }
 
 class _DiscoveryTrendingSectionState extends State<DiscoveryTrendingSection> {
-  int _selectedTimeRange = 0; // 0: Today, 1: Weekly, 2: Month
-  int _selectedCategory = 0; // 0: All, 1: Movies, 2: TV Shows, etc.
+  int _selectedTimeRange = 0; // 0: 今日, 1: 本周, 2: 本月
+  int _selectedCategory = 0; // 0: 全部, 1: 电影, 2: 电视剧, 等
 
-  final List<String> _timeRanges = ['Today', 'Weekly', 'Month'];
-  final List<String> _categories = [
-    'All',
-    'Movies',
-    'TV Shows',
-    'Documentaries',
-    'Anime',
-  ];
+  final List<String> _timeRanges = ['今日', '本周', '本月'];
+  final List<String> _categories = ['全部', '电影', '电视剧', '纪录片', '动漫'];
 
   // 假数据 - 电影标题
   final List<String> _movieTitles = [
@@ -82,7 +76,7 @@ class _DiscoveryTrendingSectionState extends State<DiscoveryTrendingSection> {
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
           Text(
-            'Trending Now',
+            '热门趋势',
             style: TextStyle(
               fontSize: 20,
               fontWeight: FontWeight.bold,
