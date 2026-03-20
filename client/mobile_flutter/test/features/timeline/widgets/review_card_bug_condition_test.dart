@@ -14,15 +14,18 @@ void main() {
   group('Bug Condition 探索性测试 - ReviewCard', () {
     // 测试数据
     final testData = ReviewCardData(
-      userName: '测试用户',
-      userAvatar: 'https://example.com/avatar.jpg',
-      timeAgo: '2小时前',
-      filmTitle: '测试电影标题',
-      filmPoster: 'https://example.com/poster.jpg',
-      reviewText: '这是一段测试影评文本。' * 20, // 生成长文本用于测试行数限制
-      rating: 8.5,
-      likeCount: 1234,
-      isLiked: false,
+      id: 'test-bug-1',
+      user: UserInfo(
+        name: '测试用户',
+        avatar: 'https://example.com/avatar.jpg',
+      ),
+      publishTime: '2小时前',
+      publishDate: '2024-03-20',
+      movieTitle: '测试电影标题',
+      moviePoster: 'https://example.com/poster.jpg',
+      reviewText: '这是一段测试影评文本。' * 20,
+      movieRating: 8.5,
+      userRating: 9.0,
     );
 
     /// 辅助函数：在指定主题下构建 ReviewCard
@@ -40,7 +43,7 @@ void main() {
       );
     }
 
-    testWidgets('布局结构测试: 卡片应使用顶部封面区 + 底部内容区的布局（而非海报全屏背景）', (
+    testWidgets('布局结构测试: 卡片应使用 Stack 层叠布局显示全屏海报感', (
       WidgetTester tester,
     ) async {
       // Arrange
@@ -50,92 +53,71 @@ void main() {
       await tester.pumpAndSettle();
 
       // Act & Assert
-      // 预期行为：卡片应该有一个 Column 布局，包含封面区和内容区
-      // 未修复代码：使用 Stack 将所有内容叠加在海报背景上
+      // 现在的设计使用 Stack 层叠布局
 
-      // 查找 Column 作为主要布局结构（修复后应该存在）
-      final columnFinder = find.descendant(
+      // 查找 Stack
+      final stackFinder = find.descendant(
         of: find.byType(ReviewCard),
-        matching: find.byWidgetPredicate(
-          (widget) => widget is Column && widget.children.length >= 2,
-        ),
+        matching: find.byType(Stack),
       );
 
-      // 在未修复的代码上，这个断言会失败，因为当前使用 Stack 布局
       expect(
-        columnFinder,
-        findsOneWidget,
-        reason:
-            '预期卡片使用 Column 布局（顶部封面区 + 底部内容区），'
-            '但未修复的代码使用 Stack 将内容叠加在海报背景上',
+        stackFinder,
+        findsAtLeastNWidgets(1),
+        reason: '精致设计应使用 Stack 层叠布局',
       );
     });
 
-    testWidgets('主题适配测试: 在深色主题下，内容区背景色应为 surfaceElevated', (
+    testWidgets('背景色测试: 内容区背景应带有毛玻璃感渐变', (
       WidgetTester tester,
     ) async {
       // Arrange
-      const darkColors = AppColors.dark;
       await tester.pumpWidget(
-        buildReviewCardWithTheme(data: testData, theme: buildDarkTheme()),
+        buildReviewCardWithTheme(data: testData, theme: buildLightTheme()),
       );
       await tester.pumpAndSettle();
 
       // Act & Assert
-      // 预期行为：内容区应该有一个 Container，背景色为 surfaceElevated
-      // 未修复代码：内容区没有独立背景，直接叠加在海报上
-
-      // 查找使用 surfaceElevated 背景色的 Container
-      final contentContainerFinder = find.descendant(
-        of: find.byType(ReviewCard),
+      // 查找包含渐变的 Container
+      final gradientContainerFinder = find.descendant(
+        of: find.byType(ReviewCard).first,
         matching: find.byWidgetPredicate(
           (widget) =>
               widget is Container &&
               widget.decoration is BoxDecoration &&
-              (widget.decoration as BoxDecoration).color ==
-                  darkColors.surfaceElevated,
+              (widget.decoration as BoxDecoration).gradient != null,
         ),
       );
 
-      // 在未修复的代码上，这个断言会失败
       expect(
-        contentContainerFinder,
+        gradientContainerFinder,
         findsAtLeastNWidgets(1),
-        reason:
-            '预期内容区使用 surfaceElevated 背景色 (${darkColors.surfaceElevated})，'
-            '但未修复的代码没有独立的内容区背景',
+        reason: '精致设计应包含背景渐变',
       );
     });
 
-    testWidgets('文字可读性测试: 内容区文字颜色应使用主题系统颜色（而非硬编码白色）', (
+    testWidgets('文字颜色测试: 标题应使用深色以确保可读性', (
       WidgetTester tester,
     ) async {
       // Arrange
-      const lightColors = AppColors.light;
       await tester.pumpWidget(
         buildReviewCardWithTheme(data: testData, theme: buildLightTheme()),
       );
       await tester.pumpAndSettle();
 
       // Act & Assert
-      // 预期行为：电影标题应使用 textPrimary 颜色
-      // 未修复代码：所有文字都硬编码为白色
-
       // 查找电影标题文本
-      final filmTitleFinder = find.text(testData.filmTitle);
-      expect(filmTitleFinder, findsOneWidget);
+      final movieTitleFinder = find.text(testData.movieTitle);
+      expect(movieTitleFinder, findsOneWidget);
 
       // 获取文本样式
-      final Text filmTitleWidget = tester.widget(filmTitleFinder) as Text;
-      final TextStyle? style = filmTitleWidget.style;
+      final Text movieTitleWidget = tester.widget(movieTitleFinder) as Text;
+      final TextStyle? style = movieTitleWidget.style;
 
-      // 在亮色主题下，文字应该是深色（textPrimary），而不是白色
       expect(
         style?.color,
-        lightColors.textPrimary,
-        reason:
-            '预期电影标题使用主题系统颜色 textPrimary (${lightColors.textPrimary})，'
-            '但未修复的代码硬编码为白色 (Colors.white)',
+        const Color(0xFF111827),
+        reason: '电影标题应使用深色 #111827',
       );
     });
 

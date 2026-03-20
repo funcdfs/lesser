@@ -15,22 +15,25 @@ void main() {
   group('Preservation 属性测试 - ReviewCard', () {
     // 测试数据
     const testData = ReviewCardData(
-      userName: '测试用户',
-      userAvatar: 'https://example.com/avatar.jpg',
-      timeAgo: '2小时前',
-      filmTitle: '测试电影',
-      filmPoster: 'https://example.com/poster.jpg',
+      id: 'test-1',
+      user: UserInfo(
+        name: '测试用户',
+        avatar: 'https://example.com/avatar.jpg',
+      ),
+      publishTime: '2小时前',
+      publishDate: '2024-03-20',
+      movieTitle: '测试电影',
+      moviePoster: 'https://example.com/poster.jpg',
       reviewText: '这是一段测试影评文本',
-      rating: 8.5,
-      likeCount: 1234,
-      isLiked: false,
+      movieRating: 8.5,
+      userRating: 9.0,
     );
 
     /// 辅助函数：在指定主题下构建 ReviewCard
     Widget buildReviewCardWithTheme({
       required ReviewCardData data,
       required ThemeData theme,
-      VoidCallback? onTap,
+      VoidCallback? onExpand,
       VoidCallback? onLike,
       VoidCallback? onShare,
       VoidCallback? onRepost,
@@ -44,7 +47,7 @@ void main() {
               width: 400,
               child: ReviewCard(
                 data: data,
-                onTap: onTap,
+                onExpand: onExpand,
                 onLike: onLike,
                 onShare: onShare,
                 onRepost: onRepost,
@@ -63,7 +66,7 @@ void main() {
         buildReviewCardWithTheme(
           data: testData,
           theme: buildLightTheme(),
-          onTap: () => cardTapped = true,
+          onExpand: () => cardTapped = true,
         ),
       );
       await tester.pumpAndSettle();
@@ -281,15 +284,15 @@ void main() {
       // Arrange
       // 使用无效的图片 URL 触发错误
       final dataWithInvalidPoster = ReviewCardData(
-        userName: testData.userName,
-        userAvatar: testData.userAvatar,
-        timeAgo: testData.timeAgo,
-        filmTitle: testData.filmTitle,
-        filmPoster: 'https://invalid-url-that-will-fail.com/poster.jpg',
+        id: 'test-invalid-poster',
+        user: testData.user,
+        publishTime: testData.publishTime,
+        publishDate: testData.publishDate,
+        movieTitle: testData.movieTitle,
+        moviePoster: 'https://invalid-url-that-will-fail.com/poster.jpg',
         reviewText: testData.reviewText,
-        rating: testData.rating,
-        likeCount: testData.likeCount,
-        isLiked: testData.isLiked,
+        movieRating: testData.movieRating,
+        userRating: testData.userRating,
       );
 
       await tester.pumpWidget(
@@ -320,15 +323,18 @@ void main() {
       // Arrange
       // 使用无效的头像 URL 触发错误
       final dataWithInvalidAvatar = ReviewCardData(
-        userName: testData.userName,
-        userAvatar: 'https://invalid-url-that-will-fail.com/avatar.jpg',
-        timeAgo: testData.timeAgo,
-        filmTitle: testData.filmTitle,
-        filmPoster: testData.filmPoster,
+        id: 'test-invalid-avatar',
+        user: UserInfo(
+          name: testData.user.name,
+          avatar: 'https://invalid-url-that-will-fail.com/avatar.jpg',
+        ),
+        publishTime: testData.publishTime,
+        publishDate: testData.publishDate,
+        movieTitle: testData.movieTitle,
+        moviePoster: testData.moviePoster,
         reviewText: testData.reviewText,
-        rating: testData.rating,
-        likeCount: testData.likeCount,
-        isLiked: testData.isLiked,
+        movieRating: testData.movieRating,
+        userRating: testData.userRating,
       );
 
       await tester.pumpWidget(
@@ -374,15 +380,15 @@ void main() {
     testWidgets('数字格式化保留测试: 小于 1000 的点赞数应直接显示', (WidgetTester tester) async {
       // Arrange
       final dataWithSmallLikeCount = ReviewCardData(
-        userName: testData.userName,
-        userAvatar: testData.userAvatar,
-        timeAgo: testData.timeAgo,
-        filmTitle: testData.filmTitle,
-        filmPoster: testData.filmPoster,
+        id: 'test-small-likes',
+        user: testData.user,
+        publishTime: testData.publishTime,
+        publishDate: testData.publishDate,
+        movieTitle: testData.movieTitle,
+        moviePoster: testData.moviePoster,
         reviewText: testData.reviewText,
-        rating: testData.rating,
-        likeCount: 42,
-        isLiked: false,
+        movieRating: testData.movieRating,
+        userRating: testData.userRating,
       );
 
       await tester.pumpWidget(
@@ -405,15 +411,15 @@ void main() {
     ) async {
       // Arrange
       final likedData = ReviewCardData(
-        userName: testData.userName,
-        userAvatar: testData.userAvatar,
-        timeAgo: testData.timeAgo,
-        filmTitle: testData.filmTitle,
-        filmPoster: testData.filmPoster,
+        id: 'test-liked',
+        user: testData.user,
+        publishTime: testData.publishTime,
+        publishDate: testData.publishDate,
+        movieTitle: testData.movieTitle,
+        moviePoster: testData.moviePoster,
         reviewText: testData.reviewText,
-        rating: testData.rating,
-        likeCount: testData.likeCount,
-        isLiked: true,
+        movieRating: testData.movieRating,
+        userRating: testData.userRating,
       );
 
       await tester.pumpWidget(

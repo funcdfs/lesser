@@ -55,10 +55,22 @@ class UserInfo {
 
 /// 精致影评卡片 - 1:1 复刻 UIdemo
 class ReviewCard extends StatefulWidget {
-  const ReviewCard({super.key, required this.data, this.onExpand});
+  const ReviewCard({
+    super.key,
+    required this.data,
+    this.onExpand,
+    this.onLike,
+    this.onShare,
+    this.onRepost,
+    this.onBookmark,
+  });
 
   final ReviewCardData data;
   final VoidCallback? onExpand;
+  final VoidCallback? onLike;
+  final VoidCallback? onShare;
+  final VoidCallback? onRepost;
+  final VoidCallback? onBookmark;
 
   @override
   State<ReviewCard> createState() => _ReviewCardState();
@@ -81,12 +93,14 @@ class _ReviewCardState extends State<ReviewCard> {
       _liked = !_liked;
       _likeCount = _liked ? _likeCount + 1 : _likeCount - 1;
     });
+    widget.onLike?.call();
   }
 
   void _handleBookmark() {
     setState(() {
       _bookmarked = !_bookmarked;
     });
+    widget.onBookmark?.call();
   }
 
   @override
@@ -98,7 +112,7 @@ class _ReviewCardState extends State<ReviewCard> {
           borderRadius: BorderRadius.circular(24),
           boxShadow: [
             BoxShadow(
-              color: const Color(0xFF8B5CF6).withOpacity(0.08),
+              color: const Color(0xFF8B5CF6).withValues(alpha: 0.08),
               blurRadius: 20,
               offset: const Offset(0, 4),
             ),
@@ -151,9 +165,9 @@ class _ReviewCardState extends State<ReviewCard> {
                 begin: Alignment.topCenter,
                 end: Alignment.bottomCenter,
                 colors: [
-                  Colors.white.withOpacity(0.4), // 顶部
-                  Colors.white.withOpacity(0.85), // 中部
-                  Colors.white.withOpacity(0.95), // 底部
+                  Colors.white.withValues(alpha: 0.4), // 顶部
+                  Colors.white.withValues(alpha: 0.85), // 中部
+                  Colors.white.withValues(alpha: 0.95), // 底部
                 ],
                 stops: const [0.0, 0.5, 1.0],
               ),
@@ -162,7 +176,7 @@ class _ReviewCardState extends State<ReviewCard> {
           // 紫罗兰色调叠加 - 使用更深一点的紫色模拟 overlay 效果
           Container(
             decoration: BoxDecoration(
-              color: const Color(0xFF4C1D95).withOpacity(0.04), // violet-900
+              color: const Color(0xFF4C1D95).withValues(alpha: 0.04), // violet-900
             ),
           ),
         ],
@@ -214,7 +228,7 @@ class _ReviewCardState extends State<ReviewCard> {
             border: Border.all(color: Colors.white, width: 2),
             boxShadow: [
               BoxShadow(
-                color: Colors.black.withOpacity(0.1),
+                color: Colors.black.withValues(alpha: 0.1),
                 blurRadius: 4,
                 offset: const Offset(0, 2),
               ),
@@ -293,7 +307,7 @@ class _ReviewCardState extends State<ReviewCard> {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
       decoration: BoxDecoration(
-        color: badgeStyle.bgColor.withOpacity(0.8),
+        color: badgeStyle.bgColor.withValues(alpha: 0.6),
         borderRadius: BorderRadius.circular(6),
       ),
       child: Row(
@@ -400,7 +414,7 @@ class _ReviewCardState extends State<ReviewCard> {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
       decoration: BoxDecoration(
-        color: Colors.white.withOpacity(0.5),
+        color: Colors.white.withValues(alpha: 0.5),
         borderRadius: BorderRadius.circular(4),
       ),
       child: Row(
@@ -428,7 +442,7 @@ class _ReviewCardState extends State<ReviewCard> {
       decoration: BoxDecoration(
         border: Border(
           top: BorderSide(
-            color: const Color(0xFF8B5CF6).withOpacity(0.1),
+            color: const Color(0xFF8B5CF6).withValues(alpha: 0.1),
             width: 1,
           ),
         ),
@@ -451,7 +465,7 @@ class _ReviewCardState extends State<ReviewCard> {
             icon: Icons.repeat,
             label: widget.data.repostCount.toString(),
             color: const Color(0xFF8B5CF6), // violet-500
-            onTap: () {},
+            onTap: () => widget.onRepost?.call(),
           ),
           const SizedBox(width: 4),
           // 分享
@@ -459,7 +473,7 @@ class _ReviewCardState extends State<ReviewCard> {
             icon: Icons.share_outlined,
             label: widget.data.shareCount.toString(),
             color: const Color(0xFF8B5CF6), // violet-500
-            onTap: () {},
+            onTap: () => widget.onShare?.call(),
           ),
           const Spacer(),
           // 收藏
@@ -501,7 +515,7 @@ class _ActionButton extends StatelessWidget {
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
         decoration: BoxDecoration(
           color: filled
-              ? const Color(0xFF8B5CF6).withOpacity(0.1)
+              ? const Color(0xFF8B5CF6).withValues(alpha: 0.1)
               : Colors.transparent,
           borderRadius: BorderRadius.circular(8),
         ),

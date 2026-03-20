@@ -220,7 +220,7 @@ class _TimelineItem extends StatelessWidget {
                               ),
                             );
                           },
-                          errorBuilder: (_, __, ___) => Container(
+                          errorBuilder: (_, _, _) => Container(
                             width: 38,
                             height: 54,
                             decoration: BoxDecoration(

@@ -61,7 +61,7 @@ class HeroReviewCard extends StatelessWidget {
   Widget _buildPosterBackground() {
     return Positioned.fill(
       child: Image.network(
-        data.filmPoster,
+        data.moviePoster,
         fit: BoxFit.cover,
         loadingBuilder: (context, child, loadingProgress) {
           if (loadingProgress == null) return child;
@@ -123,7 +123,7 @@ class HeroReviewCard extends StatelessWidget {
           const Spacer(),
           // 电影标题
           Text(
-            data.filmTitle,
+            data.movieTitle,
             style: const TextStyle(
               fontSize: 48,
               fontWeight: FontWeight.w700,
@@ -202,7 +202,7 @@ class HeroReviewCard extends StatelessWidget {
           ),
           child: ClipOval(
             child: Image.network(
-              data.userAvatar,
+              data.user.avatar,
               fit: BoxFit.cover,
               loadingBuilder: (context, child, loadingProgress) {
                 if (loadingProgress == null) return child;
@@ -231,7 +231,7 @@ class HeroReviewCard extends StatelessWidget {
         const SizedBox(width: 12),
         // 用户名
         Text(
-          data.userName,
+          data.user.name,
           style: TextStyle(
             fontSize: 14,
             fontWeight: FontWeight.w500,
@@ -252,7 +252,7 @@ class HeroReviewCard extends StatelessWidget {
             const Icon(Icons.star, size: 14, color: Color(0xFFd2bbff)),
             const SizedBox(width: 4),
             Text(
-              data.rating.toStringAsFixed(1),
+              data.movieRating.toStringAsFixed(1),
               style: const TextStyle(
                 fontSize: 14,
                 fontWeight: FontWeight.w700,

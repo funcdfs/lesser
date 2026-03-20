@@ -21,8 +21,8 @@ class TimelinePage extends StatelessWidget {
           end: Alignment.bottomRight,
           colors: [
             const Color(0xFFF9FAFB),
-            const Color(0xFFF3E8FF).withOpacity(0.3),
-            const Color(0xFFFAF5FF).withOpacity(0.2),
+            const Color(0xFFF3E8FF).withValues(alpha: 0.3),
+            const Color(0xFFFAF5FF).withValues(alpha: 0.2),
           ],
         ),
       ),

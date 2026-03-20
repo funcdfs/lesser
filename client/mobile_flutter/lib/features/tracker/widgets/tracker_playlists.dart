@@ -168,7 +168,7 @@ class _PlaylistCard extends StatelessWidget {
                               color: colors.accentSoft,
                             );
                           },
-                          errorBuilder: (_, __, ___) => Container(
+                          errorBuilder: (_, _, _) => Container(
                             width: itemSize,
                             height: itemSize,
                             color: colors.accentSoft,

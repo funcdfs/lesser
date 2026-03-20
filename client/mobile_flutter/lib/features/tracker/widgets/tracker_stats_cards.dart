@@ -298,7 +298,7 @@ class _MiniPosterStack extends StatelessWidget {
                             if (progress == null) return child;
                             return Container(color: colors.accentSoft);
                           },
-                          errorBuilder: (_, __, ___) => Container(
+                          errorBuilder: (_, _, _) => Container(
                             color: colors.accentSoft,
                             child: Icon(
                               Icons.movie_rounded,
