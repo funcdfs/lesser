@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../../pkg/ui/theme/theme.dart';
 import '../widgets/review_card.dart';
 
 /// Timeline 页面 - 推荐流（影评社区）
@@ -14,15 +15,17 @@ class TimelinePage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colors = AppColors.of(context);
     return Container(
       decoration: BoxDecoration(
+        // 背景渐变使用主题专属紫色的柔和变体 (accentSoft)，营造社区氛围
         gradient: LinearGradient(
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
           colors: [
-            const Color(0xFFF9FAFB),
-            const Color(0xFFF3E8FF).withValues(alpha: 0.3),
-            const Color(0xFFFAF5FF).withValues(alpha: 0.2),
+            colors.surfaceBase,
+            colors.accentSoft.withValues(alpha: 0.3),
+            colors.accentSoft.withValues(alpha: 0.2),
           ],
         ),
       ),

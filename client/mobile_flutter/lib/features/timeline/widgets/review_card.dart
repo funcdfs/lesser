@@ -1,13 +1,5 @@
-// 影评卡片 - 1:1 复刻 UIdemo 精致设计
-// 设计特点：
-// - 电影海报作为背景，渐变遮罩（顶部保留背景，越往下越透明）
-// - 紫罗兰色调，圆角 24px，阴影效果
-// - 用户头像、标签、时间在顶部
-// - 电影标题、评分、影评内容在中下部
-// - 底部交互按钮（点赞、分享、转发、收藏）
-
 import 'package:flutter/material.dart';
-import '../../../pkg/ui/effects/effects.dart';
+import '../../../pkg/ui/theme/theme.dart';
 
 /// 影评卡片数据模型
 class ReviewCardData {
@@ -105,14 +97,16 @@ class _ReviewCardState extends State<ReviewCard> {
 
   @override
   Widget build(BuildContext context) {
-    return TapScale(
+    final colors = AppColors.of(context);
+    return GestureDetector(
+      // 移除原有的 TapScale，改为普通点击手势，降低视觉干扰
       onTap: widget.onExpand,
       child: Container(
         decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(24),
           boxShadow: [
             BoxShadow(
-              color: const Color(0xFF8B5CF6).withValues(alpha: 0.08),
+              color: colors.accent.withValues(alpha: 0.1),
               blurRadius: 20,
               offset: const Offset(0, 4),
             ),
@@ -125,9 +119,9 @@ class _ReviewCardState extends State<ReviewCard> {
             child: Stack(
               children: [
                 // 背景：电影海报 + 渐变遮罩
-                _buildBackground(),
+                _buildBackground(colors),
                 // 内容层
-                _buildContent(),
+                _buildContent(colors),
               ],
             ),
           ),
@@ -137,11 +131,12 @@ class _ReviewCardState extends State<ReviewCard> {
   }
 
   /// 背景层：电影海报 + 渐变遮罩
-  Widget _buildBackground() {
+  Widget _buildBackground(AppColorScheme colors) {
     return Positioned.fill(
       child: Stack(
         children: [
-          // 电影海报
+          // 电影海报背景
+          // 采用 fitWidth 模式确保宽度铺满，对齐顶部
           Image.network(
             widget.data.moviePoster,
             fit: BoxFit.fitWidth,
@@ -173,10 +168,10 @@ class _ReviewCardState extends State<ReviewCard> {
               ),
             ),
           ),
-          // 紫罗兰色调叠加 - 使用更深一点的紫色模拟 overlay 效果
+          // 紫罗兰色调叠加 - 使用专属紫色 accentText 模拟精致的遮罩层
           Container(
             decoration: BoxDecoration(
-              color: const Color(0xFF4C1D95).withValues(alpha: 0.04), // violet-900
+              color: colors.accentText.withValues(alpha: 0.05),
             ),
           ),
         ],
@@ -185,7 +180,7 @@ class _ReviewCardState extends State<ReviewCard> {
   }
 
   /// 内容层
-  Widget _buildContent() {
+  Widget _buildContent(AppColorScheme colors) {
     return Padding(
       padding: const EdgeInsets.all(20),
       child: Column(
@@ -193,7 +188,7 @@ class _ReviewCardState extends State<ReviewCard> {
         mainAxisSize: MainAxisSize.min,
         children: [
           // 1. 顶部：头像、用户名、时间、标签
-          _buildUserInfo(),
+          _buildUserInfo(colors),
           const SizedBox(height: 16),
           // 2. 电影标题 & 评分
           Row(
@@ -201,7 +196,7 @@ class _ReviewCardState extends State<ReviewCard> {
             children: [
               Expanded(child: _buildMovieTitle()),
               const SizedBox(width: 12),
-              _buildRatings(),
+              _buildRatings(colors),
             ],
           ),
           const SizedBox(height: 12),
@@ -209,14 +204,14 @@ class _ReviewCardState extends State<ReviewCard> {
           _buildReviewText(),
           const SizedBox(height: 16),
           // 4. 底部交互按钮
-          _buildActions(),
+          _buildActions(colors),
         ],
       ),
     );
   }
 
   /// 用户信息区
-  Widget _buildUserInfo() {
+  Widget _buildUserInfo(AppColorScheme colors) {
     return Row(
       children: [
         // 头像
@@ -271,10 +266,10 @@ class _ReviewCardState extends State<ReviewCard> {
                   const SizedBox(width: 8),
                   Text(
                     widget.data.publishTime,
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize: 14,
                       fontWeight: FontWeight.w600,
-                      color: Color(0xFF7C3AED), // violet-600
+                      color: colors.accent,
                     ),
                   ),
                   const SizedBox(width: 8),
@@ -290,7 +285,7 @@ class _ReviewCardState extends State<ReviewCard> {
                 Wrap(
                   spacing: 6,
                   children: widget.data.user.badges
-                      .map((badge) => _buildBadge(badge))
+                      .map((badge) => _buildBadge(badge, colors))
                       .toList(),
                 ),
               ],
@@ -302,8 +297,8 @@ class _ReviewCardState extends State<ReviewCard> {
   }
 
   /// 用户标签
-  Widget _buildBadge(String badge) {
-    final badgeStyle = _getBadgeStyle(badge);
+  Widget _buildBadge(String badge, AppColorScheme colors) {
+    final badgeStyle = _getBadgeStyle(badge, colors);
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
       decoration: BoxDecoration(
@@ -328,7 +323,7 @@ class _ReviewCardState extends State<ReviewCard> {
     );
   }
 
-  _BadgeStyle _getBadgeStyle(String badge) {
+  _BadgeStyle _getBadgeStyle(String badge, AppColorScheme colors) {
     switch (badge) {
       case 'VIP':
         return const _BadgeStyle(
@@ -337,10 +332,10 @@ class _ReviewCardState extends State<ReviewCard> {
           textColor: Color(0xFFB45309),
         );
       case '影评人':
-        return const _BadgeStyle(
+        return _BadgeStyle(
           icon: Icons.emoji_events,
-          bgColor: Color(0xFFEDE9FE),
-          textColor: Color(0xFF6D28D9),
+          bgColor: colors.accentSoft,
+          textColor: colors.accent,
         );
       case '活跃':
         return const _BadgeStyle(
@@ -367,11 +362,7 @@ class _ReviewCardState extends State<ReviewCard> {
         color: Color(0xFF111827),
         height: 1.3,
         shadows: [
-          Shadow(
-            color: Colors.black12,
-            offset: Offset(0, 1),
-            blurRadius: 2,
-          ),
+          Shadow(color: Colors.black12, offset: Offset(0, 1), blurRadius: 2),
         ],
       ),
       maxLines: 2,
@@ -390,13 +381,13 @@ class _ReviewCardState extends State<ReviewCard> {
   }
 
   /// 评分区
-  Widget _buildRatings() {
+  Widget _buildRatings(AppColorScheme colors) {
     return Row(
       mainAxisSize: MainAxisSize.min,
       children: [
         _buildCompactRating(
           rating: widget.data.movieRating,
-          starColor: const Color(0xFF8B5CF6),
+          starColor: colors.accent,
         ),
         const SizedBox(width: 8),
         _buildCompactRating(
@@ -436,26 +427,25 @@ class _ReviewCardState extends State<ReviewCard> {
   }
 
   /// 底部交互按钮
-  Widget _buildActions() {
+  Widget _buildActions(AppColorScheme colors) {
     return Container(
       padding: const EdgeInsets.only(top: 12),
       decoration: BoxDecoration(
         border: Border(
           top: BorderSide(
-            color: const Color(0xFF8B5CF6).withValues(alpha: 0.1),
+            color: colors.accent.withValues(alpha: 0.1),
             width: 1,
           ),
         ),
       ),
       child: Row(
         children: [
+          // 交互按钮均使用主题专属紫色 (accent) 或强调色 (interactiveHover)
           // 点赞
           _ActionButton(
             icon: _liked ? Icons.favorite : Icons.favorite_border,
             label: _likeCount.toString(),
-            color: _liked
-                ? const Color(0xFF6D28D9) // violet-700
-                : const Color(0xFF8B5CF6), // violet-500
+            color: _liked ? colors.interactiveHover : colors.accent,
             filled: _liked,
             onTap: _handleLike,
           ),
@@ -464,7 +454,7 @@ class _ReviewCardState extends State<ReviewCard> {
           _ActionButton(
             icon: Icons.repeat,
             label: widget.data.repostCount.toString(),
-            color: const Color(0xFF8B5CF6), // violet-500
+            color: colors.accent,
             onTap: () => widget.onRepost?.call(),
           ),
           const SizedBox(width: 4),
@@ -472,16 +462,14 @@ class _ReviewCardState extends State<ReviewCard> {
           _ActionButton(
             icon: Icons.share_outlined,
             label: widget.data.shareCount.toString(),
-            color: const Color(0xFF8B5CF6), // violet-500
+            color: colors.accent,
             onTap: () => widget.onShare?.call(),
           ),
           const Spacer(),
           // 收藏
           _ActionButton(
             icon: _bookmarked ? Icons.bookmark : Icons.bookmark_border,
-            color: _bookmarked
-                ? const Color(0xFF6D28D9) // violet-700
-                : const Color(0xFF8B5CF6), // violet-500
+            color: _bookmarked ? colors.interactiveHover : colors.accent,
             filled: _bookmarked,
             onTap: _handleBookmark,
           ),
@@ -509,13 +497,14 @@ class _ActionButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return TapScale(
+    final colors = AppColors.of(context);
+    return GestureDetector(
       onTap: onTap,
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
         decoration: BoxDecoration(
           color: filled
-              ? const Color(0xFF8B5CF6).withValues(alpha: 0.1)
+              ? colors.accent.withValues(alpha: 0.1)
               : Colors.transparent,
           borderRadius: BorderRadius.circular(8),
         ),

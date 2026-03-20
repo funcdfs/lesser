@@ -16,6 +16,7 @@ class FeedTabPage extends StatefulWidget {
 class _FeedTabPageState extends State<FeedTabPage>
     with SingleTickerProviderStateMixin {
   late final TabController _tabController;
+  bool _canScroll = true;
 
   @override
   void initState() {
@@ -67,9 +68,32 @@ class _FeedTabPageState extends State<FeedTabPage>
             ),
           ];
         },
-        body: TabBarView(
-          controller: _tabController,
-          children: const [TimelinePage(), DiscoveryPage()],
+        body: Listener(
+          // 限制横向滑动触发区域：
+          // 1. 推荐页 -> 发现页：必须从屏幕右侧 25% 区域开始滑动
+          // 2. 发现页 -> 推荐页：必须从屏幕左侧 25% 区域开始滑动
+          onPointerDown: (event) {
+            final x = event.position.dx;
+            final width = MediaQuery.of(context).size.width;
+
+            if (_tabController.index == 0) {
+              // 在推荐页，只有从右侧 25% 开始滑动才能到发现页
+              _canScroll = x > width * 0.75;
+            } else {
+              // 在发现页，只有从左侧 25% 开始滑动才能到推荐页
+              _canScroll = x < width * 0.25;
+            }
+            setState(() {});
+          },
+          child: TabBarView(
+            controller: _tabController,
+            // 根据 _canScroll 状态动态切换滚动物理效果
+            // 如果不在指定区域，使用 NeverScrollableScrollPhysics 禁用滑动切换
+            physics: _canScroll
+                ? const BouncingScrollPhysics()
+                : const NeverScrollableScrollPhysics(),
+            children: const [TimelinePage(), DiscoveryPage()],
+          ),
         ),
       ),
     );

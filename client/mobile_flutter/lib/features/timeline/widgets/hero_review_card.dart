@@ -1,16 +1,18 @@
 // Hero 精选影评卡片 - 推荐流顶部大卡片
 
 import 'package:flutter/material.dart';
-import '../../../pkg/ui/effects/effects.dart';
+import '../../../pkg/ui/theme/theme.dart';
 import 'review_card.dart';
 
 /// Hero 精选影评卡片
 ///
 /// 用于推荐流顶部，展示编辑精选的高质量影评
 /// 设计特点：
-/// - 更大的尺寸和更突出的视觉效果
-/// - 编辑精选标签
-/// - 电影类型标签
+/// - 1:1 复刻 UIdemo 精致设计，响应式大尺寸布局
+/// - 编辑精选标签 (Editor's Choice)
+/// - 电影类型标签展示
+/// - 移除点击缩放效果，保持交互稳重感
+/// - 背景图采用 fitWidth 模式，确保宽度铺满并对齐顶部
 class HeroReviewCard extends StatelessWidget {
   const HeroReviewCard({
     super.key,
@@ -25,7 +27,9 @@ class HeroReviewCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return TapScale(
+    final colors = AppColors.of(context);
+    return GestureDetector(
+      // 移除原有的 TapScale，改为普通点击手势，避免过度动画
       onTap: onTap,
       child: Container(
         height: 400,
@@ -34,7 +38,7 @@ class HeroReviewCard extends StatelessWidget {
           borderRadius: BorderRadius.circular(32),
           boxShadow: [
             BoxShadow(
-              color: const Color(0xFF2e0052).withValues(alpha: 0.08),
+              color: colors.accent.withValues(alpha: 0.15),
               blurRadius: 30,
               offset: const Offset(0, -8),
             ),
@@ -45,11 +49,11 @@ class HeroReviewCard extends StatelessWidget {
           child: Stack(
             children: [
               // 背景：电影海报
-              _buildPosterBackground(),
+              _buildPosterBackground(colors),
               // 渐变遮罩
-              _buildGradientOverlay(),
+              _buildGradientOverlay(colors),
               // 内容层
-              _buildContent(),
+              _buildContent(colors),
             ],
           ),
         ),
@@ -58,15 +62,18 @@ class HeroReviewCard extends StatelessWidget {
   }
 
   /// 电影海报背景
-  Widget _buildPosterBackground() {
+  Widget _buildPosterBackground(AppColorScheme colors) {
     return Positioned.fill(
       child: Image.network(
         data.moviePoster,
-        fit: BoxFit.cover,
+        // 采用 fitWidth 模式确保图片在容器中宽度铺满
+        // alignment 设置为 topCenter 以展示海报上方内容（通常是标题或关键画面）
+        fit: BoxFit.fitWidth,
+        alignment: Alignment.topCenter,
         loadingBuilder: (context, child, loadingProgress) {
           if (loadingProgress == null) return child;
           return Container(
-            color: const Color(0xFF2e0052).withValues(alpha: 0.2),
+            color: colors.accent.withValues(alpha: 0.1),
             child: Center(
               child: CircularProgressIndicator(
                 value: loadingProgress.expectedTotalBytes != null
@@ -74,9 +81,7 @@ class HeroReviewCard extends StatelessWidget {
                           loadingProgress.expectedTotalBytes!
                     : null,
                 strokeWidth: 3,
-                valueColor: const AlwaysStoppedAnimation<Color>(
-                  Color(0xFF6c49b2),
-                ),
+                valueColor: AlwaysStoppedAnimation<Color>(colors.accent),
               ),
             ),
           );
@@ -92,19 +97,20 @@ class HeroReviewCard extends StatelessWidget {
   }
 
   /// 渐变遮罩
-  Widget _buildGradientOverlay() {
+  Widget _buildGradientOverlay(AppColorScheme colors) {
     return Positioned.fill(
       child: Container(
         decoration: BoxDecoration(
           gradient: LinearGradient(
             begin: Alignment.topCenter,
             end: Alignment.bottomCenter,
+            // 使用主题中的专属紫色 (accentText) 配合不同透明度构建层次感
             colors: [
-              const Color(0xFF2e0052).withValues(alpha: 0.9),
-              const Color(0xFF2e0052).withValues(alpha: 0.3),
-              const Color(0xFF2e0052).withValues(alpha: 0.9),
+              colors.accentText.withValues(alpha: 0.8),
+              colors.accentText.withValues(alpha: 0.3),
+              colors.accentText.withValues(alpha: 0.8),
             ],
-            stops: const [0.0, 0.3, 1.0],
+            stops: const [0.0, 0.3, 1.0], // 控制渐变平滑度
           ),
         ),
       ),
@@ -112,14 +118,14 @@ class HeroReviewCard extends StatelessWidget {
   }
 
   /// 内容层
-  Widget _buildContent() {
+  Widget _buildContent(AppColorScheme colors) {
     return Padding(
       padding: const EdgeInsets.all(32),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           // 标签行
-          _buildTags(),
+          _buildTags(colors),
           const Spacer(),
           // 电影标题
           Text(
@@ -136,21 +142,21 @@ class HeroReviewCard extends StatelessWidget {
           ),
           const SizedBox(height: 16),
           // 用户信息和评分
-          _buildUserAndRating(),
+          _buildUserAndRating(colors),
         ],
       ),
     );
   }
 
   /// 标签行
-  Widget _buildTags() {
+  Widget _buildTags(AppColorScheme colors) {
     return Row(
       children: [
         // 编辑精选标签
         Container(
           padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
           decoration: BoxDecoration(
-            color: const Color(0xFFb390fe),
+            color: colors.accent,
             borderRadius: BorderRadius.circular(6),
           ),
           child: const Text(
@@ -158,7 +164,7 @@ class HeroReviewCard extends StatelessWidget {
             style: TextStyle(
               fontSize: 10,
               fontWeight: FontWeight.w700,
-              color: Color(0xFF461f8a),
+              color: Colors.white,
               letterSpacing: 1.2,
             ),
           ),
@@ -186,7 +192,7 @@ class HeroReviewCard extends StatelessWidget {
   }
 
   /// 用户信息和评分
-  Widget _buildUserAndRating() {
+  Widget _buildUserAndRating(AppColorScheme colors) {
     return Row(
       children: [
         // 用户头像
@@ -249,14 +255,14 @@ class HeroReviewCard extends StatelessWidget {
         // 评分
         Row(
           children: [
-            const Icon(Icons.star, size: 14, color: Color(0xFFd2bbff)),
+            Icon(Icons.star, size: 14, color: colors.accent),
             const SizedBox(width: 4),
             Text(
               data.movieRating.toStringAsFixed(1),
-              style: const TextStyle(
+              style: TextStyle(
                 fontSize: 14,
                 fontWeight: FontWeight.w700,
-                color: Color(0xFFd2bbff),
+                color: colors.accent,
               ),
             ),
           ],
