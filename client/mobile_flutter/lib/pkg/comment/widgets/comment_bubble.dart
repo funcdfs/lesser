@@ -241,7 +241,7 @@ class _UserRow extends StatelessWidget {
   }
 }
 
-/// 引用框 - 带背景色的左边框样式，点击可跳转到原评论
+/// 引用框 - 优化 UI：内容自适应宽度，左侧竖线不具圆角，移除右侧箭头
 class _QuoteBox extends StatelessWidget {
   const _QuoteBox({required this.target, required this.quoteColor, this.onTap});
 
@@ -256,56 +256,59 @@ class _QuoteBox extends StatelessWidget {
 
     // 预计算颜色 - 优化左侧竖线和背景的视觉效果
     final bgColor = quoteColor.withValues(alpha: isDark ? 0.12 : 0.10);
-    final borderColor = quoteColor.withValues(alpha: isDark ? 0.8 : 0.7);
+    final borderColor = quoteColor.withValues(alpha: isDark ? 0.9 : 0.8);
 
     final content = Container(
       decoration: BoxDecoration(
         color: bgColor,
-        borderRadius: BorderRadius.circular(8),
-        // 使用更粗的左边框，增加圆角，提升视觉效果
-        border: Border(left: BorderSide(color: borderColor, width: 3.5)),
+        borderRadius: const BorderRadius.only(
+          topRight: Radius.circular(8),
+          bottomRight: Radius.circular(8),
+        ),
       ),
-      child: Padding(
-        padding: const EdgeInsets.fromLTRB(10, 6, 10, 6),
+      child: IntrinsicWidth(
         child: Row(
+          mainAxisSize: MainAxisSize.min,
           children: [
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Text(
-                    target.authorName,
-                    style: TextStyle(
-                      fontSize: 11.5,
-                      fontWeight: FontWeight.w600,
-                      color: quoteColor,
-                      height: 1.2,
-                    ),
-                  ),
-                  const SizedBox(height: 2),
-                  Text(
-                    target.isDeleted ? '消息已删除' : target.contentPreview,
-                    style: TextStyle(
-                      fontSize: 11.5,
-                      color: colors.textTertiary,
-                      height: 1.3,
-                    ),
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                ],
+            // 左侧不具圆角的竖线 (Sharp Line)
+            Container(
+              width: 3.5,
+              decoration: BoxDecoration(
+                color: borderColor,
+                // 不设置 borderRadius 以保持其为纯矩形
               ),
             ),
-            // 可点击时显示跳转图标提示
-            if (onTap != null) ...[
-              const SizedBox(width: 6),
-              Icon(
-                Icons.arrow_forward_rounded,
-                size: 14,
-                color: quoteColor.withValues(alpha: 0.6),
+            Flexible(
+              child: Padding(
+                padding: const EdgeInsets.fromLTRB(10, 6, 12, 6),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(
+                      target.authorName,
+                      style: TextStyle(
+                        fontSize: 11.5,
+                        fontWeight: FontWeight.w700,
+                        color: quoteColor,
+                        height: 1.2,
+                      ),
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      target.isDeleted ? '消息已删除' : target.contentPreview,
+                      style: TextStyle(
+                        fontSize: 11.5,
+                        color: colors.textSecondary.withValues(alpha: 0.8),
+                        height: 1.3,
+                      ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ],
+                ),
               ),
-            ],
+            ),
           ],
         ),
       ),
