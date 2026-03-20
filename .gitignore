@@ -219,3 +219,5 @@ target/
 # --- 操作系统相关 ---
 .DS_Store
 Thumbs.db
+
+figma/

@@ -7,14 +7,11 @@ import '../../../pkg/ui/theme/theme.dart';
 import '../../../pkg/ui/widgets/widgets.dart';
 import 'feed_tab_page.dart';
 import '../../subject/pages/subject_page.dart';
-import '../../tracker/pages/tracker_page.dart';
 import '../../profile/pages/profile_page.dart';
 
 // 导航图标 SVG 路径（24x24 viewBox）
 const _iconInfo = 'M4 4H16 M4 9H20 M4 14H20 M4 19H14';
 const _iconSeries = 'M10 3L8 21 M16 3L14 21 M4 8H20 M3 16H19';
-const _iconTracker =
-    'M6 3H18V21L12 16.5L6 21Z M10 8V13L14 10.5Z'; // Bookmark + Play
 const _iconProfile =
     'M12 12C14.21 12 16 10.21 16 8C16 5.79 14.21 4 12 4C9.79 4 8 5.79 8 8C8 10.21 9.79 12 12 12Z M4 20C4 17 8 15 12 15C16 15 20 17 20 20';
 
@@ -47,9 +44,6 @@ class HomePageState extends State<HomePage> {
               ? const SubjectPage()
               : const SizedBox.shrink(),
           _loadedTabs.contains(2)
-              ? const TrackerPage()
-              : const SizedBox.shrink(),
-          _loadedTabs.contains(3)
               ? const ProfilePage()
               : const SizedBox.shrink(),
         ],
@@ -80,7 +74,6 @@ class _FrostedBottomNavBar extends StatelessWidget {
   static const _items = [
     (label: '首页', icon: _iconInfo),
     (label: '剧集', icon: _iconSeries),
-    (label: '追踪', icon: _iconTracker),
     (label: '我的', icon: _iconProfile),
   ];
 
